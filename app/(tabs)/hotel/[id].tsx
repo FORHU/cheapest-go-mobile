@@ -5,6 +5,7 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, Platform, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSettings } from '../../../context/SettingsContext';
 import { getHotelDetails, getHotelReviews } from '../../../lib/api';
+import StarRating from '../../../components/ui/StarRating';
 
 const { width } = Dimensions.get('window');
 
@@ -13,24 +14,7 @@ const stripHtml = (html: string) => {
     return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
 };
 
-const StarRating = React.memo(({ rating, size = 16, color = '#2563eb' }: { rating: number, size?: number, color?: string }) => {
-    // Convert 0-10 or 0-5 to 5-star scale
-    const normalizedRating = rating > 5 ? rating / 2 : rating;
-    const fullStars = Math.floor(normalizedRating);
 
-    return (
-        <View style={{ flexDirection: 'row', gap: 2 }}>
-            {[...Array(5)].map((_, i) => (
-                <Star
-                    key={i}
-                    size={size}
-                    color={i < fullStars ? color : '#cbd5e1'}
-                    fill={i < fullStars ? color : 'transparent'}
-                />
-            ))}
-        </View>
-    );
-});
 
 const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
     const [expanded, setExpanded] = useState(false);
@@ -210,7 +194,7 @@ export default function HotelDetailsScreen() {
                         <View style={styles.ratingRow}>
                             <StarRating rating={hotel.reviewRating || hotel.starRating || 0} size={20} />
                             <View>
-                                <Text style={styles.reviewCount}>{hotel.reviewsCount || 0} verified reviews</Text>
+                                <Text style={styles.reviewCount}>{hotel.reviewsCount || reviews.length || 0} verified reviews</Text>
                             </View>
                         </View>
                         <View style={styles.locationRow}>
@@ -470,6 +454,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
     },
     infoItem: {
+        flex: 1,
         alignItems: 'center',
         gap: 6,
     },

@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Dimensions, ActivityIndicator, Image } from 'react-native';
+import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Dimensions, ActivityIndicator, Image, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, List, Map as MapIcon, Search, Filter, Star, MapPin, Heart, MousePointer2, Move, X } from 'lucide-react-native';
 import { searchHotels, autocompleteDestinations, Destination } from '../../lib/api';
 import MapboxWebView from '../../components/search/MapboxWebView';
 import FilterModal from '../../components/search/FilterModal';
 import HotelSearchModal from '../../components/search/HotelSearchModal';
+import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
 import { getFavorites, toggleFavorite } from '../../lib/favorites';
 import { FACILITY_MAP } from '../../components/search/FilterModal';
@@ -114,6 +115,7 @@ export default function SearchScreen() {
     // Filter & Sort State
     const [isFilterVisible, setIsFilterVisible] = useState(false);
     const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
+    const [localDestination, setLocalDestination] = useState(params.destination as string || '');
     const [filters, setFilters] = useState({
         hotelName: '',
         starRating: [] as number[],
@@ -360,16 +362,19 @@ export default function SearchScreen() {
                 <Pressable onPress={() => router.back()} style={styles.backBtn}>
                     <ChevronLeft size={24} color={isDark ? '#ffffff' : '#0f172a'} />
                 </Pressable>
-                <Pressable 
-                    style={styles.searchPill} 
-                    onPress={() => setIsSearchModalVisible(true)}
-                >
-                    <Search size={16} color="#2563eb" />
-                    <View style={styles.searchInfo}>
-                        <Text style={styles.destinationText} numberOfLines={1}>{params.destination}</Text>
-                        <Text style={styles.dateText}>{params.checkIn} - {params.checkOut} • {params.adults} guests</Text>
-                    </View>
-                </Pressable>
+                <View style={styles.searchInputContainer}>
+                    <Search size={16} color={isDark ? '#94a3b8' : '#64748b'} />
+                    <TextInput 
+                        style={styles.searchPill} 
+                        placeholder="Search location..."
+                        placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
+                        value={localDestination}
+                        onChangeText={setLocalDestination}
+                        onSubmitEditing={() => {
+                            router.setParams({ destination: localDestination });
+                        }}
+                    />
+                </View>
                 <Pressable style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
                     <Filter size={20} color={isDark ? '#ffffff' : '#0f172a'} />
                     {activeFilterCount > 0 && (
@@ -477,9 +482,8 @@ export default function SearchScreen() {
                                                     onPress={() => handleHotelSelect(hotel)}
                                                 >
                                                     <Pressable onPress={() => navigateToHotel(hotel)}>
-                                                        <View style={[styles.ratingBadge, { backgroundColor: '#2563eb' }]}>
-                                                            <Star size={10} color="white" fill="white" />
-                                                            <Text style={styles.ratingBadgeText}>{hotel.starRating || hotel.reviewRating || 'New'}</Text>
+                                                        <View style={styles.cardRatingContainer}>
+                                                            <StarRating rating={hotel.starRating || hotel.reviewRating || 0} size={13} color="#2563eb" numeric={true} />
                                                         </View>
                                                         <ImageWithSkeleton 
                                                             uri={hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80'} 
@@ -555,9 +559,8 @@ export default function SearchScreen() {
                                 ) : (
                                     hotels.slice(0, displayLimit).map((hotel) => (
                                             <Pressable key={hotel.hotelId} style={styles.listCard} onPress={() => navigateToHotel(hotel)}>
-                                                <View style={[styles.ratingBadge, { backgroundColor: '#2563eb' }]}>
-                                                    <Star size={10} color="white" fill="white" />
-                                                    <Text style={styles.ratingBadgeText}>{hotel.starRating || hotel.reviewRating || 'New'}</Text>
+                                                <View style={styles.listRatingContainer}>
+                                                    <StarRating rating={hotel.starRating || hotel.reviewRating || 0} size={13} color="#2563eb" numeric={true} />
                                                 </View>
                                                 <ImageWithSkeleton 
                                                     uri={hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=500&q=80'} 
@@ -633,8 +636,8 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingTop: 24,
-        paddingBottom: 2,
+        paddingTop: 44, // Increased for status bar + breathing room
+        paddingBottom: 16, // Increased for better spacing
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderBottomWidth: 1,
         borderBottomColor: isDark ? '#1e293b' : '#e2e8f0',
@@ -643,24 +646,24 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     backBtn: {
         padding: 4,
     },
-    searchPill: {
+    searchInputContainer: {
         flex: 1,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        height: 36,
         marginLeft: 10,
         marginRight: 10,
-        paddingHorizontal: 16,
-        paddingVertical: 5,
-        backgroundColor: isDark ? '#1e293b' : '#ffffff',
-        borderRadius: 16,
-        borderWidth: 1.5,
-        borderColor: isDark ? '#334155' : '#e2e8f0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
+        borderBottomWidth: 1.5,
+        borderBottomColor: isDark ? '#334155' : '#e2e8f0',
+        paddingHorizontal: 4,
+    },
+    searchPill: {
+        flex: 1,
+        height: '100%',
+        color: isDark ? '#ffffff' : '#0f172a',
+        fontSize: 13,
+        fontWeight: '500',
+        marginLeft: 8,
     },
     searchInfo: {
         flex: 1,
@@ -918,8 +921,33 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     hotelPriceRow: {
         flexDirection: 'row',
-        alignItems: 'baseline',
-        gap: 2,
+        alignItems: 'flex-end',
+        justifyContent: 'space-between',
+        marginTop: 10,
+    },
+    cardRatingContainer: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        zIndex: 10,
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+    },
+    listRatingContainer: {
+        position: 'absolute',
+        top: 10,
+        left: 10,
+        zIndex: 10,
+        backgroundColor: 'rgba(255,255,255,0.95)',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
     },
     hotelPrice: {
         fontSize: 16,

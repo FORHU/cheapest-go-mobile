@@ -455,6 +455,8 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                             log('Received: ' + data.type);
                             if (data.type === 'SET_HOTELS') {
                                 updateMarkers(data.hotels, data.selectedHotelId, data.currencySymbol);
+                            } else if (data.type === 'FLY_TO') {
+                                map.flyTo({ center: data.center, zoom: 14, duration: 1500 });
                             } else if (data.type === 'SELECT_HOTEL') {
                                 const m = markers[data.hotelId];
                                 if (m) {
@@ -493,8 +495,16 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
     }, [hotels]);
 
     useEffect(() => {
-        if (hasLoadedRef.current && selectedHotelId && webViewRef.current) {
+        if (hasLoadedRef.current && center && webViewRef.current) {
+            webViewRef.current.postMessage(JSON.stringify({
+                type: 'FLY_TO',
+                center: center
+            }));
+        }
+    }, [center]);
 
+    useEffect(() => {
+        if (hasLoadedRef.current && selectedHotelId && webViewRef.current) {
             webViewRef.current.postMessage(JSON.stringify({
                 type: 'SELECT_HOTEL',
                 hotelId: selectedHotelId
