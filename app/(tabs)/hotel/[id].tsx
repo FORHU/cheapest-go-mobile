@@ -1,6 +1,13 @@
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Check, ChevronLeft, Coffee, Heart, HelpCircle, MapPin, Share2, ShieldCheck, Star, Tv, Wifi, Wind } from 'lucide-react-native';
+import { 
+    Check, ChevronLeft, Coffee, Heart, HelpCircle, MapPin, Share2, 
+    ShieldCheck, Star, Tv, Wifi, Wind, Car, Utensils, Waves, 
+    Dumbbell, Sparkles, Martini, ConciergeBell, Bath, Baby, 
+    Languages, Phone, CreditCard, Clock, Cigarette, CigaretteOff, 
+    Trees, Briefcase, GraduationCap, Info, AirVent, Bed, Key, 
+    ArrowUp, User, Users, Calendar, Camera, Map, Scissors, ShoppingBag
+} from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, Platform, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSettings } from '../../../context/SettingsContext';
@@ -14,6 +21,36 @@ const stripHtml = (html: string) => {
     return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
 };
 
+const getAmenityIcon = (name: string, size: number = 16, color: string = '#10b981') => {
+    const lower = name.toLowerCase();
+    let IconComponent = Check;
+
+    if (lower.includes('wifi') || lower.includes('internet')) IconComponent = Wifi;
+    else if (lower.includes('breakfast') || lower.includes('coffee')) IconComponent = Coffee;
+    else if (lower.includes('ac') || lower.includes('air cond') || lower.includes('ventilation')) IconComponent = Wind;
+    else if (lower.includes('tv') || lower.includes('television')) IconComponent = Tv;
+    else if (lower.includes('park')) IconComponent = Car;
+    else if (lower.includes('pool') || lower.includes('swim')) IconComponent = Waves;
+    else if (lower.includes('gym') || lower.includes('fitness')) IconComponent = Dumbbell;
+    else if (lower.includes('restaurant') || lower.includes('din')) IconComponent = Utensils;
+    else if (lower.includes('spa') || lower.includes('mass')) IconComponent = Sparkles;
+    else if (lower.includes('safe') || lower.includes('secur')) IconComponent = ShieldCheck;
+    else if (lower.includes('bar') || lower.includes('loung')) IconComponent = Martini;
+    else if (lower.includes('room service') || lower.includes('concierge')) IconComponent = ConciergeBell;
+    else if (lower.includes('bath') || lower.includes('shower')) IconComponent = Bath;
+    else if (lower.includes('laundry') || lower.includes('clean')) IconComponent = Sparkles;
+    else if (lower.includes('elevator') || lower.includes('lift')) IconComponent = ArrowUp;
+    else if (lower.includes('transfer') || lower.includes('shuttle')) IconComponent = Car;
+    else if (lower.includes('family') || lower.includes('kid') || lower.includes('baby')) IconComponent = Baby;
+    else if (lower.includes('smoke')) IconComponent = lower.includes('no') ? CigaretteOff : Cigarette;
+    else if (lower.includes('meeting') || lower.includes('business')) IconComponent = Briefcase;
+    else if (lower.includes('garden') || lower.includes('park')) IconComponent = Trees;
+    else if (lower.includes('hair') || lower.includes('salon')) IconComponent = Scissors;
+    else if (lower.includes('shop')) IconComponent = ShoppingBag;
+
+    return <IconComponent size={size} color={color} />;
+};
+
 
 
 const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
@@ -25,7 +62,11 @@ const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
         <View style={[styles.reviewItem, !isLast && styles.reviewDivider]}>
             <View style={styles.reviewHeader}>
                 <View style={styles.reviewerAvatar}>
-                    <Text style={styles.avatarText}>{review.name?.[0] || 'V'}</Text>
+                    {review.avatar || review.userImage ? (
+                        <Image source={{ uri: review.avatar || review.userImage }} style={styles.reviewerAvatarImage} />
+                    ) : (
+                        <Text style={styles.avatarText}>{review.name?.[0] || 'V'}</Text>
+                    )}
                 </View>
                 <View style={styles.reviewerInfo}>
                     <Text style={styles.reviewerName}>{review.name || 'Verified Traveler'}</Text>
@@ -45,37 +86,43 @@ const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
     );
 });
 
-const RoomCard = React.memo(({ room, hotelThumbnail, currency, styles }: any) => {
-    // Extensive image detection
-    const roomImage = room.roomPhotos?.[0] ||
-        room.images?.[0]?.url ||
-        room.images?.[0] ||
+const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, styles }: any) => {
+    // Resolve room image via mappedRoomId -> detailRooms
+    const mappedRoomId = room.rates?.[0]?.mappedRoomId;
+    const matchedRoom = mappedRoomId && detailRooms
+        ? detailRooms.find((dr: any) => dr.id === mappedRoomId || dr.id === parseInt(mappedRoomId))
+        : null;
+    
+    // Get photo from matched detailRoom, falling back to other sources
+    const roomImage = matchedRoom?.photos?.[0]?.url ||
+        room.roomPhotos?.[0] ||
+        (room.images && room.images[0] && (room.images[0].url || room.images[0])) ||
+        room.photos?.[0]?.url ||
         room.photos?.[0] ||
-        room.roomImages?.[0] ||
-        (room.rates?.[0]?.room_images?.[0]) ||
         hotelThumbnail;
 
     const price = Math.round(room.rates?.[0]?.retailRate?.total?.[0]?.amount || room.rates?.[0]?.retailRate?.total?.amount || room.rates?.[0]?.price?.amount || room.rates?.[0]?.price || 0);
+    const roomName = room.rates?.[0]?.name || room.name || matchedRoom?.roomName || 'Room';
+    const maxOccupancy = room.rates?.[0]?.maxOccupancy || room.maxOccupancy || matchedRoom?.maxOccupancy || 2;
+    const boardName = room.rates?.[0]?.boardName;
 
     return (
         <View style={styles.roomCard}>
-            <Image source={{ uri: roomImage }} style={styles.roomImage} />
-            <View style={styles.roomInfo}>
-                <Text style={styles.roomName}>{room.name}</Text>
-                <View style={styles.roomAmenities}>
-                    <Text style={styles.roomAmenityText}>• Max {room.maxOccupancy || 2} guests</Text>
-                    {room.amenities?.slice(0, 3).map((a: string, j: number) => (
-                        <Text key={j} style={styles.roomAmenityText}>• {a}</Text>
-                    ))}
-                </View>
-                <View style={styles.roomFooter}>
-                    <View>
-                        <Text style={styles.roomPrice}>{currency.symbol}{price}</Text>
-                        <Text style={styles.perNight}>per night</Text>
+            <View style={styles.roomCardRow}>
+                <Image source={{ uri: roomImage }} style={styles.roomImage} />
+                <View style={styles.roomInfo}>
+                    <Text style={styles.roomName} numberOfLines={2}>{roomName}</Text>
+                    <Text style={styles.roomAmenityText}>Max {maxOccupancy} guests</Text>
+                    {boardName && <Text style={styles.roomBoardText}>{boardName}</Text>}
+                    <View style={styles.roomFooter}>
+                        <View>
+                            <Text style={styles.roomPrice}>{currency.symbol}{price}</Text>
+                            <Text style={styles.perNight}>per night</Text>
+                        </View>
+                        <Pressable style={styles.selectBtn}>
+                            <Text style={styles.selectBtnText}>Select</Text>
+                        </Pressable>
                     </View>
-                    <Pressable style={styles.selectBtn}>
-                        <Text style={styles.selectBtnText}>Select</Text>
-                    </Pressable>
                 </View>
             </View>
         </View>
@@ -239,12 +286,15 @@ export default function HotelDetailsScreen() {
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Facilities</Text>
                             <View style={styles.facilitiesList}>
-                                {hotel.facilities.slice(0, isFacilitiesExpanded ? undefined : 8).map((facility: any, i: number) => (
-                                    <View key={i} style={styles.facilityItem}>
-                                        <Check size={16} color="#10b981" />
-                                        <Text style={styles.facilityText}>{typeof facility === 'string' ? facility : facility.name}</Text>
-                                    </View>
-                                ))}
+                                {hotel.facilities.slice(0, isFacilitiesExpanded ? undefined : 8).map((facility: any, i: number) => {
+                                    const name = typeof facility === 'string' ? facility : (facility.name || facility.label || '');
+                                    return (
+                                        <View key={i} style={styles.facilityItem}>
+                                            {getAmenityIcon(name)}
+                                            <Text style={styles.facilityText} numberOfLines={1}>{name}</Text>
+                                        </View>
+                                    );
+                                })}
                             </View>
                             {hotel.facilities.length > 8 && (
                                 <Pressable style={styles.viewMoreBtn} onPress={() => setIsFacilitiesExpanded(!isFacilitiesExpanded)}>
@@ -260,7 +310,7 @@ export default function HotelDetailsScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Available Rooms</Text>
                         {(hotel.roomTypes || []).map((room: any, i: number) => (
-                            <RoomCard key={i} room={room} hotelThumbnail={hotel.thumbnailUrl} currency={currency} styles={styles} />
+                            <RoomCard key={i} room={room} hotelThumbnail={hotel.thumbnailUrl} detailRooms={hotel.detailRooms} currency={currency} styles={styles} />
                         ))}
                     </View>
                     {/* Reviews Section */}
@@ -524,40 +574,50 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     roomCard: {
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
-        borderRadius: 20,
-        marginBottom: 16,
+        borderRadius: 16,
+        marginBottom: 12,
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
     },
+    roomCardRow: {
+        flexDirection: 'row',
+    },
     roomImage: {
-        width: '100%',
-        height: 180,
+        width: 110,
+        height: 130,
+        backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
     },
     roomInfo: {
-        padding: 16,
+        flex: 1,
+        padding: 12,
+        justifyContent: 'space-between',
     },
     roomName: {
-        fontSize: 16,
+        fontSize: 14,
         fontWeight: '700',
         color: isDark ? '#ffffff' : '#0f172a',
-        marginBottom: 8,
-    },
-    roomAmenities: {
-        marginBottom: 16,
+        marginBottom: 4,
     },
     roomAmenityText: {
-        fontSize: 13,
+        fontSize: 12,
         color: isDark ? '#64748b' : '#94a3b8',
         marginBottom: 2,
+    },
+    roomBoardText: {
+        fontSize: 11,
+        color: '#10b981',
+        fontWeight: '600',
+        marginBottom: 4,
     },
     roomFooter: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginTop: 4,
     },
     roomPrice: {
-        fontSize: 22,
+        fontSize: 18,
         fontWeight: '800',
         color: '#2563eb',
     },
@@ -567,13 +627,14 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     selectBtn: {
         backgroundColor: '#2563eb',
-        paddingHorizontal: 24,
-        paddingVertical: 12,
-        borderRadius: 14,
+        paddingHorizontal: 16,
+        paddingVertical: 8,
+        borderRadius: 10,
     },
     selectBtnText: {
         color: 'white',
         fontWeight: '700',
+        fontSize: 12,
     },
     reviewItem: {
         paddingVertical: 16,
@@ -595,6 +656,11 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: 12,
+        overflow: 'hidden',
+    },
+    reviewerAvatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarText: {
         fontSize: 16,
