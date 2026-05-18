@@ -17,12 +17,12 @@ import * as Location from 'expo-location';
 
 // ─── Popular destinations ──────────────────────────────────────────────────
 const POPULAR_DESTINATIONS: Destination[] = [
-    { title: 'Bangkok',        subtitle: 'Thailand',     id: 'ChIJ82ENKDJgHTERIEjiXbIAAQE', countryCode: 'TH' },
-    { title: 'Baguio City',    subtitle: 'Philippines',  id: 'ChIJP_HeeWihkTMRwHU6vjT13o4', countryCode: 'PH' },
-    { title: 'Singapore',      subtitle: 'Singapore',    id: 'ChIJdZOSAqgZ2jERMCXo9bBVMKE', countryCode: 'SG' },
-    { title: 'Tokyo',          subtitle: 'Japan',        id: 'ChIJ51cu8IcbXWARiRtXIothAS4', countryCode: 'JP' },
-    { title: 'Kuala Lumpur',   subtitle: 'Malaysia',     id: 'ChIJ-3ewCN0fMzYRpR50P1WnLNs', countryCode: 'MY' },
-    { title: 'Cebu City',      subtitle: 'Philippines',  id: 'ChIJvRKrsd9RqTMRxBOZiPa5MsU', countryCode: 'PH' },
+    { type: 'city', title: 'Bangkok',        subtitle: 'Thailand',     id: 'ChIJ82ENKDJgHTERIEjiXbIAAQE', countryCode: 'TH' },
+    { type: 'city', title: 'Baguio City',    subtitle: 'Philippines',  id: 'ChIJP_HeeWihkTMRwHU6vjT13o4', countryCode: 'PH' },
+    { type: 'city', title: 'Singapore',      subtitle: 'Singapore',    id: 'ChIJdZOSAqgZ2jERMCXo9bBVMKE', countryCode: 'SG' },
+    { type: 'city', title: 'Tokyo',          subtitle: 'Japan',        id: 'ChIJ51cu8IcbXWARiRtXIothAS4', countryCode: 'JP' },
+    { type: 'city', title: 'Kuala Lumpur',   subtitle: 'Malaysia',     id: 'ChIJ-3ewCN0fMzYRpR50P1WnLNs', countryCode: 'MY' },
+    { type: 'city', title: 'Cebu City',      subtitle: 'Philippines',  id: 'ChIJvRKrsd9RqTMRxBOZiPa5MsU', countryCode: 'PH' },
 ];
 
 // ─── Children age options ──────────────────────────────────────────────────
@@ -74,6 +74,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
         if (initialParams) {
             if (initialParams.destination) {
                 setDestination({
+                    type: 'city',
                     title: initialParams.destination,
                     subtitle: initialParams.countryCode || '',
                     id: initialParams.placeId || '',
@@ -130,6 +131,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
                 const country = place.country || '';
                 
                 const nearMeDest: Destination = {
+                    type: 'city',
                     title: city,
                     subtitle: country,
                     id: `near-me-${loc.coords.latitude}-${loc.coords.longitude}`,
@@ -210,7 +212,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
     };
 
     const handleSelectRecent = (recent: RecentSearch) => {
-        setDestination({ title: recent.destination, subtitle: '', id: recent.placeId || '', countryCode: recent.countryCode || '' });
+        setDestination({ type: 'city', title: recent.destination, subtitle: '', id: recent.placeId || '', countryCode: recent.countryCode || '' });
         setDestQuery(recent.destination);
         setCheckIn(new Date(recent.checkIn + 'T00:00:00'));
         setCheckOut(new Date(recent.checkOut + 'T00:00:00'));

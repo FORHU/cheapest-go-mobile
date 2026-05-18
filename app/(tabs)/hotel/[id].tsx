@@ -1,18 +1,57 @@
 import { BlurView } from 'expo-blur';
+import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { 
-    Check, ChevronLeft, Coffee, Heart, HelpCircle, MapPin, Share2, 
-    ShieldCheck, Star, Tv, Wifi, Wind, Car, Utensils, Waves, 
-    Dumbbell, Sparkles, Martini, ConciergeBell, Bath, Baby, 
-    Languages, Phone, CreditCard, Clock, Cigarette, CigaretteOff, 
-    Trees, Briefcase, GraduationCap, Info, AirVent, Bed, Key, 
-    ArrowUp, User, Users, Calendar, Camera, Map, Scissors, ShoppingBag
+import {
+    AirVent,
+    AlertTriangle,
+    ArrowUp,
+    Baby,
+    Bath,
+    Bed,
+    Briefcase,
+    Car,
+    Check,
+    CheckCircle,
+    ChevronDown,
+    ChevronLeft,
+    ChevronRight,
+    ChevronUp,
+    Cigarette, CigaretteOff,
+    Clock,
+    Coffee,
+    ConciergeBell,
+    Dumbbell,
+    Heart, HelpCircle,
+    Info,
+    Key,
+    Languages,
+    MapPin,
+    Martini,
+    Phone,
+    Scissors,
+    Share2,
+    ShieldCheck,
+    ShoppingBag,
+    Sparkles,
+    Trees,
+    Tv,
+    Utensils, Waves,
+    Wifi, Wind,
+    XCircle
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, Platform, Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
+
+import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
+import OptimizedImage from '../../../components/ui/OptimizedImage';
+import StarRating from '../../../components/ui/StarRating';
 import { useSettings } from '../../../context/SettingsContext';
 import { getHotelDetails, getHotelReviews } from '../../../lib/api';
-import StarRating from '../../../components/ui/StarRating';
+
+// Enable LayoutAnimation on Android
+if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 const { width } = Dimensions.get('window');
 
@@ -25,28 +64,55 @@ const getAmenityIcon = (name: string, size: number = 16, color: string = '#10b98
     const lower = name.toLowerCase();
     let IconComponent = Check;
 
-    if (lower.includes('wifi') || lower.includes('internet')) IconComponent = Wifi;
-    else if (lower.includes('breakfast') || lower.includes('coffee')) IconComponent = Coffee;
-    else if (lower.includes('ac') || lower.includes('air cond') || lower.includes('ventilation')) IconComponent = Wind;
-    else if (lower.includes('tv') || lower.includes('television')) IconComponent = Tv;
-    else if (lower.includes('park')) IconComponent = Car;
-    else if (lower.includes('pool') || lower.includes('swim')) IconComponent = Waves;
-    else if (lower.includes('gym') || lower.includes('fitness')) IconComponent = Dumbbell;
-    else if (lower.includes('restaurant') || lower.includes('din')) IconComponent = Utensils;
-    else if (lower.includes('spa') || lower.includes('mass')) IconComponent = Sparkles;
-    else if (lower.includes('safe') || lower.includes('secur')) IconComponent = ShieldCheck;
-    else if (lower.includes('bar') || lower.includes('loung')) IconComponent = Martini;
-    else if (lower.includes('room service') || lower.includes('concierge')) IconComponent = ConciergeBell;
-    else if (lower.includes('bath') || lower.includes('shower')) IconComponent = Bath;
-    else if (lower.includes('laundry') || lower.includes('clean')) IconComponent = Sparkles;
+    // Wifi & Internet
+    if (lower.includes('wifi') || lower.includes('internet') || lower.includes('lan')) IconComponent = Wifi;
+    // Food & Dining
+    else if (lower.includes('breakfast') || lower.includes('coffee') || lower.includes('tea')) IconComponent = Coffee;
+    else if (lower.includes('restaurant') || lower.includes('din') || lower.includes('tableware') || lower.includes('food')) IconComponent = Utensils;
+    else if (lower.includes('bar') || lower.includes('loung') || lower.includes('pub') || lower.includes('drink')) IconComponent = Martini;
+    // AC & Ventilation
+    else if (lower.includes('ac ') || lower.includes('air cond') || lower.includes('ventilation') || lower.includes('airvent')) IconComponent = AirVent;
+    else if (lower.includes('fan') || lower.includes('wind') || lower.includes('cooling')) IconComponent = Wind;
+    // Entertainment & Tech
+    else if (lower.includes('tv') || lower.includes('television') || lower.includes('satellite') || lower.includes('cable')) IconComponent = Tv;
+    // Transport & Parking
+    else if (lower.includes('garage') || lower.includes('valet')) IconComponent = Key;
+    else if (lower.includes('parking') || lower.includes('car') || lower.includes('vehicle') || lower.includes('surcharge')) IconComponent = Car;
+    // Pool & Spa
+    else if (lower.includes('pool') || lower.includes('swim') || lower.includes('beach')) IconComponent = Waves;
+    else if (lower.includes('gym') || lower.includes('fitness') || lower.includes('exercise')) IconComponent = Dumbbell;
+    else if (lower.includes('spa') || lower.includes('mass') || lower.includes('jacuzzi') || lower.includes('sauna')) IconComponent = Sparkles;
+    // Bathroom
+    else if (lower.includes('bath') || lower.includes('shower') || lower.includes('toiletries')) IconComponent = Bath;
+    // Reception & Service
+    else if (lower.includes('front desk') || lower.includes('reception') || lower.includes('concierge') || lower.includes('bell')) IconComponent = ConciergeBell;
+    else if (lower.includes('room service') || lower.includes('housekeeping')) IconComponent = Clock;
+    else if (lower.includes('laundry') || lower.includes('dry clean') || lower.includes('iron')) IconComponent = Sparkles;
     else if (lower.includes('elevator') || lower.includes('lift')) IconComponent = ArrowUp;
-    else if (lower.includes('transfer') || lower.includes('shuttle')) IconComponent = Car;
-    else if (lower.includes('family') || lower.includes('kid') || lower.includes('baby')) IconComponent = Baby;
-    else if (lower.includes('smoke')) IconComponent = lower.includes('no') ? CigaretteOff : Cigarette;
-    else if (lower.includes('meeting') || lower.includes('business')) IconComponent = Briefcase;
-    else if (lower.includes('garden') || lower.includes('park')) IconComponent = Trees;
-    else if (lower.includes('hair') || lower.includes('salon')) IconComponent = Scissors;
-    else if (lower.includes('shop')) IconComponent = ShoppingBag;
+    else if (lower.includes('phone') || lower.includes('call')) IconComponent = Phone;
+    else if (lower.includes('language') || lower.includes('multilingual')) IconComponent = Languages;
+    // Safety & Security
+    else if (lower.includes('24-hour security') || lower.includes('security guard') || lower.includes('secur')) IconComponent = ShieldCheck;
+    else if (lower.includes('safe') || lower.includes('lock')) IconComponent = Key;
+    else if (lower.includes('fire extinguisher') || lower.includes('first aid') || lower.includes('thermometer') || lower.includes('medical') || lower.includes('doctor')) IconComponent = ShieldCheck;
+    else if (lower.includes('smoke alarm') || lower.includes('fire alarm') || lower.includes('carbon monoxide')) IconComponent = AirVent;
+    // Cleaning & Hygiene
+    else if (lower.includes('disinfect') || lower.includes('sanit') || lower.includes('clean') || lower.includes('hygiene') || lower.includes('steril')) IconComponent = Sparkles;
+    // Distancing & Guidelines
+    else if (lower.includes('distancing') || lower.includes('mask') || lower.includes('barrier') || lower.includes('screen') || lower.includes('guideline')) IconComponent = Info;
+    // Smoking Policy
+    else if (lower.includes('non-smoking') || lower.includes('no smoking') || lower.includes('smoke-free')) IconComponent = CigaretteOff;
+    else if (lower.includes('smoking area') || lower.includes('designated smoking')) IconComponent = Cigarette;
+    // Kids & Family
+    else if (lower.includes('family') || lower.includes('kid') || lower.includes('baby') || lower.includes('child')) IconComponent = Baby;
+    // Business
+    else if (lower.includes('meeting') || lower.includes('business') || lower.includes('conference')) IconComponent = Briefcase;
+    // Outdoors
+    else if (lower.includes('garden') || lower.includes('terrace') || lower.includes('patio') || lower.includes('yard')) IconComponent = Trees;
+    else if (lower.includes('shop') || lower.includes('market') || lower.includes('boutique')) IconComponent = ShoppingBag;
+    else if (lower.includes('hair') || lower.includes('salon') || lower.includes('beauty')) IconComponent = Scissors;
+    // General Rooms
+    else if (lower.includes('room') || lower.includes('suite') || lower.includes('bed')) IconComponent = Bed;
 
     return <IconComponent size={size} color={color} />;
 };
@@ -86,45 +152,76 @@ const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
     );
 });
 
-const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, styles }: any) => {
+const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, styles, onSelect }: any) => {
     // Resolve room image via mappedRoomId -> detailRooms
     const mappedRoomId = room.rates?.[0]?.mappedRoomId;
     const matchedRoom = mappedRoomId && detailRooms
-        ? detailRooms.find((dr: any) => dr.id === mappedRoomId || dr.id === parseInt(mappedRoomId))
+        ? detailRooms.find((dr: any) => String(dr.id) === String(mappedRoomId))
         : null;
-    
-    // Get photo from matched detailRoom, falling back to other sources
-    const roomImage = matchedRoom?.photos?.[0]?.url ||
-        room.roomPhotos?.[0] ||
-        (room.images && room.images[0] && (room.images[0].url || room.images[0])) ||
-        room.photos?.[0]?.url ||
-        room.photos?.[0] ||
-        hotelThumbnail;
+
+    // Get photo from matched detailRoom — photos are normalized to { url } objects by the edge function
+    let roomImage = hotelThumbnail;
+    if (matchedRoom?.photos?.length > 0) {
+        const photo = matchedRoom.photos[0];
+        roomImage = typeof photo === 'string' ? photo : (photo.url || photo.urlHd || photo.hd_url || photo.hdUrl || photo.thumbnail);
+    } else if (room.roomPhotos?.[0]) {
+        roomImage = room.roomPhotos[0];
+    } else if (room.images?.[0]) {
+        const img = room.images[0];
+        roomImage = typeof img === 'string' ? img : (img.url || img.urlHd || img);
+    } else if (room.photos?.[0]) {
+        const p = room.photos[0];
+        roomImage = typeof p === 'string' ? p : (p.url || p);
+    }
 
     const price = Math.round(room.rates?.[0]?.retailRate?.total?.[0]?.amount || room.rates?.[0]?.retailRate?.total?.amount || room.rates?.[0]?.price?.amount || room.rates?.[0]?.price || 0);
     const roomName = room.rates?.[0]?.name || room.name || matchedRoom?.roomName || 'Room';
     const maxOccupancy = room.rates?.[0]?.maxOccupancy || room.maxOccupancy || matchedRoom?.maxOccupancy || 2;
     const boardName = room.rates?.[0]?.boardName;
+    const offerId = room.rates?.[0]?.offerId || room.offerId;
+    const refundableTag = room.rates?.[0]?.cancellationPolicies?.refundableTag || room.cancellationPolicies?.refundableTag;
 
     return (
         <View style={styles.roomCard}>
             <View style={styles.roomCardRow}>
-                <Image source={{ uri: roomImage }} style={styles.roomImage} />
+                <OptimizedImage uri={roomImage} style={styles.roomImage} type="room" />
                 <View style={styles.roomInfo}>
                     <Text style={styles.roomName} numberOfLines={2}>{roomName}</Text>
                     <Text style={styles.roomAmenityText}>Max {maxOccupancy} guests</Text>
                     {boardName && <Text style={styles.roomBoardText}>{boardName}</Text>}
+                    {refundableTag === 'RFN' && (
+                        <Text style={[styles.roomBoardText, { color: '#10b981' }]}>✓ Free cancellation</Text>
+                    )}
                     <View style={styles.roomFooter}>
                         <View>
                             <Text style={styles.roomPrice}>{currency.symbol}{price}</Text>
                             <Text style={styles.perNight}>per night</Text>
                         </View>
-                        <Pressable style={styles.selectBtn}>
+                        <Pressable
+                            style={styles.selectBtn}
+                            onPress={() => onSelect?.({ offerId, roomName, price })}
+                        >
                             <Text style={styles.selectBtnText}>Select</Text>
                         </Pressable>
                     </View>
                 </View>
             </View>
+        </View>
+    );
+});
+
+const GalleryImage = React.memo(({ uri, width }: { uri: string, width: number }) => {
+    return (
+        <View style={{ width, height: 350, backgroundColor: '#0f172a' }}>
+            <ExpoImage
+                source={{ uri }}
+                style={{ width, height: 350 }}
+                contentFit="cover"
+                cachePolicy="disk"
+                placeholder={{ blurhash: 'L15#hiof00of~qfQIUay00fQ-;fQ' }}
+                placeholderContentFit="cover"
+                transition={300}
+            />
         </View>
     );
 });
@@ -142,8 +239,35 @@ export default function HotelDetailsScreen() {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
+    const [isPoliciesExpanded, setIsPoliciesExpanded] = useState(false);
+    const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
+    
+    const galleryScrollRef = useRef<ScrollView>(null);
 
-    const styles = getStyles(isDark);
+    const styles = useMemo(() => getStyles(isDark), [isDark]);
+
+    // Merge hotelFacilities (full list from API) with facilities
+    const allFacilities = useMemo(() => {
+        return hotel?.hotelFacilities?.length > 0
+            ? hotel.hotelFacilities
+            : hotel?.facilities || [];
+    }, [hotel]);
+
+    const handleRoomSelect = useCallback(({ offerId, roomName, price }: any) => {
+        router.push({
+            pathname: '/checkout',
+            params: {
+                offerId,
+                roomName,
+                roomPrice: String(price),
+                hotelName: hotel?.name || '',
+                hotelImage: hotel?.thumbnailUrl || '',
+                checkIn: params.checkIn as string || '',
+                checkOut: params.checkOut as string || '',
+                adults: params.adults as string || '2',
+            },
+        });
+    }, [hotel, params, router]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -157,7 +281,7 @@ export default function HotelDetailsScreen() {
                         rooms: params.rooms,
                         currency: params.currency
                     }),
-                    getHotelReviews(params.id as string, 5)
+                    getHotelReviews(params.id as string, 100)
                 ]);
                 setHotel(details);
                 setReviews(reviewData);
@@ -192,30 +316,78 @@ export default function HotelDetailsScreen() {
         );
     }
 
-    const hotelImages = hotel.images || [hotel.thumbnailUrl];
+    const rawImages = hotel.images || hotel.details?.hotelImages || hotel.details?.images || [];
+    const validImages = Array.isArray(rawImages)
+        ? rawImages.map((img: any) => typeof img === 'string' ? img : (img.url || img.urlHd || img.hdUrl || img.image || '')).filter((url: string) => url.trim().length > 0)
+        : [];
+
+    if (hotel.thumbnailUrl && !validImages.includes(hotel.thumbnailUrl)) {
+        validImages.unshift(hotel.thumbnailUrl);
+    }
+
+    const hotelImages = validImages.length > 0
+        ? validImages
+        : [hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'];
 
     return (
         <View style={styles.container}>
-            <ScrollView style={styles.scrollView} bounces={false} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.scrollView} contentContainerStyle={{ paddingBottom: 140 }} bounces={false} showsVerticalScrollIndicator={false}>
                 {/* Image Gallery */}
                 <View style={styles.imageContainer}>
                     <ScrollView
+                        ref={galleryScrollRef}
+                        key={hotelImages.length}
                         horizontal
                         pagingEnabled
+                        removeClippedSubviews={Platform.OS === 'android'} // Memory optimization for Android offscreen items
                         showsHorizontalScrollIndicator={false}
-                        onScroll={(e) => {
+                        onMomentumScrollEnd={(e) => {
                             const x = e.nativeEvent.contentOffset.x;
-                            setActiveImageIndex(Math.round(x / width));
+                            const idx = Math.round(x / width);
+                            setActiveImageIndex(idx);
                         }}
                     >
-                        {hotelImages.map((img: string, i: number) => (
-                            <Image key={i} source={{ uri: img }} style={styles.headerImage} />
+                        {hotelImages.map((img: string) => (
+                            <GalleryImage key={img} uri={img} width={width} />
                         ))}
                     </ScrollView>
                     <View style={styles.imageDots}>
                         {hotelImages.slice(0, 10).map((_: any, i: number) => (
                             <View key={i} style={[styles.dot, activeImageIndex === i && styles.dotActive]} />
                         ))}
+                    </View>
+
+                    {/* Left & Right Sliding Arrows */}
+                    {hotelImages.length > 1 && activeImageIndex > 0 && (
+                        <Pressable 
+                            style={[styles.sliderArrow, styles.sliderArrowLeft]}
+                            onPress={() => {
+                                const prevIdx = activeImageIndex - 1;
+                                galleryScrollRef.current?.scrollTo({ x: prevIdx * width, animated: true });
+                                setActiveImageIndex(prevIdx);
+                            }}
+                        >
+                            <ChevronLeft size={20} color="white" />
+                        </Pressable>
+                    )}
+                    {hotelImages.length > 1 && activeImageIndex < hotelImages.length - 1 && (
+                        <Pressable 
+                            style={[styles.sliderArrow, styles.sliderArrowRight]}
+                            onPress={() => {
+                                const nextIdx = activeImageIndex + 1;
+                                galleryScrollRef.current?.scrollTo({ x: nextIdx * width, animated: true });
+                                setActiveImageIndex(nextIdx);
+                            }}
+                        >
+                            <ChevronRight size={20} color="white" />
+                        </Pressable>
+                    )}
+
+                    {/* Dynamic Image Slide Counter */}
+                    <View style={styles.imageCounter}>
+                        <Text style={styles.imageCounterText}>
+                            {activeImageIndex + 1} / {hotelImages.length}
+                        </Text>
                     </View>
 
                     {/* Floating Header Actions */}
@@ -274,20 +446,107 @@ export default function HotelDetailsScreen() {
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>About this hotel</Text>
                         <Text style={styles.descriptionText} numberOfLines={isDescriptionExpanded ? undefined : 5}>
-                            {stripHtml(hotel.description) || "Experience luxury and comfort in the heart of the city. This property offers modern amenities, exceptional service, and a convenient location near major attractions."}
+                            {stripHtml(hotel.description || hotel.details?.description || hotel.details?.hotelDescription) || "Experience luxury and comfort in the heart of the city. This property offers modern amenities, exceptional service, and a convenient location near major attractions."}
                         </Text>
-                        <Pressable style={styles.readMore} onPress={() => setIsDescriptionExpanded(!isDescriptionExpanded)}>
+                        <Pressable style={styles.readMore} onPress={() => {
+                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                            setIsDescriptionExpanded(!isDescriptionExpanded);
+                        }}>
                             <Text style={styles.readMoreText}>{isDescriptionExpanded ? 'Show less' : 'Read more'}</Text>
                         </Pressable>
                     </View>
 
-                    {/* Facilities Section */}
-                    {hotel.facilities && hotel.facilities.length > 0 && (
+                    {/* Property Policies — moved here just after description */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>Property Policies</Text>
+
+                        {/* Check-in & Check-out Schedules */}
+                        <View style={styles.policyItem}>
+                            <Clock size={20} color="#3b82f6" />
+                            <View style={styles.policyContent}>
+                                <Text style={styles.policyLabel}>Check-in & Check-out Schedule</Text>
+                                <Text style={styles.policyValue}>
+                                    Check-in from: <Text style={{ fontWeight: '700' }}>{hotel.checkInTime || hotel.details?.checkIn?.schedule?.[0]?.startTime || '3:00 PM'}</Text>
+                                </Text>
+                                <Text style={styles.policyValue}>
+                                    Check-out before: <Text style={{ fontWeight: '700' }}>{hotel.checkOutTime || hotel.details?.checkOut?.schedule?.[0]?.startTime || '11:00 AM'}</Text>
+                                </Text>
+                            </View>
+                        </View>
+
+                        {/* Cancellation Policy */}
+                        {hotel.cancellationPolicies && (
+                            <View style={styles.policyItem}>
+                                {hotel.cancellationPolicies.refundableTag === 'RFN'
+                                    ? <CheckCircle size={20} color="#10b981" />
+                                    : <XCircle size={20} color="#f59e0b" />
+                                }
+                                <View style={styles.policyContent}>
+                                    <Text style={styles.policyLabel}>Cancellation Policy</Text>
+                                    <View style={[styles.policyBadge, hotel.cancellationPolicies.refundableTag === 'RFN' ? styles.policyRefundable : styles.policyNonRefundable]}>
+                                        <Text style={[
+                                            styles.policyBadgeText,
+                                            { color: hotel.cancellationPolicies.refundableTag === 'RFN' ? '#059669' : '#d97706' }
+                                        ]}>
+                                            {hotel.cancellationPolicies.refundableTag === 'RFN' ? 'Refundable' : 'Non-refundable'}
+                                        </Text>
+                                    </View>
+                                    {hotel.cancellationPolicies.cancelPolicyInfos?.map((policy: any, i: number) => (
+                                        <Text key={i} style={styles.policyValue}>
+                                            Cancel before {new Date(policy.cancelTime).toLocaleDateString()} — Fee: {policy.currency} {policy.amount}
+                                        </Text>
+                                    ))}
+                                    {hotel.cancellationPolicies.hotelRemarks && (
+                                        <Text style={[styles.policyValue, { marginTop: 4 }]}>
+                                            {stripHtml(typeof hotel.cancellationPolicies.hotelRemarks === 'string' ? hotel.cancellationPolicies.hotelRemarks : (hotel.cancellationPolicies.hotelRemarks?.[0] || ''))}
+                                        </Text>
+                                    )}
+                                </View>
+                            </View>
+                        )}
+
+                        {/* Important Check-in & Property Instructions */}
+                        {(hotel.hotelImportantInformation || hotel.details?.importantInformation || hotel.details?.checkIn?.instructions) && (
+                            <View style={styles.policyItem}>
+                                <AlertTriangle size={20} color="#f59e0b" />
+                                <View style={styles.policyContent}>
+                                    <Text style={styles.policyLabel}>Important Check-in Instructions</Text>
+                                    <Text style={styles.policyValue}>
+                                        {stripHtml(hotel.hotelImportantInformation || hotel.details?.importantInformation || hotel.details?.checkIn?.instructions?.[0]?.text || '')}
+                                    </Text>
+                                </View>
+                            </View>
+                        )}
+
+                        {/* General House Rules */}
+                        <View style={styles.policyItem}>
+                            <Info size={20} color="#10b981" />
+                            <View style={styles.policyContent}>
+                                <Text style={styles.policyLabel}>House Rules & Guest Requirements</Text>
+                                <Text style={styles.policyValue}>
+                                    • A valid photo ID matching the reservation name is required at check-in.
+                                </Text>
+                                <Text style={styles.policyValue}>
+                                    • Minimum check-in age is typically 18 or 21 (please contact the front desk in advance for details).
+                                </Text>
+                                <Text style={styles.policyValue}>
+                                    • Pets: {allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet')) ? 'Pets are allowed on request. Charges may apply.' : 'Pets are generally not allowed.'}
+                                </Text>
+                                <Text style={styles.policyValue}>
+                                    • Smoking: {allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('smoking')) ? 'Designated smoking areas are available.' : 'This is a strictly non-smoking property.'}
+                                </Text>
+                            </View>
+                        </View>
+                    </View>
+
+                    {/* Facilities / Amenities Section */}
+                    {allFacilities.length > 0 && (
                         <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Facilities</Text>
+                            <Text style={styles.sectionTitle}>Amenities & Facilities</Text>
                             <View style={styles.facilitiesList}>
-                                {hotel.facilities.slice(0, isFacilitiesExpanded ? undefined : 8).map((facility: any, i: number) => {
+                                {allFacilities.slice(0, isFacilitiesExpanded ? undefined : 8).map((facility: any, i: number) => {
                                     const name = typeof facility === 'string' ? facility : (facility.name || facility.label || '');
+                                    if (!name) return null;
                                     return (
                                         <View key={i} style={styles.facilityItem}>
                                             {getAmenityIcon(name)}
@@ -296,53 +555,120 @@ export default function HotelDetailsScreen() {
                                     );
                                 })}
                             </View>
-                            {hotel.facilities.length > 8 && (
-                                <Pressable style={styles.viewMoreBtn} onPress={() => setIsFacilitiesExpanded(!isFacilitiesExpanded)}>
-                                    <Text style={styles.viewMoreText}>
-                                        {isFacilitiesExpanded ? 'Show less' : `View all ${hotel.facilities.length} facilities`}
-                                    </Text>
+                            {allFacilities.length > 8 && (
+                                <Pressable
+                                    style={styles.viewMoreBtn}
+                                    onPress={() => {
+                                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                        setIsFacilitiesExpanded(!isFacilitiesExpanded);
+                                    }}
+                                >
+                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                                        <Text style={styles.viewMoreText}>
+                                            {isFacilitiesExpanded ? 'Show less' : `View all ${allFacilities.length} amenities`}
+                                        </Text>
+                                        {isFacilitiesExpanded
+                                            ? <ChevronUp size={16} color={isDark ? '#e2e8f0' : '#475569'} />
+                                            : <ChevronDown size={16} color={isDark ? '#e2e8f0' : '#475569'} />
+                                        }
+                                    </View>
                                 </Pressable>
                             )}
                         </View>
                     )}
 
+                    {/* Location / Where you'll be */}
+                    {(() => {
+                        // Resolve coordinates from various possible API response shapes (top level, nested details, location, or coordinates object)
+                        const lat = hotel.latitude || hotel.details?.latitude || hotel.details?.location?.latitude || hotel.coordinates?.lat || 0;
+                        const lng = hotel.longitude || hotel.details?.longitude || hotel.details?.location?.longitude || hotel.coordinates?.lng || 0;
+                        console.log(`[PropertyDetails] Coordinates for ${hotel.name}: lat=${lat}, lng=${lng}`);
+                        if (!lat || !lng) return null;
+                        return (
+                            <View style={styles.section}>
+                                <Text style={styles.sectionTitle}>Where you'll be</Text>
+                                <View style={[styles.locationRow, { paddingHorizontal: 0, marginTop: 4, marginBottom: 12 }]}>
+                                    <MapPin size={16} color="#64748b" />
+                                    <Text style={styles.addressText} numberOfLines={2}>
+                                        {hotel.address || 'Address unavailable'}{hotel.city ? `, ${hotel.city}` : ''}
+                                    </Text>
+                                </View>
+                                <PropertyMapWebView
+                                    latitude={Number(lat)}
+                                    longitude={Number(lng)}
+                                    hotelName={hotel.name}
+                                    address={hotel.address}
+                                    city={hotel.city}
+                                    isDark={isDark}
+                                />
+                            </View>
+                        );
+                    })()}
+
                     {/* Room Options */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Available Rooms</Text>
                         {(hotel.roomTypes || []).map((room: any, i: number) => (
-                            <RoomCard key={i} room={room} hotelThumbnail={hotel.thumbnailUrl} detailRooms={hotel.detailRooms} currency={currency} styles={styles} />
+                            <RoomCard
+                                key={i}
+                                room={room}
+                                hotelThumbnail={hotel.thumbnailUrl}
+                                detailRooms={hotel.detailRooms}
+                                currency={currency}
+                                styles={styles}
+                                onSelect={handleRoomSelect}
+                            />
                         ))}
                     </View>
                     {/* Reviews Section */}
                     {reviews.length > 0 && (
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Guest Reviews</Text>
+                                <Text style={styles.sectionTitle}>Guest Reviews ({reviews.length})</Text>
                             </View>
-                            {reviews.map((review: any, i: number) => (
-                                <ReviewItem key={i} review={review} isLast={i === reviews.length - 1} styles={styles} />
+                            {reviews.slice(0, visibleReviewsCount).map((review: any, i: number) => (
+                                <ReviewItem key={i} review={review} isLast={i === Math.min(reviews.length - 1, visibleReviewsCount - 1)} styles={styles} />
                             ))}
+                            {reviews.length > 5 && (
+                                <View style={{ alignItems: 'center', marginTop: 16 }}>
+                                    <View style={{ flexDirection: 'row', gap: 24, justifyContent: 'center' }}>
+                                        {visibleReviewsCount < reviews.length && (
+                                            <Pressable
+                                                style={{ paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                                                onPress={() => {
+                                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                                    setVisibleReviewsCount(prev => Math.min(reviews.length, prev + 5));
+                                                }}
+                                            >
+                                                <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 15 }}>Show More</Text>
+                                                <ChevronDown size={16} color="#2563eb" />
+                                            </Pressable>
+                                        )}
+                                        {visibleReviewsCount > 5 && (
+                                            <Pressable
+                                                style={{ paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}
+                                                onPress={() => {
+                                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                                    setVisibleReviewsCount(5);
+                                                }}
+                                            >
+                                                <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 15 }}>Show Less</Text>
+                                                <ChevronUp size={16} color="#2563eb" />
+                                            </Pressable>
+                                        )}
+                                    </View>
+                                    <Text style={{ 
+                                        color: isDark ? '#64748b' : '#94a3b8', 
+                                        fontSize: 13, 
+                                        marginTop: 4, 
+                                        fontWeight: '500' 
+                                    }}>
+                                        {Math.min(visibleReviewsCount, reviews.length)} out of {reviews.length}
+                                    </Text>
+                                </View>
+                            )}
                         </View>
                     )}
-
-                    {/* Policy / FAQ Summary */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Property Policies</Text>
-                        <View style={styles.policyItem}>
-                            <ShieldCheck size={20} color="#64748b" />
-                            <View style={styles.policyContent}>
-                                <Text style={styles.policyLabel}>Check-in / Check-out</Text>
-                                <Text style={styles.policyValue}>Check-in: 2:00 PM • Check-out: 12:00 PM</Text>
-                            </View>
-                        </View>
-                        <View style={styles.policyItem}>
-                            <HelpCircle size={20} color="#64748b" />
-                            <View style={styles.policyContent}>
-                                <Text style={styles.policyLabel}>Important Info</Text>
-                                <Text style={styles.policyValue}>Please have a valid ID ready upon arrival. Pets are {hotel.facilities?.some((f: any) => (f.name || f).toLowerCase().includes('pet')) ? 'welcome' : 'not allowed'}.</Text>
-                            </View>
-                        </View>
-                    </View>
                 </View>
             </ScrollView>
 
@@ -352,7 +678,27 @@ export default function HotelDetailsScreen() {
                     <Text style={styles.bookingPrice}>From {currency.symbol}{Math.round(hotel.price?.amount || hotel.roomTypes?.[0]?.rates?.[0]?.retailRate?.total?.[0]?.amount || 0)}</Text>
                     <Text style={styles.bookingDates}>{params.checkIn} - {params.checkOut}</Text>
                 </View>
-                <Pressable style={styles.bookBtn} onPress={() => Alert.alert('Coming Soon', 'Booking functionality is being implemented.')}>
+                <Pressable style={styles.bookBtn} onPress={() => {
+                    const firstRoom = hotel.roomTypes?.[0];
+                    const rate = firstRoom?.rates?.[0];
+                    if (rate?.offerId) {
+                        router.push({
+                            pathname: '/checkout',
+                            params: {
+                                offerId: rate.offerId,
+                                roomName: rate.name || firstRoom?.name || 'Room',
+                                roomPrice: String(Math.round(rate.retailRate?.total?.[0]?.amount || rate.retailRate?.total?.amount || rate.price?.amount || rate.price || 0)),
+                                hotelName: hotel.name,
+                                hotelImage: hotel.thumbnailUrl || '',
+                                checkIn: params.checkIn as string || '',
+                                checkOut: params.checkOut as string || '',
+                                adults: params.adults as string || '2',
+                            },
+                        });
+                    } else {
+                        Alert.alert('No Rooms', 'Please select a room from the list above.');
+                    }
+                }}>
                     <Text style={styles.bookBtnText}>Book Now</Text>
                 </Pressable>
             </BlurView>
@@ -404,11 +750,12 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     imageDots: {
         position: 'absolute',
-        bottom: 20,
+        bottom: 40,
         flexDirection: 'row',
         width: '100%',
         justifyContent: 'center',
         gap: 6,
+        zIndex: 10,
     },
     dot: {
         width: 8,
@@ -547,15 +894,17 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     facilitiesList: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 12,
+        justifyContent: 'space-between',
     },
     facilityItem: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: 8,
-        width: (width - 60) / 2,
+        width: '48%',
+        marginBottom: 12,
     },
     facilityText: {
+        flex: 1,
         fontSize: 14,
         color: isDark ? '#e2e8f0' : '#475569',
     },
@@ -584,8 +933,10 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
     },
     roomImage: {
-        width: 110,
-        height: 130,
+        width: 140,
+        height: 150,
+        borderTopLeftRadius: 16,
+        borderBottomLeftRadius: 16,
         backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
     },
     roomInfo: {
@@ -715,6 +1066,23 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: isDark ? '#94a3b8' : '#64748b',
         lineHeight: 18,
     },
+    policyBadge: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        marginVertical: 4,
+    },
+    policyRefundable: {
+        backgroundColor: isDark ? '#064e3b44' : '#d1fae5',
+    },
+    policyNonRefundable: {
+        backgroundColor: isDark ? '#78350f44' : '#fef3c7',
+    },
+    policyBadgeText: {
+        fontSize: 12,
+        fontWeight: '700',
+    },
     bookingBar: {
         position: 'absolute',
         bottom: 0,
@@ -753,5 +1121,37 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: 'white',
         fontWeight: '700',
         fontSize: 16,
+    },
+    sliderArrow: {
+        position: 'absolute',
+        top: 350 / 2 - 18,
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        backgroundColor: 'rgba(15, 23, 42, 0.6)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 10,
+    },
+    sliderArrowLeft: {
+        left: 12,
+    },
+    sliderArrowRight: {
+        right: 12,
+    },
+    imageCounter: {
+        position: 'absolute',
+        bottom: 40,
+        right: 12,
+        backgroundColor: 'rgba(15, 23, 42, 0.75)',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 12,
+        zIndex: 10,
+    },
+    imageCounterText: {
+        color: 'white',
+        fontSize: 11,
+        fontWeight: 'bold',
     },
 });

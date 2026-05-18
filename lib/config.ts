@@ -8,4 +8,11 @@ export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiO
 export const SITE_URL = 'https://cheapestgo.com';
 
 // Mapbox Configuration
-export const MAPBOX_TOKEN = 'pk.eyJ1Ijoic3N0dGVldnZlZW5ubm4iLCJhIjoiY21sOTk4NXoyMDBpbTNjc2c4aDNqeGl5bCJ9.ayPMFHY9AWdO24ENq1biNA';
+export const MAPBOX_TOKEN = 'pk.eyJ1IjoianVuZ2t3YW5zaGluIiwiYSI6ImNtb3RrbHR5eDAwNDQycHIyd3JuNDY3M2MifQ.YH0mdJ62BYw8aE1CAKpQcw';
+
+// Google Places & Weather API Key
+export const GOOGLE_PLACES_API_KEY = 'AIzaSyBo-jez97YB_HFmCWyFO1vOm2L85kPd2Fs';
+
+// Foursquare API Key
+export const FOURSQUARE_SERVICE_API_KEY = 'FPHI5MQ3IEVWS4V0OF5T1IXI3KA4S0YPWQGZM5ZKOIUND520';
+

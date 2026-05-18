@@ -81,18 +81,10 @@ const getRatingColor = (rating: any) => {
     return '#f43f5e'; // Poor
 };
 
+import OptimizedImage from '../../components/ui/OptimizedImage';
+
 const ImageWithSkeleton = ({ uri, style }: { uri: string, style: any }) => {
-    const [loaded, setLoaded] = useState(false);
-    return (
-        <View style={style}>
-            {!loaded && <Skeleton width="100%" height="100%" borderRadius={0} />}
-            <Image 
-                source={{ uri }} 
-                style={[style, { position: loaded ? 'relative' : 'absolute', opacity: loaded ? 1 : 0 }]} 
-                onLoad={() => setLoaded(true)}
-            />
-        </View>
-    );
+    return <OptimizedImage uri={uri} style={style} type="hotel" />;
 };
 
 export default function SearchScreen() {
@@ -287,7 +279,7 @@ export default function SearchScreen() {
 
     const navigateToHotel = (hotel: any) => {
         router.push({
-            pathname: `/hotel/${hotel.hotelId}`,
+            pathname: '/(tabs)/hotel/[id]',
             params: {
                 id: hotel.hotelId,
                 checkIn: params.checkIn,
