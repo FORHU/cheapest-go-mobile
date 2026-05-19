@@ -4,6 +4,7 @@
  */
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config';
+import { searchAirports } from './airports';
 
 export async function invokeEdgeFunction<T = any>(
     functionName: string,
@@ -450,23 +451,35 @@ export interface FlightSearchParams {
     children?: number;
     infants?: number;
     cabinClass?: string;
-    tripType: 'one-way' | 'round-trip';
+    tripType: 'one-way' | 'round-trip' | 'multi-city';
+    multiCitySegments?: Array<{ origin: string; destination: string; departureDate: string }>;
 }
 
 export async function searchFlights(params: FlightSearchParams) {
+    let segments = [
+        {
+            origin: params.origin.toUpperCase(),
+            destination: params.destination.toUpperCase(),
+            departureDate: params.departureDate
+        }
+    ];
+
+    if (params.tripType === 'round-trip' && params.returnDate) {
+        segments.push({
+            origin: params.destination.toUpperCase(),
+            destination: params.origin.toUpperCase(),
+            departureDate: params.returnDate
+        });
+    } else if (params.tripType === 'multi-city' && params.multiCitySegments) {
+        segments = params.multiCitySegments.map(s => ({
+            origin: s.origin.toUpperCase(),
+            destination: s.destination.toUpperCase(),
+            departureDate: s.departureDate
+        }));
+    }
+
     return invokeEdgeFunction('unified-flight-search', {
-        segments: [
-            {
-                origin: params.origin.toUpperCase(),
-                destination: params.destination.toUpperCase(),
-                departureDate: params.departureDate
-            },
-            ...(params.returnDate ? [{
-                origin: params.destination.toUpperCase(),
-                destination: params.origin.toUpperCase(),
-                departureDate: params.returnDate
-            }] : [])
-        ],
+        segments,
         tripType: params.tripType,
         adults: params.adults,
         children: params.children || 0,
@@ -478,18 +491,8 @@ export async function searchFlights(params: FlightSearchParams) {
 export async function autocompleteAirports(keyword: string): Promise<Airport[]> {
     if (!keyword || keyword.length < 2) return [];
     try {
-        // We'll use the same edge function for airports if it exists, 
-        // or a dedicated one. For now, we'll assume 'airport-autocomplete'.
-        const result = await invokeEdgeFunction<{ data?: any[] }>('airport-autocomplete', { keyword });
-        return (result?.data ?? []).map((item: any) => ({
-            iata: item.iata,
-            name: item.name,
-            city: item.city,
-            country: item.country,
-            countryCode: item.countryCode,
-        }));
+        return searchAirports(keyword);
     } catch (err) {
-
         return [];
     }
 }

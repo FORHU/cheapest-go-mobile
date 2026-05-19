@@ -51,3 +51,60 @@ export async function clearSearchHistory() {
         console.error('Failed to clear search history:', e);
     }
 }
+
+// ─── Flight Search History ──────────────────────────────────────────────
+const RECENT_FLIGHT_SEARCHES_KEY = 'recent_flight_searches';
+
+export interface RecentFlightSearch {
+    id: string;
+    from: string;
+    to: string;
+    departure: string;
+    returnDate?: string;
+    passengers: number;
+    adults: number;
+    children: number;
+    infants: number;
+    cabinClass: string;
+    tripType: 'one-way' | 'round-trip' | 'multi-city';
+    timestamp: number;
+}
+
+export async function saveRecentFlightSearch(search: Omit<RecentFlightSearch, 'id' | 'timestamp'>) {
+    try {
+        const history = await getRecentFlightSearches();
+        const newSearch: RecentFlightSearch = {
+            ...search,
+            id: `${search.from}-${search.to}-${Date.now()}`,
+            timestamp: Date.now(),
+        };
+
+        // Remove duplicates
+        const filteredHistory = history.filter(
+            h => !(h.from === search.from && h.to === search.to)
+        );
+        const updatedHistory = [newSearch, ...filteredHistory].slice(0, MAX_RECENT_SEARCHES);
+
+        await AsyncStorage.setItem(RECENT_FLIGHT_SEARCHES_KEY, JSON.stringify(updatedHistory));
+    } catch (e) {
+        console.error('Failed to save flight search history:', e);
+    }
+}
+
+export async function getRecentFlightSearches(): Promise<RecentFlightSearch[]> {
+    try {
+        const jsonValue = await AsyncStorage.getItem(RECENT_FLIGHT_SEARCHES_KEY);
+        return jsonValue != null ? JSON.parse(jsonValue) : [];
+    } catch (e) {
+        console.error('Failed to get flight search history:', e);
+        return [];
+    }
+}
+
+export async function clearFlightSearchHistory() {
+    try {
+        await AsyncStorage.removeItem(RECENT_FLIGHT_SEARCHES_KEY);
+    } catch (e) {
+        console.error('Failed to clear flight search history:', e);
+    }
+}
