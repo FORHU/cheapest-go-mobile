@@ -551,9 +551,16 @@ export default function SearchScreen() {
                                 ) : (
                                     hotels.slice(0, displayLimit).map((hotel) => (
                                             <Pressable key={hotel.hotelId} style={styles.listCard} onPress={() => navigateToHotel(hotel)}>
-                                                <View style={styles.listRatingContainer}>
-                                                    <StarRating rating={hotel.starRating || hotel.reviewRating || 0} size={13} color="#2563eb" numeric={true} />
-                                                </View>
+                                                {/* Star rating badge — top-left corner over image */}
+                                                {(hotel.starRating > 0 || hotel.rating > 0) && (
+                                                    <View style={styles.listRatingContainer}>
+                                                        <StarRating
+                                                            rating={hotel.starRating || 0}
+                                                            size={11}
+                                                            gold
+                                                        />
+                                                    </View>
+                                                )}
                                                 <ImageWithSkeleton 
                                                     uri={hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=500&q=80'} 
                                                     style={styles.listImage} 
@@ -579,6 +586,19 @@ export default function SearchScreen() {
                                                         <MapPin size={12} color={isDark ? '#64748b' : '#94a3b8'} />
                                                         <Text style={styles.listLocationText} numberOfLines={1}>{hotel.address || hotel.city || 'Location unavailable'}</Text>
                                                     </View>
+                                                    {/* Star rating row — only renders when rating is available */}
+                                                    {hotel.starRating > 0 && (
+                                                        <View style={styles.listStarRow}>
+                                                            <StarRating
+                                                                rating={hotel.starRating}
+                                                                size={13}
+                                                                gold
+                                                            />
+                                                            <Text style={styles.listStarLabel}>
+                                                                {hotel.starRating}-star property
+                                                            </Text>
+                                                        </View>
+                                                    )}
                                                     <View style={styles.listFooterRow}>
                                                         <View style={styles.listPriceCol}>
                                                             <Text style={[styles.listPriceText, { color: getPriceColor(hotel.displayPrice) }]}>

@@ -1023,6 +1023,7 @@ export default function PropertyMapWebView({
         return (
             <Animated.View style={[
                 styles.slidingBottomSheet,
+                isMax ? styles.slidingBottomSheetMaximized : styles.slidingBottomSheetMinimized,
                 { height: sheetHeight }
             ]}>
                 {/* Drag Handle & Title Header - Touch Target Area for sliding gestures */}
@@ -1841,9 +1842,6 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         marginBottom: 2,
     },
     slidingBottomSheet: {
-        position: 'absolute',
-        left: 12,
-        right: 12,
         height: 250,
         backgroundColor: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.94)',
         borderRadius: 20,
@@ -1856,16 +1854,22 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         zIndex: 100,
         overflow: 'hidden',
     },
+    slidingBottomSheetMaximized: {
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        bottom: Platform.OS === 'ios' ? 34 : 20,
+    },
+    slidingBottomSheetMinimized: {
+        position: 'absolute',
+        left: 12,
+        right: 12,
+        bottom: 12,
+    },
     dragHeaderWrapper: {
         width: '100%',
         alignItems: 'stretch',
         paddingBottom: 2,
-    },
-    slidingBottomSheetInline: {
-        bottom: 12,
-    },
-    slidingBottomSheetFloating: {
-        bottom: Platform.OS === 'ios' ? 34 : 20,
     },
     dragHandle: {
         width: 36,
