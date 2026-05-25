@@ -5,9 +5,6 @@
     "paths": {
       "@/*": [
         "./*"
-      ],
-      "@core/*": [
-        "../cheapest-go-app/src/*"
       ]
     }
   },
