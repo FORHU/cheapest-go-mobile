@@ -36,6 +36,10 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
+# dev/debug scripts
+scratch/
+test_pipeline.js
+
 # generated native folders
 /ios
 /android

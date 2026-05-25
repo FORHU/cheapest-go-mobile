@@ -4,7 +4,7 @@
  */
 
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config';
-import { searchAirports } from './airports';
+import { searchAirports } from '../data/airports';
 
 export async function invokeEdgeFunction<T = any>(
     functionName: string,
