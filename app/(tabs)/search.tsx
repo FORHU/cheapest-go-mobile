@@ -1136,16 +1136,6 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         fontWeight: '700',
         color: 'white',
     },
-    listStarRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        marginBottom: 8,
-    },
-    listStarLabel: {
-        fontSize: 12,
-        color: isDark ? '#94a3b8' : '#64748b',
-    },
     listLocationRow: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1219,17 +1209,6 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: 'white',
         fontWeight: '700',
         fontSize: 14,
-    },
-    cardViewBtn: {
-        backgroundColor: '#2563eb',
-        paddingHorizontal: 12,
-        paddingVertical: 6,
-        borderRadius: 8,
-    },
-    cardViewBtnText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '700',
     },
     filterChipsContainer: {
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
