@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text } from 'react-native';
-import { VersionBadge } from './TelemetryComponents';
+import { VersionBadge } from '../ui/TelemetryComponents';
 import { GradientText } from '../GradientText';
 
 const HeroHeadline: React.FC = () => {

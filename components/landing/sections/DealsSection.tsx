@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, ScrollView, Pressable, Image } from 'react-native';
 import { Clock, Sparkles } from 'lucide-react-native';
 import { SectionHeader } from '../../ui/SectionHeader';
-import Skeleton from '../Skeleton';
+import Skeleton from '../../ui/Skeleton';
 
 export const DealCard = ({ deal, index, loading }: any) => {
     if (loading) {

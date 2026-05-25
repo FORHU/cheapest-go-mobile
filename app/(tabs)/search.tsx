@@ -10,7 +10,7 @@ import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
 import { getFavorites, toggleFavorite } from '../../lib/favorites';
 import { FACILITY_MAP } from '../../components/search/FilterModal';
-import Skeleton from '../../components/landing/Skeleton';
+import Skeleton from '../../components/ui/Skeleton';
 import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
@@ -1040,6 +1040,16 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         fontSize: 12,
         fontWeight: '700',
         color: 'white',
+    },
+    listStarRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 8,
+    },
+    listStarLabel: {
+        fontSize: 12,
+        color: isDark ? '#94a3b8' : '#64748b',
     },
     listLocationRow: {
         flexDirection: 'row',

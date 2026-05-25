@@ -5,7 +5,7 @@ import SearchModal from './SearchModal';
 import CalendarPicker from './CalendarPicker';
 import { useRouter } from 'expo-router';
 import { autocompleteAirports, type Airport } from '../../lib/api';
-import { searchAirports } from '../../lib/airports';
+import { searchAirports } from '../../data/airports';
 import { saveRecentFlightSearch, getRecentFlightSearches, RecentFlightSearch } from '../../lib/search-history';
 
 interface FlightSearchModalProps {

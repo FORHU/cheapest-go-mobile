@@ -4,8 +4,8 @@ import { Link, Tabs } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
 import Colors from '@/constants/Colors';
-import { useColorScheme } from '@/components/useColorScheme';
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { useClientOnlyValue } from '@/hooks/useClientOnlyValue';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();

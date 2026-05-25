@@ -7,7 +7,7 @@ import YourRecentSearches from '../../components/landing/sections/YourRecentSear
 import UniqueStays from '../../components/landing/sections/UniqueStays';
 import DealsSection from '../../components/landing/sections/DealsSection';
 import ExploreVacationPackages from '../../components/landing/sections/ExploreVacationPackages';
-import { MOCK_DEALS, MOCK_DESTINATIONS } from '../../constants/LandingMockData';
+import { MOCK_DEALS, MOCK_DESTINATIONS } from '../../fixtures/LandingMockData';
 
 export default function LandingScreen() {
     const { colorScheme } = useColorScheme();
