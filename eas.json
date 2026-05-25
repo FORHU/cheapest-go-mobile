@@ -9,7 +9,6 @@
         "buildType": "apk"
       },
       "distribution": "internal",
-      "channel": "staging",
       "environment": "preview"
     },
     "production": {
@@ -17,7 +16,6 @@
         "buildType": "app-bundle"
       },
       "distribution": "store",
-      "channel": "production",
       "environment": "production"
     }
   },
