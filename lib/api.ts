@@ -3,8 +3,8 @@
  * Mirrors the web app's invokeEdgeFunction utility.
  */
 
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from './config';
 import { searchAirports } from '../data/airports';
+import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 
 export async function invokeEdgeFunction<T = any>(
     functionName: string,
@@ -105,6 +105,37 @@ const countryMap: Record<string, string> = {
     'Italy': 'IT', 'Spain': 'ES', 'Australia': 'AU', 'Canada': 'CA', 'China': 'CN'
 };
 
+const DESTINATION_KEYWORD_ALIASES: Record<string, string> = {
+    'beijing airport': 'Beijing',
+    'beijing capital airport': 'Beijing',
+    'beijing city': 'Beijing',
+    'beijing downtown': 'Beijing',
+    'hk': 'Hong Kong',
+    'hongkong': 'Hong Kong',
+    'hong kong airport': 'Hong Kong',
+    'new york city': 'New York',
+    'new york': 'New York',
+    'nyc': 'New York',
+    'los angeles': 'Los Angeles',
+    'la': 'Los Angeles',
+    'sao paulo': 'São Paulo',
+    'saopaulo': 'São Paulo',
+    'saint petersburg': 'St. Petersburg',
+    'san francisco': 'San Francisco',
+    'sf': 'San Francisco',
+    'sfo': 'San Francisco',
+    'london airport': 'London',
+    'tokyo airport': 'Tokyo',
+};
+
+function normalizeDestinationKeyword(keyword: string): string {
+    if (!keyword) return '';
+    const cleaned = keyword.trim().replace(/\s+/g, ' ');
+    const alias = DESTINATION_KEYWORD_ALIASES[cleaned.toLowerCase()];
+    if (alias) return alias;
+    return cleaned;
+}
+
 function getCountryCodeFromAddress(address: string): string {
     if (!address) return '';
     const parts = address.split(',').map(p => p.trim());
@@ -113,16 +144,21 @@ function getCountryCodeFromAddress(address: string): string {
 }
 
 export async function autocompleteDestinations(keyword: string): Promise<Destination[]> {
-    if (!keyword || keyword.length < 2) return [];
+    const normalizedKeyword = normalizeDestinationKeyword(keyword);
+    if (!normalizedKeyword || normalizedKeyword.length < 2) return [];
     try {
-        const result = await invokeEdgeFunction<{ data?: any[] }>('travelgatex-destinations', { keyword });
-        return (result?.data ?? []).map((item: any) => ({
-            type: (item.type || 'city') as any,
-            title: item.name || '',
-            subtitle: item.type === 'country' ? 'Country' : 'City/Zone',
-            countryCode: '',
-            id: item.code,
-        }));
+        const result = await invokeEdgeFunction<{ data?: any[] }>('travelgatex-destinations', { keyword: normalizedKeyword });
+        return (result?.data ?? []).map((item: any) => {
+            const title = item.name || '';
+            const countryCode = item.countryCode || item.isoCountryCode || item.country || getCountryCodeFromAddress(item.name || item.subtitle || '');
+            return {
+                type: (item.type || 'city') as any,
+                title,
+                subtitle: item.type === 'country' ? 'Country' : item.country || item.subtitle || 'City/Zone',
+                countryCode,
+                id: item.code || item.id,
+            };
+        });
     } catch (err) {
         return [];
     }
@@ -143,15 +179,20 @@ export interface HotelSearchParams {
 
 export async function searchHotels(params: HotelSearchParams) {
     let { destination, countryCode, placeId } = params;
+    const normalizedDestination = normalizeDestinationKeyword(destination);
+    if (normalizedDestination && normalizedDestination !== destination) {
+        destination = normalizedDestination;
+    }
 
     // If we're missing both countryCode and placeId, try to resolve via autocomplete first
     // This handles cases where the user types and hits search without selecting a suggestion.
     if (!placeId && !countryCode && destination) {
         try {
             const suggestions = await autocompleteDestinations(destination);
-            if (suggestions.length > 0) {
-                placeId = suggestions[0].id;
-                countryCode = suggestions[0].countryCode;
+            const exactMatch = suggestions.find(s => s.title.toLowerCase() === destination.toLowerCase() && !!s.id);
+            if (exactMatch) {
+                placeId = exactMatch.id;
+                countryCode = exactMatch.countryCode || getCountryCodeFromAddress(exactMatch.subtitle || exactMatch.title || '');
             }
         } catch (err) {
             // Silently fail, we'll try with just the name

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useColorScheme } from 'react-native';
-import { Building2, Calendar, Users, Moon, Search, Plane, Sparkles } from 'lucide-react-native';
+import { ArrowRight, Building2, Calendar, Users, Moon, Plane, Sparkles } from 'lucide-react-native';
 import HotelSearchModal from '../search/HotelSearchModal';
 import FlightSearchModal from '../search/FlightSearchModal';
 
@@ -55,34 +55,29 @@ const AISearchBar: React.FC<AISearchBarProps> = ({ activeTab }) => {
                     <View style={styles.topRow}>
                         <View style={styles.leftSection}>
                             {getLeftIcon()}
-                            <Text style={styles.title}>{getTitle()}</Text>
+                            <View>
+                                <Text style={styles.title}>{getTitle()}</Text>
+                                <Text style={styles.subtitle}>City, hotel, or landmark</Text>
+                            </View>
                         </View>
                         <View style={styles.searchButton}>
-                            <Search size={16} color="#ffffff" />
+                            <ArrowRight size={18} color="#ffffff" />
                         </View>
                     </View>
 
                     {/* Divider */}
                     <View style={styles.divider} />
 
-                    {/* Date + Guests row */}
+                    {/* Single info row: date · guests · nights */}
                     <View style={styles.infoRow}>
                         <View style={styles.infoItem}>
                             <Calendar size={13} color={isDark ? '#475569' : '#94a3b8'} />
-                            <Text style={styles.infoText}>Any week</Text>
+                            <Text style={styles.infoText}>{dateRange}</Text>
                         </View>
                         <View style={styles.dotSeparator} />
                         <View style={styles.infoItem}>
                             <Users size={13} color={isDark ? '#475569' : '#94a3b8'} />
                             <Text style={styles.infoText}>2 guests</Text>
-                        </View>
-                    </View>
-
-                    {/* Dates + Nights row */}
-                    <View style={styles.infoRow}>
-                        <View style={styles.infoItem}>
-                            <Calendar size={13} color={isDark ? '#475569' : '#94a3b8'} />
-                            <Text style={styles.infoText}>{dateRange}</Text>
                         </View>
                         <View style={styles.dotSeparator} />
                         <View style={styles.infoItem}>
@@ -141,6 +136,11 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         fontSize: 16,
         fontWeight: '700',
         color: isDark ? '#ffffff' : '#0f172a',
+    },
+    subtitle: {
+        fontSize: 12,
+        color: isDark ? '#475569' : '#94a3b8',
+        marginTop: 1,
     },
     searchButton: {
         width: 32,

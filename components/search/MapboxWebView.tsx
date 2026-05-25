@@ -1,5 +1,5 @@
-import React, { useEffect, useRef, useMemo } from 'react';
-import { View, StyleSheet, ActivityIndicator } from 'react-native';
+import React, { useEffect, useMemo, useRef } from 'react';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { MAPBOX_TOKEN } from '../../lib/config';
 
@@ -7,12 +7,13 @@ interface MapboxWebViewProps {
     hotels: any[];
     selectedHotelId: string | null;
     onHotelSelect: (hotel: any) => void;
+    onDeselect?: () => void;
     isDark: boolean;
     center?: [number, number];
     currencySymbol: string;
 }
 
-export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, isDark, center, currencySymbol }: MapboxWebViewProps) {
+export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, onDeselect, isDark, center, currencySymbol }: MapboxWebViewProps) {
     const webViewRef = useRef<WebView>(null);
     const hasLoadedRef = useRef(false);
 
@@ -260,50 +261,66 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                                 type: 'geojson',
                                 data: geojson,
                                 cluster: true,
-                                clusterMaxZoom: 14,
-                                clusterRadius: 50
+                                clusterMaxZoom: 16,
+                                clusterRadius: 60,
+                                clusterProperties: {
+                                    minPrice: ['min', ['get', 'price']]
+                                }
                             });
 
-                            // Cluster circles
+                            // Glow ring (blurred, like web app)
+                            map.addLayer({
+                                id: 'clusters-glow',
+                                type: 'circle',
+                                source: 'hotels',
+                                filter: ['has', 'point_count'],
+                                paint: {
+                                    'circle-color': ['step', ['get', 'point_count'], '#3b82f6', 10, '#2563eb', 30, '#1d4ed8'],
+                                    'circle-radius': ['step', ['get', 'point_count'], 24, 10, 29, 30, 34],
+                                    'circle-blur': 0.8,
+                                    'circle-opacity': 0.4,
+                                }
+                            });
+
+                            // Solid cluster circle
                             map.addLayer({
                                 id: 'clusters',
                                 type: 'circle',
                                 source: 'hotels',
                                 filter: ['has', 'point_count'],
                                 paint: {
-                                    'circle-color': [
-                                        'step',
-                                        ['get', 'point_count'],
-                                        '#3b82f6',
-                                        5,
-                                        '#2563eb',
-                                        15,
-                                        '#1d4ed8'
-                                    ],
-                                    'circle-radius': [
-                                        'step',
-                                        ['get', 'point_count'],
-                                        20,
-                                        5,
-                                        30,
-                                        15,
-                                        40
-                                    ],
-                                    'circle-stroke-width': 2,
-                                    'circle-stroke-color': '#fff'
+                                    'circle-color': ['step', ['get', 'point_count'], '#3b82f6', 10, '#2563eb', 30, '#1d4ed8'],
+                                    'circle-radius': ['step', ['get', 'point_count'], 18, 10, 23, 30, 28],
+                                    'circle-stroke-width': 3,
+                                    'circle-stroke-color': '#ffffff',
+                                    'circle-stroke-opacity': 0.9,
                                 }
                             });
 
-                            // Cluster count labels
+                            // Cluster label: show "{count} hotels · {symbol}{minPrice}+"
                             map.addLayer({
                                 id: 'cluster-count',
                                 type: 'symbol',
                                 source: 'hotels',
                                 filter: ['has', 'point_count'],
                                 layout: {
-                                    'text-field': '{point_count}',
+                                    'text-field': [
+                                        'concat',
+                                        ['to-string', ['get', 'point_count']],
+                                        '\\n',
+                                        symbol,
+                                        ['case',
+                                            ['>=', ['get', 'minPrice'], 1000000],
+                                            ['concat', ['to-string', ['round', ['/', ['get', 'minPrice'], 1000000]]], 'M'],
+                                            ['>=', ['get', 'minPrice'], 1000],
+                                            ['concat', ['to-string', ['round', ['/', ['get', 'minPrice'], 1000]]], 'k'],
+                                            ['to-string', ['round', ['get', 'minPrice']]]
+                                        ],
+                                        '+'
+                                    ],
                                     'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                                    'text-size': 14
+                                    'text-size': 11,
+                                    'text-line-height': 1.3,
                                 },
                                 paint: {
                                     'text-color': '#ffffff'
@@ -315,10 +332,7 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                                 const clusterId = features[0].properties.cluster_id;
                                 map.getSource('hotels').getClusterExpansionZoom(clusterId, (err, zoom) => {
                                     if (err) return;
-                                    map.easeTo({
-                                        center: features[0].geometry.coordinates,
-                                        zoom: zoom
-                                    });
+                                    map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom });
                                 });
                             });
 
@@ -436,6 +450,12 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         }, labelLayerId);
                     }
 
+                    map.on('dragstart', () => {
+                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_DRAG_START' }));
+                        // Deselect all markers in map
+                        Object.keys(markers).forEach(id => markers[id].getElement().classList.remove('selected'));
+                    });
+
                     map.on('load', () => {
                         add3DBuildings();
                         map.resize();
@@ -528,10 +548,19 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         currencySymbol
                     }));
                 }
+
+                // If we already have a selected hotel, make sure the map centers on it after load
+                if (selectedHotelId) {
+                    webViewRef.current?.postMessage(JSON.stringify({
+                        type: 'SELECT_HOTEL',
+                        hotelId: selectedHotelId
+                    }));
+                }
             } else if (data.type === 'HOTEL_SELECT') {
                 const hotel = hotels.find(h => h.hotelId === data.hotelId);
                 if (hotel) onHotelSelect(hotel);
-
+            } else if (data.type === 'MAP_DRAG_START') {
+                onDeselect?.();
             }
         } catch (e) {
 

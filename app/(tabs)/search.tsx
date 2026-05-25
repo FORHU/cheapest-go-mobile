@@ -1,17 +1,14 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, Dimensions, ActivityIndicator, Image, TextInput } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { ChevronLeft, List, Map as MapIcon, Search, Filter, Star, MapPin, Heart, MousePointer2, Move, X } from 'lucide-react-native';
-import { searchHotels, autocompleteDestinations, Destination } from '../../lib/api';
-import MapboxWebView from '../../components/search/MapboxWebView';
-import FilterModal from '../../components/search/FilterModal';
+import { ChevronLeft, Heart, List, Map as MapIcon, MapPin, MousePointer2, Move, Search, SlidersHorizontal, X } from 'lucide-react-native';
+import React, { memo, useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import FilterModal, { FACILITY_MAP } from '../../components/search/FilterModal';
 import HotelSearchModal from '../../components/search/HotelSearchModal';
+import MapboxWebView from '../../components/search/MapboxWebView';
 import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
+import { searchHotels } from '../../lib/api';
 import { getFavorites, toggleFavorite } from '../../lib/favorites';
-import { FACILITY_MAP } from '../../components/search/FilterModal';
-import Skeleton from '../../components/ui/Skeleton';
-import * as Location from 'expo-location';
 
 const { width, height } = Dimensions.get('window');
 
@@ -87,6 +84,96 @@ const ImageWithSkeleton = ({ uri, style }: { uri: string, style: any }) => {
     return <OptimizedImage uri={uri} style={style} type="hotel" />;
 };
 
+const CARD_WIDTH = 300;
+const CARD_GAP = 12;
+
+type HotelCardProps = {
+    hotel: any;
+    index: number;
+    isSelected: boolean;
+    isDark: boolean;
+    currencySymbol: string;
+    isFavorite: boolean;
+    onSelect: (hotel: any) => void;
+    onNavigate: (hotel: any) => void;
+    onToggleFav: (id: string) => void;
+    styles: any;
+};
+
+const HotelMapCard = memo(({ hotel, index, isSelected, isDark, currencySymbol, isFavorite, onSelect, onNavigate, onToggleFav, styles }: HotelCardProps) => {
+    const score = hotel.reviewRating || hotel.rating;
+    const ratingLabel = score >= 9 ? 'Excellent' : score >= 8 ? 'Very Good' : score >= 7 ? 'Good' : 'Fair';
+    return (
+        <Pressable
+            style={[styles.hotelCard, isSelected && styles.hotelCardSelected]}
+            onPress={() => onSelect(hotel)}
+        >
+            <Pressable onPress={() => onNavigate(hotel)} style={{ position: 'relative' }}>
+                <ImageWithSkeleton
+                    uri={hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80'}
+                    style={styles.hotelCardImage}
+                />
+                <View style={styles.rankBadge}>
+                    <Text style={styles.rankBadgeText}>{index + 1}</Text>
+                </View>
+                {hotel.refundable && (
+                    <View style={styles.freeCancelBadge}>
+                        <Text style={styles.freeCancelText}>Free cancel</Text>
+                    </View>
+                )}
+            </Pressable>
+
+            <Pressable
+                style={styles.heartBtn}
+                onPress={() => onToggleFav(hotel.hotelId)}
+            >
+                <Heart
+                    size={14}
+                    color={isFavorite ? '#ef4444' : '#64748b'}
+                    fill={isFavorite ? '#ef4444' : 'transparent'}
+                />
+            </Pressable>
+
+            <Pressable style={styles.hotelCardContent} onPress={() => onNavigate(hotel)}>
+                <Text style={styles.hotelName} numberOfLines={2}>{hotel.name}</Text>
+
+                {(hotel.address || hotel.city) && (
+                    <View style={styles.hotelLocationRow}>
+                        <MapPin size={11} color={isDark ? '#64748b' : '#94a3b8'} />
+                        <Text style={styles.hotelLocationText} numberOfLines={1}>
+                            {hotel.address || hotel.city}
+                        </Text>
+                    </View>
+                )}
+
+                <View style={styles.hotelRatingRow}>
+                    {score > 0 && (
+                        <View style={[styles.reviewBadge, { backgroundColor: getRatingColor(score) }]}>
+                            <Text style={styles.reviewBadgeScore}>{score.toFixed(1)}</Text>
+                            <Text style={styles.reviewBadgeLabel}>{ratingLabel}</Text>
+                        </View>
+                    )}
+                    {hotel.starRating > 0 && (
+                        <StarRating rating={hotel.starRating} size={11} gold />
+                    )}
+                </View>
+
+                <View style={styles.hotelPriceRow}>
+                    <View>
+                        <Text style={[styles.hotelPrice, { color: getPriceColor(hotel.displayPrice) }]}>
+                            {currencySymbol}{hotel.displayPrice}
+                        </Text>
+                        <Text style={styles.hotelPerNight}>per night</Text>
+                    </View>
+                    <View style={styles.cardViewBtn}>
+                        <Text style={styles.cardViewBtnText}>View Deal</Text>
+                    </View>
+                </View>
+            </Pressable>
+        </Pressable>
+    );
+});
+
 export default function SearchScreen() {
     const params = useLocalSearchParams();
     const router = useRouter();
@@ -101,9 +188,10 @@ export default function SearchScreen() {
     const [selectedHotel, setSelectedHotel] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const isFetching = useRef(false);
-    const cardsScrollRef = useRef<ScrollView>(null);
+    const cardsFlatListRef = useRef<FlatList>(null);
     const isInternalScroll = useRef(false);
     const lastScrolledIndex = useRef(-1);
+    const CARD_SNAP = CARD_WIDTH + CARD_GAP;
     // Filter & Sort State
     const [isFilterVisible, setIsFilterVisible] = useState(false);
     const [isSearchModalVisible, setIsSearchModalVisible] = useState(false);
@@ -130,6 +218,13 @@ export default function SearchScreen() {
         const timer = setTimeout(() => setShowMapHints(false), 4000);
         return () => clearTimeout(timer);
     }, []);
+
+    useEffect(() => {
+        const destination = params.destination as string | undefined;
+        if (destination && destination !== localDestination) {
+            setLocalDestination(destination);
+        }
+    }, [params.destination]);
 
     const toggleFav = async (id: string) => {
         const added = await toggleFavorite(id);
@@ -178,7 +273,7 @@ export default function SearchScreen() {
                             latitude: parseFloat(lat.toString()),
                             longitude: parseFloat(lng.toString()),
                             displayPrice: price,
-                            thumbnailUrl: h.thumbnailUrl || h.details?.main_photo || (h.details?.hotel_images_photos?.[0]?.url) || h.image || h.mainPhotoUrl,
+                            thumbnailUrl: h.thumbnailUrl || h.details?.main_photo || (h.details?.hotel_images_photos?.[0]?.url) || h.image || (Array.isArray(h.images) ? h.images[0] : undefined) || h.mainPhotoUrl,
                             address: h.address || h.details?.address || h.location || h.city || 'Location unavailable'
                         };
                     })
@@ -197,7 +292,7 @@ export default function SearchScreen() {
         if (params.destination) {
             fetchResults();
         }
-    }, [params.destination, params.checkIn, params.checkOut, params.adults, params.rooms, currency.code]);
+    }, [params.destination, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
 
     const handleHotelSelect = (hotel: any) => {
         setSelectedHotel(hotel);
@@ -259,15 +354,12 @@ export default function SearchScreen() {
     }, [rawHotels, filters, sortBy]);
 
     useEffect(() => {
-        if (selectedHotel && viewMode === 'map' && cardsScrollRef.current) {
+        if (selectedHotel && viewMode === 'map' && cardsFlatListRef.current) {
             const index = hotels.findIndex(h => h.hotelId === selectedHotel.hotelId);
             if (index !== -1 && index !== lastScrolledIndex.current) {
                 isInternalScroll.current = true;
                 lastScrolledIndex.current = index;
-                cardsScrollRef.current.scrollTo({
-                    x: index * 312,
-                    animated: true
-                });
+                cardsFlatListRef.current.scrollToIndex({ index, animated: true, viewPosition: 0.5 });
                 setTimeout(() => { isInternalScroll.current = false; }, 300);
             }
         }
@@ -363,12 +455,14 @@ export default function SearchScreen() {
                         value={localDestination}
                         onChangeText={setLocalDestination}
                         onSubmitEditing={() => {
-                            router.setParams({ destination: localDestination });
+                            const destination = localDestination.trim();
+                            if (!destination) return;
+                            router.setParams({ destination, placeId: '', countryCode: '' });
                         }}
                     />
                 </View>
                 <Pressable style={styles.filterBtn} onPress={() => setIsFilterVisible(true)}>
-                    <Filter size={20} color={isDark ? '#ffffff' : '#0f172a'} />
+                    <SlidersHorizontal size={18} color={isDark ? '#ffffff' : '#0f172a'} />
                     {activeFilterCount > 0 && (
                         <View style={styles.filterBadge}>
                             <Text style={styles.filterBadgeText}>{activeFilterCount}</Text>
@@ -422,10 +516,11 @@ export default function SearchScreen() {
 
                         {viewMode === 'map' ? (
                             <View style={styles.mapContainer}>
-                                <MapboxWebView 
+                                <MapboxWebView
                                     hotels={hotels}
                                     selectedHotelId={selectedHotel?.hotelId}
                                     onHotelSelect={handleHotelSelect}
+                                    onDeselect={() => setSelectedHotel(null)}
                                     isDark={isDark}
                                     currencySymbol={currency.symbol}
                                 />
@@ -445,17 +540,33 @@ export default function SearchScreen() {
 
                                 {hotels.length > 0 && (
                                     <View style={styles.floatingCards}>
-                                        <ScrollView 
-                                            ref={cardsScrollRef}
-                                            horizontal 
-                                            showsHorizontalScrollIndicator={false} 
+                                        <FlatList
+                                            ref={cardsFlatListRef}
+                                            horizontal
+                                            data={hotels}
+                                            keyExtractor={(item) => item.hotelId}
+                                            showsHorizontalScrollIndicator={false}
                                             contentContainerStyle={styles.cardsScroll}
-                                            snapToInterval={312}
+                                            snapToInterval={CARD_SNAP}
                                             decelerationRate="fast"
+                                            initialNumToRender={3}
+                                            maxToRenderPerBatch={5}
+                                            windowSize={5}
+                                            removeClippedSubviews={true}
+                                            getItemLayout={(_, index) => ({
+                                                length: CARD_SNAP,
+                                                offset: CARD_SNAP * index,
+                                                index,
+                                            })}
+                                            onScrollToIndexFailed={(info) => {
+                                                setTimeout(() => {
+                                                    cardsFlatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                                                }, 100);
+                                            }}
                                             onMomentumScrollEnd={(e) => {
                                                 if (isInternalScroll.current) return;
                                                 const x = e.nativeEvent.contentOffset.x;
-                                                const index = Math.round(x / 312);
+                                                const index = Math.round(x / CARD_SNAP);
                                                 if (index !== lastScrolledIndex.current && hotels[index]) {
                                                     lastScrolledIndex.current = index;
                                                     if (selectedHotel?.hotelId !== hotels[index].hotelId) {
@@ -463,118 +574,32 @@ export default function SearchScreen() {
                                                     }
                                                 }
                                             }}
-                                            onScrollBeginDrag={() => { 
-                                                isInternalScroll.current = false; 
-                                            }}
-                                        >
-                                            {hotels.map((hotel, index) => (
-                                                <Pressable 
-                                                    key={hotel.hotelId} 
-                                                    style={[styles.hotelCard, selectedHotel?.hotelId === hotel.hotelId && styles.hotelCardSelected]}
-                                                    onPress={() => handleHotelSelect(hotel)}
-                                                >
-                                                    {/* Image section */}
-                                                    <Pressable onPress={() => navigateToHotel(hotel)} style={{ position: 'relative' }}>
-                                                        <ImageWithSkeleton 
-                                                            uri={hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80'} 
-                                                            style={styles.hotelCardImage} 
-                                                        />
-                                                        {/* Rank badge */}
-                                                        <View style={styles.rankBadge}>
-                                                            <Text style={styles.rankBadgeText}>{index + 1}</Text>
-                                                        </View>
-                                                        {/* Free cancellation badge */}
-                                                        {hotel.refundable && (
-                                                            <View style={styles.freeCancelBadge}>
-                                                                <Text style={styles.freeCancelText}>Free cancel</Text>
-                                                            </View>
-                                                        )}
-                                                    </Pressable>
+                                            onScrollBeginDrag={() => { isInternalScroll.current = false; }}
+                                            renderItem={({ item: hotel, index }) => (
+                                                <HotelMapCard
+                                                    hotel={hotel}
+                                                    index={index}
+                                                    isSelected={selectedHotel?.hotelId === hotel.hotelId}
+                                                    isDark={isDark}
+                                                    currencySymbol={currency.symbol}
+                                                    isFavorite={favorites.includes(hotel.hotelId)}
+                                                    onSelect={handleHotelSelect}
+                                                    onNavigate={navigateToHotel}
+                                                    onToggleFav={toggleFav}
+                                                    styles={styles}
+                                                />
+                                            )}
+                                        />
 
-                                                    {/* Favourite */}
-                                                    <Pressable 
-                                                        style={styles.heartBtn} 
-                                                        onPress={(e) => {
-                                                            e.stopPropagation();
-                                                            toggleFav(hotel.hotelId);
-                                                        }}
-                                                    >
-                                                        <Heart 
-                                                            size={14} 
-                                                            color={favorites.includes(hotel.hotelId) ? '#ef4444' : '#64748b'} 
-                                                            fill={favorites.includes(hotel.hotelId) ? '#ef4444' : 'transparent'} 
-                                                        />
-                                                    </Pressable>
-
-                                                    {/* Content */}
-                                                    <Pressable style={styles.hotelCardContent} onPress={() => navigateToHotel(hotel)}>
-                                                        {/* Name */}
-                                                        <Text style={styles.hotelName} numberOfLines={2}>{hotel.name}</Text>
-
-                                                        {/* Location */}
-                                                        {(hotel.address || hotel.city) && (
-                                                            <View style={styles.hotelLocationRow}>
-                                                                <MapPin size={11} color={isDark ? '#64748b' : '#94a3b8'} />
-                                                                <Text style={styles.hotelLocationText} numberOfLines={1}>
-                                                                    {hotel.address || hotel.city}
-                                                                </Text>
-                                                            </View>
-                                                        )}
-
-                                                        {/* Rating row */}
-                                                        <View style={styles.hotelRatingRow}>
-                                                            {/* Review score badge */}
-                                                            {(hotel.reviewRating > 0 || hotel.rating > 0) && (() => {
-                                                                const score = hotel.reviewRating || hotel.rating;
-                                                                const label = score >= 9 ? 'Excellent'
-                                                                    : score >= 8 ? 'Very Good'
-                                                                    : score >= 7 ? 'Good'
-                                                                    : 'Fair';
-                                                                return (
-                                                                    <View style={[styles.reviewBadge, { backgroundColor: getRatingColor(score) }]}>
-                                                                        <Text style={styles.reviewBadgeScore}>{score.toFixed(1)}</Text>
-                                                                        <Text style={styles.reviewBadgeLabel}>{label}</Text>
-                                                                    </View>
-                                                                );
-                                                            })()}
-                                                            {/* Star classification */}
-                                                            {hotel.starRating > 0 && (
-                                                                <StarRating rating={hotel.starRating} size={11} gold />
-                                                            )}
-                                                            {/* Review count */}
-                                                            {hotel.reviews > 0 && (
-                                                                <Text style={styles.reviewCountText}>
-                                                                    {hotel.reviews.toLocaleString()} reviews
-                                                                </Text>
-                                                            )}
-                                                        </View>
-
-                                                        {/* Price + CTA */}
-                                                        <View style={styles.hotelPriceRow}>
-                                                            <View>
-                                                                <Text style={[styles.hotelPrice, { color: getPriceColor(hotel.displayPrice) }]}>
-                                                                    {currency.symbol}{hotel.displayPrice}
-                                                                </Text>
-                                                                <Text style={styles.hotelPerNight}>/night</Text>
-                                                            </View>
-                                                            <View style={styles.cardViewBtn}>
-                                                                <Text style={styles.cardViewBtnText}>View Deal</Text>
-                                                            </View>
-                                                        </View>
-                                                    </Pressable>
-                                                </Pressable>
-                                            ))}
-                                        </ScrollView>
-                                        
                                         {/* Pagination Indicator */}
                                         <View style={styles.paginationDots}>
                                             {hotels.slice(0, Math.min(hotels.length, 10)).map((_, i) => (
-                                                <View 
-                                                    key={i} 
+                                                <View
+                                                    key={i}
                                                     style={[
-                                                        styles.dot, 
+                                                        styles.dot,
                                                         Math.round(hotels.findIndex(h => h.hotelId === selectedHotel?.hotelId)) === i && styles.activeDot
-                                                    ]} 
+                                                    ]}
                                                 />
                                             ))}
                                         </View>
@@ -899,18 +924,18 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     floatingCards: {
         position: 'absolute',
-        bottom: 30,
+        bottom: 20,
         left: 0,
         right: 0,
         zIndex: 20,
     },
     cardsScroll: {
-        paddingHorizontal: 20,
+        paddingHorizontal: 16,
         paddingBottom: 10,
         gap: 12,
     },
     hotelCard: {
-        width: 320,
+        width: 300,
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderRadius: 20,
         overflow: 'hidden',
@@ -928,8 +953,8 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         borderWidth: 2,
     },
     hotelCardImage: {
-        width: 110,
-        height: 130,
+        width: 100,
+        height: 140,
         backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
     },
     rankBadge: {
@@ -937,16 +962,16 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         top: 8,
         left: 8,
         zIndex: 10,
-        width: 22,
-        height: 22,
-        borderRadius: 11,
+        width: 24,
+        height: 24,
+        borderRadius: 7,
         backgroundColor: '#2563eb',
         alignItems: 'center',
         justifyContent: 'center',
     },
     rankBadgeText: {
         color: '#ffffff',
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: '800',
     },
     freeCancelBadge: {
@@ -1034,14 +1059,16 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: isDark ? '#64748b' : '#94a3b8',
     },
     cardViewBtn: {
-        backgroundColor: '#2563eb',
-        paddingHorizontal: 10,
-        paddingVertical: 6,
-        borderRadius: 8,
+        backgroundColor: isDark ? '#1e293b' : '#f8fafc',
+        paddingHorizontal: 14,
+        paddingVertical: 8,
+        borderRadius: 12,
+        borderWidth: 1.5,
+        borderColor: isDark ? '#334155' : '#e2e8f0',
     },
     cardViewBtnText: {
-        color: 'white',
-        fontSize: 11,
+        color: isDark ? '#ffffff' : '#0f172a',
+        fontSize: 12,
         fontWeight: '700',
     },
     listRatingContainer: {
