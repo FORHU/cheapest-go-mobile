@@ -35,6 +35,13 @@
     ],
     "experiments": {
       "typedRoutes": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a438c5b2-ecf9-4bde-a329-7d40658ac43e"
+      }
+    },
+    "owner": "cheapestgo"
   }
 }

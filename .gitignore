@@ -40,6 +40,9 @@ yarn-error.*
 scratch/
 test_pipeline.js
 
+# Play Store service account key
+google-service-account.json
+
 # generated native folders
 /ios
 /android
