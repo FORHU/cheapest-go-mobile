@@ -29,6 +29,7 @@ jobs:
     name: Build Android (Staging)
     needs: type-check
     runs-on: ubuntu-latest
+    environment: staging
     steps:
       - uses: actions/checkout@v4
 
