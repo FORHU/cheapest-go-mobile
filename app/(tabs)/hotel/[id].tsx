@@ -25,6 +25,7 @@ import {
     Info,
     Key,
     Languages,
+    LogIn, LogOut,
     MapPin,
     Martini,
     Phone,
@@ -35,6 +36,7 @@ import {
     Sparkles,
     Trees,
     Tv,
+    User,
     Utensils, Waves,
     Wifi, Wind,
     XCircle
@@ -58,6 +60,15 @@ const { width } = Dimensions.get('window');
 const stripHtml = (html: string) => {
     if (!html) return '';
     return html.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&');
+};
+
+const cleanDescription = (text: string) => {
+    if (!text) return '';
+    return stripHtml(text)
+        .replace(/[«»]/g, '')
+        .replace(/\.,/g, '. ')
+        .replace(/\s{2,}/g, ' ')
+        .trim();
 };
 
 const getAmenityIcon = (name: string, size: number = 16, color: string = '#10b981') => {
@@ -444,9 +455,9 @@ export default function HotelDetailsScreen() {
 
                     {/* Description */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>About this hotel</Text>
+                        <Text style={styles.sectionTitle}>About this property</Text>
                         <Text style={styles.descriptionText} numberOfLines={isDescriptionExpanded ? undefined : 5}>
-                            {stripHtml(hotel.description || hotel.details?.description || hotel.details?.hotelDescription) || "Experience luxury and comfort in the heart of the city. This property offers modern amenities, exceptional service, and a convenient location near major attractions."}
+                            {cleanDescription(hotel.description || hotel.details?.description || hotel.details?.hotelDescription) || "Experience luxury and comfort in the heart of the city. This property offers modern amenities, exceptional service, and a convenient location near major attractions."}
                         </Text>
                         <Pressable style={styles.readMore} onPress={() => {
                             LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
@@ -456,87 +467,85 @@ export default function HotelDetailsScreen() {
                         </Pressable>
                     </View>
 
-                    {/* Property Policies — moved here just after description */}
+                    {/* Property policies */}
                     <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Property Policies</Text>
+                        <Text style={styles.sectionTitle}>Property policies</Text>
 
-                        {/* Check-in & Check-out Schedules */}
-                        <View style={styles.policyItem}>
-                            <Clock size={20} color="#3b82f6" />
-                            <View style={styles.policyContent}>
-                                <Text style={styles.policyLabel}>Check-in & Check-out Schedule</Text>
-                                <Text style={styles.policyValue}>
-                                    Check-in from: <Text style={{ fontWeight: '700' }}>{hotel.checkInTime || hotel.details?.checkIn?.schedule?.[0]?.startTime || '3:00 PM'}</Text>
+                        {/* Check-in / Check-out time cards */}
+                        <View style={styles.policyTimeRow}>
+                            <View style={styles.policyTimeCard}>
+                                <LogIn size={15} color="#3b82f6" />
+                                <Text style={styles.policyTimeCardLabel}>Check-in</Text>
+                                <Text style={styles.policyTimeValue}>
+                                    {hotel.checkInTime || hotel.details?.checkIn?.schedule?.[0]?.startTime || '3:00 PM'}
                                 </Text>
-                                <Text style={styles.policyValue}>
-                                    Check-out before: <Text style={{ fontWeight: '700' }}>{hotel.checkOutTime || hotel.details?.checkOut?.schedule?.[0]?.startTime || '11:00 AM'}</Text>
+                                <Text style={styles.policyTimeSub}>Earliest arrival</Text>
+                            </View>
+                            <View style={styles.policyTimeCard}>
+                                <LogOut size={15} color="#3b82f6" />
+                                <Text style={styles.policyTimeCardLabel}>Check-out</Text>
+                                <Text style={styles.policyTimeValue}>
+                                    {hotel.checkOutTime || hotel.details?.checkOut?.schedule?.[0]?.startTime || '11:00 AM'}
                                 </Text>
+                                <Text style={styles.policyTimeSub}>Latest departure</Text>
                             </View>
                         </View>
 
-                        {/* Cancellation Policy */}
+                        {/* Cancellation policy */}
                         {hotel.cancellationPolicies && (
-                            <View style={styles.policyItem}>
-                                {hotel.cancellationPolicies.refundableTag === 'RFN'
-                                    ? <CheckCircle size={20} color="#10b981" />
-                                    : <XCircle size={20} color="#f59e0b" />
-                                }
-                                <View style={styles.policyContent}>
-                                    <Text style={styles.policyLabel}>Cancellation Policy</Text>
-                                    <View style={[styles.policyBadge, hotel.cancellationPolicies.refundableTag === 'RFN' ? styles.policyRefundable : styles.policyNonRefundable]}>
-                                        <Text style={[
-                                            styles.policyBadgeText,
-                                            { color: hotel.cancellationPolicies.refundableTag === 'RFN' ? '#059669' : '#d97706' }
-                                        ]}>
-                                            {hotel.cancellationPolicies.refundableTag === 'RFN' ? 'Refundable' : 'Non-refundable'}
+                            hotel.cancellationPolicies.refundableTag === 'RFN' ? (
+                                <View style={[styles.policyAlertCard, styles.policyAlertGreen]}>
+                                    <CheckCircle size={18} color="#059669" />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.policyAlertTitle, { color: '#059669' }]}>Free cancellation</Text>
+                                        <Text style={[styles.policyAlertText, { color: isDark ? '#6ee7b7' : '#065f46' }]}>
+                                            This booking can be cancelled at no charge.
                                         </Text>
                                     </View>
-                                    {hotel.cancellationPolicies.cancelPolicyInfos?.map((policy: any, i: number) => (
-                                        <Text key={i} style={styles.policyValue}>
-                                            Cancel before {new Date(policy.cancelTime).toLocaleDateString()} — Fee: {policy.currency} {policy.amount}
-                                        </Text>
-                                    ))}
-                                    {hotel.cancellationPolicies.hotelRemarks && (
-                                        <Text style={[styles.policyValue, { marginTop: 4 }]}>
-                                            {stripHtml(typeof hotel.cancellationPolicies.hotelRemarks === 'string' ? hotel.cancellationPolicies.hotelRemarks : (hotel.cancellationPolicies.hotelRemarks?.[0] || ''))}
-                                        </Text>
-                                    )}
                                 </View>
-                            </View>
+                            ) : (
+                                <View style={[styles.policyAlertCard, styles.policyAlertAmber]}>
+                                    <AlertTriangle size={18} color="#d97706" />
+                                    <View style={{ flex: 1 }}>
+                                        <Text style={[styles.policyAlertTitle, { color: '#d97706' }]}>Non-refundable booking</Text>
+                                        <Text style={[styles.policyAlertText, { color: isDark ? '#fbbf24' : '#92400e' }]}>
+                                            This rate cannot be cancelled or modified after booking.
+                                        </Text>
+                                    </View>
+                                </View>
+                            )
                         )}
 
-                        {/* Important Check-in & Property Instructions */}
+                        {/* Important instructions */}
                         {(hotel.hotelImportantInformation || hotel.details?.importantInformation || hotel.details?.checkIn?.instructions) && (
-                            <View style={styles.policyItem}>
-                                <AlertTriangle size={20} color="#f59e0b" />
-                                <View style={styles.policyContent}>
-                                    <Text style={styles.policyLabel}>Important Check-in Instructions</Text>
-                                    <Text style={styles.policyValue}>
-                                        {stripHtml(hotel.hotelImportantInformation || hotel.details?.importantInformation || hotel.details?.checkIn?.instructions?.[0]?.text || '')}
-                                    </Text>
-                                </View>
+                            <View style={[styles.policyAlertCard, { borderColor: isDark ? '#1e293b' : '#e2e8f0', backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
+                                <Info size={18} color="#64748b" />
+                                <Text style={[styles.policyAlertText, { flex: 1, color: isDark ? '#94a3b8' : '#475569' }]}>
+                                    {cleanDescription(hotel.hotelImportantInformation || hotel.details?.importantInformation || hotel.details?.checkIn?.instructions?.[0]?.text || '')}
+                                </Text>
                             </View>
                         )}
+                    </View>
 
-                        {/* General House Rules */}
-                        <View style={styles.policyItem}>
-                            <Info size={20} color="#10b981" />
-                            <View style={styles.policyContent}>
-                                <Text style={styles.policyLabel}>House Rules & Guest Requirements</Text>
-                                <Text style={styles.policyValue}>
-                                    • A valid photo ID matching the reservation name is required at check-in.
-                                </Text>
-                                <Text style={styles.policyValue}>
-                                    • Minimum check-in age is typically 18 or 21 (please contact the front desk in advance for details).
-                                </Text>
-                                <Text style={styles.policyValue}>
-                                    • Pets: {allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet')) ? 'Pets are allowed on request. Charges may apply.' : 'Pets are generally not allowed.'}
-                                </Text>
-                                <Text style={styles.policyValue}>
-                                    • Smoking: {allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('smoking')) ? 'Designated smoking areas are available.' : 'This is a strictly non-smoking property.'}
-                                </Text>
+                    {/* House rules */}
+                    <View style={styles.section}>
+                        <Text style={styles.sectionTitle}>House rules</Text>
+                        {([
+                            { Icon: ShieldCheck, text: 'Valid photo ID matching the reservation name required at check-in.' },
+                            { Icon: User, text: 'Minimum check-in age is 18–21. Contact the front desk in advance.' },
+                            {
+                                Icon: allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet')) ? Check : XCircle,
+                                text: allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet'))
+                                    ? 'Pets are allowed on request. Charges may apply.'
+                                    : 'Pets are not permitted on the property.',
+                            },
+                            { Icon: CigaretteOff, text: 'This is a strictly non-smoking property.' },
+                        ] as { Icon: any; text: string }[]).map(({ Icon, text }, i) => (
+                            <View key={i} style={styles.houseRuleCard}>
+                                <Icon size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                                <Text style={styles.houseRuleText}>{text}</Text>
                             </View>
-                        </View>
+                        ))}
                     </View>
 
                     {/* Facilities / Amenities Section */}
@@ -544,18 +553,18 @@ export default function HotelDetailsScreen() {
                         <View style={styles.section}>
                             <Text style={styles.sectionTitle}>Amenities & Facilities</Text>
                             <View style={styles.facilitiesList}>
-                                {allFacilities.slice(0, isFacilitiesExpanded ? undefined : 8).map((facility: any, i: number) => {
+                                {allFacilities.slice(0, isFacilitiesExpanded ? undefined : 12).map((facility: any, i: number) => {
                                     const name = typeof facility === 'string' ? facility : (facility.name || facility.label || '');
                                     if (!name) return null;
                                     return (
                                         <View key={i} style={styles.facilityItem}>
-                                            {getAmenityIcon(name)}
+                                            {getAmenityIcon(name, 14, '#3b82f6')}
                                             <Text style={styles.facilityText} numberOfLines={1}>{name}</Text>
                                         </View>
                                     );
                                 })}
                             </View>
-                            {allFacilities.length > 8 && (
+                            {allFacilities.length > 12 && (
                                 <Pressable
                                     style={styles.viewMoreBtn}
                                     onPress={() => {
@@ -894,19 +903,23 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     facilitiesList: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        justifyContent: 'space-between',
+        gap: 8,
     },
     facilityItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        width: '48%',
-        marginBottom: 12,
+        gap: 6,
+        backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+        borderRadius: 20,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderWidth: 1,
+        borderColor: isDark ? '#334155' : '#e2e8f0',
     },
     facilityText: {
-        flex: 1,
-        fontSize: 14,
-        color: isDark ? '#e2e8f0' : '#475569',
+        fontSize: 13,
+        color: isDark ? '#cbd5e1' : '#475569',
+        fontWeight: '500',
     },
     viewMoreBtn: {
         marginTop: 16,
@@ -1153,5 +1166,81 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: 'white',
         fontSize: 11,
         fontWeight: 'bold',
+    },
+    policyTimeRow: {
+        flexDirection: 'row',
+        gap: 12,
+        marginBottom: 12,
+    },
+    policyTimeCard: {
+        flex: 1,
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        borderRadius: 16,
+        padding: 16,
+        borderWidth: 1,
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+        gap: 2,
+    },
+    policyTimeCardLabel: {
+        fontSize: 11,
+        color: '#3b82f6',
+        fontWeight: '600',
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
+        marginTop: 6,
+        marginBottom: 2,
+    },
+    policyTimeValue: {
+        fontSize: 22,
+        fontWeight: '800',
+        color: isDark ? '#ffffff' : '#0f172a',
+    },
+    policyTimeSub: {
+        fontSize: 12,
+        color: isDark ? '#475569' : '#94a3b8',
+        marginTop: 2,
+    },
+    policyAlertCard: {
+        flexDirection: 'row',
+        gap: 12,
+        alignItems: 'flex-start',
+        padding: 14,
+        borderRadius: 14,
+        borderWidth: 1,
+        marginBottom: 12,
+    },
+    policyAlertAmber: {
+        backgroundColor: isDark ? 'rgba(120, 53, 15, 0.3)' : '#fffbeb',
+        borderColor: isDark ? 'rgba(180, 83, 9, 0.5)' : '#fde68a',
+    },
+    policyAlertGreen: {
+        backgroundColor: isDark ? 'rgba(6, 78, 59, 0.3)' : '#ecfdf5',
+        borderColor: isDark ? 'rgba(5, 150, 105, 0.5)' : '#a7f3d0',
+    },
+    policyAlertTitle: {
+        fontSize: 14,
+        fontWeight: '700',
+        marginBottom: 2,
+    },
+    policyAlertText: {
+        fontSize: 13,
+        lineHeight: 18,
+    },
+    houseRuleCard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 14,
+        padding: 14,
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+        marginBottom: 8,
+    },
+    houseRuleText: {
+        flex: 1,
+        fontSize: 14,
+        color: isDark ? '#cbd5e1' : '#475569',
+        lineHeight: 20,
     },
 });
