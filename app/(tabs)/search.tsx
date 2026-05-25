@@ -467,21 +467,31 @@ export default function SearchScreen() {
                                                 isInternalScroll.current = false; 
                                             }}
                                         >
-                                            {hotels.map((hotel) => (
+                                            {hotels.map((hotel, index) => (
                                                 <Pressable 
                                                     key={hotel.hotelId} 
                                                     style={[styles.hotelCard, selectedHotel?.hotelId === hotel.hotelId && styles.hotelCardSelected]}
                                                     onPress={() => handleHotelSelect(hotel)}
                                                 >
-                                                    <Pressable onPress={() => navigateToHotel(hotel)}>
-                                                        <View style={styles.cardRatingContainer}>
-                                                            <StarRating rating={hotel.starRating || hotel.reviewRating || 0} size={13} color="#2563eb" numeric={true} />
-                                                        </View>
+                                                    {/* Image section */}
+                                                    <Pressable onPress={() => navigateToHotel(hotel)} style={{ position: 'relative' }}>
                                                         <ImageWithSkeleton 
                                                             uri={hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80'} 
                                                             style={styles.hotelCardImage} 
                                                         />
+                                                        {/* Rank badge */}
+                                                        <View style={styles.rankBadge}>
+                                                            <Text style={styles.rankBadgeText}>{index + 1}</Text>
+                                                        </View>
+                                                        {/* Free cancellation badge */}
+                                                        {hotel.refundable && (
+                                                            <View style={styles.freeCancelBadge}>
+                                                                <Text style={styles.freeCancelText}>Free cancel</Text>
+                                                            </View>
+                                                        )}
                                                     </Pressable>
+
+                                                    {/* Favourite */}
                                                     <Pressable 
                                                         style={styles.heartBtn} 
                                                         onPress={(e) => {
@@ -495,23 +505,63 @@ export default function SearchScreen() {
                                                             fill={favorites.includes(hotel.hotelId) ? '#ef4444' : 'transparent'} 
                                                         />
                                                     </Pressable>
-                                                    <View style={styles.hotelCardContent}>
-                                                        <Text style={styles.hotelName} numberOfLines={1}>{hotel.name}</Text>
+
+                                                    {/* Content */}
+                                                    <Pressable style={styles.hotelCardContent} onPress={() => navigateToHotel(hotel)}>
+                                                        {/* Name */}
+                                                        <Text style={styles.hotelName} numberOfLines={2}>{hotel.name}</Text>
+
+                                                        {/* Location */}
+                                                        {(hotel.address || hotel.city) && (
+                                                            <View style={styles.hotelLocationRow}>
+                                                                <MapPin size={11} color={isDark ? '#64748b' : '#94a3b8'} />
+                                                                <Text style={styles.hotelLocationText} numberOfLines={1}>
+                                                                    {hotel.address || hotel.city}
+                                                                </Text>
+                                                            </View>
+                                                        )}
+
+                                                        {/* Rating row */}
+                                                        <View style={styles.hotelRatingRow}>
+                                                            {/* Review score badge */}
+                                                            {(hotel.reviewRating > 0 || hotel.rating > 0) && (() => {
+                                                                const score = hotel.reviewRating || hotel.rating;
+                                                                const label = score >= 9 ? 'Excellent'
+                                                                    : score >= 8 ? 'Very Good'
+                                                                    : score >= 7 ? 'Good'
+                                                                    : 'Fair';
+                                                                return (
+                                                                    <View style={[styles.reviewBadge, { backgroundColor: getRatingColor(score) }]}>
+                                                                        <Text style={styles.reviewBadgeScore}>{score.toFixed(1)}</Text>
+                                                                        <Text style={styles.reviewBadgeLabel}>{label}</Text>
+                                                                    </View>
+                                                                );
+                                                            })()}
+                                                            {/* Star classification */}
+                                                            {hotel.starRating > 0 && (
+                                                                <StarRating rating={hotel.starRating} size={11} gold />
+                                                            )}
+                                                            {/* Review count */}
+                                                            {hotel.reviews > 0 && (
+                                                                <Text style={styles.reviewCountText}>
+                                                                    {hotel.reviews.toLocaleString()} reviews
+                                                                </Text>
+                                                            )}
+                                                        </View>
+
+                                                        {/* Price + CTA */}
                                                         <View style={styles.hotelPriceRow}>
-                                                            <View style={{ flex: 1 }}>
-                                                                <Text style={styles.hotelPrice}>
+                                                            <View>
+                                                                <Text style={[styles.hotelPrice, { color: getPriceColor(hotel.displayPrice) }]}>
                                                                     {currency.symbol}{hotel.displayPrice}
                                                                 </Text>
                                                                 <Text style={styles.hotelPerNight}>/night</Text>
                                                             </View>
-                                                            <Pressable 
-                                                                style={styles.cardViewBtn}
-                                                                onPress={() => navigateToHotel(hotel)}
-                                                            >
-                                                                <Text style={styles.cardViewBtnText}>View</Text>
-                                                            </Pressable>
+                                                            <View style={styles.cardViewBtn}>
+                                                                <Text style={styles.cardViewBtnText}>View Deal</Text>
+                                                            </View>
                                                         </View>
-                                                    </View>
+                                                    </Pressable>
                                                 </Pressable>
                                             ))}
                                         </ScrollView>
@@ -860,7 +910,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         gap: 12,
     },
     hotelCard: {
-        width: 300,
+        width: 320,
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderRadius: 20,
         overflow: 'hidden',
@@ -873,102 +923,147 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         shadowRadius: 20,
         elevation: 15,
     },
-    ratingBadge: {
-        position: 'absolute',
-        top: 10,
-        left: 10,
-        zIndex: 10,
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: 8,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    ratingBadgeText: {
-        color: 'white',
-        fontSize: 12,
-        fontWeight: '800',
-    },
     hotelCardSelected: {
         borderColor: '#2563eb',
         borderWidth: 2,
     },
     hotelCardImage: {
-        width: 100,
-        height: 100,
+        width: 110,
+        height: 130,
         backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+    },
+    rankBadge: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        zIndex: 10,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: '#2563eb',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    rankBadgeText: {
+        color: '#ffffff',
+        fontSize: 11,
+        fontWeight: '800',
+    },
+    freeCancelBadge: {
+        position: 'absolute',
+        bottom: 6,
+        left: 6,
+        zIndex: 10,
+        backgroundColor: '#22c55e',
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
+    },
+    freeCancelText: {
+        color: '#ffffff',
+        fontSize: 9,
+        fontWeight: '700',
     },
     hotelCardContent: {
         flex: 1,
-        padding: 12,
-        justifyContent: 'center',
+        padding: 10,
+        justifyContent: 'space-between',
     },
     hotelName: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '700',
         color: isDark ? '#ffffff' : '#0f172a',
         marginBottom: 2,
-        paddingRight: 40,
+        paddingRight: 28,
+        lineHeight: 18,
+    },
+    hotelLocationRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        marginBottom: 4,
+    },
+    hotelLocationText: {
+        fontSize: 11,
+        color: isDark ? '#64748b' : '#94a3b8',
+        flex: 1,
     },
     hotelRatingRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 5,
+        flexWrap: 'wrap',
         marginBottom: 6,
     },
-    hotelRatingText: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: isDark ? '#e2e8f0' : '#0f172a',
+    reviewBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 3,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: 6,
     },
-    hotelDistanceText: {
+    reviewBadgeScore: {
         fontSize: 11,
-        color: isDark ? '#64748b' : '#94a3b8',
+        fontWeight: '800',
+        color: '#ffffff',
+    },
+    reviewBadgeLabel: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: 'rgba(255,255,255,0.9)',
+    },
+    reviewCountText: {
+        fontSize: 10,
+        color: isDark ? '#475569' : '#94a3b8',
+        fontWeight: '500',
     },
     hotelPriceRow: {
         flexDirection: 'row',
         alignItems: 'flex-end',
         justifyContent: 'space-between',
-        marginTop: 10,
     },
-    cardRatingContainer: {
-        position: 'absolute',
-        top: 8,
-        left: 8,
-        zIndex: 10,
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        paddingHorizontal: 6,
-        paddingVertical: 3,
+    hotelPrice: {
+        fontSize: 15,
+        fontWeight: '800',
+        color: '#2563eb',
+        lineHeight: 18,
+    },
+    hotelPerNight: {
+        fontSize: 10,
+        color: isDark ? '#64748b' : '#94a3b8',
+    },
+    cardViewBtn: {
+        backgroundColor: '#2563eb',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
         borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
+    },
+    cardViewBtnText: {
+        color: 'white',
+        fontSize: 11,
+        fontWeight: '700',
     },
     listRatingContainer: {
         position: 'absolute',
         top: 10,
         left: 10,
         zIndex: 10,
-        backgroundColor: 'rgba(255,255,255,0.95)',
-        paddingHorizontal: 6,
-        paddingVertical: 3,
+        backgroundColor: 'rgba(0,0,0,0.55)',
+        paddingHorizontal: 7,
+        paddingVertical: 4,
         borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#e2e8f0',
     },
-    hotelPrice: {
-        fontSize: 16,
-        fontWeight: '700',
-        color: '#2563eb',
+    listStarRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginBottom: 10,
     },
-    hotelPerNight: {
-        fontSize: 11,
-        color: isDark ? '#64748b' : '#94a3b8',
+    listStarLabel: {
+        fontSize: 12,
+        color: isDark ? '#94a3b8' : '#64748b',
+        fontWeight: '500',
     },
     paginationDots: {
         flexDirection: 'row',

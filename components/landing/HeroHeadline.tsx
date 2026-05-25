@@ -13,11 +13,11 @@ const HeroHeadline: React.FC = () => {
                     Precision Travel.
                 </Text>
                 
-                <GradientText 
+                <GradientText
                     colors={['#3b82f6', '#06b6d4']}
                     className="text-4xl font-extrabold tracking-tighter leading-[1.05] text-center"
                 >
-                    Machined for You.
+                    For You.
                 </GradientText>
             </View>
 

@@ -1,11 +1,11 @@
 import React from 'react';
 import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { ChevronDown, Sun, Moon } from 'lucide-react-native';
+import { ChevronDown, DollarSign, Bell } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { useSettings, CURRENCIES } from '../../context/SettingsContext';
 
 const TopBar: React.FC = () => {
-    const { colorScheme, toggleColorScheme } = useColorScheme();
+    const { colorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { currency, setCurrency } = useSettings();
 
@@ -23,27 +23,20 @@ const TopBar: React.FC = () => {
                     Cheapest<Text style={styles.logoAccent}>Go</Text>
                 </Text>
             </View>
- 
+
             {/* Right Side Actions */}
             <View style={styles.actionsContainer}>
-                <Pressable 
+                <Pressable
                     style={[styles.currencyPill, isDark && styles.currencyPillDark]}
                     onPress={handleCurrencyPress}
                 >
-                    <Text style={styles.regionText}>{currency.region}</Text>
+                    <DollarSign size={13} color={isDark ? "#94a3b8" : "#64748b"} />
                     <Text style={[styles.currencyText, isDark && styles.currencyTextDark]}>{currency.code}</Text>
-                    <ChevronDown size={16} color={isDark ? "#475569" : "#94a3b8"} />
+                    <ChevronDown size={14} color={isDark ? "#475569" : "#94a3b8"} />
                 </Pressable>
- 
-                <Pressable 
-                    onPress={() => toggleColorScheme()}
-                    style={styles.themeButton}
-                >
-                    {isDark ? (
-                        <Sun size={24} color="#facc15" />
-                    ) : (
-                        <Moon size={24} color="#475569" />
-                    )}
+
+                <Pressable style={styles.bellButton}>
+                    <Bell size={22} color={isDark ? "#94a3b8" : "#475569"} />
                 </Pressable>
             </View>
         </View>
@@ -94,13 +87,6 @@ const styles = StyleSheet.create({
         backgroundColor: '#0f172a',
         borderColor: '#1e293b',
     },
-    regionText: {
-        fontSize: 10,
-        fontWeight: '700',
-        color: '#64748b',
-        textTransform: 'uppercase',
-        letterSpacing: -0.5,
-    },
     currencyText: {
         fontSize: 14,
         fontWeight: '700',
@@ -110,8 +96,8 @@ const styles = StyleSheet.create({
     currencyTextDark: {
         color: '#ffffff',
     },
-    themeButton: {
-        padding: 8,
+    bellButton: {
+        padding: 4,
     },
 });
 

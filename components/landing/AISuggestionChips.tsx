@@ -1,6 +1,6 @@
 import React from 'react';
-import { View, Text, Pressable, ScrollView, StyleSheet } from 'react-native';
-import { Palmtree, Gem, Heart, Plane, Mountain } from 'lucide-react-native';
+import { View, Text, Pressable, ScrollView, StyleSheet, useColorScheme } from 'react-native';
+import { Waves, Gem, Heart, Plane, Mountain } from 'lucide-react-native';
 
 const suggestions = [
     { label: 'Beach Escape', prompt: 'Beachfront resort in Boracay for 2, this weekend' },
@@ -10,22 +10,28 @@ const suggestions = [
     { label: 'Adventure', prompt: 'Mountain lodge in Baguio for a group of 4' },
 ];
 
-const iconMap: Record<string, React.ReactNode> = {
-    'Beach Escape': <Palmtree size={12} color="#94a3b8" />,
-    'Luxury Stay': <Gem size={12} color="#94a3b8" />,
-    'Romantic Trip': <Heart size={12} color="#94a3b8" />,
-    'Quick Getaway': <Plane size={12} color="#94a3b8" />,
-    'Adventure': <Mountain size={12} color="#94a3b8" />,
-};
-
 interface AISuggestionChipsProps {
     onSuggestionClick: (prompt: string) => void;
 }
 
 const AISuggestionChips: React.FC<AISuggestionChipsProps> = ({ onSuggestionClick }) => {
+    const colorScheme = useColorScheme();
+    const isDark = colorScheme === 'dark';
+    const iconColor = isDark ? '#64748b' : '#94a3b8';
+
+    const iconMap: Record<string, React.ReactNode> = {
+        'Beach Escape': <Waves size={13} color={iconColor} />,
+        'Luxury Stay': <Gem size={13} color={iconColor} />,
+        'Romantic Trip': <Heart size={13} color={iconColor} />,
+        'Quick Getaway': <Plane size={13} color={iconColor} />,
+        'Adventure': <Mountain size={13} color={iconColor} />,
+    };
+
+    const styles = getStyles(isDark);
+
     return (
-        <ScrollView 
-            horizontal 
+        <ScrollView
+            horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.scrollView}
             contentContainerStyle={styles.contentContainer}
@@ -48,9 +54,9 @@ const AISuggestionChips: React.FC<AISuggestionChipsProps> = ({ onSuggestionClick
     );
 };
 
-const styles = StyleSheet.create({
+const getStyles = (isDark: boolean) => StyleSheet.create({
     scrollView: {
-        marginTop: 16,
+        marginTop: 14,
         paddingHorizontal: 16,
     },
     contentContainer: {
@@ -63,23 +69,18 @@ const styles = StyleSheet.create({
     chip: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8,
-        paddingHorizontal: 16,
+        gap: 7,
+        paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 9999,
-        backgroundColor: '#ffffff',
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderWidth: 1,
-        borderColor: '#e2e8f0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
     },
     chipText: {
-        fontSize: 11,
+        fontSize: 12,
         fontWeight: '500',
-        color: '#475569',
+        color: isDark ? '#94a3b8' : '#475569',
     },
 });
 
