@@ -1,6 +1,6 @@
 import { BlurView } from 'expo-blur';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { AlertTriangle, ArrowLeft, Check, CheckCircle, ChevronDown, Loader, Mail, Tag, User } from 'lucide-react-native';
+import { AlertTriangle, ArrowLeft, Check, CheckCircle, Mail, Tag } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator, Alert, Dimensions, Image, KeyboardAvoidingView,
@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext';
-import { confirmBooking, prebookRoom, PrebookResponse, validatePromoCode } from '../lib/api';
+import { confirmBooking, PrebookResponse, prebookRoom, validatePromoCode } from '../lib/api';
 
 const { width } = Dimensions.get('window');
 
@@ -488,6 +488,12 @@ export default function CheckoutScreen() {
 }
 
 const getStyles = (isDark: boolean) => StyleSheet.create({
+    
+    
+    
+    
+    
+    
     container: {
         flex: 1,
         backgroundColor: isDark ? '#020617' : '#f8fafc',

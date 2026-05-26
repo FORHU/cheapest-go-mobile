@@ -41,25 +41,29 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         display: flex;
                         align-items: center;
                         background: white;
-                        padding: 4px 10px 4px 4px;
-                        border-radius: 24px;
+                        padding: 3px 7px 3px 3px;
+                        border-radius: 20px;
                         border: 1px solid #e2e8f0;
-                        box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
-                        gap: 6px;
+                        box-shadow: 0 3px 5px -1px rgba(0,0,0,0.12);
+                        gap: 4px;
                     }
-                    .marker-icon {
-                        width: 24px;
-                        height: 24px;
+                    .marker-num {
+                        width: 16px;
+                        height: 16px;
                         background: #3b82f6;
                         border-radius: 50%;
                         display: flex;
                         align-items: center;
                         justify-content: center;
                         color: white;
+                        font-family: -apple-system, system-ui, sans-serif;
+                        font-size: 9px;
+                        font-weight: 800;
+                        flex-shrink: 0;
                     }
                     .marker-price {
                         font-family: -apple-system, system-ui, sans-serif;
-                        font-size: 13px;
+                        font-size: 11px;
                         font-weight: 800;
                         color: #1e293b;
                     }
@@ -69,13 +73,13 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                     .marker.selected .marker-pill {
                         background: #2563eb;
                         border-color: #1d4ed8;
-                        transform: scale(1.1) translateY(-5px);
-                        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
+                        transform: scale(1.1) translateY(-4px);
+                        box-shadow: 0 8px 12px -2px rgba(37, 99, 235, 0.4);
                     }
                     .marker.selected .marker-price {
                         color: white;
                     }
-                    .marker.selected .marker-icon {
+                    .marker.selected .marker-num {
                         background: white;
                         color: #2563eb;
                     }
@@ -115,12 +119,11 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         position: absolute;
                         bottom: 100%;
                         left: 50%;
-                        transform: translateX(-50%) translateY(-12px);
-                        width: 200px;
-                        background: ${isDark ? '#1e293b' : 'white'};
+                        transform: translateX(-50%) translateY(-10px);
+                        width: 210px;
                         border-radius: 14px;
                         overflow: hidden;
-                        box-shadow: 0 10px 25px -5px rgba(0,0,0,0.2);
+                        box-shadow: 0 12px 28px -4px rgba(0,0,0,0.28);
                         border: 1px solid ${isDark ? '#334155' : '#e2e8f0'};
                         z-index: 200;
                         pointer-events: auto;
@@ -129,34 +132,19 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         display: block;
                         animation: markerPopup 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
                     }
-                    .card-img {
+                    .card-img-grid {
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 2px;
                         width: 100%;
-                        height: 100px;
+                        height: 150px;
+                        background: ${isDark ? '#1e293b' : '#f1f5f9'};
+                    }
+                    .grid-img {
+                        width: 100%;
+                        height: 100%;
                         object-fit: cover;
                         display: block;
-                    }
-                    .card-body {
-                        padding: 10px;
-                    }
-                    .card-name {
-                        font-family: sans-serif;
-                        font-size: 13px;
-                        font-weight: 700;
-                        color: ${isDark ? '#f8fafc' : '#0f172a'};
-                        margin-bottom: 4px;
-                        white-space: nowrap;
-                        overflow: hidden;
-                        text-overflow: ellipsis;
-                    }
-                    .card-description {
-                        font-family: sans-serif;
-                        font-size: 11px;
-                        color: ${isDark ? '#94a3b8' : '#64748b'};
-                        line-height: 1.4;
-                        display: -webkit-box;
-                        -webkit-line-clamp: 2;
-                        -webkit-box-orient: vertical;
-                        overflow: hidden;
                     }
 
                     @keyframes markerPopup {
@@ -229,122 +217,10 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                     }
 
                     let currentHotels = [];
-                    let clusterLayerAdded = false;
 
                     function updateMarkers(hotelsData, selectedId, symbol) {
                         currentHotels = hotelsData;
-                        
-                        // Convert hotels to GeoJSON for clustering
-                        const geojson = {
-                            type: 'FeatureCollection',
-                            features: hotelsData.map(h => ({
-                                type: 'Feature',
-                                properties: {
-                                    hotelId: h.hotelId,
-                                    name: h.name,
-                                    price: h.displayPrice,
-                                    thumbnail: h.thumbnailUrl,
-                                    address: h.address || h.city,
-                                    selected: h.hotelId === selectedId
-                                },
-                                geometry: {
-                                    type: 'Point',
-                                    coordinates: [h.longitude, h.latitude]
-                                }
-                            }))
-                        };
 
-                        if (map.getSource('hotels')) {
-                            map.getSource('hotels').setData(geojson);
-                        } else {
-                            map.addSource('hotels', {
-                                type: 'geojson',
-                                data: geojson,
-                                cluster: true,
-                                clusterMaxZoom: 16,
-                                clusterRadius: 60,
-                                clusterProperties: {
-                                    minPrice: ['min', ['get', 'price']]
-                                }
-                            });
-
-                            // Glow ring (blurred, like web app)
-                            map.addLayer({
-                                id: 'clusters-glow',
-                                type: 'circle',
-                                source: 'hotels',
-                                filter: ['has', 'point_count'],
-                                paint: {
-                                    'circle-color': ['step', ['get', 'point_count'], '#3b82f6', 10, '#2563eb', 30, '#1d4ed8'],
-                                    'circle-radius': ['step', ['get', 'point_count'], 24, 10, 29, 30, 34],
-                                    'circle-blur': 0.8,
-                                    'circle-opacity': 0.4,
-                                }
-                            });
-
-                            // Solid cluster circle
-                            map.addLayer({
-                                id: 'clusters',
-                                type: 'circle',
-                                source: 'hotels',
-                                filter: ['has', 'point_count'],
-                                paint: {
-                                    'circle-color': ['step', ['get', 'point_count'], '#3b82f6', 10, '#2563eb', 30, '#1d4ed8'],
-                                    'circle-radius': ['step', ['get', 'point_count'], 18, 10, 23, 30, 28],
-                                    'circle-stroke-width': 3,
-                                    'circle-stroke-color': '#ffffff',
-                                    'circle-stroke-opacity': 0.9,
-                                }
-                            });
-
-                            // Cluster label: show "{count} hotels · {symbol}{minPrice}+"
-                            map.addLayer({
-                                id: 'cluster-count',
-                                type: 'symbol',
-                                source: 'hotels',
-                                filter: ['has', 'point_count'],
-                                layout: {
-                                    'text-field': [
-                                        'concat',
-                                        ['to-string', ['get', 'point_count']],
-                                        '\\n',
-                                        symbol,
-                                        ['case',
-                                            ['>=', ['get', 'minPrice'], 1000000],
-                                            ['concat', ['to-string', ['round', ['/', ['get', 'minPrice'], 1000000]]], 'M'],
-                                            ['>=', ['get', 'minPrice'], 1000],
-                                            ['concat', ['to-string', ['round', ['/', ['get', 'minPrice'], 1000]]], 'k'],
-                                            ['to-string', ['round', ['get', 'minPrice']]]
-                                        ],
-                                        '+'
-                                    ],
-                                    'text-font': ['DIN Offc Pro Medium', 'Arial Unicode MS Bold'],
-                                    'text-size': 11,
-                                    'text-line-height': 1.3,
-                                },
-                                paint: {
-                                    'text-color': '#ffffff'
-                                }
-                            });
-
-                            map.on('click', 'clusters', (e) => {
-                                const features = map.queryRenderedFeatures(e.point, { layers: ['clusters'] });
-                                const clusterId = features[0].properties.cluster_id;
-                                map.getSource('hotels').getClusterExpansionZoom(clusterId, (err, zoom) => {
-                                    if (err) return;
-                                    map.easeTo({ center: features[0].geometry.coordinates, zoom: zoom });
-                                });
-                            });
-
-                            clusterLayerAdded = true;
-                        }
-
-                        // We still use HTML markers for individual hotels for better styling/interaction
-                        // but we only show them when zoomed in or for unclustered points if we wanted.
-                        // However, to satisfy "Show price badges for more hotels", we'll use a hybrid approach:
-                        // Use Mapbox Symbol layer for price badges for better performance with many pins.
-                        
-                        // Sync HTML markers with current zoom/view
                         renderHtmlMarkers(hotelsData, selectedId, symbol);
 
                         const bounds = new mapboxgl.LngLatBounds();
@@ -371,30 +247,28 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                             }
                         });
 
-                        hotelsData.forEach(hotel => {
+                        const fallbackImg = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
+                        hotelsData.forEach((hotel, idx) => {
+                            const hotelIndex = idx + 1;
+                            const imgList = (Array.isArray(hotel.imageUrls) && hotel.imageUrls.length > 0)
+                                ? hotel.imageUrls
+                                : [hotel.thumbnailUrl || fallbackImg];
+                            const imgs = [0,1,2,3].map(function(i) { return imgList[i] || imgList[0] || fallbackImg; });
+                            const gridHtml = imgs.map(function(url) { return '<img src="' + url + '" class="grid-img" />'; }).join('');
+
                             if (!markers[hotel.hotelId]) {
                                 const el = document.createElement('div');
                                 el.className = 'marker';
                                 el.id = 'marker-' + hotel.hotelId;
-                                
+
                                 const price = hotel.displayPrice || '???';
                                 el.innerHTML = \`
                                     <div class="marker-card">
-                                        <img src="\${hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80'}" class="card-img" />
-                                        <div class="card-body">
-                                            <div class="card-name">\${hotel.name}</div>
-                                            <div class="card-description">\${hotel.address || hotel.city || 'Beautiful property'}</div>
-                                        </div>
+                                        <div class="card-img-grid">\${gridHtml}</div>
                                     </div>
                                     <div class="marker-pill">
-                                        <div class="marker-icon">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                                <path d="M5 20v-8a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v8"></path>
-                                                <path d="M7 10V6a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v4"></path>
-                                                <path d="M5 17h14"></path>
-                                            </svg>
-                                        </div>
-                                         <span class="marker-price">\${symbol}\${price}</span>
+                                        <div class="marker-num">\${hotelIndex}</div>
+                                        <span class="marker-price">\${symbol}\${price}</span>
                                     </div>
                                     <div class="marker-pin-container">
                                         <div class="marker-pin-line"></div>
@@ -410,12 +284,15 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                                     }));
                                 };
 
-                                markers[hotel.hotelId] = new mapboxgl.Marker({ 
-                                    element: el, 
-                                    anchor: 'bottom' 
+                                markers[hotel.hotelId] = new mapboxgl.Marker({
+                                    element: el,
+                                    anchor: 'bottom'
                                 })
                                 .setLngLat([hotel.longitude, hotel.latitude])
                                 .addTo(map);
+                            } else {
+                                const numEl = markers[hotel.hotelId].getElement().querySelector('.marker-num');
+                                if (numEl) numEl.textContent = hotelIndex;
                             }
 
                             const mEl = markers[hotel.hotelId].getElement();
