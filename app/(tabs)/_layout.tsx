@@ -1,7 +1,8 @@
 import React from 'react';
-import { Home, Compass, User } from 'lucide-react-native';
+import { Home, Compass, Heart, User } from 'lucide-react-native';
 import { Link, Tabs } from 'expo-router';
 import { Pressable, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -10,6 +11,7 @@ import { useClientOnlyValue } from '@/hooks/useClientOnlyValue';
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
 
   return (
     <Tabs
@@ -20,8 +22,8 @@ export default function TabLayout() {
           borderTopWidth: 1,
           borderTopColor: isDark ? '#1e293b' : '#f1f5f9',
           backgroundColor: isDark ? '#020617' : '#ffffff',
-          height: 60,
-          paddingBottom: 8,
+          height: 60 + insets.bottom,
+          paddingBottom: 8 + insets.bottom,
           paddingTop: 8,
         },
         tabBarLabelStyle: {
@@ -43,6 +45,14 @@ export default function TabLayout() {
         options={{
           title: 'Explore',
           tabBarIcon: ({ color, size }) => <Compass size={size} color={color} />,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="saved"
+        options={{
+          title: 'Saved',
+          tabBarIcon: ({ color, size }) => <Heart size={size} color={color} />,
           headerShown: false,
         }}
       />
