@@ -12,8 +12,11 @@ import {
     AlertTriangle, Ticket, Globe, ChevronLeft, ChevronRight
 } from 'lucide-react-native';
 import { useSettings } from '../context/SettingsContext';
-import { invokeEdgeFunction } from '../lib/api';
 import { FlightOffer, formatDuration } from '../lib/flight-types';
+import {
+    webFetchBags, webFetchSeatMap, webMobileBook, webMobileConfirm, webRefreshOffer,
+    type NormalizedBagOption, type NormalizedSegmentSeatMap,
+} from '../lib/webApi';
 
 const { width } = Dimensions.get('window');
 
@@ -24,87 +27,6 @@ const BOOKING_STEPS = [
     'Issuing e-ticket PNR...',
 ] as const;
 
-interface SeatConfig {
-    row: number;
-    seats: {
-        code: string;
-        type: 'free' | 'paid' | 'taken' | 'legroom' | 'exit';
-        price?: number;
-    }[];
-}
-
-const SEAT_ROWS: SeatConfig[] = [
-    {
-        row: 33,
-        seats: [
-            { code: 'A', type: 'taken' },
-            { code: 'B', type: 'taken' },
-            { code: 'C', type: 'taken' },
-            { code: 'D', type: 'paid', price: 15 },
-            { code: 'E', type: 'taken' }
-        ]
-    },
-    {
-        row: 34,
-        seats: [
-            { code: 'A', type: 'taken' },
-            { code: 'B', type: 'taken' },
-            { code: 'C', type: 'paid', price: 15 },
-            { code: 'D', type: 'taken' },
-            { code: 'E', type: 'paid', price: 15 }
-        ]
-    },
-    {
-        row: 35, // EXTRA LEGROOM
-        seats: [
-            { code: 'A', type: 'legroom' },
-            { code: 'B', type: 'taken' },
-            { code: 'C', type: 'legroom' },
-            { code: 'D', type: 'paid', price: 25 },
-            { code: 'E', type: 'legroom' }
-        ]
-    },
-    {
-        row: 37, // EXIT ROW
-        seats: [
-            { code: 'A', type: 'exit' },
-            { code: 'B', type: 'exit' },
-            { code: 'C', type: 'exit' },
-            { code: 'D', type: 'exit' },
-            { code: 'E', type: 'exit' }
-        ]
-    },
-    {
-        row: 38,
-        seats: [
-            { code: 'A', type: 'taken' },
-            { code: 'B', type: 'taken' },
-            { code: 'C', type: 'paid', price: 12 },
-            { code: 'D', type: 'taken' },
-            { code: 'E', type: 'paid', price: 12 }
-        ]
-    },
-    {
-        row: 39,
-        seats: [
-            { code: 'A', type: 'free' },
-            { code: 'B', type: 'free' },
-            { code: 'C', type: 'taken' },
-            { code: 'D', type: 'free' },
-            { code: 'E', type: 'taken' }
-        ]
-    },
-    {
-        row: 40,
-        seats: [
-            { code: 'A', type: 'taken' },
-            { code: 'B', type: 'taken' },
-            { code: 'C', type: 'free' },
-            { code: 'D', type: 'taken' },
-            { code: 'E', type: 'paid', price: 12 }
-        ]
-    }
-];
 
 export default function FlightCheckoutScreen() {
     const params = useLocalSearchParams();
@@ -173,9 +95,17 @@ export default function FlightCheckoutScreen() {
     const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
     const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
 
-    // Seat Selection State
-    const [selectedSeats, setSelectedSeats] = useState<Record<number, string>>({});
+    // Seat Selection State (live from API)
+    const [selectedSeats, setSelectedSeats] = useState<Record<string, string>>({}); // designator → serviceId
     const [activeSegmentTab, setActiveSegmentTab] = useState(0);
+    const [seatMaps, setSeatMaps] = useState<NormalizedSegmentSeatMap[]>([]);
+    const [seatMapLoading, setSeatMapLoading] = useState(false);
+    const [seatMapUnavailable, setSeatMapUnavailable] = useState(false);
+
+    // Bag Selection State (live from API)
+    const [bagOptions, setBagOptions] = useState<NormalizedBagOption[]>([]);
+    const [bagLoading, setBagLoading] = useState(false);
+    const [selectedBags, setSelectedBags] = useState<Record<string, number>>({}); // serviceId → quantity
 
     // Date Calculation Helpers
     const getDaysInMonth = useCallback((year: number, month: number) => {
@@ -201,6 +131,50 @@ export default function FlightCheckoutScreen() {
     const destinationCode = offer?.segments[offer.segments.length - 1]?.arrival?.airport || 'DAD';
     const isRoundTrip = offer?.tripType === 'round-trip';
     const titleText = `${isRoundTrip ? 'Round trip' : 'One way'} to ${destinationAirport} (${destinationCode})`;
+
+    // ── Load real bags + seat-map from web API when screen mounts ─────────
+    useEffect(() => {
+        if (!offer) return;
+        const rawOffer = (offer as any)._rawOffer;
+        if (!rawOffer?.id) return;
+
+        const duffelPassengerIds: string[] = (rawOffer.passengers ?? []).map((p: any) => p.id);
+        const offerSegments = (offer.segments ?? []).map((s: any) => ({
+            origin: s.departure?.airport ?? s.origin ?? '',
+            destination: s.arrival?.airport ?? s.destination ?? '',
+        }));
+
+        // Bags
+        setBagLoading(true);
+        webFetchBags(rawOffer.id, duffelPassengerIds)
+            .then(res => { if (res.success) setBagOptions(res.bagOptions); })
+            .catch(() => {/* silently skip — airline may not support ancillaries */})
+            .finally(() => setBagLoading(false));
+
+        // Seat map
+        setSeatMapLoading(true);
+        webFetchSeatMap(rawOffer.id, offerSegments)
+            .then(res => {
+                if (res.unavailable) { setSeatMapUnavailable(true); return; }
+                if (res.success) setSeatMaps(res.seatMaps);
+            })
+            .catch(async (err) => {
+                // Offer expired → try refresh
+                if (err.status === 404 && rawOffer) {
+                    try {
+                        const refreshed = await webRefreshOffer(rawOffer);
+                        if (refreshed.success && refreshed.newOffer) {
+                            const newRaw = (refreshed.newOffer as any)._rawOffer;
+                            if (newRaw?.id) {
+                                const retry = await webFetchSeatMap(newRaw.id, offerSegments);
+                                if (retry.success) setSeatMaps(retry.seatMaps);
+                            }
+                        }
+                    } catch {/* seat map optional */}
+                }
+            })
+            .finally(() => setSeatMapLoading(false));
+    }, [offer]);
 
     const openDatePicker = (target: 'birthDate' | 'passportExpiry', currentValue: string) => {
         setPickerTarget(target);
@@ -296,7 +270,6 @@ export default function FlightCheckoutScreen() {
             scrollRef.current?.scrollTo({ y: 0, animated: true });
             return;
         }
-
         if (!offer) {
             Alert.alert('Error', 'No flight offer selected.');
             return;
@@ -304,58 +277,77 @@ export default function FlightCheckoutScreen() {
 
         setStep('confirming');
         setBooking(true);
+        setBookingStepIdx(0);
 
         try {
-            // Step 1: Create a Booking Session (mirroring web app's POST /api/flights/book)
-            const sessionResult = await invokeEdgeFunction<{ success: boolean; sessionId?: string; error?: string }>('create-booking-session', {
-                userId: '00000000-0000-0000-0000-000000000000', // mobile guest profile UUID
-                provider: offer.provider === 'duffel' ? 'duffel' : 'mystifly_v2',
+            // Collect selected seat service IDs
+            const seatServiceIds = Object.values(selectedSeats).filter(Boolean);
+            const seatTotal = seatMaps
+                .flatMap(sm => sm.rows.flatMap(r => r.sections.flat()))
+                .filter(s => seatServiceIds.includes(s.serviceId ?? ''))
+                .reduce((sum, s) => sum + (s.price ?? 0), 0);
+
+            // Collect selected bag service IDs
+            const bagServiceIds: string[] = [];
+            let bagTotal = 0;
+            for (const [serviceId, qty] of Object.entries(selectedBags)) {
+                if (qty > 0) {
+                    for (let i = 0; i < qty; i++) bagServiceIds.push(serviceId);
+                    const opt = bagOptions.find(b => b.serviceId === serviceId);
+                    if (opt) bagTotal += opt.price * qty;
+                }
+            }
+
+            setBookingStepIdx(1);
+
+            // Step 1: Duffel pre-order + Stripe PaymentIntent (via web API)
+            const bookResult = await webMobileBook({
+                provider: 'duffel',
                 flight: offer,
                 passengers: passengers.map(p => ({
                     type: p.type,
                     firstName: p.firstName,
                     lastName: p.lastName,
-                    gender: p.gender === 'M' ? 'male' : 'female',
+                    gender: p.gender,
                     birthDate: p.birthDate,
                 })),
-                contact: {
-                    email,
-                    phone: `+${countryCode}${phone}`,
-                },
-                farePolicy: {
-                    isRefundable: false,
-                    isChangeable: false,
-                }
+                contact: { email, phone, countryCode },
+                idempotencyKey: `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                ...(seatServiceIds.length ? { seatServiceIds, seatTotal } : {}),
+                ...(bagServiceIds.length ? { bagServiceIds, bagTotal } : {}),
+                confirmedPrice: offer.price?.total,
             });
 
-            if (!sessionResult?.success || !sessionResult?.sessionId) {
-                throw new Error(sessionResult?.error || 'Failed to initialize booking session');
-            }
+            setBookingStepIdx(2);
 
-            const sessionId = sessionResult.sessionId;
+            // Step 2: Payment
+            // bookResult.clientSecret is the Stripe PaymentIntent client secret.
+            // When @stripe/stripe-react-native is installed (requires eas build),
+            // replace this block with initPaymentSheet + presentPaymentSheet.
+            //
+            // For now we confirm the payment intent directly server-side
+            // since the Duffel pre-order has already locked the fare.
+            // This works in sandbox mode. Production requires the Stripe payment sheet.
+            //
+            // TODO: Replace with Stripe payment sheet once stripe-react-native is set up:
+            //   const { error } = await presentPaymentSheet();
+            //   if (error) throw new Error(error.message);
+            const paymentIntentId = bookResult.clientSecret.split('_secret_')[0];
 
-            // Step 2: Confirm & Issue Ticket PNR (mirroring web app's POST /api/flights/confirm)
-            const confirmResult = await invokeEdgeFunction<{
-                success: boolean;
-                bookingId?: string;
-                pnr?: string;
-                status?: string;
-                error?: string;
-            }>('create-booking', {
-                sessionId,
-                paymentIntentId: `pi_mob_${Math.random().toString(36).substring(7)}`, // Mock authorized payment token
-            });
+            setBookingStepIdx(3);
 
-            if (!confirmResult?.success) {
-                throw new Error(confirmResult?.error || 'Supplier failed to book flight');
-            }
+            // Step 3: Confirm booking + issue ticket (via web API)
+            const confirmResult = await webMobileConfirm(paymentIntentId, bookResult.sessionId);
 
             setBookingResult(confirmResult);
             setStep('success');
         } catch (err: any) {
+            const isPriceChanged = err.priceChanged;
             Alert.alert(
-                'Booking Failed',
-                err.message || 'Something went wrong during reservation. Please try again.',
+                isPriceChanged ? 'Price Changed' : 'Booking Failed',
+                isPriceChanged
+                    ? `The flight price has changed. Please go back and reselect the flight.`
+                    : (err.message || 'Something went wrong during reservation. Please try again.'),
                 [{ text: 'OK', onPress: () => setStep('form') }]
             );
         } finally {
@@ -364,7 +356,7 @@ export default function FlightCheckoutScreen() {
     };
 
     if (step === 'success') {
-        const pnr = bookingResult?.pnr || 'PNR123';
+        const pnr = bookingResult?.pnr || bookingResult?.bookingId || '—';
         return (
             <SafeAreaView style={styles.container}>
                 <View style={styles.successContainer}>
