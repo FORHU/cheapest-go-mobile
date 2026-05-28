@@ -21,7 +21,7 @@ import {
     Coffee,
     ConciergeBell,
     Dumbbell,
-    Heart, HelpCircle,
+    Heart,
     Info,
     Key,
     Languages,
@@ -36,7 +36,6 @@ import {
     Sparkles,
     Trees,
     Tv,
-    User,
     Utensils, Waves,
     Wifi, Wind,
     XCircle
@@ -250,7 +249,6 @@ export default function HotelDetailsScreen() {
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
-    const [isPoliciesExpanded, setIsPoliciesExpanded] = useState(false);
     const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
     
     const galleryScrollRef = useRef<ScrollView>(null);
@@ -435,19 +433,31 @@ export default function HotelDetailsScreen() {
 
                     {/* Quick Info */}
                     <View style={styles.infoGrid}>
-                        <View style={[styles.infoItem, !hotel.facilities?.some((f: any) => (f.name || f).toLowerCase().includes('wifi')) && { opacity: 0.3 }]}>
+                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
+                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
+                            return n.includes('wifi') || n.includes('wi-fi') || n.includes('wi_fi') || n.includes('internet');
+                        }) && { opacity: 0.3 }]}>
                             <Wifi size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
                             <Text style={styles.infoLabel}>Free Wifi</Text>
                         </View>
-                        <View style={[styles.infoItem, !hotel.facilities?.some((f: any) => (f.name || f).toLowerCase().includes('breakfast')) && { opacity: 0.3 }]}>
+                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
+                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
+                            return n.includes('breakfast') || n.includes('coffee');
+                        }) && { opacity: 0.3 }]}>
                             <Coffee size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
                             <Text style={styles.infoLabel}>Breakfast</Text>
                         </View>
-                        <View style={[styles.infoItem, !hotel.facilities?.some((f: any) => (f.name || f).toLowerCase().includes('air conditioning')) && { opacity: 0.3 }]}>
+                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
+                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
+                            return n.includes('air cond') || n.includes('air_cond') || n.includes('conditioning') || n.includes('aircon') || n.includes('climate') || n === 'ac';
+                        }) && { opacity: 0.3 }]}>
                             <Wind size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
                             <Text style={styles.infoLabel}>AC</Text>
                         </View>
-                        <View style={[styles.infoItem, !hotel.facilities?.some((f: any) => (f.name || f).toLowerCase().includes('tv')) && { opacity: 0.3 }]}>
+                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
+                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
+                            return n.includes('tv') || n.includes('television') || n.includes('satellite') || n.includes('cable');
+                        }) && { opacity: 0.3 }]}>
                             <Tv size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
                             <Text style={styles.infoLabel}>TV</Text>
                         </View>
@@ -477,7 +487,7 @@ export default function HotelDetailsScreen() {
                                 <LogIn size={15} color="#3b82f6" />
                                 <Text style={styles.policyTimeCardLabel}>Check-in</Text>
                                 <Text style={styles.policyTimeValue}>
-                                    {hotel.checkInTime || hotel.details?.checkIn?.schedule?.[0]?.startTime || '3:00 PM'}
+                                    {hotel.checkInTime || hotel.details?.checkIn?.schedule?.[0]?.startTime || 'Contact property'}
                                 </Text>
                                 <Text style={styles.policyTimeSub}>Earliest arrival</Text>
                             </View>
@@ -485,7 +495,7 @@ export default function HotelDetailsScreen() {
                                 <LogOut size={15} color="#3b82f6" />
                                 <Text style={styles.policyTimeCardLabel}>Check-out</Text>
                                 <Text style={styles.policyTimeValue}>
-                                    {hotel.checkOutTime || hotel.details?.checkOut?.schedule?.[0]?.startTime || '11:00 AM'}
+                                    {hotel.checkOutTime || hotel.details?.checkOut?.schedule?.[0]?.startTime || 'Contact property'}
                                 </Text>
                                 <Text style={styles.policyTimeSub}>Latest departure</Text>
                             </View>
@@ -530,16 +540,31 @@ export default function HotelDetailsScreen() {
                     {/* House rules */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>House rules</Text>
+
+                        {/* Hotel-specific important information from OTV/ETG */}
+                        {hotel.hotelImportantInformation ? (
+                            <View style={styles.houseRuleCard}>
+                                <Info size={18} color={isDark ? '#94a3b8' : '#64748b'} />
+                                <Text style={styles.houseRuleText}>
+                                    {cleanDescription(hotel.hotelImportantInformation)}
+                                </Text>
+                            </View>
+                        ) : null}
+
+                        {/* Dynamic rules derived from OTV/ETG amenities */}
                         {([
                             { Icon: ShieldCheck, text: 'Valid photo ID matching the reservation name required at check-in.' },
-                            { Icon: User, text: 'Minimum check-in age is 18–21. Contact the front desk in advance.' },
                             {
                                 Icon: allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet')) ? Check : XCircle,
                                 text: allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet'))
                                     ? 'Pets are allowed on request. Charges may apply.'
                                     : 'Pets are not permitted on the property.',
                             },
-                            { Icon: CigaretteOff, text: 'This is a strictly non-smoking property.' },
+                            ...(allFacilities.some((f: any) => {
+                                const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
+                                return n.includes('smoking area') || n.includes('designated smoking') || n.includes('smoking_area');
+                            }) ? [{ Icon: Cigarette, text: 'Designated smoking areas are available on the property.' }]
+                            : [{ Icon: CigaretteOff, text: 'This is a non-smoking property.' }]),
                         ] as { Icon: any; text: string }[]).map(({ Icon, text }, i) => (
                             <View key={i} style={styles.houseRuleCard}>
                                 <Icon size={18} color={isDark ? '#94a3b8' : '#64748b'} />

@@ -16,6 +16,8 @@ import {
 } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { useSettings } from '@/context/SettingsContext';
+import CurrencyPickerModal from '@/components/ui/CurrencyPickerModal';
 
 const dark = {
   bg: '#0B1018',
@@ -146,6 +148,14 @@ export default function ProfileScreen() {
   const router = useRouter();
   const C = useTheme();
   const [signingOut, setSigningOut] = useState(false);
+  const { currency, setCurrency } = useSettings();
+  const [currencyPickerVisible, setCurrencyPickerVisible] = useState(false);
+
+  const CURRENCY_NAMES: Record<string, string> = {
+    KRW: 'Korean Won',
+    USD: 'US Dollar',
+    PHP: 'Philippine Peso',
+  };
 
   const handleLogout = () => {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
@@ -322,9 +332,10 @@ export default function ProfileScreen() {
         <SectionLabel label="PREFERENCES" />
         <View style={{ marginHorizontal: 16, backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
           <SettingRow
-            icon={<Text style={{ fontSize: 16, color: C.icon, fontWeight: '700' }}>₱</Text>}
+            icon={<Text style={{ fontSize: 16, color: C.icon, fontWeight: '700' }}>{currency.symbol}</Text>}
             title="Currency"
-            subtitle="Philippine Peso (₱)"
+            subtitle={`${CURRENCY_NAMES[currency.code] ?? currency.code} (${currency.symbol})`}
+            onPress={() => setCurrencyPickerVisible(true)}
             isLast={false}
           />
           <SettingRow
@@ -379,6 +390,13 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <CurrencyPickerModal
+        visible={currencyPickerVisible}
+        currentCode={currency.code}
+        onSelect={setCurrency}
+        onClose={() => setCurrencyPickerVisible(false)}
+      />
     </SafeAreaView>
   );
 }
