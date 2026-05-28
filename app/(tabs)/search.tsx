@@ -83,7 +83,7 @@ type HotelCardProps = {
     isFavorite: boolean;
     onSelect: (hotel: any) => void;
     onNavigate: (hotel: any) => void;
-    onToggleFav: (id: string) => void;
+    onToggleFav: (id: string, hotel?: any) => void;
     styles: any;
 };
 
@@ -113,7 +113,7 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
 
             <Pressable
                 style={styles.heartBtn}
-                onPress={() => onToggleFav(hotel.hotelId)}
+                onPress={() => onToggleFav(hotel.hotelId, hotel)}
             >
                 <Heart
                     size={14}
@@ -174,7 +174,7 @@ type HotelListCardProps = {
     currencySymbol: string;
     isFavorite: boolean;
     onNavigate: (hotel: any) => void;
-    onToggleFav: (id: string) => void;
+    onToggleFav: (id: string, hotel?: any) => void;
     styles: any;
 };
 
@@ -187,7 +187,7 @@ const HotelListCard = memo(({ hotel, isDark, currencySymbol, isFavorite, onNavig
     return (
         <Pressable style={styles.listCard} onPress={() => onNavigate(hotel)}>
             {/* Heart */}
-            <Pressable style={styles.heartBtn} onPress={() => onToggleFav(hotel.hotelId)}>
+            <Pressable style={styles.heartBtn} onPress={() => onToggleFav(hotel.hotelId, hotel)}>
                 <Heart
                     size={14}
                     color={isFavorite ? '#ef4444' : isDark ? '#64748b' : '#94a3b8'}
@@ -342,13 +342,24 @@ export default function SearchScreen() {
                         const imgFallback = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
                         const imageUrls: string[] = [];
                         const addUrl = (u: any) => { if (u && typeof u === 'string' && !imageUrls.includes(u)) imageUrls.push(u); };
-                        addUrl(thumbUrl);
+                        const isExterior = (p: any) => {
+                            const type = String(p?.type || p?.tag || p?.category || p?.imageTypeId || p?.photo_type || '').toLowerCase();
+                            return type === '1' || type.includes('exterior') || type.includes('building') || type.includes('facade') || type.includes('front');
+                        };
                         if (h.details?.hotel_images_photos) {
-                            h.details.hotel_images_photos.forEach((p: any) => addUrl(p?.url));
+                            const allPhotos = h.details.hotel_images_photos;
+                            const roomPhotos = allPhotos.filter((p: any) => !isExterior(p));
+                            // If type info exists and filters down to room photos, use those; otherwise skip the first photo (typically building exterior)
+                            const photosToUse = roomPhotos.length >= 2 ? roomPhotos : allPhotos.slice(1);
+                            photosToUse.forEach((p: any) => addUrl(p?.url));
                         }
                         if (Array.isArray(h.images)) {
-                            h.images.forEach((img: any) => addUrl(typeof img === 'string' ? img : img?.url));
+                            // Skip first image — it's usually the same exterior photo as the thumbnail
+                            h.images.slice(1).forEach((img: any) => addUrl(typeof img === 'string' ? img : img?.url));
                         }
+                        // Fallback chain if no interior photos were found
+                        if (imageUrls.length === 0 && h.details?.hotel_images_photos?.[0]?.url) addUrl(h.details.hotel_images_photos[0].url);
+                        if (imageUrls.length === 0) addUrl(thumbUrl);
                         if (imageUrls.length === 0) imageUrls.push(imgFallback);
                         while (imageUrls.length < 4) imageUrls.push(imageUrls[0]);
 
@@ -380,8 +391,8 @@ export default function SearchScreen() {
         }
     }, [params.destination, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
 
-    const toggleFav = useCallback(async (id: string) => {
-        const added = await toggleFavorite(id);
+    const toggleFav = useCallback(async (id: string, hotelData?: any) => {
+        const added = await toggleFavorite(id, hotelData);
         setFavorites(prev => added ? [...prev, id] : prev.filter(fid => fid !== id));
     }, []);
 
@@ -604,6 +615,10 @@ export default function SearchScreen() {
                                     hotels={hotels}
                                     selectedHotelId={selectedHotel?.hotelId}
                                     onHotelSelect={handleHotelSelect}
+                                    onHotelNavigate={(id) => {
+                                        const h = hotels.find(x => x.hotelId === id);
+                                        if (h) navigateToHotel(h);
+                                    }}
                                     onDeselect={() => setSelectedHotel(null)}
                                     isDark={isDark}
                                     currencySymbol={currency.symbol}
@@ -1005,8 +1020,6 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderRadius: 16,
         overflow: 'hidden',
-        borderWidth: 1.5,
-        borderColor: isDark ? '#1e293b' : '#f1f5f9',
         flexDirection: 'row',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },

@@ -7,13 +7,14 @@ interface MapboxWebViewProps {
     hotels: any[];
     selectedHotelId: string | null;
     onHotelSelect: (hotel: any) => void;
+    onHotelNavigate?: (hotelId: string) => void;
     onDeselect?: () => void;
     isDark: boolean;
     center?: [number, number];
     currencySymbol: string;
 }
 
-export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, onDeselect, isDark, center, currencySymbol }: MapboxWebViewProps) {
+export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, onHotelNavigate, onDeselect, isDark, center, currencySymbol }: MapboxWebViewProps) {
     const webViewRef = useRef<WebView>(null);
     const hasLoadedRef = useRef(false);
 
@@ -124,9 +125,9 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         border-radius: 14px;
                         overflow: hidden;
                         box-shadow: 0 12px 28px -4px rgba(0,0,0,0.28);
-                        border: 1px solid ${isDark ? '#334155' : '#e2e8f0'};
                         z-index: 200;
                         pointer-events: auto;
+                        cursor: pointer;
                     }
                     .marker.selected .marker-card {
                         display: block;
@@ -135,6 +136,7 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                     .card-img-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr;
+                        grid-template-rows: 1fr 1fr;
                         gap: 2px;
                         width: 100%;
                         height: 150px;
@@ -196,8 +198,8 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         style: '${styleUrl}',
                         center: ${JSON.stringify(center || [120.596, 16.402])},
                         zoom: 12,
-                        pitch: 60,
-                        bearing: -17.6,
+                        pitch: 0,
+                        bearing: 0,
                         antialias: true,
                         attributionControl: false
                     });
@@ -283,6 +285,17 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                                         hotelId: hotel.hotelId
                                     }));
                                 };
+
+                                const cardEl = el.querySelector('.marker-card');
+                                if (cardEl) {
+                                    cardEl.addEventListener('click', function(e) {
+                                        e.stopPropagation();
+                                        window.ReactNativeWebView.postMessage(JSON.stringify({
+                                            type: 'HOTEL_NAVIGATE',
+                                            hotelId: hotel.hotelId
+                                        }));
+                                    });
+                                }
 
                                 markers[hotel.hotelId] = new mapboxgl.Marker({
                                     element: el,
@@ -436,6 +449,8 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
             } else if (data.type === 'HOTEL_SELECT') {
                 const hotel = hotels.find(h => h.hotelId === data.hotelId);
                 if (hotel) onHotelSelect(hotel);
+            } else if (data.type === 'HOTEL_NAVIGATE') {
+                onHotelNavigate?.(data.hotelId);
             } else if (data.type === 'MAP_DRAG_START') {
                 onDeselect?.();
             }
