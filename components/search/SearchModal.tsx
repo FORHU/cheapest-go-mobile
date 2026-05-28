@@ -1,5 +1,6 @@
 import React from 'react';
 import { Modal, View, Text, Pressable, StyleSheet, StatusBar, useColorScheme } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { X } from 'lucide-react-native';
 
 interface SearchModalProps {
@@ -22,9 +23,9 @@ const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose, title, chil
             presentationStyle="fullScreen"
             onRequestClose={onClose}
         >
-            <View style={styles.container}>
+            <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
                 <StatusBar barStyle={isDark ? "light-content" : "dark-content"} />
-                
+
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.title}>{title}</Text>
@@ -37,7 +38,7 @@ const SearchModal: React.FC<SearchModalProps> = ({ visible, onClose, title, chil
                 <View style={styles.content}>
                     {children}
                 </View>
-            </View>
+            </SafeAreaView>
         </Modal>
     );
 };

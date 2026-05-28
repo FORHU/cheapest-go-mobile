@@ -33,7 +33,13 @@
     },
     "plugins": [
       "expo-router",
-      "@stripe/stripe-react-native"
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "com.cheapestgo.mobile",
+          "enableGooglePay": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

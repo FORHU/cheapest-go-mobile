@@ -21,6 +21,7 @@ import {
     useColorScheme,
     View
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../../context/SettingsContext';
 import { autocompleteDestinations, Destination } from '../../lib/api';
 import { getRecentSearches, RecentSearch, saveRecentSearch } from '../../lib/search-history';
@@ -68,6 +69,7 @@ interface HotelSearchModalProps {
 const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, initialParams }) => {
     const colorScheme = useColorScheme();
     const isDark      = colorScheme === 'dark';
+    const insets      = useSafeAreaInsets();
     const router      = useRouter();
     const { currency } = useSettings();
 
@@ -113,7 +115,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
     const [errors, setErrors] = useState<{ destination?: string; dates?: string }>({});
     const [hoverDate, setHoverDate] = useState<Date | null>(null);
 
-    const styles = getStyles(isDark);
+    const styles = getStyles(isDark, insets.bottom);
 
     // ── Load recent searches on open ───────────────────────────────────────
     useEffect(() => {
@@ -736,7 +738,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
     );
 };
 
-const getStyles = (isDark: boolean) => StyleSheet.create({
+const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.create({
     scrollView:  { flex: 1 },
     scrollContent: { padding: 16, paddingBottom: 140, gap: 10 },
 
@@ -1171,7 +1173,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         left: 0,
         right: 0,
         padding: 16,
-        paddingBottom: 32,
+        paddingBottom: bottomInset + 16,
         backgroundColor: isDark ? 'rgba(2,6,23,0.97)' : 'rgba(255,255,255,0.97)',
         borderTopWidth: 1,
         borderTopColor: isDark ? '#1e293b' : '#f1f5f9',

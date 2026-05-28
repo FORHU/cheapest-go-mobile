@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { Image as ExpoImage } from 'expo-image';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
@@ -42,12 +41,14 @@ import {
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, Share, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
 import StarRating from '../../../components/ui/StarRating';
 import { useSettings } from '../../../context/SettingsContext';
 import { getHotelDetails, getHotelReviews } from '../../../lib/api';
+import { convertCurrency } from '../../../lib/currency';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -69,6 +70,27 @@ const cleanDescription = (text: string) => {
         .replace(/\s{2,}/g, ' ')
         .trim();
 };
+
+const AMENITY_COLORS: Array<{ test: (n: string) => boolean; light: { bg: string; text: string }; dark: { bg: string; text: string } }> = [
+    { test: n => n.includes('wifi') || n.includes('wi-fi') || n.includes('internet'), light: { bg: '#dbeafe', text: '#1d4ed8' }, dark: { bg: '#1e3a5f', text: '#93c5fd' } },
+    { test: n => n.includes('breakfast') || (n.includes('coffee') && !n.includes('maker')) || n.includes('half board') || n.includes('full board'), light: { bg: '#fef3c7', text: '#b45309' }, dark: { bg: '#431407', text: '#fcd34d' } },
+    { test: n => n.includes('pool') || n.includes('swim') || n.includes('beach'), light: { bg: '#cffafe', text: '#0e7490' }, dark: { bg: '#164e63', text: '#67e8f9' } },
+    { test: n => n.includes('gym') || n.includes('fitness') || n.includes('exercise'), light: { bg: '#dcfce7', text: '#15803d' }, dark: { bg: '#14532d', text: '#86efac' } },
+    { test: n => n.includes('spa') || n.includes('massage') || n.includes('sauna') || n.includes('jacuzzi'), light: { bg: '#fae8ff', text: '#a21caf' }, dark: { bg: '#4a044e', text: '#e879f9' } },
+    { test: n => n.includes('bar') || n.includes('lounge') || n.includes('pub') || n.includes('drink'), light: { bg: '#fff7ed', text: '#c2410c' }, dark: { bg: '#431407', text: '#fb923c' } },
+    { test: n => n.includes('parking') || n.includes('garage') || n.includes('valet'), light: { bg: '#f1f5f9', text: '#475569' }, dark: { bg: '#1e293b', text: '#94a3b8' } },
+    { test: n => n.includes('restaurant') || n.includes('dining') || n.includes('food'), light: { bg: '#fef9c3', text: '#a16207' }, dark: { bg: '#422006', text: '#fde047' } },
+    { test: n => n.includes('air cond') || n.includes('aircon') || n.includes('ac ') || n === 'ac' || n.includes('climate'), light: { bg: '#e0f2fe', text: '#0369a1' }, dark: { bg: '#0c4a6e', text: '#7dd3fc' } },
+    { test: n => n.includes('pet'), light: { bg: '#fce7f3', text: '#9d174d' }, dark: { bg: '#4a044e', text: '#f9a8d4' } },
+    { test: n => n.includes('24') || n.includes('reception') || n.includes('front desk'), light: { bg: '#ede9fe', text: '#6d28d9' }, dark: { bg: '#2e1065', text: '#c4b5fd' } },
+];
+
+function getAmenityPillColors(name: string, isDark: boolean) {
+    const lower = name.toLowerCase();
+    const match = AMENITY_COLORS.find(c => c.test(lower));
+    if (match) return isDark ? match.dark : match.light;
+    return isDark ? { bg: '#1e293b', text: '#94a3b8' } : { bg: '#f1f5f9', text: '#475569' };
+}
 
 const getAmenityIcon = (name: string, size: number = 16, color: string = '#10b981') => {
     const lower = name.toLowerCase();
@@ -129,10 +151,48 @@ const getAmenityIcon = (name: string, size: number = 16, color: string = '#10b98
 
 
 
+const normalizeRoomOptions = (hotel: any) => {
+    if (!hotel) return [];
+
+    const rawRooms = hotel.roomTypes || hotel.details?.roomTypes || hotel.details?.rooms || hotel.rooms || [];
+    const rooms = Array.isArray(rawRooms) ? rawRooms : [rawRooms];
+
+    return rooms
+        .map((room: any, index: number) => {
+            const rawRates = room.rates || room.rate || [];
+            const rates = Array.isArray(rawRates) ? rawRates : rawRates ? [rawRates] : [];
+            const roomId = room.roomId || room.id || room.code || room.roomTypeId || rates[0]?.offerId || `room-${index}`;
+            return {
+                ...room,
+                rates,
+                selectorId: roomId,
+            };
+        })
+        .filter((room: any) => room.rates.length > 0);
+};
+
+const getPolicyTime = (value: any) => {
+    if (!value) return null;
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value?.schedule) && value.schedule.length > 0) {
+        return value.schedule[0]?.startTime || value.schedule[0]?.time || null;
+    }
+    return value.startTime || value.time || value.text || null;
+};
+
+const getPolicyDescription = (value: any) => {
+    if (!value) return null;
+    if (typeof value === 'string') return value;
+    if (Array.isArray(value?.instructions) && value.instructions.length > 0) {
+        return value.instructions.map((item: any) => item?.text || item).filter(Boolean).join('\n');
+    }
+    return value.description || value.text || null;
+};
+
 const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
     const [expanded, setExpanded] = useState(false);
     const content = stripHtml(review.pros || review.headline || "Excellent stay, very friendly staff and great location.");
-    const isLong = content.length > 120;
+    const isLong = content.length > 100;
 
     return (
         <View style={[styles.reviewItem, !isLast && styles.reviewDivider]}>
@@ -148,13 +208,13 @@ const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
                     <Text style={styles.reviewerName}>{review.name || 'Verified Traveler'}</Text>
                     <Text style={styles.reviewDate}>{new Date(review.date).toLocaleDateString()}</Text>
                 </View>
-                <StarRating rating={review.averageScore || 10} size={14} />
+                <StarRating rating={review.averageScore || 10} size={12} />
             </View>
-            <Text style={styles.reviewText} numberOfLines={expanded ? undefined : 3}>
+            <Text style={styles.reviewText} numberOfLines={expanded ? undefined : 2}>
                 {content}
             </Text>
             {isLong && (
-                <Pressable onPress={() => setExpanded(!expanded)} style={{ marginTop: 4 }}>
+                <Pressable onPress={() => setExpanded(!expanded)} style={{ marginTop: 2 }}>
                     <Text style={styles.readMoreText}>{expanded ? 'Show less' : 'Read more'}</Text>
                 </Pressable>
             )}
@@ -162,14 +222,12 @@ const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
     );
 });
 
-const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, styles, onSelect }: any) => {
-    // Resolve room image via mappedRoomId -> detailRooms
+const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, fromCurrency, styles, onSelect, isSelected }: any) => {
     const mappedRoomId = room.rates?.[0]?.mappedRoomId;
     const matchedRoom = mappedRoomId && detailRooms
         ? detailRooms.find((dr: any) => String(dr.id) === String(mappedRoomId))
         : null;
 
-    // Get photo from matched detailRoom — photos are normalized to { url } objects by the edge function
     let roomImage = hotelThumbnail;
     if (matchedRoom?.photos?.length > 0) {
         const photo = matchedRoom.photos[0];
@@ -184,38 +242,111 @@ const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, styl
         roomImage = typeof p === 'string' ? p : (p.url || p);
     }
 
-    const price = Math.round(room.rates?.[0]?.retailRate?.total?.[0]?.amount || room.rates?.[0]?.retailRate?.total?.amount || room.rates?.[0]?.price?.amount || room.rates?.[0]?.price || 0);
+    const rawPrice = Math.round(
+        room.rates?.[0]?.retailRate?.total?.[0]?.amount ||
+        room.rates?.[0]?.retailRate?.total?.amount ||
+        room.rates?.[0]?.price?.amount ||
+        room.rates?.[0]?.price || 0
+    );
+    // Read the actual currency the supplier returned the price in.
+    // TravelgateX stores it in retailRate.total[0].currency — it is often PHP/KRW
+    // even when USD was requested, because OTV suppliers quote in their native currency.
+    const rateCurrency = (
+        room.rates?.[0]?.retailRate?.total?.[0]?.currency ||
+        room.rates?.[0]?.retailRate?.total?.currency ||
+        room.rates?.[0]?.currency ||
+        fromCurrency ||
+        'USD'
+    ).toUpperCase();
+    const price = rateCurrency !== currency.code.toUpperCase()
+        ? Math.round(convertCurrency(rawPrice, rateCurrency, currency.code))
+        : rawPrice;
     const roomName = room.rates?.[0]?.name || room.name || matchedRoom?.roomName || 'Room';
     const maxOccupancy = room.rates?.[0]?.maxOccupancy || room.maxOccupancy || matchedRoom?.maxOccupancy || 2;
     const boardName = room.rates?.[0]?.boardName;
-    const offerId = room.rates?.[0]?.offerId || room.offerId;
     const refundableTag = room.rates?.[0]?.cancellationPolicies?.refundableTag || room.cancellationPolicies?.refundableTag;
+    const isRefundable = refundableTag === 'RFN';
+    const hasBreakfast = boardName && (
+        boardName.toLowerCase().includes('breakfast') ||
+        boardName.toLowerCase().includes('bb') ||
+        boardName.toLowerCase() === 'half board' ||
+        boardName.toLowerCase() === 'full board' ||
+        boardName.toLowerCase() === 'all inclusive'
+    );
 
     return (
-        <View style={styles.roomCard}>
+        <Pressable
+            style={[styles.roomCard, isSelected && styles.roomCardSelected]}
+            onPress={() => onSelect?.(room)}
+        >
             <View style={styles.roomCardRow}>
                 <OptimizedImage uri={roomImage} style={styles.roomImage} type="room" />
                 <View style={styles.roomInfo}>
                     <Text style={styles.roomName} numberOfLines={2}>{roomName}</Text>
-                    <Text style={styles.roomAmenityText}>Max {maxOccupancy} guests</Text>
-                    {boardName && <Text style={styles.roomBoardText}>{boardName}</Text>}
-                    {refundableTag === 'RFN' && (
-                        <Text style={[styles.roomBoardText, { color: '#10b981' }]}>✓ Free cancellation</Text>
+
+                    <View style={styles.roomBadgeRow}>
+                        <View style={styles.roomBadgeSmall}>
+                            <Text style={styles.roomBadgeSmallText}>👥 {maxOccupancy}</Text>
+                        </View>
+                        {isRefundable && (
+                            <View style={[styles.roomBadgeSmall, styles.roomBadgeGreen]}>
+                                <Text style={[styles.roomBadgeSmallText, { color: '#059669' }]}>✓ Free cancel</Text>
+                            </View>
+                        )}
+                        {!isRefundable && refundableTag === 'NRFN' && (
+                            <View style={[styles.roomBadgeSmall, styles.roomBadgeAmber]}>
+                                <Text style={[styles.roomBadgeSmallText, { color: '#d97706' }]}>Non-refundable</Text>
+                            </View>
+                        )}
+                        {hasBreakfast && (
+                            <View style={[styles.roomBadgeSmall, styles.roomBadgeBlue]}>
+                                <Text style={[styles.roomBadgeSmallText, { color: '#2563eb' }]}>🍳 Breakfast</Text>
+                            </View>
+                        )}
+                    </View>
+
+                    {boardName && !hasBreakfast && (
+                        <Text style={styles.roomBoardText} numberOfLines={1}>{boardName}</Text>
                     )}
+
                     <View style={styles.roomFooter}>
                         <View>
-                            <Text style={styles.roomPrice}>{currency.symbol}{price}</Text>
+                            <Text style={styles.roomPrice}>{currency.symbol}{price.toLocaleString()}</Text>
                             <Text style={styles.perNight}>per night</Text>
                         </View>
-                        <Pressable
-                            style={styles.selectBtn}
-                            onPress={() => onSelect?.({ offerId, roomName, price })}
-                        >
-                            <Text style={styles.selectBtnText}>Select</Text>
-                        </Pressable>
+                        <View style={[styles.selectBtn, isSelected && styles.selectBtnSelected]}>
+                            <Text style={styles.selectBtnText}>{isSelected ? 'Selected' : 'Select'}</Text>
+                        </View>
                     </View>
                 </View>
             </View>
+        </Pressable>
+    );
+});
+
+const FaqSection = React.memo(({ faqs, styles, isDark }: { faqs: { q: string; a: string }[]; styles: any; isDark: boolean }) => {
+    const [openIndex, setOpenIndex] = useState<number | null>(null);
+    if (!faqs.length) return null;
+    return (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Frequently Asked Questions</Text>
+            {faqs.map(({ q, a }, i) => (
+                <Pressable
+                    key={i}
+                    style={[styles.faqItem, i < faqs.length - 1 && styles.faqDivider]}
+                    onPress={() => setOpenIndex(openIndex === i ? null : i)}
+                >
+                    <View style={styles.faqRow}>
+                        <Text style={styles.faqQuestion} numberOfLines={openIndex === i ? undefined : 2}>{q}</Text>
+                        {openIndex === i
+                            ? <ChevronUp size={16} color="#2563eb" />
+                            : <ChevronDown size={16} color={isDark ? '#475569' : '#94a3b8'} />}
+                    </View>
+                    {openIndex === i && (
+                        <Text style={styles.faqAnswer}>{a}</Text>
+                    )}
+                </Pressable>
+            ))}
         </View>
     );
 });
@@ -242,30 +373,29 @@ export default function HotelDetailsScreen() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { currency } = useSettings();
+    const insets = useSafeAreaInsets();
+    const styles = getStyles(isDark, insets.bottom);
+    const galleryScrollRef = useRef<ScrollView>(null);
 
     const [loading, setLoading] = useState(true);
     const [hotel, setHotel] = useState<any>(null);
     const [reviews, setReviews] = useState<any[]>([]);
     const [activeImageIndex, setActiveImageIndex] = useState(0);
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
-    const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
-    const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
+    const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
+    const [selectedRoom, setSelectedRoom] = useState<any>(null);
     const [isFavorite, setIsFavorite] = useState(false);
-    
-    const galleryScrollRef = useRef<ScrollView>(null);
+    const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
+    const [isPolicyExpanded, setIsPolicyExpanded] = useState(false);
 
-    const styles = useMemo(() => getStyles(isDark), [isDark]);
-
-    const handleShare = useCallback(async () => {
+    const handleShare = useCallback(() => {
         if (!hotel) return;
-        try {
-            await Share.share({
-                title: hotel.name || 'Hotel',
-                message: `Check out ${hotel.name || 'this hotel'}${hotel.address ? ` at ${hotel.address}` : ''}`,
-            });
-        } catch (err: any) {
-            Alert.alert('Unable to share', err.message || 'Please try again.');
-        }
+        Share.share({
+            title: hotel.name || 'Hotel',
+            message: `Check out ${hotel.name || 'this hotel'}${hotel.address ? ` at ${hotel.address}` : ''}`,
+        }).catch((err: any) => {
+            Alert.alert('Unable to share', err?.message || 'Please try again.');
+        });
     }, [hotel]);
 
     const toggleFavorite = useCallback(() => {
@@ -274,18 +404,100 @@ export default function HotelDetailsScreen() {
 
     // Merge hotelFacilities (full list from API) with facilities
     const allFacilities = useMemo(() => {
-        return hotel?.hotelFacilities?.length > 0
-            ? hotel.hotelFacilities
-            : hotel?.facilities || [];
+        if (hotel?.hotelFacilities?.length > 0) return hotel.hotelFacilities;
+        if (hotel?.facilities?.length > 0) return hotel.facilities;
+        if (hotel?.details?.amenities?.length > 0) return hotel.details.amenities;
+        return hotel?.details?.facilities || [];
     }, [hotel]);
 
-    const handleRoomSelect = useCallback(({ offerId, roomName, price }: any) => {
+    const checkInTime = useMemo(() => {
+        return hotel?.checkInTime
+            || hotel?.checkinTime
+            || hotel?.checkin
+            || hotel?.check_in
+            || getPolicyTime(hotel?.details?.checkIn)
+            || getPolicyTime(hotel?.details?.checkin)
+            || getPolicyTime(hotel?.details?.policies?.checkIn)
+            || getPolicyTime(hotel?.policies?.checkIn)
+            || hotel?.policy?.checkIn
+            || hotel?.otherPolicy?.checkIn
+            || null;
+    }, [hotel]);
+
+    const checkOutTime = useMemo(() => {
+        return hotel?.checkOutTime
+            || hotel?.checkoutTime
+            || hotel?.checkout
+            || hotel?.check_out
+            || getPolicyTime(hotel?.details?.checkOut)
+            || getPolicyTime(hotel?.details?.checkout)
+            || getPolicyTime(hotel?.details?.policies?.checkOut)
+            || getPolicyTime(hotel?.policies?.checkOut)
+            || hotel?.policy?.checkOut
+            || hotel?.otherPolicy?.checkOut
+            || null;
+    }, [hotel]);
+
+    const policyInstructions = useMemo(() => {
+        const raw = hotel?.hotelImportantInformation
+            || getPolicyDescription(hotel?.details?.importantInformation)
+            || getPolicyDescription(hotel?.details?.checkIn?.instructions)
+            || getPolicyDescription(hotel?.details?.policies?.general)
+            || getPolicyDescription(hotel?.details?.policies);
+        return cleanDescription(raw || '');
+    }, [hotel]);
+
+    const handleRoomSelect = useCallback((room: any) => {
+        setSelectedRoom(prev =>
+            prev?.selectorId === room.selectorId ? null : room
+        );
+    }, []);
+
+    const handleBookNow = useCallback(() => {
+        if (!selectedRoom) {
+            Alert.alert('Select a room', 'Please choose a room from the list before continuing.');
+            return;
+        }
+        const rate = selectedRoom.rates?.[0];
+
+        // TGX edge function sets offerId at the room level, not inside rates[].
+        // Fall back through all possible locations before giving up.
+        const offerId =
+            selectedRoom.offerId ||
+            rate?.offerId ||
+            (rate?._tgx?.optionId ? `TGX:${rate._tgx.optionId}` : null) ||
+            (rate?._tgx?.token    ? `TGX:${rate._tgx.token}`    : null);
+
+        if (!offerId) {
+            Alert.alert('Room unavailable', 'This room cannot be booked right now. Please select a different room.');
+            return;
+        }
+        const room = selectedRoom;
+
+        const rateCcy = (
+            rate?.retailRate?.total?.[0]?.currency ||
+            rate?.retailRate?.total?.currency ||
+            rate?.currency ||
+            params.currency ||
+            'USD'
+        ).toUpperCase();
+        const rawAmt = Math.round(
+            rate?.retailRate?.total?.[0]?.amount ||
+            rate?.retailRate?.total?.amount ||
+            rate?.price?.amount ||
+            rate?.price || 0
+        );
+        const displayAmt = rateCcy !== currency.code.toUpperCase()
+            ? Math.round(convertCurrency(rawAmt, rateCcy, currency.code))
+            : rawAmt;
+
         router.push({
             pathname: '/checkout',
             params: {
                 offerId,
-                roomName,
-                roomPrice: String(price),
+                roomName: rate.name || room.name || room.roomName || 'Room',
+                roomPrice: String(displayAmt),
+                roomCurrency: currency.code,
                 hotelName: hotel?.name || '',
                 hotelImage: hotel?.thumbnailUrl || '',
                 checkIn: params.checkIn as string || '',
@@ -293,7 +505,9 @@ export default function HotelDetailsScreen() {
                 adults: params.adults as string || '2',
             },
         });
-    }, [hotel, params, router]);
+    }, [hotel, params, router, selectedRoom]);
+
+    const availableRooms = useMemo(() => normalizeRoomOptions(hotel), [hotel]);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -470,37 +684,47 @@ export default function HotelDetailsScreen() {
                         </View>
                     </View>
 
-                    {/* Quick Info */}
-                    <View style={styles.infoGrid}>
-                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
-                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
-                            return n.includes('wifi') || n.includes('wi-fi') || n.includes('wi_fi') || n.includes('internet');
-                        }) && { opacity: 0.3 }]}>
-                            <Wifi size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
-                            <Text style={styles.infoLabel}>Free Wifi</Text>
-                        </View>
-                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
-                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
-                            return n.includes('breakfast') || n.includes('coffee');
-                        }) && { opacity: 0.3 }]}>
-                            <Coffee size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
-                            <Text style={styles.infoLabel}>Breakfast</Text>
-                        </View>
-                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
-                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
-                            return n.includes('air cond') || n.includes('air_cond') || n.includes('conditioning') || n.includes('aircon') || n.includes('climate') || n === 'ac';
-                        }) && { opacity: 0.3 }]}>
-                            <Wind size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
-                            <Text style={styles.infoLabel}>AC</Text>
-                        </View>
-                        <View style={[styles.infoItem, !allFacilities.some((f: any) => {
-                            const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
-                            return n.includes('tv') || n.includes('television') || n.includes('satellite') || n.includes('cable');
-                        }) && { opacity: 0.3 }]}>
-                            <Tv size={20} color={isDark ? "#3b82f6" : "#2563eb"} />
-                            <Text style={styles.infoLabel}>TV</Text>
-                        </View>
-                    </View>
+                    {/* Quick Info pills */}
+                    {(() => {
+                        const checks = [
+                            { icon: Wifi,   label: 'Free Wi-Fi', match: (n: string) => n.includes('wifi') || n.includes('wi-fi') || n.includes('wi_fi') || n.includes('internet') },
+                            { icon: Coffee, label: 'Breakfast',  match: (n: string) => n.includes('breakfast') || n.includes('coffee') },
+                            { icon: Wind,   label: 'AC',         match: (n: string) => n.includes('air cond') || n.includes('air_cond') || n.includes('conditioning') || n.includes('aircon') || n.includes('climate') || n === 'ac' },
+                            { icon: Tv,     label: 'TV',         match: (n: string) => n.includes('tv') || n.includes('television') || n.includes('satellite') || n.includes('cable') },
+                        ];
+                        return (
+                            <ScrollView
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                style={styles.infoPillRow}
+                                contentContainerStyle={styles.infoPillRowContent}
+                            >
+                                {checks.map(({ icon: Icon, label, match }) => {
+                                    const active = allFacilities.some((f: any) => match((typeof f === 'string' ? f : f.name || '').toLowerCase()));
+                                    return (
+                                        <View
+                                            key={label}
+                                            style={[
+                                                styles.infoPill,
+                                                active ? styles.infoPillActive : styles.infoPillInactive,
+                                            ]}
+                                        >
+                                            <Icon
+                                                size={13}
+                                                color={isDark ? '#3b82f6' : '#2563eb'}
+                                            />
+                                            <Text style={[
+                                                styles.infoPillText,
+                                                active ? styles.infoPillTextActive : styles.infoPillTextInactive,
+                                            ]}>
+                                                {label}
+                                            </Text>
+                                        </View>
+                                    );
+                                })}
+                            </ScrollView>
+                        );
+                    })()}
 
                     {/* Description */}
                     <View style={styles.section}>
@@ -516,39 +740,84 @@ export default function HotelDetailsScreen() {
                         </Pressable>
                     </View>
 
+                    {/* ── Room Options / Selector ── */}
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Select Your Room</Text>
+                            {availableRooms.length > 0 && (
+                                <View style={styles.amenityCountBadge}>
+                                    <Text style={styles.amenityCountText}>{availableRooms.length}</Text>
+                                </View>
+                            )}
+                        </View>
+                        {availableRooms.length === 0 ? (
+                            <View style={styles.noRoomsBox}>
+                                <Text style={styles.noRoomsText}>No available rooms were found for these dates.</Text>
+                                <Text style={styles.noRoomsHint}>Try adjusting your check-in/out dates or guest count.</Text>
+                            </View>
+                        ) : availableRooms.map((room: any, i: number) => (
+                            <RoomCard
+                                key={room.selectorId || i}
+                                room={room}
+                                hotelThumbnail={hotel.thumbnailUrl}
+                                detailRooms={hotel.detailRooms}
+                                currency={currency}
+                                fromCurrency={params.currency as string || 'USD'}
+                                styles={styles}
+                                isSelected={selectedRoom?.selectorId === room.selectorId}
+                                onSelect={() => handleRoomSelect(room)}
+                            />
+                        ))}
+                    </View>
+
                     {/* Property policies */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Property policies</Text>
 
-                        {/* Check-in / Check-out time cards */}
+                        {/* Check-in / Check-out — compact inline row */}
                         <View style={styles.policyTimeRow}>
                             <View style={styles.policyTimeCard}>
-                                <LogIn size={15} color="#3b82f6" />
-                                <Text style={styles.policyTimeCardLabel}>Check-in</Text>
-                                <Text style={styles.policyTimeValue}>
-                                    {hotel.checkInTime || hotel.details?.checkIn?.schedule?.[0]?.startTime || 'Contact property'}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                    <LogIn size={13} color="#3b82f6" />
+                                    <Text style={styles.policyTimeCardLabel}>Check-in</Text>
+                                </View>
+                                <Text style={[styles.policyTimeValue, !checkInTime && { fontSize: 13, color: isDark ? '#475569' : '#94a3b8' }]}>
+                                    {checkInTime || 'Not specified'}
                                 </Text>
                                 <Text style={styles.policyTimeSub}>Earliest arrival</Text>
                             </View>
                             <View style={styles.policyTimeCard}>
-                                <LogOut size={15} color="#3b82f6" />
-                                <Text style={styles.policyTimeCardLabel}>Check-out</Text>
-                                <Text style={styles.policyTimeValue}>
-                                    {hotel.checkOutTime || hotel.details?.checkOut?.schedule?.[0]?.startTime || 'Contact property'}
+                                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+                                    <LogOut size={13} color="#3b82f6" />
+                                    <Text style={styles.policyTimeCardLabel}>Check-out</Text>
+                                </View>
+                                <Text style={[styles.policyTimeValue, !checkOutTime && { fontSize: 13, color: isDark ? '#475569' : '#94a3b8' }]}>
+                                    {checkOutTime || 'Not specified'}
                                 </Text>
                                 <Text style={styles.policyTimeSub}>Latest departure</Text>
                             </View>
                         </View>
 
-                        {/* Cancellation policy */}
-                        {hotel.cancellationPolicies && (
-                            hotel.cancellationPolicies.refundableTag === 'RFN' ? (
+                        {/* Cancellation policy — prefer selected room's rate, fall back to hotel level */}
+                        {(() => {
+                            const tag =
+                                selectedRoom?.rates?.[0]?.cancellationPolicies?.refundableTag ||
+                                selectedRoom?.cancellationPolicies?.refundableTag ||
+                                hotel?.cancellationPolicies?.refundableTag;
+                            const penalties = selectedRoom?.rates?.[0]?.cancellationPolicies?.cancelPolicyInfos ||
+                                hotel?.cancellationPolicies?.cancelPolicyInfos || [];
+                            if (!tag) return null;
+                            const isRefundable = tag === 'RFN';
+                            const firstPenalty = penalties[0];
+                            return isRefundable ? (
                                 <View style={[styles.policyAlertCard, styles.policyAlertGreen]}>
                                     <CheckCircle size={18} color="#059669" />
                                     <View style={{ flex: 1 }}>
                                         <Text style={[styles.policyAlertTitle, { color: '#059669' }]}>Free cancellation</Text>
                                         <Text style={[styles.policyAlertText, { color: isDark ? '#6ee7b7' : '#065f46' }]}>
-                                            This booking can be cancelled at no charge.
+                                            {firstPenalty?.cancelTime
+                                                ? `Cancel free before ${new Date(firstPenalty.cancelTime).toLocaleDateString()}.`
+                                                : 'This booking can be cancelled at no charge.'}
                                         </Text>
                                     </View>
                                 </View>
@@ -556,106 +825,93 @@ export default function HotelDetailsScreen() {
                                 <View style={[styles.policyAlertCard, styles.policyAlertAmber]}>
                                     <AlertTriangle size={18} color="#d97706" />
                                     <View style={{ flex: 1 }}>
-                                        <Text style={[styles.policyAlertTitle, { color: '#d97706' }]}>Non-refundable booking</Text>
+                                        <Text style={[styles.policyAlertTitle, { color: '#d97706' }]}>Non-refundable</Text>
                                         <Text style={[styles.policyAlertText, { color: isDark ? '#fbbf24' : '#92400e' }]}>
-                                            This rate cannot be cancelled or modified after booking.
+                                            {firstPenalty?.amount
+                                                ? `Cancellation fee: ${currency.symbol}${Math.round(firstPenalty.amount)}.`
+                                                : 'This rate cannot be cancelled or modified after booking.'}
                                         </Text>
                                     </View>
                                 </View>
-                            )
-                        )}
+                            );
+                        })()}
 
                         {/* Important instructions */}
-                        {(hotel.hotelImportantInformation || hotel.details?.importantInformation || hotel.details?.checkIn?.instructions) && (
+                        {policyInstructions && (
                             <View style={[styles.policyAlertCard, { borderColor: isDark ? '#1e293b' : '#e2e8f0', backgroundColor: isDark ? '#0f172a' : '#f8fafc' }]}>
-                                <Info size={18} color="#64748b" />
-                                <Text style={[styles.policyAlertText, { flex: 1, color: isDark ? '#94a3b8' : '#475569' }]}>
-                                    {cleanDescription(hotel.hotelImportantInformation || hotel.details?.importantInformation || hotel.details?.checkIn?.instructions?.[0]?.text || '')}
-                                </Text>
+                                <Info size={18} color="#64748b" style={{ marginTop: 2 }} />
+                                <View style={{ flex: 1 }}>
+                                    <Text
+                                        style={[styles.policyAlertText, { color: isDark ? '#94a3b8' : '#475569' }]}
+                                        numberOfLines={isPolicyExpanded ? undefined : 3}
+                                    >
+                                        {policyInstructions}
+                                    </Text>
+                                    {policyInstructions.length > 120 && (
+                                        <Pressable onPress={() => setIsPolicyExpanded(!isPolicyExpanded)} style={{ marginTop: 4 }}>
+                                            <Text style={styles.readMoreText}>{isPolicyExpanded ? 'Show less' : 'Read more'}</Text>
+                                        </Pressable>
+                                    )}
+                                </View>
                             </View>
                         )}
-                    </View>
-
-                    {/* House rules */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>House rules</Text>
-
-                        {/* Hotel-specific important information from OTV/ETG */}
-                        {hotel.hotelImportantInformation ? (
-                            <View style={styles.houseRuleCard}>
-                                <Info size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                                <Text style={styles.houseRuleText}>
-                                    {cleanDescription(hotel.hotelImportantInformation)}
-                                </Text>
-                            </View>
-                        ) : null}
-
-                        {/* Dynamic rules derived from OTV/ETG amenities */}
-                        {([
-                            { Icon: ShieldCheck, text: 'Valid photo ID matching the reservation name required at check-in.' },
-                            {
-                                Icon: allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet')) ? Check : XCircle,
-                                text: allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet'))
-                                    ? 'Pets are allowed on request. Charges may apply.'
-                                    : 'Pets are not permitted on the property.',
-                            },
-                            ...(allFacilities.some((f: any) => {
-                                const n = (typeof f === 'string' ? f : f.name || '').toLowerCase();
-                                return n.includes('smoking area') || n.includes('designated smoking') || n.includes('smoking_area');
-                            }) ? [{ Icon: Cigarette, text: 'Designated smoking areas are available on the property.' }]
-                            : [{ Icon: CigaretteOff, text: 'This is a non-smoking property.' }]),
-                        ] as { Icon: any; text: string }[]).map(({ Icon, text }, i) => (
-                            <View key={i} style={styles.houseRuleCard}>
-                                <Icon size={18} color={isDark ? '#94a3b8' : '#64748b'} />
-                                <Text style={styles.houseRuleText}>{text}</Text>
-                            </View>
-                        ))}
                     </View>
 
                     {/* Facilities / Amenities Section */}
-                    {allFacilities.length > 0 && (
-                        <View style={styles.section}>
-                            <Text style={styles.sectionTitle}>Amenities & Facilities</Text>
-                            <View style={styles.facilitiesList}>
-                                {allFacilities.slice(0, isFacilitiesExpanded ? undefined : 12).map((facility: any, i: number) => {
-                                    const name = typeof facility === 'string' ? facility : (facility.name || facility.label || '');
-                                    if (!name) return null;
-                                    return (
-                                        <View key={i} style={styles.facilityItem}>
-                                            {getAmenityIcon(name, 14, '#3b82f6')}
-                                            <Text style={styles.facilityText} numberOfLines={1}>{name}</Text>
-                                        </View>
-                                    );
-                                })}
-                            </View>
-                            {allFacilities.length > 12 && (
-                                <Pressable
-                                    style={styles.viewMoreBtn}
-                                    onPress={() => {
-                                        LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                                        setIsFacilitiesExpanded(!isFacilitiesExpanded);
-                                    }}
-                                >
-                                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                                        <Text style={styles.viewMoreText}>
-                                            {isFacilitiesExpanded ? 'Show less' : `View all ${allFacilities.length} amenities`}
-                                        </Text>
-                                        {isFacilitiesExpanded
-                                            ? <ChevronUp size={16} color={isDark ? '#e2e8f0' : '#475569'} />
-                                            : <ChevronDown size={16} color={isDark ? '#e2e8f0' : '#475569'} />
-                                        }
-                                    </View>
-                                </Pressable>
+                    <View style={styles.section}>
+                        <View style={styles.sectionHeaderRow}>
+                            <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Amenities & Facilities</Text>
+                            {allFacilities.length > 0 && (
+                                <View style={styles.amenityCountBadge}>
+                                    <Text style={styles.amenityCountText}>{allFacilities.length}</Text>
+                                </View>
                             )}
                         </View>
-                    )}
+                        {allFacilities.length === 0 ? (
+                            <View style={styles.noAmenitiesBox}>
+                                <Text style={styles.noAmenitiesText}>No amenities listed for this property.</Text>
+                            </View>
+                        ) : (
+                            <>
+                                <View style={styles.amenityPillsWrap}>
+                                    {allFacilities
+                                        .slice(0, isFacilitiesExpanded ? undefined : 12)
+                                        .map((facility: any, i: number) => {
+                                            const name = typeof facility === 'string' ? facility : (facility.name || facility.label || '');
+                                            if (!name) return null;
+                                            const colors = getAmenityPillColors(name, isDark);
+                                            return (
+                                                <View key={i} style={[styles.amenityPill, { backgroundColor: colors.bg }]}>
+                                                    {getAmenityIcon(name, 13, colors.text)}
+                                                    <Text style={[styles.amenityPillText, { color: colors.text }]} numberOfLines={1}>{name}</Text>
+                                                </View>
+                                            );
+                                        })}
+                                </View>
+                                {allFacilities.length > 12 && (
+                                    <Pressable
+                                        style={styles.seeMoreBtn}
+                                        onPress={() => {
+                                            LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                            setIsFacilitiesExpanded(!isFacilitiesExpanded);
+                                        }}
+                                    >
+                                        <Text style={styles.seeMoreText}>
+                                            {isFacilitiesExpanded ? 'Show less' : `See all ${allFacilities.length} amenities`}
+                                        </Text>
+                                        {isFacilitiesExpanded
+                                            ? <ChevronUp size={14} color="#2563eb" />
+                                            : <ChevronDown size={14} color="#2563eb" />}
+                                    </Pressable>
+                                )}
+                            </>
+                        )}
+                    </View>
 
                     {/* Location / Where you'll be */}
                     {(() => {
-                        // Resolve coordinates from various possible API response shapes (top level, nested details, location, or coordinates object)
                         const lat = hotel.latitude || hotel.details?.latitude || hotel.details?.location?.latitude || hotel.coordinates?.lat || 0;
                         const lng = hotel.longitude || hotel.details?.longitude || hotel.details?.location?.longitude || hotel.coordinates?.lng || 0;
-                        console.log(`[PropertyDetails] Coordinates for ${hotel.name}: lat=${lat}, lng=${lng}`);
                         if (!lat || !lng) return null;
                         return (
                             <View style={styles.section}>
@@ -677,109 +933,149 @@ export default function HotelDetailsScreen() {
                             </View>
                         );
                     })()}
-
-                    {/* Room Options */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Available Rooms</Text>
-                        {(hotel.roomTypes || []).map((room: any, i: number) => (
-                            <RoomCard
-                                key={i}
-                                room={room}
-                                hotelThumbnail={hotel.thumbnailUrl}
-                                detailRooms={hotel.detailRooms}
-                                currency={currency}
-                                styles={styles}
-                                onSelect={handleRoomSelect}
-                            />
-                        ))}
-                    </View>
                     {/* Reviews Section */}
                     {reviews.length > 0 && (
                         <View style={styles.section}>
                             <View style={styles.sectionHeader}>
-                                <Text style={styles.sectionTitle}>Guest Reviews ({reviews.length})</Text>
+                                <Text style={styles.sectionTitle}>Guest Reviews</Text>
+                                <View style={styles.amenityCountBadge}>
+                                    <Text style={styles.amenityCountText}>{reviews.length}</Text>
+                                </View>
                             </View>
                             {reviews.slice(0, visibleReviewsCount).map((review: any, i: number) => (
                                 <ReviewItem key={i} review={review} isLast={i === Math.min(reviews.length - 1, visibleReviewsCount - 1)} styles={styles} />
                             ))}
-                            {reviews.length > 5 && (
-                                <View style={{ alignItems: 'center', marginTop: 16 }}>
-                                    <View style={{ flexDirection: 'row', gap: 24, justifyContent: 'center' }}>
-                                        {visibleReviewsCount < reviews.length && (
-                                            <Pressable
-                                                style={{ paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                                                onPress={() => {
-                                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                                                    setVisibleReviewsCount(prev => Math.min(reviews.length, prev + 5));
-                                                }}
-                                            >
-                                                <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 15 }}>Show More</Text>
-                                                <ChevronDown size={16} color="#2563eb" />
-                                            </Pressable>
-                                        )}
-                                        {visibleReviewsCount > 5 && (
-                                            <Pressable
-                                                style={{ paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6 }}
-                                                onPress={() => {
-                                                    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
-                                                    setVisibleReviewsCount(5);
-                                                }}
-                                            >
-                                                <Text style={{ color: '#2563eb', fontWeight: '600', fontSize: 15 }}>Show Less</Text>
-                                                <ChevronUp size={16} color="#2563eb" />
-                                            </Pressable>
-                                        )}
-                                    </View>
-                                    <Text style={{ 
-                                        color: isDark ? '#64748b' : '#94a3b8', 
-                                        fontSize: 13, 
-                                        marginTop: 4, 
-                                        fontWeight: '500' 
-                                    }}>
-                                        {Math.min(visibleReviewsCount, reviews.length)} out of {reviews.length}
-                                    </Text>
+                            {reviews.length > 3 && (
+                                <View style={styles.reviewPagination}>
+                                    {visibleReviewsCount < reviews.length && (
+                                        <Pressable
+                                            style={styles.reviewPaginationBtn}
+                                            onPress={() => {
+                                                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                                setVisibleReviewsCount(prev => Math.min(reviews.length, prev + 3));
+                                            }}
+                                        >
+                                            <Text style={styles.reviewPaginationText}>Show more</Text>
+                                            <ChevronDown size={14} color="#2563eb" />
+                                        </Pressable>
+                                    )}
+                                    {visibleReviewsCount > 3 && (
+                                        <Pressable
+                                            style={styles.reviewPaginationBtn}
+                                            onPress={() => {
+                                                LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+                                                setVisibleReviewsCount(3);
+                                            }}
+                                        >
+                                            <Text style={styles.reviewPaginationText}>Show less</Text>
+                                            <ChevronUp size={14} color="#2563eb" />
+                                        </Pressable>
+                                    )}
                                 </View>
                             )}
                         </View>
                     )}
+                    {/* FAQ Section */}
+                    {(() => {
+                        const hasPets = allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pet'));
+                        const hasWifi = allFacilities.some((f: any) => { const n = (typeof f === 'string' ? f : f.name || '').toLowerCase(); return n.includes('wifi') || n.includes('wi-fi') || n.includes('internet'); });
+                        const hasParking = allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('parking'));
+                        const hasBreakfastFacility = allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('breakfast'));
+                        const hasPool = allFacilities.some((f: any) => (typeof f === 'string' ? f : f.name || '').toLowerCase().includes('pool'));
+                        const hasSmoking = allFacilities.some((f: any) => { const n = (typeof f === 'string' ? f : f.name || '').toLowerCase(); return n.includes('smoking area') || n.includes('designated smoking'); });
+
+                        const faqItems = [
+                            checkInTime || checkOutTime ? {
+                                q: 'What are the check-in and check-out times?',
+                                a: [checkInTime && `Check-in from ${checkInTime}.`, checkOutTime && `Check-out by ${checkOutTime}.`].filter(Boolean).join(' ') || 'Please contact the property for check-in/out times.',
+                            } : null,
+                            {
+                                q: 'Is free Wi-Fi available?',
+                                a: hasWifi ? 'Yes, free Wi-Fi is available at this property.' : 'Wi-Fi availability has not been confirmed. Please contact the property.',
+                            },
+                            {
+                                q: 'Is breakfast included?',
+                                a: hasBreakfastFacility ? 'Breakfast is available at this property. Check room rates for inclusion details.' : 'Breakfast is not listed as an included facility. It may be available for an extra charge.',
+                            },
+                            {
+                                q: 'Is parking available?',
+                                a: hasParking ? 'Parking is available at this property. Charges may apply.' : 'On-site parking is not listed. Please contact the property for nearby parking options.',
+                            },
+                            {
+                                q: 'Are pets allowed?',
+                                a: hasPets ? 'Pets are welcome on request. Additional charges may apply.' : 'Pets are not permitted at this property.',
+                            },
+                            {
+                                q: 'Is there a swimming pool?',
+                                a: hasPool ? 'Yes, this property has a swimming pool.' : 'This property does not list a swimming pool.',
+                            },
+                            {
+                                q: 'Is this a non-smoking property?',
+                                a: hasSmoking ? 'Designated smoking areas are available on the premises.' : 'This is a non-smoking property. Smoking is not permitted indoors.',
+                            },
+                            policyInstructions ? { q: 'Are there any special instructions for guests?', a: policyInstructions } : null,
+                        ].filter(Boolean) as { q: string; a: string }[];
+
+                        return (
+                            <FaqSection faqs={faqItems} styles={styles} isDark={isDark} />
+                        );
+                    })()}
                 </View>
             </ScrollView>
 
-            {/* Bottom Sticky Booking Bar */}
-            <BlurView intensity={80} tint={isDark ? "dark" : "light"} style={styles.bookingBar}>
-                <View>
-                    <Text style={styles.bookingPrice}>From {currency.symbol}{Math.round(hotel.price?.amount || hotel.roomTypes?.[0]?.rates?.[0]?.retailRate?.total?.[0]?.amount || 0)}</Text>
-                    <Text style={styles.bookingDates}>{params.checkIn} - {params.checkOut}</Text>
+            {/* Bottom Sticky Booking Bar — solid, opaque */}
+            <View style={styles.bookingBar}>
+                <View style={{ flex: 1, marginRight: 12 }}>
+                    {selectedRoom ? (() => {
+                        const rateCcy = (
+                            selectedRoom.rates?.[0]?.retailRate?.total?.[0]?.currency ||
+                            selectedRoom.rates?.[0]?.retailRate?.total?.currency ||
+                            selectedRoom.rates?.[0]?.currency ||
+                            params.currency ||
+                            'USD'
+                        ).toUpperCase();
+                        const rawAmt = Math.round(
+                            selectedRoom.rates?.[0]?.retailRate?.total?.[0]?.amount ||
+                            selectedRoom.rates?.[0]?.retailRate?.total?.amount ||
+                            selectedRoom.rates?.[0]?.price?.amount ||
+                            selectedRoom.rates?.[0]?.price || 0
+                        );
+                        const displayAmt = rateCcy !== currency.code.toUpperCase()
+                            ? Math.round(convertCurrency(rawAmt, rateCcy, currency.code))
+                            : rawAmt;
+                        return (
+                            <>
+                                <Text style={styles.bookingPrice}>
+                                    {currency.symbol}{displayAmt.toLocaleString()}
+                                    <Text style={styles.bookingPriceSuffix}> / night</Text>
+                                </Text>
+                                <Text style={styles.bookingDates} numberOfLines={1}>
+                                    {selectedRoom.rates?.[0]?.name || selectedRoom.name || 'Room'} • {params.checkIn} → {params.checkOut}
+                                </Text>
+                            </>
+                        );
+                    })() : (
+                        <>
+                            <Text style={styles.bookingPricePlaceholder}>
+                                Select a room to book
+                            </Text>
+                            <Text style={styles.bookingDates}>{params.checkIn} → {params.checkOut}</Text>
+                        </>
+                    )}
                 </View>
-                <Pressable style={styles.bookBtn} onPress={() => {
-                    const firstRoom = hotel.roomTypes?.[0];
-                    const rate = firstRoom?.rates?.[0];
-                    if (rate?.offerId) {
-                        router.push({
-                            pathname: '/checkout',
-                            params: {
-                                offerId: rate.offerId,
-                                roomName: rate.name || firstRoom?.name || 'Room',
-                                roomPrice: String(Math.round(rate.retailRate?.total?.[0]?.amount || rate.retailRate?.total?.amount || rate.price?.amount || rate.price || 0)),
-                                hotelName: hotel.name,
-                                hotelImage: hotel.thumbnailUrl || '',
-                                checkIn: params.checkIn as string || '',
-                                checkOut: params.checkOut as string || '',
-                                adults: params.adults as string || '2',
-                            },
-                        });
-                    } else {
-                        Alert.alert('No Rooms', 'Please select a room from the list above.');
-                    }
-                }}>
+                <Pressable
+                    style={[styles.bookBtn, !selectedRoom && styles.bookBtnDisabled]}
+                    onPress={handleBookNow}
+                    disabled={!selectedRoom}
+                >
                     <Text style={styles.bookBtnText}>Book Now</Text>
                 </Pressable>
-            </BlurView>
+            </View>
         </View>
     );
 }
 
-const getStyles = (isDark: boolean) => StyleSheet.create({
+const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: isDark ? '#020617' : '#f8fafc',
@@ -913,33 +1209,50 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: isDark ? '#94a3b8' : '#64748b',
         flex: 1,
     },
-    infoGrid: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        backgroundColor: isDark ? '#0f172a' : '#ffffff',
-        padding: 16,
-        borderRadius: 20,
+    infoPillRow: {
         marginBottom: 24,
-        borderWidth: 1,
-        borderColor: isDark ? '#1e293b' : '#e2e8f0',
     },
-    infoItem: {
-        flex: 1,
+    infoPillRowContent: {
+        flexDirection: 'row',
+        gap: 8,
+        paddingRight: 4,
+    },
+    infoPill: {
+        flexDirection: 'row',
         alignItems: 'center',
         gap: 6,
+        paddingHorizontal: 13,
+        paddingVertical: 8,
+        borderRadius: 20,
+        borderWidth: 1,
     },
-    infoLabel: {
-        fontSize: 12,
-        color: isDark ? '#94a3b8' : '#64748b',
+    infoPillActive: {
+        backgroundColor: 'transparent',
+        borderColor: isDark ? '#3b82f6' : '#2563eb',
+    },
+    infoPillInactive: {
+        backgroundColor: 'transparent',
+        borderColor: isDark ? '#3b82f6' : '#2563eb',
+        opacity: 0.35,
+    },
+    infoPillText: {
+        fontSize: 13,
+        fontWeight: '600',
+    },
+    infoPillTextActive: {
+        color: isDark ? '#3b82f6' : '#2563eb',
+    },
+    infoPillTextInactive: {
+        color: isDark ? '#3b82f6' : '#2563eb',
     },
     section: {
         marginBottom: 32,
     },
     sectionHeader: {
         flexDirection: 'row',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 16,
+        gap: 10,
+        marginBottom: 12,
     },
     sectionTitle: {
         fontSize: 18,
@@ -985,18 +1298,112 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         color: isDark ? '#cbd5e1' : '#475569',
         fontWeight: '500',
     },
-    viewMoreBtn: {
-        marginTop: 16,
-        padding: 12,
+    sectionHeaderRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginBottom: 14,
+    },
+    amenityCountBadge: {
+        backgroundColor: '#2563eb',
+        paddingHorizontal: 8,
+        paddingVertical: 2,
+        borderRadius: 10,
+    },
+    amenityCountText: {
+        color: '#ffffff',
+        fontSize: 12,
+        fontWeight: '700',
+    },
+    facilitiesGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    facilityGridItem: {
+        width: (width - 40 - 8) / 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderRadius: 12,
+        padding: 10,
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
+    },
+    facilityIconBox: {
+        width: 34,
+        height: 34,
+        borderRadius: 9,
+        backgroundColor: isDark ? '#172554' : '#dbeafe',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+    },
+    facilityGridText: {
+        flex: 1,
+        fontSize: 12,
+        color: isDark ? '#cbd5e1' : '#475569',
+        fontWeight: '500',
+        lineHeight: 16,
+    },
+    seeMoreBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        marginTop: 14,
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: isDark ? '#1e3a5f' : '#bfdbfe',
+        backgroundColor: isDark ? '#172554' : '#eff6ff',
+    },
+    seeMoreText: {
+        fontSize: 13,
+        fontWeight: '700',
+        color: '#2563eb',
+    },
+    roomBadgeRow: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 4,
+        marginVertical: 4,
+    },
+    roomBadgeSmall: {
+        paddingHorizontal: 7,
+        paddingVertical: 3,
+        borderRadius: 6,
+        backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+    },
+    roomBadgeGreen: {
+        backgroundColor: isDark ? '#064e3b33' : '#d1fae5',
+    },
+    roomBadgeAmber: {
+        backgroundColor: isDark ? '#78350f33' : '#fef3c7',
+    },
+    roomBadgeBlue: {
+        backgroundColor: isDark ? '#1e3a5f33' : '#dbeafe',
+    },
+    roomBadgeSmallText: {
+        fontSize: 10,
+        fontWeight: '600',
+        color: isDark ? '#94a3b8' : '#64748b',
+    },
+    noRoomsBox: {
+        padding: 20,
+        borderRadius: 14,
+        borderWidth: 1,
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+        backgroundColor: isDark ? '#0f172a' : '#f8fafc',
         alignItems: 'center',
     },
-    viewMoreText: {
-        color: isDark ? '#e2e8f0' : '#475569',
-        fontWeight: '600',
-        fontSize: 13,
+    noRoomsHint: {
+        fontSize: 12,
+        color: isDark ? '#475569' : '#94a3b8',
+        marginTop: 4,
+        textAlign: 'center',
     },
     roomCard: {
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
@@ -1005,6 +1412,22 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         overflow: 'hidden',
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
+    },
+    roomCardSelected: {
+        borderColor: '#2563eb',
+        shadowColor: '#2563eb',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    selectBtnSelected: {
+        backgroundColor: '#1d4ed8',
+    },
+    noRoomsText: {
+        color: isDark ? '#94a3b8' : '#64748b',
+        fontSize: 14,
+        marginTop: 8,
     },
     roomCardRow: {
         flexDirection: 'row',
@@ -1065,25 +1488,26 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         fontSize: 12,
     },
     reviewItem: {
-        paddingVertical: 16,
+        paddingVertical: 10,
     },
     reviewDivider: {
         borderBottomWidth: 1,
-        borderBottomColor: isDark ? '#1e293b' : '#e2e8f0',
+        borderBottomColor: isDark ? '#1e293b' : '#f1f5f9',
     },
     reviewHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        marginBottom: 12,
+        alignItems: 'center',
+        marginBottom: 6,
     },
     reviewerAvatar: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 30,
+        height: 30,
+        borderRadius: 15,
         backgroundColor: isDark ? '#1e293b' : '#e2e8f0',
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 12,
+        marginRight: 8,
         overflow: 'hidden',
     },
     reviewerAvatarImage: {
@@ -1091,7 +1515,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         height: '100%',
     },
     avatarText: {
-        fontSize: 16,
+        fontSize: 12,
         fontWeight: '700',
         color: isDark ? '#94a3b8' : '#64748b',
     },
@@ -1099,30 +1523,53 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flex: 1,
     },
     reviewerName: {
-        fontSize: 15,
+        fontSize: 13,
         fontWeight: '700',
         color: isDark ? '#ffffff' : '#0f172a',
     },
     reviewDate: {
-        fontSize: 12,
+        fontSize: 11,
         color: isDark ? '#64748b' : '#94a3b8',
     },
     reviewScore: {
-        width: 32,
-        height: 32,
-        borderRadius: 8,
+        width: 28,
+        height: 28,
+        borderRadius: 7,
         alignItems: 'center',
         justifyContent: 'center',
     },
     reviewScoreText: {
         color: 'white',
-        fontSize: 14,
+        fontSize: 12,
         fontWeight: 'bold',
     },
     reviewText: {
-        fontSize: 14,
-        lineHeight: 20,
+        fontSize: 13,
+        lineHeight: 18,
         color: isDark ? '#cbd5e1' : '#475569',
+    },
+    reviewPagination: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 16,
+        marginTop: 10,
+        paddingTop: 10,
+        borderTopWidth: 1,
+        borderTopColor: isDark ? '#1e293b' : '#f1f5f9',
+    },
+    reviewPaginationBtn: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        paddingVertical: 6,
+        paddingHorizontal: 12,
+        borderRadius: 8,
+        backgroundColor: isDark ? '#172554' : '#eff6ff',
+    },
+    reviewPaginationText: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#2563eb',
     },
     policyItem: {
         flexDirection: 'row',
@@ -1168,36 +1615,58 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 24,
-        paddingTop: 16,
-        paddingBottom: Platform.OS === 'ios' ? 40 : 20,
+        paddingHorizontal: 16,
+        paddingTop: 10,
+        paddingBottom: 10,
         borderTopWidth: 1,
-        borderTopColor: isDark ? '#1e293b' : '#e2e8f0',
+        borderTopColor: isDark ? '#1e293b' : '#dbeafe',
+        backgroundColor: isDark ? '#0c1a3a' : '#ffffff',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -2 },
+        shadowOpacity: isDark ? 0.3 : 0.08,
+        shadowRadius: 6,
+        elevation: 10,
     },
     bookingPrice: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: isDark ? '#ffffff' : '#0f172a',
+        fontSize: 16,
+        fontWeight: '800',
+        color: isDark ? '#60a5fa' : '#2563eb',
+    },
+    bookingPriceSuffix: {
+        fontSize: 11,
+        fontWeight: '500',
+        color: isDark ? '#3b82f6' : '#3b82f6',
+    },
+    bookingPricePlaceholder: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: isDark ? '#3b82f6' : '#2563eb',
     },
     bookingDates: {
-        fontSize: 12,
-        color: isDark ? '#64748b' : '#94a3b8',
+        fontSize: 10,
+        color: isDark ? '#4e7dd4' : '#3b82f6',
+        marginTop: 1,
     },
     bookBtn: {
         backgroundColor: '#2563eb',
-        paddingHorizontal: 24,
-        paddingVertical: 14,
-        borderRadius: 16,
+        paddingHorizontal: 20,
+        paddingVertical: 10,
+        borderRadius: 12,
         shadowColor: '#2563eb',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
         elevation: 6,
     },
+    bookBtnDisabled: {
+        backgroundColor: '#64748b',
+        shadowOpacity: 0,
+        elevation: 0,
+    },
     bookBtnText: {
         color: 'white',
         fontWeight: '700',
-        fontSize: 16,
+        fontSize: 14,
     },
     sliderArrow: {
         position: 'absolute',
@@ -1239,30 +1708,27 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     policyTimeCard: {
         flex: 1,
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
-        borderRadius: 16,
-        padding: 16,
+        borderRadius: 12,
+        padding: 12,
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
-        gap: 2,
     },
     policyTimeCardLabel: {
-        fontSize: 11,
+        fontSize: 10,
         color: '#3b82f6',
-        fontWeight: '600',
+        fontWeight: '700',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
-        marginTop: 6,
-        marginBottom: 2,
     },
     policyTimeValue: {
-        fontSize: 22,
+        fontSize: 17,
         fontWeight: '800',
         color: isDark ? '#ffffff' : '#0f172a',
     },
     policyTimeSub: {
-        fontSize: 12,
+        fontSize: 11,
         color: isDark ? '#475569' : '#94a3b8',
-        marginTop: 2,
+        marginTop: 1,
     },
     policyAlertCard: {
         flexDirection: 'row',
@@ -1292,19 +1758,98 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     houseRuleCard: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 14,
-        padding: 14,
+        alignItems: 'flex-start',
+        gap: 12,
+        paddingVertical: 10,
+        paddingHorizontal: 12,
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
-        borderRadius: 14,
+        borderRadius: 12,
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
-        marginBottom: 8,
+        marginBottom: 6,
     },
     houseRuleText: {
         flex: 1,
-        fontSize: 14,
+        fontSize: 13,
         color: isDark ? '#cbd5e1' : '#475569',
+        lineHeight: 18,
+    },
+    houseRuleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        paddingVertical: 8,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? '#1e293b' : '#f1f5f9',
+    },
+    houseRuleIconWrap: {
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+        alignItems: 'center',
+        justifyContent: 'center',
+        flexShrink: 0,
+    },
+    houseRuleRowText: {
+        flex: 1,
+        fontSize: 13,
+        color: isDark ? '#94a3b8' : '#475569',
+    },
+    amenityPillsWrap: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 8,
+    },
+    amenityPill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 5,
+        paddingHorizontal: 11,
+        paddingVertical: 6,
+        borderRadius: 20,
+    },
+    amenityPillText: {
+        fontSize: 12,
+        fontWeight: '600',
+    },
+    noAmenitiesBox: {
+        paddingVertical: 16,
+        paddingHorizontal: 12,
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+        backgroundColor: isDark ? '#0f172a' : '#f8fafc',
+        alignItems: 'center',
+    },
+    noAmenitiesText: {
+        fontSize: 13,
+        color: isDark ? '#475569' : '#94a3b8',
+    },
+    faqItem: {
+        paddingVertical: 12,
+    },
+    faqDivider: {
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? '#1e293b' : '#f1f5f9',
+    },
+    faqRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        justifyContent: 'space-between',
+        gap: 12,
+    },
+    faqQuestion: {
+        flex: 1,
+        fontSize: 14,
+        fontWeight: '600',
+        color: isDark ? '#e2e8f0' : '#0f172a',
+        lineHeight: 20,
+    },
+    faqAnswer: {
+        marginTop: 8,
+        fontSize: 13,
+        color: isDark ? '#94a3b8' : '#475569',
         lineHeight: 20,
     },
 });
