@@ -1,44 +1,54 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { ChevronDown, DollarSign, Bell } from 'lucide-react-native';
+import { ChevronDown, Moon, Sun } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { useSettings, CURRENCIES } from '../../context/SettingsContext';
+import React, { useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSettings } from '../../context/SettingsContext';
+import CurrencyPickerModal from '../ui/CurrencyPickerModal';
 
 const TopBar: React.FC = () => {
-    const { colorScheme } = useColorScheme();
+    const { colorScheme, setColorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { currency, setCurrency } = useSettings();
+    const [pickerVisible, setPickerVisible] = useState(false);
 
-    const handleCurrencyPress = () => {
-        const currentIndex = CURRENCIES.findIndex(c => c.code === currency.code);
-        const nextIndex = (currentIndex + 1) % CURRENCIES.length;
-        setCurrency(CURRENCIES[nextIndex].code);
-    };
+    const toggleTheme = () => setColorScheme(isDark ? 'light' : 'dark');
 
     return (
         <View style={styles.container}>
-            {/* Logo */}
             <View style={styles.logoContainer}>
                 <Text style={[styles.logoText, isDark && styles.logoTextDark]}>
                     Cheapest<Text style={styles.logoAccent}>Go</Text>
                 </Text>
             </View>
 
-            {/* Right Side Actions */}
             <View style={styles.actionsContainer}>
                 <Pressable
                     style={[styles.currencyPill, isDark && styles.currencyPillDark]}
-                    onPress={handleCurrencyPress}
+                    onPress={() => setPickerVisible(true)}
                 >
-                    <DollarSign size={13} color={isDark ? "#94a3b8" : "#64748b"} />
-                    <Text style={[styles.currencyText, isDark && styles.currencyTextDark]}>{currency.code}</Text>
-                    <ChevronDown size={14} color={isDark ? "#475569" : "#94a3b8"} />
+                    <Text style={[styles.currencySymbol, isDark && styles.currencyTextDark]}>
+                        {currency.symbol}
+                    </Text>
+                    <Text style={[styles.currencyText, isDark && styles.currencyTextDark]}>
+                        {currency.code}
+                    </Text>
+                    <ChevronDown size={14} color={isDark ? '#475569' : '#94a3b8'} />
                 </Pressable>
 
-                <Pressable style={styles.bellButton}>
-                    <Bell size={22} color={isDark ? "#94a3b8" : "#475569"} />
+                <Pressable style={styles.iconButton} onPress={toggleTheme}>
+                    {isDark
+                        ? <Sun size={22} color="#94a3b8" />
+                        : <Moon size={22} color="#475569" />
+                    }
                 </Pressable>
             </View>
+
+            <CurrencyPickerModal
+                visible={pickerVisible}
+                currentCode={currency.code}
+                onSelect={setCurrency}
+                onClose={() => setPickerVisible(false)}
+            />
         </View>
     );
 };
@@ -50,7 +60,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'space-between',
         paddingHorizontal: 24,
-        paddingVertical: 32,
+        paddingVertical: 16,
     },
     logoContainer: {
         flexDirection: 'row',
@@ -70,7 +80,7 @@ const styles = StyleSheet.create({
     actionsContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 24,
+        gap: 16,
     },
     currencyPill: {
         flexDirection: 'row',
@@ -87,6 +97,11 @@ const styles = StyleSheet.create({
         backgroundColor: '#0f172a',
         borderColor: '#1e293b',
     },
+    currencySymbol: {
+        fontSize: 14,
+        fontWeight: '700',
+        color: '#0f172a',
+    },
     currencyText: {
         fontSize: 14,
         fontWeight: '700',
@@ -96,7 +111,7 @@ const styles = StyleSheet.create({
     currencyTextDark: {
         color: '#ffffff',
     },
-    bellButton: {
+    iconButton: {
         padding: 4,
     },
 });

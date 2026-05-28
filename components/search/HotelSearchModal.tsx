@@ -1,19 +1,31 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import {
-    View, Text, Pressable, TextInput, ScrollView,
-    StyleSheet, ActivityIndicator, useColorScheme, Animated,
-} from 'react-native';
-import {
-    MapPin, ChevronRight, Users, Building2, X,
-    Clock, TrendingUp, Moon,
-} from 'lucide-react-native';
-import SearchModal from './SearchModal';
-import CalendarPicker from './CalendarPicker';
-import { autocompleteDestinations, Destination } from '../../lib/api';
-import { useRouter } from 'expo-router';
-import { saveRecentSearch, getRecentSearches, RecentSearch } from '../../lib/search-history';
-import { useSettings } from '../../context/SettingsContext';
 import * as Location from 'expo-location';
+import { useRouter } from 'expo-router';
+import {
+    Building2,
+    ChevronRight,
+    Clock,
+    MapPin,
+    Moon,
+    TrendingUp,
+    Users,
+    X,
+} from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import {
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    useColorScheme,
+    View
+} from 'react-native';
+import { useSettings } from '../../context/SettingsContext';
+import { autocompleteDestinations, Destination } from '../../lib/api';
+import { getRecentSearches, RecentSearch, saveRecentSearch } from '../../lib/search-history';
+import CalendarPicker from './CalendarPicker';
+import SearchModal from './SearchModal';
 
 // ─── Popular destinations ──────────────────────────────────────────────────
 const POPULAR_DESTINATIONS: Destination[] = [
@@ -241,7 +253,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
     // ── Validate and search ────────────────────────────────────────────────
     const handleSearch = async () => {
         const newErrors: typeof errors = {};
-        const destValue = destination?.title || destQuery;
+        const destValue = (destination?.title || destQuery).trim();
         if (!destValue) newErrors.destination = 'Please enter a destination';
         if (!checkIn || !checkOut) newErrors.dates = 'Please select your check-in and check-out dates';
         if (Object.keys(newErrors).length > 0) {

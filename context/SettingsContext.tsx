@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { refreshExchangeRates } from '../lib/currency';
 
 export type Currency = {
     code: string;
@@ -8,11 +9,9 @@ export type Currency = {
 };
 
 export const CURRENCIES: Currency[] = [
-    { code: 'USD', symbol: '$', region: 'us' },
-    { code: 'PHP', symbol: '₱', region: 'ph' },
     { code: 'KRW', symbol: '₩', region: 'kr' },
-    { code: 'THB', symbol: '฿', region: 'th' },
-    { code: 'SGD', symbol: 'S$', region: 'sg' },
+    { code: 'USD', symbol: '$',  region: 'us' },
+    { code: 'PHP', symbol: '₱', region: 'ph' },
 ];
 
 interface SettingsContextType {
@@ -23,15 +22,19 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-    const [currency, setCurrencyState] = useState<Currency>(CURRENCIES[0]);
+    const [currency, setCurrencyState] = useState<Currency>(CURRENCIES[0]); // KRW default
 
     useEffect(() => {
+        // Restore persisted currency choice
         AsyncStorage.getItem('selected_currency').then((val) => {
             if (val) {
                 const found = CURRENCIES.find(c => c.code === val);
                 if (found) setCurrencyState(found);
             }
         });
+
+        // Hydrate exchange rates with live data in the background
+        refreshExchangeRates();
     }, []);
 
     const setCurrency = (code: string) => {
