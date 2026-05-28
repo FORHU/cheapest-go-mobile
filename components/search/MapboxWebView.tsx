@@ -6,6 +6,7 @@ import { MAPBOX_TOKEN } from '../../lib/config';
 interface MapboxWebViewProps {
     hotels: any[];
     selectedHotelId: string | null;
+    flyToOnSelectId?: string | null;
     onHotelSelect: (hotel: any) => void;
     onHotelNavigate?: (hotelId: string) => void;
     onDeselect?: () => void;
@@ -14,7 +15,7 @@ interface MapboxWebViewProps {
     currencySymbol: string;
 }
 
-export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, onHotelNavigate, onDeselect, isDark, center, currencySymbol }: MapboxWebViewProps) {
+export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId, onHotelSelect, onHotelNavigate, onDeselect, isDark, center, currencySymbol }: MapboxWebViewProps) {
     const webViewRef = useRef<WebView>(null);
     const hasLoadedRef = useRef(false);
 
@@ -199,8 +200,10 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         center: ${JSON.stringify(center || [120.596, 16.402])},
                         zoom: 12,
                         pitch: 0,
+                        maxPitch: 0,
                         bearing: 0,
-                        antialias: true,
+                        dragRotate: false,
+                        antialias: false,
                         attributionControl: false
                     });
 
@@ -211,11 +214,19 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
                     }
 
+                    function applyBuildingStyle() {
+                        if (map.getLayer('building')) {
+                            map.setPaintProperty('building', 'fill-color', '#f0f0f0');
+                            map.setPaintProperty('building', 'fill-opacity', 0.75);
+                        }
+                    }
+
                     function setStyle(style, el) {
                         map.setStyle('mapbox://styles/mapbox/' + style);
                         document.querySelectorAll('.layer-opt').forEach(opt => opt.classList.remove('active'));
                         el.classList.add('active');
                         toggleLayers();
+                        map.once('idle', applyBuildingStyle);
                     }
 
                     let currentHotels = [];
@@ -317,29 +328,6 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                         });
                     }
 
-                    function add3DBuildings() {
-                        const layers = map.getStyle().layers;
-                        const labelLayer = layers.find(l => l.type === 'symbol' && l.layout['text-field']);
-                        const labelLayerId = labelLayer ? labelLayer.id : null;
-
-                        if (map.getLayer('3d-buildings')) map.removeLayer('3d-buildings');
-
-                        map.addLayer({
-                            'id': '3d-buildings',
-                            'source': 'composite',
-                            'source-layer': 'building',
-                            'filter': ['==', 'extrude', 'true'],
-                            'type': 'fill-extrusion',
-                            'minzoom': 14,
-                            'paint': {
-                                'fill-extrusion-color': '${isDark ? '#1e293b' : '#aaa'}',
-                                'fill-extrusion-height': ['get', 'height'],
-                                'fill-extrusion-base': ['get', 'min_height'],
-                                'fill-extrusion-opacity': 0.6
-                            }
-                        }, labelLayerId);
-                    }
-
                     map.on('dragstart', () => {
                         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_DRAG_START' }));
                         // Deselect all markers in map
@@ -347,13 +335,9 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                     });
 
                     map.on('load', () => {
-                        add3DBuildings();
                         map.resize();
+                        applyBuildingStyle();
                         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_LOADED' }));
-                    });
-
-                    map.on('style.load', () => {
-                        add3DBuildings();
                     });
 
                     // Handler for messages from React Native
@@ -367,7 +351,15 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
                                 updateMarkers(data.hotels, data.selectedHotelId, data.currencySymbol);
                             } else if (data.type === 'FLY_TO') {
                                 map.flyTo({ center: data.center, zoom: 14, duration: 1500 });
+                            } else if (data.type === 'HIGHLIGHT_HOTEL') {
+                                // Visual-only: update marker CSS classes, no map movement
+                                Object.keys(markers).forEach(id => {
+                                    const el = markers[id].getElement();
+                                    if (id === data.hotelId) el.classList.add('selected');
+                                    else el.classList.remove('selected');
+                                });
                             } else if (data.type === 'SELECT_HOTEL') {
+                                // Fly to hotel + update marker CSS classes
                                 const m = markers[data.hotelId];
                                 if (m) {
                                     map.flyTo({ center: m.getLngLat(), zoom: 15, duration: 1000 });
@@ -416,11 +408,20 @@ export default function MapboxWebView({ hotels, selectedHotelId, onHotelSelect, 
     useEffect(() => {
         if (hasLoadedRef.current && selectedHotelId && webViewRef.current) {
             webViewRef.current.postMessage(JSON.stringify({
-                type: 'SELECT_HOTEL',
+                type: 'HIGHLIGHT_HOTEL',
                 hotelId: selectedHotelId
             }));
         }
     }, [selectedHotelId]);
+
+    useEffect(() => {
+        if (hasLoadedRef.current && flyToOnSelectId && webViewRef.current) {
+            webViewRef.current.postMessage(JSON.stringify({
+                type: 'SELECT_HOTEL',
+                hotelId: flyToOnSelectId
+            }));
+        }
+    }, [flyToOnSelectId]);
 
     const onMessage = (event: any) => {
         try {

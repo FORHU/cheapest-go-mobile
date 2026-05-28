@@ -9,6 +9,7 @@ import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
 import { searchHotels } from '../../lib/api';
 import { getFavorites, toggleFavorite } from '../../lib/favorites';
+import { MAPBOX_TOKEN } from '../../lib/config';
 
 const { width, height } = Dimensions.get('window');
 
@@ -96,7 +97,7 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
             style={[styles.hotelCard, isSelected && styles.hotelCardSelected]}
             onPress={() => onSelect(hotel)}
         >
-            <Pressable onPress={() => onNavigate(hotel)} style={{ position: 'relative' }}>
+            <View style={{ position: 'relative' }}>
                 <ImageWithSkeleton
                     uri={hotel.thumbnailUrl || fallback}
                     style={styles.hotelCardImage}
@@ -109,7 +110,7 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
                         <Text style={styles.freeCancelText}>Free cancel</Text>
                     </View>
                 )}
-            </Pressable>
+            </View>
 
             <Pressable
                 style={styles.heartBtn}
@@ -122,7 +123,7 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
                 />
             </Pressable>
 
-            <Pressable style={styles.hotelCardContent} onPress={() => onNavigate(hotel)}>
+            <View style={styles.hotelCardContent}>
                 <Text style={styles.hotelName} numberOfLines={2}>{hotel.name}</Text>
 
                 <View style={styles.hotelRatingRow}>
@@ -144,11 +145,11 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
                         </Text>
                         <Text style={styles.hotelPerNight}>per night</Text>
                     </View>
-                    <View style={styles.cardViewBtn}>
+                    <Pressable style={styles.cardViewBtn} onPress={() => onNavigate(hotel)}>
                         <Text style={styles.cardViewBtnText}>View Deal</Text>
-                    </View>
+                    </Pressable>
                 </View>
-            </Pressable>
+            </View>
         </Pressable>
     );
 });
@@ -284,6 +285,8 @@ export default function SearchScreen() {
     const [favorites, setFavorites] = useState<string[]>([]);
     const [showMapHints, setShowMapHints] = useState(true);
     const [displayLimit, setDisplayLimit] = useState(10);
+    const [flyToHotelId, setFlyToHotelId] = useState<string | null>(null);
+    const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
 
     const styles = useMemo(() => getStyles(isDark), [isDark]);
 
@@ -412,6 +415,7 @@ export default function SearchScreen() {
 
     const handleHotelSelect = useCallback((hotel: any) => {
         setSelectedHotel(hotel);
+        setFlyToHotelId(hotel.hotelId);
     }, []);
 
     // Apply Filters & Sorting
@@ -545,16 +549,28 @@ export default function SearchScreen() {
                 </Pressable>
                 <View style={styles.searchInputContainer}>
                     <Search size={16} color={isDark ? '#94a3b8' : '#64748b'} />
-                    <TextInput 
-                        style={styles.searchPill} 
+                    <TextInput
+                        style={styles.searchPill}
                         placeholder="Search location..."
                         placeholderTextColor={isDark ? '#94a3b8' : '#64748b'}
                         value={localDestination}
                         onChangeText={setLocalDestination}
-                        onSubmitEditing={() => {
+                        returnKeyType="search"
+                        onSubmitEditing={async () => {
                             const destination = localDestination.trim();
                             if (!destination) return;
                             router.setParams({ destination, placeId: '', countryCode: '' });
+                            try {
+                                const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destination)}.json?access_token=${MAPBOX_TOKEN}&types=place,district,region,country&limit=1`;
+                                const resp = await fetch(url);
+                                const data = await resp.json();
+                                if (data.features?.length > 0) {
+                                    const [lng, lat] = data.features[0].center;
+                                    setMapCenter([lng, lat]);
+                                }
+                            } catch (_) {
+                                // Geocoding failed — fitBounds from hotel results will center the map
+                            }
                         }}
                     />
                 </View>
@@ -614,6 +630,7 @@ export default function SearchScreen() {
                                 <MapboxWebView
                                     hotels={hotels}
                                     selectedHotelId={selectedHotel?.hotelId}
+                                    flyToOnSelectId={flyToHotelId}
                                     onHotelSelect={handleHotelSelect}
                                     onHotelNavigate={(id) => {
                                         const h = hotels.find(x => x.hotelId === id);
@@ -621,6 +638,7 @@ export default function SearchScreen() {
                                     }}
                                     onDeselect={() => setSelectedHotel(null)}
                                     isDark={isDark}
+                                    center={mapCenter}
                                     currencySymbol={currency.symbol}
                                 />
                                 
@@ -648,10 +666,9 @@ export default function SearchScreen() {
                                             contentContainerStyle={styles.cardsScroll}
                                             snapToInterval={CARD_SNAP}
                                             decelerationRate="fast"
-                                            initialNumToRender={3}
+                                            initialNumToRender={5}
                                             maxToRenderPerBatch={5}
-                                            windowSize={5}
-                                            removeClippedSubviews={true}
+                                            windowSize={11}
                                             getItemLayout={(_, index) => ({
                                                 length: CARD_SNAP,
                                                 offset: CARD_SNAP * index,
@@ -669,6 +686,8 @@ export default function SearchScreen() {
                                                 if (index !== lastScrolledIndex.current && hotels[index]) {
                                                     lastScrolledIndex.current = index;
                                                     if (selectedHotel?.hotelId !== hotels[index].hotelId) {
+                                                        // Only update visual selection — do NOT set flyToHotelId
+                                                        // so the map stays where it is during carousel swipes
                                                         setSelectedHotel(hotels[index]);
                                                     }
                                                 }

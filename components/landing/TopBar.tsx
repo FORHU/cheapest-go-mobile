@@ -1,19 +1,15 @@
 import { ChevronDown, Moon, Sun } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import React from 'react';
+import React, { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
-import { CURRENCIES, useSettings } from '../../context/SettingsContext';
+import { useSettings } from '../../context/SettingsContext';
+import CurrencyPickerModal from '../ui/CurrencyPickerModal';
 
 const TopBar: React.FC = () => {
     const { colorScheme, setColorScheme } = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { currency, setCurrency } = useSettings();
-
-    const handleCurrencyPress = () => {
-        const currentIndex = CURRENCIES.findIndex(c => c.code === currency.code);
-        const nextIndex = (currentIndex + 1) % CURRENCIES.length;
-        setCurrency(CURRENCIES[nextIndex].code);
-    };
+    const [pickerVisible, setPickerVisible] = useState(false);
 
     const toggleTheme = () => setColorScheme(isDark ? 'light' : 'dark');
 
@@ -28,10 +24,14 @@ const TopBar: React.FC = () => {
             <View style={styles.actionsContainer}>
                 <Pressable
                     style={[styles.currencyPill, isDark && styles.currencyPillDark]}
-                    onPress={handleCurrencyPress}
+                    onPress={() => setPickerVisible(true)}
                 >
-                    <Text style={[styles.currencySymbol, isDark && styles.currencyTextDark]}>{currency.symbol}</Text>
-                    <Text style={[styles.currencyText, isDark && styles.currencyTextDark]}>{currency.code}</Text>
+                    <Text style={[styles.currencySymbol, isDark && styles.currencyTextDark]}>
+                        {currency.symbol}
+                    </Text>
+                    <Text style={[styles.currencyText, isDark && styles.currencyTextDark]}>
+                        {currency.code}
+                    </Text>
                     <ChevronDown size={14} color={isDark ? '#475569' : '#94a3b8'} />
                 </Pressable>
 
@@ -42,6 +42,13 @@ const TopBar: React.FC = () => {
                     }
                 </Pressable>
             </View>
+
+            <CurrencyPickerModal
+                visible={pickerVisible}
+                currentCode={currency.code}
+                onSelect={setCurrency}
+                onClose={() => setPickerVisible(false)}
+            />
         </View>
     );
 };
