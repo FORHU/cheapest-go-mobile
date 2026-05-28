@@ -6,6 +6,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { getSavedHotels, toggleFavorite } from '@/lib/favorites';
 import { useFocusEffect } from 'expo-router';
+import { useSettings } from '@/context/SettingsContext';
+import { convertCurrency } from '@/lib/currency';
 
 const dark = {
   bg: '#0B1018',
@@ -33,6 +35,7 @@ export default function SavedScreen() {
   const colorScheme = useColorScheme();
   const C = colorScheme === 'dark' ? dark : light;
   const router = useRouter();
+  const { currency } = useSettings();
   const [hotels, setHotels] = useState<any[]>([]);
 
   useFocusEffect(
@@ -59,7 +62,7 @@ export default function SavedScreen() {
         checkOut: fmt(tomorrow),
         adults: '2',
         rooms: '1',
-        currency: 'USD',
+        currency: currency.code,
       },
     });
   };
@@ -137,7 +140,14 @@ export default function SavedScreen() {
                   <View style={styles.footer}>
                     <View>
                       <Text style={[styles.price, { color: C.blue }]}>
-                        ${hotel.displayPrice !== '???' ? hotel.displayPrice : '—'}
+                        {(() => {
+                          const raw = hotel.displayPrice;
+                          if (!raw || raw === '???') return '—';
+                          const num = Number(raw);
+                          if (isNaN(num)) return `${currency.symbol}${raw}`;
+                          const from = hotel.priceCurrency || 'KRW';
+                          return `${currency.symbol}${Math.round(convertCurrency(num, from, currency.code)).toLocaleString()}`;
+                        })()}
                       </Text>
                       <Text style={[styles.perNight, { color: C.sub }]}>per night</Text>
                     </View>

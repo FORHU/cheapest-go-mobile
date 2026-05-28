@@ -8,8 +8,9 @@ import MapboxWebView from '../../components/search/MapboxWebView';
 import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
 import { searchHotels } from '../../lib/api';
-import { getFavorites, toggleFavorite } from '../../lib/favorites';
 import { MAPBOX_TOKEN } from '../../lib/config';
+import { convertCurrency } from '../../lib/currency';
+import { getFavorites, toggleFavorite } from '../../lib/favorites';
 
 const { width, height } = Dimensions.get('window');
 
@@ -61,6 +62,30 @@ const getDisplayPrice = (hotel: any) => {
     }
     
     return '???';
+};
+
+// Extract the actual currency the API returned the price in.
+// Mirrors the same data paths as getDisplayPrice so they always agree.
+const getPriceCurrency = (hotel: any): string => {
+    // Direct currency field on the hotel object
+    if (typeof hotel.currency === 'string' && hotel.currency.length >= 3)
+        return hotel.currency.toUpperCase();
+
+    // Price object with currency
+    if (hotel.price?.currency && typeof hotel.price.currency === 'string')
+        return hotel.price.currency.toUpperCase();
+
+    // LiteAPI standard: roomTypes[0].rates[0].retailRate.total[0].currency
+    if (hotel.roomTypes?.length > 0) {
+        const total = hotel.roomTypes[0]?.rates?.[0]?.retailRate?.total;
+        if (Array.isArray(total) && total[0]?.currency)
+            return String(total[0].currency).toUpperCase();
+        if (total && typeof total === 'object' && 'currency' in total)
+            return String((total as any).currency).toUpperCase();
+    }
+
+    // Backend defaults to KRW when no currency param is honoured
+    return 'KRW';
 };
 
 const getPriceColor = (_price: any) => '#2563eb';
@@ -140,8 +165,8 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
 
                 <View style={styles.hotelPriceRow}>
                     <View>
-                        <Text style={[styles.hotelPrice, { color: getPriceColor(hotel.displayPrice) }]}>
-                            {currencySymbol}{hotel.displayPrice}
+                        <Text style={[styles.hotelPrice, { color: getPriceColor(hotel.displayConvertedPrice) }]}>
+                            {currencySymbol}{hotel.displayConvertedPrice ?? hotel.displayPrice}
                         </Text>
                         <Text style={styles.hotelPerNight}>per night</Text>
                     </View>
@@ -239,7 +264,7 @@ const HotelListCard = memo(({ hotel, isDark, currencySymbol, isFavorite, onNavig
 
                 <View style={styles.listFooterRow}>
                     <View>
-                        <Text style={styles.listPriceText}>{currencySymbol}{hotel.displayPrice}</Text>
+                        <Text style={styles.listPriceText}>{currencySymbol}{hotel.displayConvertedPrice ?? hotel.displayPrice}</Text>
                         <Text style={styles.listPerNightText}>per night</Text>
                     </View>
                     <View style={styles.viewBtn}>
@@ -306,6 +331,15 @@ export default function SearchScreen() {
     }, [params.destination]);
 
     useEffect(() => {
+        const viewModeParam = params.viewMode as string | undefined;
+        if (viewModeParam === 'map') {
+            setViewMode('map');
+        } else if (viewModeParam === 'list') {
+            setViewMode('list');
+        }
+    }, [params.viewMode]);
+
+    useEffect(() => {
         const fetchResults = async () => {
             if (isFetching.current) return;
             isFetching.current = true;
@@ -324,7 +358,7 @@ export default function SearchScreen() {
                     children: parseInt(params.children as string || '0'),
                     childrenAges: params.childrenAges as string,
                     rooms: parseInt(params.rooms as string || '1'),
-                    currency: currency.code,
+                    currency: 'USD', // always fetch in USD; we convert client-side
                 });
                 
                 const hotelData = results?.data || [];
@@ -337,6 +371,7 @@ export default function SearchScreen() {
                         const lng = h.longitude || h.details?.longitude || h.details?.location?.longitude || h.lng || h.location?.lng || 0;
                         const name = h.name || h.hotelName || h.propertyName;
                         const price = getDisplayPrice(h);
+                        const priceCurrency = getPriceCurrency(h);
                         
                         // Only return standardized object if we have a name and a valid location
                         if (!name || lat === 0 || lng === 0) return null;
@@ -372,6 +407,7 @@ export default function SearchScreen() {
                             latitude: parseFloat(lat.toString()),
                             longitude: parseFloat(lng.toString()),
                             displayPrice: price,
+                            priceCurrency: priceCurrency,
                             thumbnailUrl: thumbUrl,
                             imageUrls: imageUrls.slice(0, 4),
                             address: h.address || h.details?.address || h.location || h.city || 'Location unavailable'
@@ -392,7 +428,7 @@ export default function SearchScreen() {
         if (params.destination) {
             fetchResults();
         }
-    }, [params.destination, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
+    }, [params.destination, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms]);
 
     const toggleFav = useCallback(async (id: string, hotelData?: any) => {
         const added = await toggleFavorite(id, hotelData);
@@ -454,11 +490,11 @@ export default function SearchScreen() {
             });
         }
 
-        // 5. Sorting
+        // 5. Sorting — uses USD prices from API for consistent comparison
         result.sort((a, b) => {
             const priceA = a.displayPrice === '???' ? 0 : Number(a.displayPrice);
             const priceB = b.displayPrice === '???' ? 0 : Number(b.displayPrice);
-            
+
             if (sortBy === 'price_low') return (priceA || Infinity) - (priceB || Infinity);
             if (sortBy === 'price_high') return priceB - priceA;
             if (sortBy === 'rating') return (b.reviewRating || b.starRating || 0) - (a.reviewRating || a.starRating || 0);
@@ -466,12 +502,20 @@ export default function SearchScreen() {
             return 0;
         });
 
-        setHotels(result);
-        if (result.length > 0 && (!selectedHotel || !result.find(h => h.hotelId === selectedHotel.hotelId))) {
-            setSelectedHotel(result[0]);
+        // 6. Add displayConvertedPrice for rendering — converts from the actual API price currency
+        const withDisplay = result.map(h => {
+            if (h.displayPrice === '???') return { ...h, displayConvertedPrice: '???' };
+            const from = h.priceCurrency || 'KRW';
+            const convertedAmount = Math.round(convertCurrency(Number(h.displayPrice), from, currency.code));
+            return { ...h, displayConvertedPrice: convertedAmount.toLocaleString() };
+        });
+
+        setHotels(withDisplay);
+        if (withDisplay.length > 0 && (!selectedHotel || !withDisplay.find(h => h.hotelId === selectedHotel.hotelId))) {
+            setSelectedHotel(withDisplay[0]);
         }
         setDisplayLimit(10);
-    }, [rawHotels, filters, sortBy]);
+    }, [rawHotels, filters, sortBy, currency]);
 
     useEffect(() => {
         if (selectedHotel && viewMode === 'map' && cardsFlatListRef.current) {
@@ -510,6 +554,8 @@ export default function SearchScreen() {
                 showsHorizontalScrollIndicator={false}
                 style={styles.sortChipsContainer}
                 contentContainerStyle={styles.sortChipsContent}
+                nestedScrollEnabled
+                overScrollMode="never"
             >
                 {sortOptions.map(opt => {
                     const isActive = sortBy === opt.id;
@@ -519,20 +565,22 @@ export default function SearchScreen() {
                             style={[styles.sortChip, isActive && styles.sortChipActive]}
                             onPress={() => setSortBy(opt.id as any)}
                         >
-                            {opt.icon}
-                            <Text numberOfLines={1} style={[styles.sortChipText, isActive && styles.sortChipTextActive]}>{opt.label}</Text>
+                            {opt.icon ? <View style={styles.sortChipIcon}>{opt.icon}</View> : null}
+                            <Text style={[styles.sortChipText, isActive && styles.sortChipTextActive]}>{opt.label}</Text>
                         </Pressable>
                     );
                 })}
                 {filterOptions.map(opt => (
                     <Pressable key={opt.id} style={styles.sortChip} onPress={opt.onPress}>
-                        <Text numberOfLines={1} style={styles.sortChipText}>{opt.label}</Text>
+                        <Text style={styles.sortChipText}>{opt.label}</Text>
                     </Pressable>
                 ))}
                 {activeFilterCount > 0 && (
                     <Pressable style={[styles.sortChip, styles.sortChipActive]} onPress={() => setIsFilterVisible(true)}>
-                        <Text numberOfLines={1} style={styles.sortChipTextActive}>{activeFilterCount} active</Text>
-                        <X size={12} color="#fff" />
+                        <Text style={styles.sortChipTextActive}>{activeFilterCount} active</Text>
+                        <View style={styles.sortChipIconRight}>
+                            <X size={12} color="#fff" />
+                        </View>
                     </Pressable>
                 )}
             </ScrollView>
@@ -656,7 +704,7 @@ export default function SearchScreen() {
                                 )}
 
                                 {hotels.length > 0 && (
-                                    <View style={styles.floatingCards}>
+                                    <View style={styles.floatingCards} renderToHardwareTextureAndroid={true}>
                                         <FlatList
                                             ref={cardsFlatListRef}
                                             horizontal
@@ -895,22 +943,40 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         borderBottomWidth: 1,
         borderBottomColor: isDark ? '#1F2D3D' : '#e2e8f0',
         flexGrow: 0,
+        // Fix: allow the first and last chips to fully show their shadow/border
+        // without being clipped by the ScrollView container edge on Android
+        overflow: 'visible',
     },
     sortChipsContent: {
-        paddingHorizontal: 16,
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingLeft: 16,
+        paddingRight: 24,
+        paddingTop: 10,
         paddingBottom: 12,
-        gap: 8,
     },
     sortChip: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: 14,
-        paddingVertical: 7,
+        minWidth: 0,
+        minHeight: 36,
+        marginRight: 8,
+        paddingHorizontal: 16,
+        paddingVertical: 10,
         borderRadius: 20,
-        backgroundColor: isDark ? '#141C2A' : '#FFFFFF',
+        backgroundColor: isDark ? '#1e293b' : '#FFFFFF',
         borderWidth: 1,
-        borderColor: isDark ? '#1F2D3D' : '#E2E8F0',
+        borderColor: isDark ? '#334155' : '#E2E8F0',
+    },
+    sortChipIcon: {
+        marginRight: 8,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    sortChipIconRight: {
+        marginLeft: 6,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     sortChipActive: {
         backgroundColor: '#2563eb',
@@ -918,15 +984,23 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     sortChipText: {
         fontSize: 13,
+        lineHeight: 18,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
         fontWeight: '600',
-        color: isDark ? '#8896AA' : '#64748b',
+        color: isDark ? '#94a3b8' : '#64748b',
         flexShrink: 1,
+        minWidth: 0,
     },
     sortChipTextActive: {
         fontSize: 13,
+        lineHeight: 18,
+        includeFontPadding: false,
+        textAlignVertical: 'center',
         fontWeight: '600',
         color: '#ffffff',
         flexShrink: 1,
+        minWidth: 0,
     },
     content: {
         flex: 1,
@@ -1031,11 +1105,12 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     cardsScroll: {
         paddingHorizontal: 16,
-        paddingBottom: 10,
+        paddingBottom: 4,
         gap: 12,
     },
     hotelCard: {
         width: 270,
+        height: 110,
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderRadius: 16,
         overflow: 'hidden',

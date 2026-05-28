@@ -40,8 +40,8 @@ import {
     Wifi, Wind,
     XCircle
 } from 'lucide-react-native';
-import React, { useCallback, useEffect, useMemo, useState, useRef } from 'react';
-import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, Share, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
 
 import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
@@ -250,10 +250,27 @@ export default function HotelDetailsScreen() {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
     const [visibleReviewsCount, setVisibleReviewsCount] = useState(5);
+    const [isFavorite, setIsFavorite] = useState(false);
     
     const galleryScrollRef = useRef<ScrollView>(null);
 
     const styles = useMemo(() => getStyles(isDark), [isDark]);
+
+    const handleShare = useCallback(async () => {
+        if (!hotel) return;
+        try {
+            await Share.share({
+                title: hotel.name || 'Hotel',
+                message: `Check out ${hotel.name || 'this hotel'}${hotel.address ? ` at ${hotel.address}` : ''}`,
+            });
+        } catch (err: any) {
+            Alert.alert('Unable to share', err.message || 'Please try again.');
+        }
+    }, [hotel]);
+
+    const toggleFavorite = useCallback(() => {
+        setIsFavorite(prev => !prev);
+    }, []);
 
     // Merge hotelFacilities (full list from API) with facilities
     const allFacilities = useMemo(() => {
@@ -314,11 +331,29 @@ export default function HotelDetailsScreen() {
         );
     }
 
+    const goBackToMapSearch = () => {
+        router.push({
+            pathname: '/(tabs)/search',
+            params: {
+                viewMode: 'map',
+                destination: params.destination as string || '',
+                placeId: params.placeId as string || '',
+                countryCode: params.countryCode as string || '',
+                checkIn: params.checkIn as string || '',
+                checkOut: params.checkOut as string || '',
+                adults: params.adults as string || '2',
+                children: params.children as string || '0',
+                childrenAges: params.childrenAges as string || '',
+                rooms: params.rooms as string || '1',
+            },
+        });
+    };
+
     if (!hotel) {
         return (
             <View style={styles.errorContainer}>
                 <Text style={styles.errorText}>Hotel details not found.</Text>
-                <Pressable onPress={() => router.back()} style={styles.backBtnLabel}>
+                <Pressable onPress={goBackToMapSearch} style={styles.backBtnLabel}>
                     <Text style={styles.backBtnLabelText}>Go Back</Text>
                 </Pressable>
             </View>
@@ -401,15 +436,19 @@ export default function HotelDetailsScreen() {
 
                     {/* Floating Header Actions */}
                     <View style={styles.floatingHeader}>
-                        <Pressable onPress={() => router.back()} style={styles.roundBtn}>
+                        <Pressable onPress={goBackToMapSearch} style={styles.roundBtn}>
                             <ChevronLeft size={24} color={isDark ? "#60a5fa" : "#2563eb"} />
                         </Pressable>
                         <View style={styles.headerRight}>
-                            <Pressable style={styles.roundBtn}>
+                            <Pressable style={styles.roundBtn} onPress={handleShare}>
                                 <Share2 size={20} color={isDark ? "#60a5fa" : "#2563eb"} />
                             </Pressable>
-                            <Pressable style={styles.roundBtn}>
-                                <Heart size={20} color={isDark ? "#f87171" : "#ef4444"} fill={false ? "#ef4444" : "transparent"} />
+                            <Pressable style={styles.roundBtn} onPress={toggleFavorite}>
+                                <Heart
+                                    size={20}
+                                    color={isFavorite ? '#ef4444' : (isDark ? '#60a5fa' : '#2563eb')}
+                                    fill={isFavorite ? '#ef4444' : 'transparent'}
+                                />
                             </Pressable>
                         </View>
                     </View>
