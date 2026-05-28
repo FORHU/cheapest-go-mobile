@@ -501,32 +501,57 @@ export async function searchFlights(params: FlightSearchParams) {
         {
             origin: params.origin.toUpperCase(),
             destination: params.destination.toUpperCase(),
-            departureDate: params.departureDate
-        }
+            departureDate: params.departureDate,
+        },
     ];
 
     if (params.tripType === 'round-trip' && params.returnDate) {
         segments.push({
             origin: params.destination.toUpperCase(),
             destination: params.origin.toUpperCase(),
-            departureDate: params.returnDate
+            departureDate: params.returnDate,
         });
     } else if (params.tripType === 'multi-city' && params.multiCitySegments) {
         segments = params.multiCitySegments.map(s => ({
             origin: s.origin.toUpperCase(),
             destination: s.destination.toUpperCase(),
-            departureDate: s.departureDate
+            departureDate: s.departureDate,
         }));
     }
 
-    return invokeEdgeFunction('unified-flight-search', {
-        segments,
-        tripType: params.tripType,
-        adults: params.adults,
-        children: params.children || 0,
-        infants: params.infants || 0,
-        cabinClass: params.cabinClass?.toLowerCase().replace(' ', '_') || 'economy',
-    });
+    // Call the web app's search route — has validation, rate limiting, and
+    // runs Duffel + Mystifly in parallel with proper 15s timeouts.
+    const BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 30_000);
+
+    try {
+        const res = await fetch(`${BASE}/api/flights/search`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                segments,
+                passengers: {
+                    adults: params.adults,
+                    children: params.children || 0,
+                    infants: params.infants || 0,
+                },
+                cabinClass: params.cabinClass?.toLowerCase().replace(' ', '_') || 'economy',
+                tripType: params.tripType,
+            }),
+            signal: controller.signal,
+        });
+        clearTimeout(timer);
+        if (!res.ok) {
+            const err = await res.json().catch(() => ({}));
+            throw new Error(err.error ?? `Search failed (HTTP ${res.status})`);
+        }
+        return res.json();
+    } catch (err: any) {
+        clearTimeout(timer);
+        if (err.name === 'AbortError') throw new Error('Search timed out. Please check your connection and try again.');
+        throw err;
+    }
 }
 
 export async function autocompleteAirports(keyword: string): Promise<Airport[]> {
