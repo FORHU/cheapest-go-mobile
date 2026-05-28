@@ -137,10 +137,11 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
                     .card-img-grid {
                         display: grid;
                         grid-template-columns: 1fr 1fr;
-                        grid-template-rows: 1fr 1fr;
+                        grid-template-rows: 74px 74px;
                         gap: 2px;
                         width: 100%;
                         height: 150px;
+                        overflow: hidden;
                         background: ${isDark ? '#1e293b' : '#f1f5f9'};
                     }
                     .grid-img {
@@ -148,6 +149,8 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
                         height: 100%;
                         object-fit: cover;
                         display: block;
+                        min-width: 0;
+                        min-height: 0;
                     }
 
                     @keyframes markerPopup {
@@ -221,12 +224,22 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
                         }
                     }
 
+                    function applyPoiStyle() {
+                        // Hide default Mapbox POI circular icons (restaurants, shops, etc.)
+                        ['poi-label', 'transit-label', 'airport-label'].forEach(function(id) {
+                            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+                        });
+                    }
+
                     function setStyle(style, el) {
                         map.setStyle('mapbox://styles/mapbox/' + style);
                         document.querySelectorAll('.layer-opt').forEach(opt => opt.classList.remove('active'));
                         el.classList.add('active');
                         toggleLayers();
-                        map.once('idle', applyBuildingStyle);
+                        map.once('idle', function() {
+                            applyBuildingStyle();
+                            applyPoiStyle();
+                        });
                     }
 
                     let currentHotels = [];
@@ -274,7 +287,7 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
                                 el.className = 'marker';
                                 el.id = 'marker-' + hotel.hotelId;
 
-                                const price = hotel.displayPrice || '???';
+                                const price = hotel.displayConvertedPrice || hotel.displayPrice || '???';
                                 el.innerHTML = \`
                                     <div class="marker-card">
                                         <div class="card-img-grid">\${gridHtml}</div>
@@ -315,8 +328,11 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
                                 .setLngLat([hotel.longitude, hotel.latitude])
                                 .addTo(map);
                             } else {
-                                const numEl = markers[hotel.hotelId].getElement().querySelector('.marker-num');
+                                const el = markers[hotel.hotelId].getElement();
+                                const numEl = el.querySelector('.marker-num');
                                 if (numEl) numEl.textContent = hotelIndex;
+                                const priceEl = el.querySelector('.marker-price');
+                                if (priceEl) priceEl.textContent = symbol + (hotel.displayConvertedPrice || hotel.displayPrice || '???');
                             }
 
                             const mEl = markers[hotel.hotelId].getElement();
@@ -337,6 +353,7 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
                     map.on('load', () => {
                         map.resize();
                         applyBuildingStyle();
+                        applyPoiStyle();
                         window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_LOADED' }));
                     });
 

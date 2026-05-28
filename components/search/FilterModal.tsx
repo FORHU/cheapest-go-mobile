@@ -1,6 +1,6 @@
+import { Check, RotateCcw } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme, TextInput, ActivityIndicator } from 'react-native';
-import { X, RotateCcw, Star, Check } from 'lucide-react-native';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 import SearchModal from './SearchModal';
 
 interface FilterModalProps {
@@ -245,9 +245,9 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     resetBtn: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
     },
     resetText: {
+        marginLeft: 4,
         fontSize: 14,
         color: '#2563eb',
         fontWeight: '600',
@@ -258,11 +258,9 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     priceRangeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
     },
     priceInputWrapper: {
         flex: 1,
-        gap: 6,
     },
     priceInputLabel: {
         fontSize: 12,
@@ -305,12 +303,13 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     starGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
     },
     filterChip: {
         paddingHorizontal: 14,
         paddingVertical: 8,
         borderRadius: 10,
+        marginRight: 8,
+        marginBottom: 8,
         backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
@@ -329,7 +328,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         fontWeight: '700',
     },
     radioGrid: {
-        gap: 8,
+        marginBottom: 8,
     },
     radioItem: {
         flexDirection: 'row',
@@ -356,12 +355,13 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     amenityGrid: {
         flexDirection: 'row',
         flexWrap: 'wrap',
-        gap: 8,
     },
     amenityChip: {
         paddingHorizontal: 12,
         paddingVertical: 6,
         borderRadius: 8,
+        marginRight: 8,
+        marginBottom: 8,
         backgroundColor: isDark ? '#0f172a' : '#f1f5f9',
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',

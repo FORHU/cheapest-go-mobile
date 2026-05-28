@@ -6,12 +6,11 @@
  * All rates are in "USD per 1 unit" format (e.g. PHP: 0.01739 means 1 PHP = $0.01739).
  */
 
-// Static fallback rates — updated May 2026
-// USD per 1 unit: USD=1, PHP≈1/57.5, KRW≈1/1375
+// Static fallback rates (USD-per-1-unit format) — mirrors web app src/lib/currency.ts
 const STATIC_RATES: Record<string, number> = {
     USD: 1.0,
-    PHP: 1 / 57.5,    // 1 USD ≈ 57.5 PHP
-    KRW: 1 / 1375,    // 1 USD ≈ 1375 KRW
+    PHP: 0.018,    // 1 PHP = $0.018 → 1 USD ≈ ₱55.6
+    KRW: 0.00075,  // 1 KRW = $0.00075 → 1 USD ≈ ₩1333
 };
 
 /**
@@ -68,9 +67,9 @@ export async function refreshExchangeRates(): Promise<boolean> {
  *
  * Formula: amount_in_to = (amount_in_from × from_USD_rate) / to_USD_rate
  *
- *   100 USD → PHP:  (100 × 1.0) / (1/57.5) = 5750 PHP  ✓
- *   5750 PHP → USD: (5750 × 1/57.5) / 1.0  = 100 USD   ✓
- *   100 USD → KRW:  (100 × 1.0) / (1/1375) = 137500 KRW ✓
+ *   150000 KRW → USD: (150000 × 0.00075) / 1.0 = 112.5 USD ✓
+ *   112 USD    → KRW: (112 × 1.0) / 0.00075     = 149333 KRW ✓
+ *   6000 PHP   → USD: (6000 × 0.018) / 1.0       = 108 USD ✓
  */
 export function convertCurrency(
     amount: number,
