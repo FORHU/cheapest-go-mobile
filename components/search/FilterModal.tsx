@@ -28,7 +28,7 @@ export const FACILITY_MAP = [
 const GUEST_RATINGS = [
     { value: 0, label: 'Any' },
     { value: 9, label: 'Excellent 9+' },
-    { value: 8, label: 'Very Good 8+' },
+    { value: 8, label: 'Very Good 8+' }, 
     { value: 7, label: 'Good 7+' },
     { value: 6, label: 'Pleasant 6+' },
 ];

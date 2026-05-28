@@ -74,26 +74,26 @@ export default function PropertyMapWebView({
     const [loadingPois, setLoadingPois] = useState(false);
     const [selectedPoiId, setSelectedPoiId] = useState<string | null>(null);
 
-    // Sliding bottom sheet height animation (90 for collapsed, 250 for half/expanded, maxHeight for full screen cover)
-    const sheetHeight = useRef(new Animated.Value(activeCategory ? 250 : 90)).current;
-    const lastSheetHeight = useRef(activeCategory ? 250 : 90);
+    // Sliding bottom sheet — collapsed by default (95px = handle + title + subtitle)
+    const SHEET_COLLAPSED = 95;
+    const SHEET_EXPANDED  = 260;
+    const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
+    const lastSheetHeight = useRef(SHEET_COLLAPSED);
 
     useEffect(() => {
         const listenerId = sheetHeight.addListener(({ value }) => {
             lastSheetHeight.current = value;
         });
-        return () => {
-            sheetHeight.removeListener(listenerId);
-        };
+        return () => sheetHeight.removeListener(listenerId);
     }, []);
 
-    // Expand bottom sheet when category is selected
+    // Animate when category changes (user-driven only — no auto-select on mount)
     useEffect(() => {
         Animated.spring(sheetHeight, {
-            toValue: activeCategory ? 250 : 90,
+            toValue: activeCategory ? SHEET_EXPANDED : SHEET_COLLAPSED,
             useNativeDriver: false,
             tension: 40,
-            friction: 8
+            friction: 8,
         }).start();
     }, [activeCategory]);
 
@@ -112,7 +112,7 @@ export default function PropertyMapWebView({
             onPanResponderMove: (_, gestureState) => {
                 const newHeight = lastSheetHeight.current - gestureState.dy;
                 const maxHeight = isMaximized ? (height - 80) : 380;
-                if (newHeight >= 90 && newHeight <= maxHeight) {
+                if (newHeight >= SHEET_COLLAPSED && newHeight <= maxHeight) {
                     sheetHeight.setValue(-gestureState.dy);
                 }
             },
@@ -121,25 +121,24 @@ export default function PropertyMapWebView({
                 const finalHeight = lastSheetHeight.current;
                 const maxHeight = isMaximized ? (height - 80) : 380;
 
-                // Snap points calculations: 90 (collapsed), 250 (half-screen), maxHeight (full screen cover)
-                let targetHeight = 90;
-                if (finalHeight > 250 + (maxHeight - 250) / 2) {
-                    targetHeight = maxHeight;
-                } else if (finalHeight > 90 + (250 - 90) / 2) {
-                    targetHeight = 250;
-                } else {
-                    targetHeight = 90;
-                }
+                // Free resize: stay wherever released.
+                // Collapse if: swiping down with any noticeable velocity, OR released
+                // within 60px of the minimum (easy to close with a short drag down).
+                const flingDown = gestureState.vy > 0.3;
+                const nearMin   = finalHeight < SHEET_COLLAPSED + 60;
+                const targetHeight = (flingDown || nearMin)
+                    ? SHEET_COLLAPSED
+                    : Math.min(Math.max(finalHeight, SHEET_COLLAPSED), maxHeight);
 
                 Animated.spring(sheetHeight, {
                     toValue: targetHeight,
                     useNativeDriver: false,
-                    tension: 45,
-                    friction: 9
+                    tension: 60,
+                    friction: 12,
                 }).start();
 
-                if (targetHeight > 90 && !activeCategory) {
-                    setActiveCategory('dining');
+                if (targetHeight > SHEET_COLLAPSED && !activeCategory) {
+                    handleCategorySelect('dining');
                 }
             }
         })
@@ -272,12 +271,7 @@ export default function PropertyMapWebView({
         fetchWeather();
     }, [latitude, longitude]);
 
-    // Automatically initialize recommended places (Dining category) on mount / coordinate load
-    useEffect(() => {
-        if (latitude && longitude) {
-            handleCategorySelect('dining');
-        }
-    }, [latitude, longitude]);
+    // No auto-select on mount — sheet starts collapsed, user expands manually
 
     // Fetch POIs from Foursquare Places Search API (replacing Mapbox Search Box API)
     const handleCategorySelect = async (catId: string) => {
@@ -650,42 +644,11 @@ export default function PropertyMapWebView({
                         100% { transform: scale(1.6); opacity: 0; }
                     }
 
-                    /* Layer controls panel */
-                    .layers-btn {
-                        position: absolute; top: 120px; left: 12px; z-index: 10;
-                        background: ${isDark ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.9)'};
-                        backdrop-filter: blur(8px);
-                        color: ${isDark ? 'white' : '#0f172a'};
-                        border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.06)'};
-                        border-radius: 50%; width: 36px; height: 36px; cursor: pointer;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.1); display: flex; align-items: center; justify-content: center;
-                    }
-                    .layers-panel {
-                        display: none; position: absolute; top: 162px; left: 12px; z-index: 10;
-                        background: ${isDark ? '#0f172a' : 'white'};
-                        border: 1px solid ${isDark ? '#1e293b' : '#e2e8f0'};
-                        border-radius: 12px; padding: 6px; width: 120px;
-                        box-shadow: 0 10px 15px rgba(0,0,0,0.15);
-                    }
-                    .layer-opt {
-                        padding: 8px 10px; cursor: pointer; border-radius: 6px;
-                        font-family: -apple-system, sans-serif; font-size: 12px; color: ${isDark ? '#cbd5e1' : '#475569'};
-                    }
-                    .layer-opt.active { background: #2563eb; color: white; }
                 </style>
             </head>
             <body>
                 <div id="map"></div>
 
-                <div class="layers-btn" onclick="toggleLayers()">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                </div>
-                <div id="layers-panel" class="layers-panel">
-                    <div class="layer-opt active" onclick="setStyle('streets-v12', this)">Standard</div>
-                    <div class="layer-opt" onclick="setStyle('dark-v11', this)">Dark</div>
-                    <div class="layer-opt" onclick="setStyle('satellite-streets-v12', this)">Satellite</div>
-                    <div class="layer-opt" onclick="setStyle('outdoors-v12', this)">Outdoors</div>
-                </div>
 
                 <script>
                     mapboxgl.accessToken = '${MAPBOX_TOKEN}';
@@ -733,19 +696,6 @@ export default function PropertyMapWebView({
                     map.on('style.load', () => {
                         add3DBuildings();
                     });
-
-                    // Layer Toggles
-                    function toggleLayers() {
-                        const panel = document.getElementById('layers-panel');
-                        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-                    }
-
-                    function setStyle(style, el) {
-                        map.setStyle('mapbox://styles/mapbox/' + style);
-                        document.querySelectorAll('.layer-opt').forEach(opt => opt.classList.remove('active'));
-                        el.classList.add('active');
-                        toggleLayers();
-                    }
 
                     // Hotel Pin
                     const hotelEl = document.createElement('div');
@@ -914,11 +864,10 @@ export default function PropertyMapWebView({
             } else if (data.type === 'HOTEL_CLICKED') {
                 handleRecenter();
             } else if (data.type === 'MAP_LOADED') {
-                console.log('[PropertyMapWebView] Map WebView signal: MAP_LOADED');
+                // Re-send existing POIs to the map if already fetched, but do NOT
+                // auto-select a category — the sheet stays collapsed until the user taps.
                 if (pois.length > 0) {
                     webViewRef.current?.postMessage(JSON.stringify({ type: 'SET_POIS', pois }));
-                } else {
-                    handleCategorySelect('dining');
                 }
             }
         } catch (e) { }
@@ -1026,20 +975,25 @@ export default function PropertyMapWebView({
                 isMax ? styles.slidingBottomSheetMaximized : styles.slidingBottomSheetMinimized,
                 { height: sheetHeight }
             ]}>
-                {/* Drag Handle & Title Header - Touch Target Area for sliding gestures */}
-                <View {...panResponder.panHandlers} style={styles.dragHeaderWrapper}>
-                    {/* Sleek iOS drag handle */}
+                {/* Drag handle + title — always visible, gesture zone. Tap to expand. */}
+                <Pressable
+                    {...panResponder.panHandlers}
+                    style={styles.dragHeaderWrapper}
+                    onPress={() => {
+                        if (lastSheetHeight.current <= SHEET_COLLAPSED && !activeCategory) {
+                            handleCategorySelect('dining');
+                        }
+                    }}
+                >
                     <View style={styles.dragHandle} />
-
-                    {/* Title header */}
                     <View style={styles.sheetHeader}>
                         <Text style={styles.discoveryTitle}>Explore Nearby</Text>
-                        <Text style={styles.discoverySubtitle}>Premium recommendations around {hotelName}</Text>
+                        <Text style={styles.discoverySubtitle}>Recommendations around {hotelName}</Text>
                     </View>
-                </View>
+                </Pressable>
 
-                {/* Category Pills horizontal list */}
-                <View style={styles.categoriesScrollWrapper}>
+                {/* Category pills + POI cards — only visible when expanded */}
+                {activeCategory && (
                     <ScrollView
                         horizontal
                         showsHorizontalScrollIndicator={false}
@@ -1066,9 +1020,9 @@ export default function PropertyMapWebView({
                             );
                         })}
                     </ScrollView>
-                </View>
+                )}
 
-                {/* Horizontal scroll recommended POI cards expanded state */}
+                {/* POI cards — only when expanded */}
                 {activeCategory && (
                     <View style={styles.sheetPoisWrapper}>
                         {loadingPois ? (
@@ -1155,29 +1109,28 @@ export default function PropertyMapWebView({
                         )}
                     />
 
-                    {/* Weather Trigger Badge */}
-                    {weather && (
-                        <Pressable style={styles.weatherBadge} onPress={() => setWeatherOpen(!weatherOpen)}>
-                            <Text style={styles.weatherEmoji}>{weather.current.icon}</Text>
-                            <Text style={styles.weatherTemp}>{weather.current.temp}°</Text>
-                        </Pressable>
-                    )}
-
                     {/* Left Floating Controls (Recenter, Maximize) */}
                     <View style={styles.floatingControlsLeft}>
                         <Pressable style={styles.controlBtn} onPress={handleRecenter}>
                             <Compass size={18} color={isDark ? '#60a5fa' : '#2563eb'} />
                         </Pressable>
                         <View style={styles.controlSeparator} />
-                        <Pressable 
-                            style={styles.controlBtn} 
-                            onPress={() => setIsMaximized(true)}
-                        >
+                        <Pressable style={styles.controlBtn} onPress={() => setIsMaximized(true)}>
                             <Maximize2 size={18} color={isDark ? '#60a5fa' : '#2563eb'} />
                         </Pressable>
                     </View>
 
-                    {/* Right Floating Controls (Zoom In, Zoom Out) */}
+                    {/* Center — Weather Trigger Badge */}
+                    {weather && (
+                        <View style={styles.weatherBadgeCenter}>
+                            <Pressable style={styles.weatherBadge} onPress={() => setWeatherOpen(!weatherOpen)}>
+                                <Text style={styles.weatherEmoji}>{weather.current.icon}</Text>
+                                <Text style={styles.weatherTemp}>{weather.current.temp}°</Text>
+                            </Pressable>
+                        </View>
+                    )}
+
+                    {/* Right Floating Controls (Zoom In, Zoom Out) — aligned with left */}
                     <View style={styles.floatingControls}>
                         <Pressable style={styles.controlBtn} onPress={() => handleZoom('in')}>
                             <Plus size={18} color={isDark ? '#60a5fa' : '#2563eb'} />
@@ -1370,10 +1323,16 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: isDark ? 'rgba(2, 6, 23, 0.7)' : 'rgba(255, 255, 255, 0.7)',
     },
-    weatherBadge: {
+    weatherBadgeCenter: {
         position: 'absolute',
         top: 12,
-        right: 12,
+        left: 0,
+        right: 0,
+        alignItems: 'center',
+        zIndex: 10,
+        pointerEvents: 'box-none',
+    },
+    weatherBadge: {
         backgroundColor: isDark ? 'rgba(30, 41, 59, 0.85)' : 'rgba(15, 23, 42, 0.85)',
         paddingHorizontal: 10,
         paddingVertical: 6,
@@ -1381,9 +1340,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 4,
-        boxShadow: '0 4px 10px rgba(0,0,0,0.15)',
         elevation: 5,
-        zIndex: 10,
     },
     weatherEmoji: {
         fontSize: 15,
@@ -1396,7 +1353,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     floatingControls: {
         position: 'absolute',
-        top: 60, // Cleanly placed below the weather trigger badge on the right
+        top: 12,
         right: 12,
         backgroundColor: isDark ? 'rgba(15, 23, 42, 0.9)' : 'rgba(255, 255, 255, 0.9)',
         borderRadius: 12,
@@ -1510,6 +1467,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     categoryChip: {
         flexDirection: 'row',
         alignItems: 'center',
+        flexShrink: 0,
         gap: 4,
         paddingHorizontal: 10,
         paddingVertical: 5,
@@ -1834,11 +1792,6 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         gap: 8,
         zIndex: 10,
     },
-    categoriesScrollWrapper: {
-        height: 38,
-        marginTop: 6,
-        marginBottom: 2,
-    },
     slidingBottomSheet: {
         height: 250,
         backgroundColor: isDark ? 'rgba(15, 23, 42, 0.94)' : 'rgba(255, 255, 255, 0.94)',
@@ -1880,14 +1833,18 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     sheetHeader: {
         paddingHorizontal: 4,
-        marginBottom: 8,
-    },
-    sheetCategoriesScroll: {
-        height: 32,
+        paddingTop: 2,
         marginBottom: 6,
     },
+    sheetCategoriesScroll: {
+        height: 34,
+        marginBottom: 4,
+    },
     sheetCategoriesContent: {
+        flexDirection: 'row',
+        alignItems: 'center',
         gap: 6,
+        paddingHorizontal: 2,
     },
     sheetPoisWrapper: {
         marginTop: 6,

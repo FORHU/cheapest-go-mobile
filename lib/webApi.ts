@@ -25,7 +25,12 @@ async function post<T = any>(
     const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
     try {
-        const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+        // 'cheapestgo-client' bypasses the web app's CSRF origin check for
+        // same-site custom-header requests; see src/lib/server/csrf.ts.
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json',
+            'X-Requested-By': 'cheapestgo-client',
+        };
         if (opts?.auth) {
             headers['X-Mobile-Api-Key'] = MOBILE_KEY;
             // Include the user's Supabase session token so the web endpoint
@@ -198,4 +203,59 @@ export async function webMobileConfirm(
     sessionId: string
 ): Promise<MobileConfirmResult> {
     return post('/api/mobile/flights/confirm', { paymentIntentId, sessionId }, { auth: true });
+}
+
+// ─── Hotel Payment ────────────────────────────────────────────────────────────
+
+export interface CreateHotelPaymentParams {
+    prebookId: string;
+    amount: number;
+    currency: string;
+    holderEmail: string;
+    propertyName?: string;
+    roomName?: string;
+    checkIn?: string;
+    checkOut?: string;
+}
+
+export interface CreateHotelPaymentResult {
+    success: boolean;
+    data: { clientSecret: string; paymentIntentId: string };
+}
+
+/** Creates a Stripe PaymentIntent for a hotel booking. Returns the client secret. */
+export async function createHotelPayment(
+    params: CreateHotelPaymentParams
+): Promise<CreateHotelPaymentResult> {
+    return post('/api/booking/create-payment', params, { auth: true });
+}
+
+export interface ConfirmHotelBookingParams {
+    prebookId: string;
+    paymentIntentId: string;
+    holder: { firstName: string; lastName: string; email: string };
+    guests: Array<{ occupancyNumber: number; firstName: string; lastName: string; email: string; remarks?: string }>;
+    payment: { method: string; transactionId?: string };
+    propertyName?: string;
+    propertyImage?: string;
+    roomName?: string;
+    checkIn?: string;
+    checkOut?: string;
+    adults?: number;
+    children?: number;
+    currency?: string;
+    specialRequests?: string;
+}
+
+export interface ConfirmHotelBookingResult {
+    success: boolean;
+    data?: { bookingId: string; status: string; totalPrice?: number; currency?: string };
+    error?: string;
+}
+
+/** Confirms a hotel booking after Stripe payment. Saves to DB and sends confirmation email. */
+export async function confirmHotelBooking(
+    params: ConfirmHotelBookingParams
+): Promise<ConfirmHotelBookingResult> {
+    return post('/api/booking/confirm', params, { auth: true });
 }
