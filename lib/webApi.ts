@@ -157,6 +157,82 @@ export async function webRefreshOffer(
     return post('/api/flights/offer-refresh', { rawOffer });
 }
 
+// ─── Airport Autocomplete ─────────────────────────────────────────────────────
+
+export interface Airport {
+    iata: string;
+    name: string;
+    city: string;
+    country: string;
+    countryCode: string;
+}
+
+export async function webSearchAirports(query: string): Promise<Airport[]> {
+    const BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5_000);
+    try {
+        const res = await fetch(
+            `${BASE}/api/airports/search?q=${encodeURIComponent(query)}&limit=8`,
+            { signal: controller.signal }
+        );
+        clearTimeout(timer);
+        if (!res.ok) return [];
+        const json = await res.json();
+        return json.data ?? [];
+    } catch {
+        clearTimeout(timer);
+        return [];
+    }
+}
+
+// ─── Hotel Destination Autocomplete (Mapbox — same source as web) ─────────────
+// Calls Mapbox geocoding directly using the same token and parameters as the
+// web app's /api/autocomplete → fetchCitiesFromMapbox() in src/lib/server/search.ts.
+
+export interface WebDestination {
+    type: 'city' | 'country';
+    title: string;
+    subtitle: string;
+    countryCode: string;
+    id?: string;   // Mapbox feature ID — pass as placeId to hotel search
+    code?: string; // TravelgateX destination code (not set from Mapbox results)
+}
+
+export async function webAutocompleteDestinations(query: string): Promise<WebDestination[]> {
+    const token = process.env.EXPO_PUBLIC_MAPBOX_TOKEN;
+    if (!token) return [];
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 5_000);
+
+    try {
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(query)}.json?types=place,locality,region&limit=6&access_token=${token}`;
+        const res = await fetch(url, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res.ok) return [];
+
+        const data = await res.json();
+        return (data.features ?? []).map((feature: any) => {
+            const cityName: string = feature.text ?? '';
+            const placeName: string = feature.place_name ?? '';
+            const countryCtx = (feature.context ?? []).find((c: any) => c.id?.startsWith('country.'));
+            const countryCode: string = (countryCtx?.short_code ?? '').toUpperCase().slice(0, 2);
+
+            return {
+                type: 'city' as const,
+                title: cityName,
+                subtitle: placeName,
+                countryCode,
+                id: feature.id ?? undefined,
+            };
+        });
+    } catch {
+        clearTimeout(timer);
+        return [];
+    }
+}
+
 // ─── Mobile Book ─────────────────────────────────────────────────────────────
 
 export interface MobileBookParams {
