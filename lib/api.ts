@@ -143,31 +143,66 @@ function getCountryCodeFromAddress(address: string): string {
     return countryMap[lastPart] || '';
 }
 
+const WEB_API_URL = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
+
+// Calls the web server's /api/autocomplete which proxies Mapbox server-side.
+// Direct Mapbox calls from the device fail because the token is domain-restricted.
+async function mapboxDestinations(query: string): Promise<Destination[]> {
+    try {
+        const res = await fetch(`${WEB_API_URL}/api/autocomplete`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query }),
+        });
+        if (!res.ok) return [];
+        const json = await res.json();
+        // Production returns { success, data: [...] }; dev returns [] directly
+        const features: any[] = Array.isArray(json) ? json : (json.data ?? []);
+        return features
+            .map(f => ({
+                type: (f.type || 'city') as Destination['type'],
+                title: f.title || '',
+                subtitle: f.subtitle || '',
+                countryCode: f.countryCode || '',
+                id: f.id,
+                code: f.code,
+            } as Destination))
+            .filter(d => !!d.title);
+    } catch {
+        return [];
+    }
+}
+
 export async function autocompleteDestinations(keyword: string): Promise<Destination[]> {
     const normalizedKeyword = normalizeDestinationKeyword(keyword);
     if (!normalizedKeyword || normalizedKeyword.length < 2) return [];
-    try {
-        const result = await invokeEdgeFunction<{ data?: any[] }>('travelgatex-destinations', { keyword: normalizedKeyword });
-        return (result?.data ?? []).map((item: any) => {
-            const title = item.name || '';
-            const countryCode = item.countryCode || item.isoCountryCode || item.country || getCountryCodeFromAddress(item.name || item.subtitle || '');
-            return {
-                type: (item.type || 'city') as any,
-                title,
-                subtitle: item.type === 'country' ? 'Country' : item.country || item.subtitle || 'City/Zone',
-                countryCode,
-                id: item.code || item.id,
-            };
-        });
-    } catch (err) {
-        return [];
-    }
+
+    // Run Mapbox and TGX in parallel — Mapbox wins if it returns results.
+    // Mapbox IDs go as placeId; TGX codes go as destinationCode.
+    const mapboxPromise = mapboxDestinations(normalizedKeyword);
+
+    const tgxPromise = invokeEdgeFunction<{ data?: any[] }>('travelgatex-destinations', { keyword: normalizedKeyword })
+        .then(result =>
+            (result?.data ?? []).map((item: any) => ({
+                type: (item.type || 'city') as Destination['type'],
+                title: item.name || '',
+                subtitle: item.country || 'City',
+                countryCode: item.countryCode || item.isoCountryCode || getCountryCodeFromAddress(item.name || ''),
+                id: undefined,
+                code: item.code || item.id, // TGX destination code
+            } as Destination))
+        )
+        .catch(() => [] as Destination[]);
+
+    const [mapboxResults, tgxResults] = await Promise.all([mapboxPromise, tgxPromise]);
+    return mapboxResults.length > 0 ? mapboxResults : tgxResults;
 }
 
 export interface HotelSearchParams {
     destination: string;
     countryCode?: string;
-    placeId?: string;
+    placeId?: string;         // Mapbox place ID (from web autocomplete)
+    destinationCode?: string; // TGX destination code (from TGX autocomplete fallback)
     checkIn: string; // YYYY-MM-DD
     checkOut: string;
     adults: number;
@@ -178,7 +213,7 @@ export interface HotelSearchParams {
 }
 
 export async function searchHotels(params: HotelSearchParams) {
-    let { destination, countryCode, placeId } = params;
+    let { destination, countryCode, placeId, destinationCode } = params;
     const normalizedDestination = normalizeDestinationKeyword(destination);
     if (normalizedDestination && normalizedDestination !== destination) {
         destination = normalizedDestination;
@@ -201,7 +236,8 @@ export async function searchHotels(params: HotelSearchParams) {
 
     const result = await invokeEdgeFunction('travelgatex-search', {
         cityName: destination,
-        destinationCode: placeId || undefined,
+        placeId: placeId || undefined,             // Mapbox ID → geocoding lookup
+        destinationCode: destinationCode || undefined, // TGX code → direct lookup
         countryCode: countryCode || undefined,
         checkin: params.checkIn,
         checkout: params.checkOut,
@@ -557,8 +593,13 @@ export async function searchFlights(params: FlightSearchParams) {
 export async function autocompleteAirports(keyword: string): Promise<Airport[]> {
     if (!keyword || keyword.length < 2) return [];
     try {
+        const { webSearchAirports } = await import('./webApi');
+        const results = await webSearchAirports(keyword);
+        if (results.length > 0) return results;
+        // Fallback to local list if web API is unavailable
         return searchAirports(keyword);
     } catch (err) {
-        return [];
+        // Always fall back to local list — flights must work offline too
+        try { return searchAirports(keyword); } catch { return []; }
     }
 }

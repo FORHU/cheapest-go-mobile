@@ -349,16 +349,17 @@ export default function SearchScreen() {
             try {
 
                 const results = await searchHotels({
-                    destination: params.destination as string,
-                    countryCode: params.countryCode as string,
-                    placeId: params.placeId as string,
-                    checkIn: params.checkIn as string,
-                    checkOut: params.checkOut as string,
-                    adults: parseInt(params.adults as string || '2'),
-                    children: parseInt(params.children as string || '0'),
-                    childrenAges: params.childrenAges as string,
-                    rooms: parseInt(params.rooms as string || '1'),
-                    currency: 'USD', // always fetch in USD; we convert client-side
+                    destination:     params.destination as string,
+                    countryCode:     params.countryCode as string,
+                    placeId:         params.placeId as string,
+                    destinationCode: params.destinationCode as string,
+                    checkIn:         params.checkIn as string,
+                    checkOut:        params.checkOut as string,
+                    adults:          parseInt(params.adults as string || '2'),
+                    children:        parseInt(params.children as string || '0'),
+                    childrenAges:    params.childrenAges as string,
+                    rooms:           parseInt(params.rooms as string || '1'),
+                    currency:        'USD',
                 });
                 
                 const hotelData = results?.data || [];
