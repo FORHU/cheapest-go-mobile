@@ -20,7 +20,7 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
     const hasLoadedRef = useRef(false);
 
     const htmlContent = useMemo(() => {
-        const styleUrl = 'mapbox://styles/mapbox/streets-v12';
+        const styleUrl = 'mapbox://styles/mapbox/dark-v11';
         
         return `
             <!DOCTYPE html>
@@ -187,8 +187,8 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
                     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
                 </div>
                 <div id="layers-panel" class="layers-panel">
-                    <div class="layer-opt active" onclick="setStyle('streets-v12', this)">Standard</div>
-                    <div class="layer-opt" onclick="setStyle('dark-v11', this)">Dark</div>
+                    <div class="layer-opt" onclick="setStyle('streets-v12', this)">Standard</div>
+                    <div class="layer-opt active" onclick="setStyle('dark-v11', this)">Dark</div>
                     <div class="layer-opt" onclick="setStyle('satellite-streets-v12', this)">Satellite</div>
                     <div class="layer-opt" onclick="setStyle('outdoors-v12', this)">Outdoors</div>
                 </div>
@@ -219,9 +219,15 @@ export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId
 
                     function applyBuildingStyle() {
                         if (map.getLayer('building')) {
-                            map.setPaintProperty('building', 'fill-color', '#f0f0f0');
-                            map.setPaintProperty('building', 'fill-opacity', 0.75);
+                            map.setPaintProperty('building', 'fill-color', '#2a2d35');
+                            map.setPaintProperty('building', 'fill-opacity', 0.3);
                         }
+                        if (map.getLayer('building-extrusion')) {
+                            map.setLayoutProperty('building-extrusion', 'visibility', 'none');
+                        }
+                        ['building-number-label', 'building-entrance'].forEach(function(id) {
+                            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
+                        });
                     }
 
                     function applyPoiStyle() {
