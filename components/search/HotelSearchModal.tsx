@@ -268,16 +268,17 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
 
         setIsSearching(true);
         const params = {
-            destination: destValue,
-            countryCode:  destination?.countryCode || '',
-            placeId:      destination?.id || '',
-            checkIn:      formatDateLocal(checkIn!),
-            checkOut:     formatDateLocal(checkOut!),
-            adults:       adults.toString(),
-            children:     children.toString(),
-            childrenAges: childrenAges.join(','),
-            rooms:        rooms.toString(),
-            currency:     currency.code,
+            destination:     destValue,
+            countryCode:     destination?.countryCode || '',
+            placeId:         destination?.id || '',   // Mapbox ID (web autocomplete)
+            destinationCode: destination?.code || '', // TGX code (TGX fallback)
+            checkIn:         formatDateLocal(checkIn!),
+            checkOut:        formatDateLocal(checkOut!),
+            adults:          adults.toString(),
+            children:        children.toString(),
+            childrenAges:    childrenAges.join(','),
+            rooms:           rooms.toString(),
+            currency:        currency.code,
         };
         await saveRecentSearch({
             destination: destValue,
