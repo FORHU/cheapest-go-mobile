@@ -267,7 +267,10 @@ export async function getHotelReviews(hotelId: string, limit: number = 20) {
             getSentiment: false
         });
         if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
-            return result.data;
+            return result.data.map((r: any) => ({
+                ...r,
+                name: r.name?.split(' ').filter((p: string) => p && p !== 'undefined' && p !== 'null').join(' ') || 'Verified Traveler',
+            }));
         }
     } catch (err) {
         console.error('[getHotelReviews] Failed to fetch real reviews:', err);
