@@ -5,7 +5,7 @@ import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import * as WebBrowser from 'expo-web-browser';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
@@ -15,6 +15,13 @@ WebBrowser.maybeCompleteAuthSession();
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SettingsProvider } from '../context/SettingsContext';
 import { AuthProvider, useAuth } from '../context/AuthContext';
+import { ForceUpdateModal } from '../components/ui/ForceUpdateModal';
+import { registerForPushNotifications } from '../lib/notifications';
+import {
+    fetchVersionConfig,
+    isUpdateRequired,
+    type VersionConfig,
+} from '../lib/version-check';
 import "../global.css";
 
 export {
@@ -64,7 +71,27 @@ function RootLayoutNav() {
   const segments = useSegments();
   const router = useRouter();
 
-  // Handle deep links from auth emails (confirmation, password reset)
+  // ── Version gate ─────────────────────────────────────────────────────────
+  const [versionConfig, setVersionConfig] = useState<VersionConfig | null>(null);
+  const [forceUpdateVisible, setForceUpdateVisible] = useState(false);
+
+  useEffect(() => {
+    fetchVersionConfig().then(cfg => {
+      setVersionConfig(cfg);
+      if (isUpdateRequired(cfg)) {
+        setForceUpdateVisible(true);
+      }
+    });
+  }, []);
+
+  // ── Push notifications ───────────────────────────────────────────────────
+  useEffect(() => {
+    if (isLoading) return;
+    // Register once we know whether the user is logged in or not
+    registerForPushNotifications(user?.id ?? undefined);
+  }, [isLoading, user?.id]);
+
+  // ── Deep link handling ───────────────────────────────────────────────────
   useEffect(() => {
     const handle = async (url: string) => {
       try {
@@ -77,6 +104,7 @@ function RootLayoutNav() {
     return () => sub.remove();
   }, []);
 
+  // ── Auth redirect ────────────────────────────────────────────────────────
   useEffect(() => {
     if (isLoading) return;
 
@@ -104,6 +132,15 @@ function RootLayoutNav() {
         <Stack.Screen name="flight-checkout" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
       </Stack>
+
+      {/* Force-update gate — renders over everything, no dismiss button */}
+      {versionConfig && (
+        <ForceUpdateModal
+          visible={forceUpdateVisible}
+          message={versionConfig.updateMessage}
+          minVersion={versionConfig.minVersion}
+        />
+      )}
     </ThemeProvider>
   );
 }
