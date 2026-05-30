@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import {
     Building2,
+    Check,
     ChevronRight,
     Clock,
     MapPin,
@@ -300,7 +301,37 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
     const checkOutDisplay = formatDateShort(checkOut);
 
     return (
-        <SearchModal visible={visible} onClose={onClose} title="Search Hotels">
+        <SearchModal visible={visible} onClose={onClose} title="Hotel Search">
+            {/* ── Step progress indicator ─────────────────────────────── */}
+            <View style={styles.stepperBar}>
+                {([
+                    { key: 'where',    label: 'Destination', done: !!(destination?.title || destQuery) },
+                    { key: 'checkin',  label: 'Check-in',    done: !!checkIn },
+                    { key: 'checkout', label: 'Check-out',   done: !!checkOut },
+                    { key: 'guests',   label: 'Guests',      done: false },
+                ] as { key: string; label: string; done: boolean }[]).map((step, i, arr) => {
+                    const highlighted = step.done || activeField === step.key;
+                    const prevDone = i > 0 && arr[i - 1].done;
+                    return (
+                        <React.Fragment key={step.key}>
+                            {i > 0 && (
+                                <View style={[styles.stepLine, prevDone && styles.stepLineActive]} />
+                            )}
+                            <Pressable style={styles.stepItem} onPress={() => setActiveField(step.key)}>
+                                <View style={styles.stepDotWrapper}>
+                                    <View style={[styles.stepDot, highlighted && styles.stepDotActive]}>
+                                        {step.done && <Check size={10} color="#fff" strokeWidth={3} />}
+                                    </View>
+                                </View>
+                                <Text style={[styles.stepLabel, highlighted && styles.stepLabelActive]}>
+                                    {step.label}
+                                </Text>
+                            </Pressable>
+                        </React.Fragment>
+                    );
+                })}
+            </View>
+
             <ScrollView
                 style={styles.scrollView}
                 contentContainerStyle={styles.scrollContent}
@@ -428,17 +459,24 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
                             )}
                         </View>
                     ) : (
-                        <View style={styles.collapsedField}>
-                            <View style={styles.fieldIconLabel}>
-                                <MapPin size={14} color={isDark ? '#475569' : '#94a3b8'} />
-                                <Text style={styles.fieldLabel}>DESTINATION</Text>
+                        <View style={[styles.collapsedField, styles.collapsedFieldRow]}>
+                            <View style={{ flex: 1, gap: 4 }}>
+                                <View style={styles.fieldIconLabel}>
+                                    <MapPin size={14} color={isDark ? '#475569' : '#94a3b8'} />
+                                    <Text style={styles.fieldLabel}>DESTINATION</Text>
+                                </View>
+                                <Text
+                                    style={[styles.fieldValue, !(destination?.title || destQuery) && styles.fieldPlaceholder]}
+                                    numberOfLines={1}
+                                >
+                                    {destination?.title || destQuery || 'Where are you going?'}
+                                </Text>
                             </View>
-                            <Text
-                                style={[styles.fieldValue, !(destination?.title || destQuery) && styles.fieldPlaceholder]}
-                                numberOfLines={1}
-                            >
-                                {destination?.title || destQuery || 'Where are you going?'}
-                            </Text>
+                            {!!(destination?.title || destQuery) && (
+                                <View style={styles.fieldCheck}>
+                                    <Check size={16} color="#3b82f6" strokeWidth={2.5} />
+                                </View>
+                            )}
                         </View>
                     )}
                 </Pressable>
@@ -563,6 +601,11 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
                                     {checkOutDisplay || 'Add date'}
                                 </Text>
                             </View>
+                            {checkIn && checkOut && (
+                                <View style={styles.fieldCheck}>
+                                    <Check size={16} color="#3b82f6" strokeWidth={2.5} />
+                                </View>
+                            )}
                         </View>
                     )}
                 </Pressable>
@@ -695,12 +738,15 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
                             </View>
                         </View>
                     ) : (
-                        <View style={styles.collapsedField}>
-                            <View style={styles.fieldIconLabel}>
-                                <Users size={14} color={isDark ? '#475569' : '#94a3b8'} />
-                                <Text style={styles.fieldLabel}>GUESTS</Text>
+                        <View style={[styles.collapsedField, styles.collapsedFieldRow]}>
+                            <View style={{ flex: 1, gap: 4 }}>
+                                <View style={styles.fieldIconLabel}>
+                                    <Users size={14} color={isDark ? '#475569' : '#94a3b8'} />
+                                    <Text style={styles.fieldLabel}>GUESTS</Text>
+                                </View>
+                                <Text style={styles.fieldValue}>{guestSummary}</Text>
                             </View>
-                            <Text style={styles.fieldValue}>{guestSummary}</Text>
+                            <ChevronRight size={18} color={isDark ? '#334155' : '#cbd5e1'} />
                         </View>
                     )}
                 </Pressable>
@@ -731,7 +777,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
                     {isSearching ? (
                         <ActivityIndicator size="small" color="white" />
                     ) : (
-                        <Text style={styles.searchButtonText}>Search Hotels</Text>
+                        <Text style={styles.searchButtonText}>Search</Text>
                     )}
                 </Pressable>
             </View>
@@ -1220,7 +1266,75 @@ const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.creat
         fontSize: 16,
         fontWeight: '700',
         color: '#ffffff',
-        letterSpacing: 0.3,
+        letterSpacing: 1.5,
+    },
+
+    // ── Stepper ──────────────────────────────────────────────────
+    stepperBar: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        paddingHorizontal: 24,
+        paddingTop: 12,
+        paddingBottom: 16,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? '#1e293b' : '#e2e8f0',
+    },
+    stepLine: {
+        flex: 1,
+        height: 1.5,
+        backgroundColor: isDark ? '#1e293b' : '#e2e8f0',
+        marginTop: 8,
+    },
+    stepLineActive: {
+        backgroundColor: '#3b82f6',
+    },
+    stepItem: {
+        alignItems: 'center',
+        width: 56,
+    },
+    stepDotWrapper: {
+        width: 18,
+        height: 18,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stepDot: {
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        backgroundColor: 'transparent',
+        borderWidth: 1.5,
+        borderColor: isDark ? '#334155' : '#cbd5e1',
+    },
+    stepDotActive: {
+        width: 18,
+        height: 18,
+        borderRadius: 9,
+        backgroundColor: '#3b82f6',
+        borderWidth: 0,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    stepLabel: {
+        fontSize: 10,
+        fontWeight: '500',
+        color: isDark ? '#475569' : '#94a3b8',
+        marginTop: 5,
+        textAlign: 'center',
+    },
+    stepLabelActive: {
+        color: isDark ? '#93c5fd' : '#2563eb',
+        fontWeight: '600',
+    },
+
+    // ── Field card row + check indicator ─────────────────────────
+    collapsedFieldRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    fieldCheck: {
+        paddingLeft: 12,
+        paddingRight: 4,
     },
 });
 
