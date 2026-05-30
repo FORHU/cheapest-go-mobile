@@ -11,7 +11,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import {
   LogOut, User, Mail, ChevronRight, Lock,
-  Camera, Pencil, Building2, Bell, Globe,
+  Camera, Pencil, Bell, Globe,
   HelpCircle, Star, FileText,
 } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
@@ -279,45 +279,6 @@ export default function ProfileScreen() {
             <View style={{ width: 1, height: 32, backgroundColor: C.divider }} />
             <StatItem label="REVIEWS" value="3" />
           </View>
-        </View>
-
-        {/* Upcoming Trip */}
-        <SectionLabel label="UPCOMING TRIP" />
-        <View style={{
-          marginHorizontal: 16,
-          backgroundColor: C.card,
-          borderRadius: 16,
-          borderWidth: 1,
-          borderColor: C.border,
-          overflow: 'hidden',
-        }}>
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', padding: 16 }} activeOpacity={0.7}>
-            <View style={{
-              width: 40,
-              height: 40,
-              borderRadius: 10,
-              backgroundColor: C.iconBg,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: 14,
-            }}>
-              <Building2 size={20} color={C.icon} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={{ fontSize: 14, fontWeight: '600', color: C.text, marginBottom: 3 }}>
-                CVNB Bed & Bath – Baguio
-              </Text>
-              <Text style={{ fontSize: 12, color: C.muted }}>May 27 – May 30 · 3 nights</Text>
-            </View>
-            <View style={{
-              backgroundColor: 'rgba(34,197,94,0.15)',
-              paddingHorizontal: 10,
-              paddingVertical: 4,
-              borderRadius: 8,
-            }}>
-              <Text style={{ fontSize: 12, fontWeight: '600', color: '#22c55e' }}>Active</Text>
-            </View>
-          </TouchableOpacity>
         </View>
 
         {/* Account */}
