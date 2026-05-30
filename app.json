@@ -34,7 +34,15 @@
     "plugins": [
       "expo-router",
       [
-        "@stripe/stripe-react-native",
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#1d4ed8",
+          "sounds": []
+        }
+      ],
+      [
+        "./node_modules/@stripe/stripe-react-native/app.plugin.js",
         {
           "merchantIdentifier": "com.cheapestgo.mobile",
           "enableGooglePay": true
