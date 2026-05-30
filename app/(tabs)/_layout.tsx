@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Compass, Heart, User } from 'lucide-react-native';
+import { Home, Compass, Heart, User, Ticket } from 'lucide-react-native';
 import { Link, Tabs } from 'expo-router';
 import { Pressable, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -67,6 +67,14 @@ export default function TabLayout() {
         name="hotel/[id]"
         options={{
           href: null,
+          headerShown: false,
+        }}
+      />
+      <Tabs.Screen
+        name="trips"
+        options={{
+          title: 'Trips',
+          tabBarIcon: ({ color, size }) => <Ticket size={size} color={color} />,
           headerShown: false,
         }}
       />
