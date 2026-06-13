@@ -6,66 +6,23 @@ import { searchHotels } from '../../../lib/travel-api';
 import { resolveHotelImage } from '../../../lib/hotel-image';
 import { useSettings } from '../../../context/SettingsContext';
 
-const DESTINATIONS = [
-    { name: 'Baguio City', location: 'Benguet, PH', countryCode: 'PH', fallbackImage: 'https://images.unsplash.com/photo-1518509562904-e7ef99cdcc86?auto=format&fit=crop&w=500&q=80' },
-    { name: 'Tagaytay', location: 'Cavite, PH', countryCode: 'PH', fallbackImage: 'https://images.unsplash.com/photo-1578469550956-0e16b69c6a3d?auto=format&fit=crop&w=500&q=80' },
-    { name: 'Boracay', location: 'Aklan, PH', countryCode: 'PH', fallbackImage: 'https://images.unsplash.com/photo-1537996194471-e657df975ab4?auto=format&fit=crop&w=500&q=80' },
-    { name: 'El Nido', location: 'Palawan, PH', countryCode: 'PH', fallbackImage: 'https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=500&q=80' },
-];
-
-function getNextWeekDates() {
-    const checkIn = new Date();
-    checkIn.setDate(checkIn.getDate() + 7);
-    const checkOut = new Date(checkIn);
-    checkOut.setDate(checkIn.getDate() + 2);
-    return {
-        checkIn: checkIn.toISOString().split('T')[0],
-        checkOut: checkOut.toISOString().split('T')[0],
-    };
-}
-
 export default function TrendingNearYou() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const styles = getStyles(isDark);
     const { currency } = useSettings();
 
-    const [places, setPlaces] = useState<any[]>(
-        DESTINATIONS.map(d => ({ ...d, price: null, rating: null, image: d.fallbackImage, loading: true }))
-    );
+    const [deals, setDeals] = useState<WeekendDeal[]>([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const { checkIn, checkOut } = getNextWeekDates();
-
-        Promise.allSettled(
-            DESTINATIONS.map(dest =>
-                searchHotels({
-                    destination: dest.name,
-                    countryCode: dest.countryCode,
-                    checkIn,
-                    checkOut,
-                    adults: 2,
-                    children: 0,
-                    rooms: 1,
-                    currency: currency.code,
-                })
-            )
-        ).then(results => {
-            setPlaces(
-                DESTINATIONS.map((dest, i) => {
-                    const result = results[i];
-                    const hotel = result.status === 'fulfilled' ? result.value?.data?.[0] : null;
-                    return {
-                        ...dest,
-                        loading: false,
-                        image: resolveHotelImage(hotel, dest.fallbackImage),
-                        price: hotel?.price?.amount ? Math.round(hotel.price.amount) : null,
-                        rating: hotel?.reviewRating ? (hotel.reviewRating / 2).toFixed(1) : null,
-                    };
-                })
-            );
+        fetchWeekendDeals().then(data => {
+            setDeals(data);
+            setLoading(false);
         });
-    }, [currency.code]);
+    }, []);
+
+    const placeholders = Array.from({ length: 3 });
 
     return (
         <View style={styles.container}>
@@ -84,39 +41,45 @@ export default function TrendingNearYou() {
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.scrollContent}
             >
-                {places.map((place, i) => (
-                    <Pressable key={i} style={styles.card}>
-                        <Image
-                            source={{ uri: place.image }}
-                            style={styles.image}
-                            contentFit="cover"
-                            cachePolicy="memory-disk"
-                            placeholder={{ blurhash: 'L15#hiof00of~qfQIUay00fQ-;fQ' }}
-                        />
-                        <View style={styles.cardContent}>
-                            <Text style={styles.placeName} numberOfLines={1}>{place.name}</Text>
-                            <View style={styles.locationRow}>
-                                <MapPin size={11} color={isDark ? '#475569' : '#94a3b8'} />
-                                <Text style={styles.locationText}>{place.location}</Text>
-                            </View>
-                            <View style={styles.footer}>
-                                <View style={styles.ratingRow}>
-                                    <Star size={11} color="#fbbf24" fill="#fbbf24" />
-                                    <Text style={styles.ratingText}>
-                                        {place.loading ? '—' : (place.rating || '4.5')}
-                                    </Text>
+                {loading
+                    ? placeholders.map((_, i) => (
+                        <View key={i} style={[styles.card, styles.skeleton]} />
+                    ))
+                    : deals.map(deal => {
+                        const converted = Math.round(convertCurrency(deal.salePrice, 'PHP', currency.code));
+                        return (
+                            <Pressable key={deal.id} style={styles.card}>
+                                <View style={styles.imageWrap}>
+                                    <Image
+                                        source={{ uri: deal.imageUrl }}
+                                        style={styles.image}
+                                        contentFit="cover"
+                                        cachePolicy="memory-disk"
+                                        placeholder={{ blurhash: 'L15#hiof00of~qfQIUay00fQ-;fQ' }}
+                                    />
                                 </View>
-                                <Text style={styles.price}>
-                                    {place.loading
-                                        ? '...'
-                                        : place.price
-                                            ? `${currency.symbol}${place.price.toLocaleString()}`
-                                            : `${currency.symbol}—`}
-                                </Text>
-                            </View>
-                        </View>
-                    </Pressable>
-                ))}
+                                <View style={styles.cardBody}>
+                                    <Text style={styles.placeName} numberOfLines={1}>{deal.name}</Text>
+                                    <View style={styles.locationRow}>
+                                        <MapPin size={11} color={isDark ? '#475569' : '#94a3b8'} />
+                                        <Text style={styles.locationText}>{deal.location}</Text>
+                                    </View>
+                                    <View style={styles.footer}>
+                                        <View style={styles.ratingRow}>
+                                            <Star size={11} color="#fbbf24" fill="#fbbf24" />
+                                            <Text style={styles.ratingText}>
+                                                {deal.rating > 0 ? deal.rating.toFixed(1) : '—'}
+                                            </Text>
+                                        </View>
+                                        <Text style={styles.price}>
+                                            {converted > 0 ? `${currency.symbol}${converted.toLocaleString()}` : '—'}
+                                        </Text>
+                                    </View>
+                                </View>
+                            </Pressable>
+                        );
+                    })
+                }
             </ScrollView>
         </View>
     );
@@ -143,13 +106,15 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
     },
-    image: { width: '100%', height: 110, backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },
-    cardContent: { padding: 10, gap: 4 },
+    skeleton: { height: 180, backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },
+    imageWrap: { position: 'relative', height: 110 },
+    image: { width: '100%', height: '100%', backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },
+    cardBody: { padding: 10, gap: 3 },
     placeName: { fontSize: 13, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' },
     locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
     locationText: { fontSize: 11, color: isDark ? '#64748b' : '#94a3b8' },
     footer: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
     ratingRow: { flexDirection: 'row', alignItems: 'center', gap: 3 },
     ratingText: { fontSize: 11, fontWeight: '600', color: isDark ? '#94a3b8' : '#475569' },
-    price: { fontSize: 12, fontWeight: '700', color: '#2563eb' },
+    price: { fontSize: 12, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' },
 });
