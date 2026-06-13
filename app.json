@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "CheapestGo",
-    "slug": "mobile-app",
+    "slug": "no-001-cheapestgo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -47,7 +47,12 @@
           "merchantIdentifier": "com.cheapestgo.mobile",
           "enableGooglePay": true
         }
-      ]
+      ],
+      "@stripe/stripe-react-native",
+      "expo-font",
+      "expo-image",
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
@@ -55,9 +60,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "a438c5b2-ecf9-4bde-a329-7d40658ac43e"
+        "projectId": "bc166f70-ffc5-4e0e-8f9f-42dc4f0fdf40"
       }
     },
-    "owner": "cheapestgo"
+    "owner": "no-001-team-1"
   }
 }
