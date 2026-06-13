@@ -1,19 +1,28 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import { Compass } from 'lucide-react-native';
-
-const DESTINATIONS = [
-    { title: 'Siargao', subtitle: 'Surfing Capital', image: 'https://images.unsplash.com/photo-1542332213-9b5a5a3fad35?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Batanes', subtitle: 'Scotland of the East', image: 'https://images.unsplash.com/photo-1516690561799-46d8f74f90f6?auto=format&fit=crop&w=500&q=80' },
-    { title: 'El Nido', subtitle: 'Island Hopping', image: 'https://images.unsplash.com/photo-1518391846015-55a9cc003b25?auto=format&fit=crop&w=500&q=80' },
-    { title: 'Cebu City', subtitle: 'Queen of the South', image: 'https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?auto=format&fit=crop&w=500&q=80' },
-];
+import { fetchPopularDestinations, type PopularDestination } from '../../../lib/landing';
+import { convertCurrency } from '../../../lib/currency';
+import { useSettings } from '../../../context/SettingsContext';
 
 export default function ExploreVacationPackages() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const styles = getStyles(isDark);
+    const { currency } = useSettings();
+
+    const [destinations, setDestinations] = useState<PopularDestination[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchPopularDestinations().then(data => {
+            setDestinations(data);
+            setLoading(false);
+        });
+    }, []);
+
+    const placeholders = [0, 1, 2, 3];
 
     return (
         <View style={styles.container}>
@@ -28,22 +37,38 @@ export default function ExploreVacationPackages() {
             </View>
 
             <View style={styles.grid}>
-                {DESTINATIONS.map((dest, i) => (
-                    <Pressable key={i} style={styles.card}>
-                        <Image
-                            source={{ uri: dest.image }}
-                            style={styles.image}
-                            contentFit="cover"
-                            cachePolicy="memory-disk"
-                            placeholder={{ blurhash: 'L15#hiof00of~qfQIUay00fQ-;fQ' }}
-                        />
-                        <View style={styles.overlay} />
-                        <View style={styles.cardLabel}>
-                            <Text style={styles.cardTitle}>{dest.title}</Text>
-                            <Text style={styles.cardSubtitle}>{dest.subtitle}</Text>
-                        </View>
-                    </Pressable>
-                ))}
+                {loading
+                    ? placeholders.map(i => (
+                        <View key={i} style={[styles.card, styles.skeleton]} />
+                    ))
+                    : destinations.map(dest => {
+                        const avgPrice = dest.averagePrice > 0
+                            ? Math.round(convertCurrency(dest.averagePrice, 'PHP', currency.code))
+                            : null;
+                        return (
+                            <Pressable key={dest.id} style={styles.card}>
+                                <View style={styles.imageWrap}>
+                                    <Image
+                                        source={{ uri: dest.imageUrl }}
+                                        style={styles.image}
+                                        contentFit="cover"
+                                        cachePolicy="memory-disk"
+                                        placeholder={{ blurhash: 'L15#hiof00of~qfQIUay00fQ-;fQ' }}
+                                    />
+                                </View>
+                                <View style={styles.cardBody}>
+                                    <Text style={styles.cardTitle} numberOfLines={1}>{dest.city}</Text>
+                                    <Text style={styles.cardSubtitle} numberOfLines={1}>{dest.country}</Text>
+                                    {avgPrice && avgPrice > 0 && (
+                                        <Text style={styles.cardPrice}>
+                                            from {currency.symbol}{avgPrice.toLocaleString()}
+                                        </Text>
+                                    )}
+                                </View>
+                            </Pressable>
+                        );
+                    })
+                }
             </View>
         </View>
     );
@@ -60,42 +85,20 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     titleRow: { flexDirection: 'row', alignItems: 'center', gap: 7 },
     title: { fontSize: 16, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' },
     seeAll: { fontSize: 13, fontWeight: '500', color: '#3b82f6' },
-    grid: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 10,
-    },
+    grid: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     card: {
         width: '47.5%',
-        height: 130,
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderRadius: 16,
         overflow: 'hidden',
-        position: 'relative',
-        backgroundColor: isDark ? '#1e293b' : '#f1f5f9',
+        borderWidth: 1,
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
     },
-    image: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-    },
-    overlay: {
-        position: 'absolute',
-        top: 0, left: 0, right: 0, bottom: 0,
-        backgroundColor: 'rgba(0,0,0,0.32)',
-    },
-    cardLabel: {
-        position: 'absolute',
-        bottom: 10,
-        left: 12,
-        right: 12,
-    },
-    cardTitle: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#ffffff',
-    },
-    cardSubtitle: {
-        fontSize: 11,
-        color: 'rgba(255,255,255,0.75)',
-        marginTop: 1,
-    },
+    skeleton: { height: 175, backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },
+    imageWrap: { height: 110 },
+    image: { width: '100%', height: '100%', backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },
+    cardBody: { padding: 10, gap: 3 },
+    cardTitle: { fontSize: 13, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' },
+    cardSubtitle: { fontSize: 11, color: isDark ? '#64748b' : '#94a3b8' },
+    cardPrice: { fontSize: 11, fontWeight: '600', color: isDark ? '#94a3b8' : '#475569', marginTop: 2 },
 });
