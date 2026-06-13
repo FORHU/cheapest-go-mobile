@@ -4,7 +4,7 @@ import { Search, Plane, Calendar, Users, ArrowRight, ArrowUpDown, Plus, Trash2, 
 import SearchModal from './SearchModal';
 import CalendarPicker from './CalendarPicker';
 import { useRouter } from 'expo-router';
-import { autocompleteAirports, type Airport } from '../../lib/api';
+import { autocompleteAirports, type Airport } from '../../lib/travel-api';
 import { searchAirports } from '../../data/airports';
 import { saveRecentFlightSearch, getRecentFlightSearches, RecentFlightSearch } from '../../lib/search-history';
 

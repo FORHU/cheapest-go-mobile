@@ -47,7 +47,7 @@ import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
 import StarRating from '../../../components/ui/StarRating';
 import { useSettings } from '../../../context/SettingsContext';
-import { getHotelDetails, getHotelReviews } from '../../../lib/api';
+import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 import { convertCurrency } from '../../../lib/currency';
 
 // Enable LayoutAnimation on Android

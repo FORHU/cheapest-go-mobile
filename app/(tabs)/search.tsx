@@ -7,7 +7,7 @@ import HotelSearchModal from '../../components/search/HotelSearchModal';
 import MapboxWebView from '../../components/search/MapboxWebView';
 import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
-import { searchHotels } from '../../lib/api';
+import { searchHotels } from '../../lib/travel-api';
 import { MAPBOX_TOKEN } from '../../lib/config';
 import { convertCurrency } from '../../lib/currency';
 import { getFavorites, toggleFavorite } from '../../lib/favorites';

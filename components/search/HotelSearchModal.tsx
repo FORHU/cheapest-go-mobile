@@ -24,7 +24,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../../context/SettingsContext';
-import { autocompleteDestinations, Destination } from '../../lib/api';
+import { autocompleteDestinations, Destination } from '../../lib/travel-api';
 import { getRecentSearches, RecentSearch, saveRecentSearch } from '../../lib/search-history';
 import CalendarPicker from './CalendarPicker';
 import SearchModal from './SearchModal';

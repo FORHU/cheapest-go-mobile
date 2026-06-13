@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Alert, 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Filter, Plane, Search, RefreshCw } from 'lucide-react-native';
-import { searchFlights, type FlightSearchParams } from '../lib/api';
+import { searchFlights, type FlightSearchParams } from '../lib/travel-api';
 import { FlightOffer, FilterState, normalizeFlightOffer, formatDuration } from '../lib/flight-types';
 import FlightFilters from '../components/flights/FlightFilters';
 import FlightCard from '../components/flights/FlightCard';
