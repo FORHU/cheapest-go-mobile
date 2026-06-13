@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext';
-import { prebookRoom, PrebookResponse, validatePromoCode } from '../lib/api';
-import { confirmHotelBooking, createHotelPayment } from '../lib/webApi';
+import { prebookRoom, PrebookResponse, validatePromoCode } from '../lib/travel-api';
+import { confirmHotelBooking, createHotelPayment } from '../lib/booking-api';
 
 // Stripe is a native module — only available in EAS dev/production builds, not Expo Go.
 // We lazy-require it so the rest of the app never crashes if the native binary is absent.

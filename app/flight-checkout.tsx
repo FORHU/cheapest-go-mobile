@@ -16,7 +16,7 @@ import { FlightOffer, formatDuration } from '../lib/flight-types';
 import {
     webFetchBags, webFetchSeatMap, webMobileBook, webMobileConfirm, webRefreshOffer,
     type NormalizedBagOption, type NormalizedSegmentSeatMap,
-} from '../lib/webApi';
+} from '../lib/booking-api';
 
 const { width } = Dimensions.get('window');
 

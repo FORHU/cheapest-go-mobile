@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import { Clock, Tag } from 'lucide-react-native';
-import { searchHotels, searchFlights } from '../../../lib/api';
-import { resolveHotelImage } from '../../../lib/hotelImage';
+import { searchHotels, searchFlights } from '../../../lib/travel-api';
+import { resolveHotelImage } from '../../../lib/hotel-image';
 import { useSettings } from '../../../context/SettingsContext';
 
 function getNextWeekDates() {

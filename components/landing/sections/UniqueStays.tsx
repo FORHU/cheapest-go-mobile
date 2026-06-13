@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import { Sparkles, Heart, Star } from 'lucide-react-native';
-import { searchHotels } from '../../../lib/api';
-import { resolveHotelImage } from '../../../lib/hotelImage';
+import { searchHotels } from '../../../lib/travel-api';
+import { resolveHotelImage } from '../../../lib/hotel-image';
 import { useSettings } from '../../../context/SettingsContext';
 
 const ESCAPES = [

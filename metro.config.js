@@ -15,6 +15,7 @@ config.resolver = {
     // Alias the broken internal require to the correct file
     extraNodeModules: {
         ...config.resolver?.extraNodeModules,
+        buffer: require.resolve('buffer/'),
     },
     resolveRequest: (context, moduleName, platform) => {
         // Intercept the broken relative require inside realtime-js
@@ -40,5 +41,17 @@ config.resolver.sourceExts = [
     ...config.resolver.sourceExts,
     'cjs',
 ];
+
+const originalGetPolyfills = config.serializer?.getPolyfills?.bind(config.serializer);
+config.serializer = {
+    ...config.serializer,
+    getPolyfills: ({ platform }) => {
+        const base = originalGetPolyfills ? originalGetPolyfills({ platform }) : [];
+        return [
+            require.resolve('./polyfills/DOMException.js'),
+            ...base,
+        ];
+    },
+};
 
 module.exports = withNativeWind(config, { input: "./global.css" });
