@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import { Sparkles, Heart, Star } from 'lucide-react-native';
-import { searchHotels } from '../../../lib/travel-api';
-import { resolveHotelImage } from '../../../lib/hotel-image';
 import { useSettings } from '../../../context/SettingsContext';
+import { fetchUniqueStays, UniqueStay } from '../../../lib/landing';
+import { convertCurrency } from '../../../lib/currency';
 
 export default function UniqueStays() {
     const colorScheme = useColorScheme();
