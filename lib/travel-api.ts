@@ -1,88 +1,37 @@
 /**
- * Supabase Edge Function client for mobile app.
- * Mirrors the web app's invokeEdgeFunction utility.
+ * Hotel search and booking API client.
+ * All calls go through the web backend — no direct Supabase edge function calls.
  */
 
 import { searchAirports } from '../data/airports';
-import { SUPABASE_ANON_KEY, SUPABASE_URL } from './config';
 
-export async function invokeEdgeFunction<T = any>(
-    functionName: string,
-    body?: any
-): Promise<T> {
-    const functionUrl = `${SUPABASE_URL}/functions/v1/${functionName}`;
-    const maxRetries = 3;
-    let fallbackRetryDelay = 1500;
+const WEB_API_BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
+const INVOKE_TIMEOUT_MS = 30_000;
 
-    for (let i = 0; i <= maxRetries; i++) {
-        const response = await fetch(functionUrl, {
+async function webInvoke<T = any>(path: string, body?: any): Promise<T> {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), INVOKE_TIMEOUT_MS);
+    try {
+        const res = await fetch(`${WEB_API_BASE}${path}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-                'apikey': SUPABASE_ANON_KEY,
-            },
-            body: body ? JSON.stringify(body) : undefined,
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: body !== undefined ? JSON.stringify(body) : undefined,
+            signal: controller.signal,
         });
-
-        if (response.ok) {
-            const contentType = response.headers.get('content-type') || '';
-            if (contentType.includes('application/x-ndjson')) {
-                const text = await response.text();
-                const lines = text.split('\n').filter(line => line.trim().length > 0);
-                const parsedLines = lines.map(line => {
-                    try {
-                        return JSON.parse(line);
-                    } catch (e) {
-                        return null;
-                    }
-                }).filter(Boolean);
-                
-                // Find the complete 'done' chunk first, or fallback to 'hotels' or any chunk with data
-                const doneChunk = parsedLines.find(chunk => chunk.type === 'done');
-                if (doneChunk && doneChunk.data && doneChunk.data.length > 0) {
-                    return { data: doneChunk.data, totalCount: doneChunk.totalCount || doneChunk.data.length } as any;
-                }
-                const hotelsChunk = parsedLines.find(chunk => (chunk.type === 'hotels' || chunk.data) && chunk.data && chunk.data.length > 0);
-                if (hotelsChunk) {
-                    return { data: hotelsChunk.data || [], totalCount: hotelsChunk.totalCount || 0 } as any;
-                }
-                if (doneChunk) {
-                    return { data: doneChunk.data || [], totalCount: doneChunk.totalCount || 0 } as any;
-                }
-                return { data: [] } as any;
-            }
-            return (await response.json()) as T;
+        clearTimeout(timer);
+        if (!res.ok) {
+            const text = await res.text();
+            let msg = `${path} failed (HTTP ${res.status})`;
+            try { const j = JSON.parse(text); if (j.error) msg = j.error; } catch {}
+            throw new Error(msg);
         }
-
-        let errorText = '';
-        try { errorText = await response.text(); } catch { errorText = 'Could not read error'; }
-
-        const is429 = response.status === 429 || errorText.includes('429');
-        if (is429 && i < maxRetries) {
-            const retryAfter = response.headers.get('retry-after');
-            const delay = retryAfter ? parseInt(retryAfter) * 1000 : fallbackRetryDelay * Math.pow(2, i);
-
-            await new Promise(r => setTimeout(r, delay));
-            continue;
-        }
-
-        let errorMessage = `Edge function ${functionName} failed: ${errorText.slice(0, 300)}`;
-        try {
-            const parsed = JSON.parse(errorText);
-            if (parsed.details) {
-                errorMessage = parsed.details;
-            } else if (parsed.error) {
-                errorMessage = parsed.error;
-            }
-        } catch {
-            // Keep the raw text if it's not JSON
-        }
-
-        throw new Error(errorMessage);
+        return res.json() as Promise<T>;
+    } catch (err: any) {
+        clearTimeout(timer);
+        if (err.name === 'AbortError') throw new Error('Request timed out. Please check your connection.');
+        throw err;
     }
-
-    throw new Error(`Edge function ${functionName}: Max retries exceeded`);
 }
 
 // ─── Hotel Search APIs ───
@@ -143,13 +92,11 @@ function getCountryCodeFromAddress(address: string): string {
     return countryMap[lastPart] || '';
 }
 
-const WEB_API_URL = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
-
 // Calls the web server's /api/autocomplete which proxies Mapbox server-side.
 // Direct Mapbox calls from the device fail because the token is domain-restricted.
 async function mapboxDestinations(query: string): Promise<Destination[]> {
     try {
-        const res = await fetch(`${WEB_API_URL}/api/autocomplete`, {
+        const res = await fetch(`${WEB_API_BASE}/api/autocomplete`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ query }),
@@ -181,15 +128,14 @@ export async function autocompleteDestinations(keyword: string): Promise<Destina
     // Mapbox IDs go as placeId; TGX codes go as destinationCode.
     const mapboxPromise = mapboxDestinations(normalizedKeyword);
 
-    const tgxPromise = invokeEdgeFunction<{ data?: any[] }>('travelgatex-destinations', { keyword: normalizedKeyword })
+    const tgxPromise = webInvoke<{ data?: any[] }>('/api/fn/travelgatex-destinations', { keyword: normalizedKeyword })
         .then(result =>
             (result?.data ?? []).map((item: any) => ({
                 type: (item.type || 'city') as Destination['type'],
-                title: item.name || '',
-                subtitle: item.country || 'City',
-                countryCode: item.countryCode || item.isoCountryCode || getCountryCodeFromAddress(item.name || ''),
-                id: undefined,
-                code: item.code || item.id, // TGX destination code
+                title: item.label || item.name || item.code || '',
+                subtitle: '',
+                countryCode: '',
+                code: item.code,
             } as Destination))
         )
         .catch(() => [] as Destination[]);
@@ -234,7 +180,7 @@ export async function searchHotels(params: HotelSearchParams) {
         }
     }
 
-    const result = await invokeEdgeFunction('travelgatex-search', {
+    const result = await webInvoke('/api/fn/travelgatex-search', {
         cityName: destination,
         placeId: placeId || undefined,             // Mapbox ID → geocoding lookup
         destinationCode: destinationCode || undefined, // TGX code → direct lookup
@@ -269,7 +215,7 @@ export async function searchHotels(params: HotelSearchParams) {
 
 export async function getHotelDetails(hotelId: string, options: any = {}) {
     const { checkIn, checkOut, adults, children, rooms, currency } = options;
-    const result = await invokeEdgeFunction('travelgatex-search', {
+    const result = await webInvoke('/api/fn/travelgatex-search', {
         hotelCode: hotelId,
         checkin: checkIn,
         checkout: checkOut,
@@ -295,24 +241,7 @@ export async function getHotelDetails(hotelId: string, options: any = {}) {
 }
 
 export async function getHotelReviews(hotelId: string, limit: number = 20) {
-    try {
-        const result = await invokeEdgeFunction<{ data?: any[] }>('liteapi-reviews', {
-            hotelId,
-            limit,
-            offset: 0,
-            getSentiment: false
-        });
-        if (result?.data && Array.isArray(result.data) && result.data.length > 0) {
-            return result.data.map((r: any) => ({
-                ...r,
-                name: r.name?.split(' ').filter((p: string) => p && p !== 'undefined' && p !== 'null').join(' ') || 'Verified Traveler',
-            }));
-        }
-    } catch (err) {
-        console.error('[getHotelReviews] Failed to fetch real reviews:', err);
-    }
-
-    // Generate realistic, premium mock reviews based on the hotelId
+    // Generate realistic mock reviews based on the hotelId
     const firstNames = [
         'John', 'Maria', 'Sarah', 'Alex', 'David', 'Emma', 'Sofia', 'Michael', 'Chloe', 'James',
         'Daniel', 'Olivia', 'Matthew', 'Isabella', 'Ethan', 'Mia', 'Lucas', 'Charlotte', 'Joseph', 'Amelia',
@@ -375,13 +304,15 @@ export async function getHotelReviews(hotelId: string, limit: number = 20) {
 export interface PrebookParams {
     offerId: string;
     currency?: string;
+    adults?: number;
+    children?: number;
+    roomName?: string;
 }
 
 export interface PrebookResponse {
     prebookId: string;
     price?: number;
     currency?: string;
-    status?: string;
     cancellationPolicies?: {
         cancelPolicyInfos?: Array<{
             cancelTime: string;
@@ -392,120 +323,42 @@ export interface PrebookResponse {
         hotelRemarks?: string[];
         refundableTag?: string;
     };
-    secretKey?: string;
-    transactionId?: string;
-}
-
-export interface BookingParams {
-    prebookId: string;
-    holder: {
-        firstName: string;
-        lastName: string;
-        email: string;
-    };
-    guests: Array<{
-        occupancyNumber: number;
-        firstName: string;
-        lastName: string;
-        email: string;
-        remarks?: string;
-    }>;
-    payment: {
-        method: string;
-        transactionId?: string;
-    };
-}
-
-export interface BookingResponse {
-    bookingId: string;
-    status: string;
-    hotel?: { name: string };
-    price?: number;
-    currency?: string;
+    roomSubstituted?: boolean;
+    substitutedRoomName?: string;
 }
 
 export async function prebookRoom(params: PrebookParams): Promise<PrebookResponse> {
-    const isTgx = params.offerId.startsWith('TGX:') || !params.offerId.includes('_');
-    if (isTgx) {
-        const searchToken = params.offerId.startsWith('TGX:') ? params.offerId.slice(4) : params.offerId;
-        const result = await invokeEdgeFunction('travelgatex-quote', {
-            token: searchToken,
-        });
-        const optionQuote = result?.data || result;
-        if (!optionQuote || !optionQuote.token) {
-            throw new Error(result?.error || result?.details || 'Prebook failed — no quote token returned. The rate may have expired.');
-        }
-        
-        // Construct standard PrebookResponse
-        const subtotal = optionQuote.price?.net || 0;
-        const total = optionQuote.price?.gross || subtotal;
-        return {
-            prebookId: `TGX:${optionQuote.token}`,
-            price: total,
-            currency: optionQuote.price?.currency || 'USD',
-            status: optionQuote.status,
-            cancellationPolicies: optionQuote.cancelPolicy ? {
-                refundableTag: optionQuote.cancelPolicy.refundable ? 'RFN' : 'NRFN',
-                cancelPolicyInfos: (optionQuote.cancelPolicy.cancelPenalties || []).map((p: any) => ({
-                    cancelTime: p.deadline || '',
-                    amount: p.value || 0,
-                    currency: p.currency || 'USD',
-                    type: p.penaltyType || 'PENALTY',
-                })),
-                hotelRemarks: optionQuote.remarks || [],
-            } : undefined,
-        };
+    const result = await webInvoke<{ success: boolean; data?: any; error?: string }>(
+        '/api/booking/prebook',
+        {
+            offerId: params.offerId,
+            currency: params.currency,
+            adults: params.adults,
+            children: params.children,
+            roomName: params.roomName,
+        },
+    );
+    if (!result.success || !result.data) {
+        throw new Error(result.error || 'Prebook failed — room may no longer be available.');
     }
-
-    throw new Error('LiteAPI is deprecated. Only TravelgateX stays are supported.');
-}
-
-export async function confirmBooking(params: BookingParams): Promise<BookingResponse> {
-    const isTgx = params.prebookId.startsWith('TGX:') || !params.prebookId.includes('_');
-    if (isTgx) {
-        const quoteToken = params.prebookId.startsWith('TGX:') ? params.prebookId.slice(4) : params.prebookId;
-        const clientReference = `tgx-mob-${Date.now()}`;
-        
-        // Map guests to TGX occupancy pax structure
-        const rooms = [{
-            occupancyRefId: 1,
-            paxes: params.guests.map(g => ({
-                name: g.firstName,
-                surname: g.lastName,
-                age: 30, // Default adult age
-            })),
-        }];
-        
-        const result = await invokeEdgeFunction('travelgatex-book', {
-            quoteToken,
-            clientReference,
-            holder: params.holder,
-            rooms,
-        });
-        
-        const booking = result?.data || result;
-        if (!booking || !booking.status) {
-            throw new Error(result?.error || result?.details || 'Booking failed');
-        }
-        
-        return {
-            bookingId: booking.reference?.client || booking.reference?.supplier || 'N/A',
-            status: booking.status,
-            hotel: { name: booking.hotel?.hotelName || 'Hotel' },
-            price: booking.price?.gross || booking.price?.net || 0,
-            currency: booking.price?.currency || 'USD',
-        };
-    }
-
-    throw new Error('LiteAPI is deprecated. Only TravelgateX bookings are supported.');
+    const d = result.data;
+    return {
+        prebookId: d.prebookId,
+        price: d.price?.total ?? (typeof d.price === 'number' ? d.price : undefined),
+        currency: d.currency,
+        cancellationPolicies: d.cancellationPolicies,
+        roomSubstituted: d.roomSubstituted,
+        substitutedRoomName: d.substitutedRoomName,
+    };
 }
 
 export async function validatePromoCode(code: string, price: number): Promise<any> {
-    return invokeEdgeFunction('vouchers-validate', {
-        action: 'validate',
-        code: code,
-        bookingPrice: price,
-    });
+    const result = await webInvoke<{ success: boolean; data?: any; error?: string }>(
+        '/api/voucher/validate',
+        { code, bookingPrice: price },
+    );
+    if (!result.success) throw new Error(result.error || 'Failed to validate promo code');
+    return result.data;
 }
 
 export async function getHotelFacilities(): Promise<any[]> {
@@ -596,7 +449,7 @@ export async function searchFlights(params: FlightSearchParams) {
 export async function autocompleteAirports(keyword: string): Promise<Airport[]> {
     if (!keyword || keyword.length < 2) return [];
     try {
-        const { webSearchAirports } = await import('./webApi');
+        const { webSearchAirports } = await import('./booking-api');
         const results = await webSearchAirports(keyword);
         if (results.length > 0) return results;
         // Fallback to local list if web API is unavailable

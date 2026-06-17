@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import AntDesign from '@expo/vector-icons/AntDesign';
 import { Mail, Lock, Eye, EyeOff, ShieldCheck } from 'lucide-react-native';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
@@ -47,7 +46,7 @@ const light = {
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, signInWithGoogle, isLoading } = useAuth();
+  const { login, isLoading } = useAuth();
   const colorScheme = useColorScheme();
   const C = colorScheme === 'dark' ? dark : light;
 
@@ -55,7 +54,6 @@ export default function LoginScreen() {
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
-  const [googleLoading, setGoogleLoading] = useState(false);
 
   const handleLogin = async () => {
     setError('');
@@ -71,19 +69,6 @@ export default function LoginScreen() {
       } else {
         setError(msg);
       }
-    }
-  };
-
-  const handleGoogleSignIn = async () => {
-    setError('');
-    setGoogleLoading(true);
-    try {
-      await signInWithGoogle();
-      router.replace('/(tabs)');
-    } catch (e: any) {
-      setError(e?.message || 'Google sign-in failed. Please try again.');
-    } finally {
-      setGoogleLoading(false);
     }
   };
 
@@ -109,30 +94,6 @@ export default function LoginScreen() {
             <View style={{ marginBottom: 32 }}>
               <Text style={[s.title, { color: C.text }]}>Welcome back.</Text>
               <Text style={s.subtitle}>Sign in to continue finding great deals</Text>
-            </View>
-
-            {/* Google */}
-            <TouchableOpacity
-              style={[s.googleBtn, (googleLoading || isLoading) && s.dimmed]}
-              onPress={handleGoogleSignIn}
-              disabled={googleLoading || isLoading}
-              activeOpacity={0.8}
-            >
-              {googleLoading ? (
-                <ActivityIndicator color={C.white} size="small" />
-              ) : (
-                <>
-                  <AntDesign name="google" size={20} color="#4285F4" />
-                  <Text style={s.googleText}>Continue with Google</Text>
-                </>
-              )}
-            </TouchableOpacity>
-
-            {/* Divider */}
-            <View style={s.dividerRow}>
-              <View style={s.dividerLine} />
-              <Text style={s.dividerText}>or sign in with email</Text>
-              <View style={s.dividerLine} />
             </View>
 
             {/* Email */}
@@ -243,24 +204,7 @@ function makeStyles(C: typeof dark) {
     title: { fontSize: 34, fontWeight: '800', marginBottom: 8, letterSpacing: -0.5 },
     subtitle: { fontSize: 15, color: C.muted, lineHeight: 22 },
 
-    googleBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 12,
-      backgroundColor: C.inputBg,
-      borderWidth: 1,
-      borderColor: C.border,
-      borderRadius: 14,
-      paddingVertical: 15,
-      marginBottom: 20,
-    },
-    googleText: { fontSize: 15, fontWeight: '600', color: C.text },
     dimmed: { opacity: 0.55 },
-
-    dividerRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 24 },
-    dividerLine: { flex: 1, height: 1, backgroundColor: C.divider },
-    dividerText: { fontSize: 13, color: C.muted },
 
     label: {
       fontSize: 11,

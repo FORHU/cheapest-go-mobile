@@ -2,9 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
 import { TrendingUp, MapPin, Star } from 'lucide-react-native';
-import { searchHotels } from '../../../lib/travel-api';
-import { resolveHotelImage } from '../../../lib/hotel-image';
 import { useSettings } from '../../../context/SettingsContext';
+import { fetchWeekendDeals, WeekendDeal } from '../../../lib/landing';
+import { convertCurrency } from '../../../lib/currency';
 
 export default function TrendingNearYou() {
     const colorScheme = useColorScheme();

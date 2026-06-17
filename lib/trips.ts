@@ -1,9 +1,6 @@
-/**
- * Fetches the signed-in user's flight bookings from Supabase,
- * including segments and passengers (with seat_number if assigned).
- */
+// Session is cookie-based — the native HTTP client sends the session cookie automatically.
 
-import { supabase } from '../utils/supabase/client';
+const BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
 
 export interface FlightSegment {
     id: string;
@@ -45,29 +42,15 @@ export type BookingStatus =
     | 'refund_pending' | 'refund_failed' | 'refunded' | 'cancelled_provider_missing';
 
 export async function fetchMyFlightBookings(): Promise<FlightBooking[]> {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return [];
-
-    const { data, error } = await supabase
-        .from('flight_bookings')
-        .select(`
-            id, pnr, provider, status, trip_type,
-            total_price, charged_price, currency, created_at,
-            flight_segments (
-                id, airline, flight_number,
-                origin, destination, departure, arrival, itinerary_index
-            ),
-            passengers (
-                id, first_name, last_name, type, ticket_number, seat_number
-            )
-        `)
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
-
-    if (error) {
-        console.error('[trips] fetchMyFlightBookings error:', error.message);
+    try {
+        const res = await fetch(`${BASE}/api/mobile/trips`, {
+            credentials: 'include',
+        });
+        if (!res.ok) return [];
+        const json = await res.json();
+        return json.data ?? [];
+    } catch (e: any) {
+        console.error('[trips] fetchMyFlightBookings error:', e.message);
         return [];
     }
-
-    return (data ?? []) as FlightBooking[];
 }
