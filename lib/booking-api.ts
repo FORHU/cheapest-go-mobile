@@ -8,8 +8,6 @@
 
 import { FlightOffer } from './flight-types';
 
-import { supabase } from '../utils/supabase/client';
-
 const BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
 const MOBILE_KEY = process.env.EXPO_PUBLIC_MOBILE_API_KEY ?? '';
 const TIMEOUT_MS = 30_000;
@@ -33,17 +31,13 @@ async function post<T = any>(
         };
         if (opts?.auth) {
             headers['X-Mobile-Api-Key'] = MOBILE_KEY;
-            // Include the user's Supabase session token so the web endpoint
-            // can identify the real user instead of using a guest UUID.
-            const { data } = await supabase.auth.getSession();
-            if (data.session?.access_token) {
-                headers['X-Supabase-Token'] = data.session.access_token;
-            }
+            // Session cookie is sent automatically by the native HTTP client.
         }
 
         const res = await fetch(`${BASE}${path}`, {
             method: 'POST',
             headers,
+            credentials: 'include',
             body: JSON.stringify(body),
             signal: opts?.signal ?? controller.signal,
         });

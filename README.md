@@ -7,7 +7,7 @@ React Native mobile app for CheapestGo — a travel deals platform for finding c
 - **Framework:** Expo SDK 56 (New Architecture enabled)
 - **Navigation:** Expo Router v4 (file-based)
 - **Styling:** NativeWind v4 (Tailwind CSS for React Native)
-- **Auth:** Supabase Auth
+- **Auth:** Lucia v3 (cookie-based sessions via web backend)
 - **Payments:** Stripe React Native
 - **Maps:** Mapbox
 - **Notifications:** Expo Notifications
@@ -15,10 +15,57 @@ React Native mobile app for CheapestGo — a travel deals platform for finding c
 ## Prerequisites
 
 - Node.js 18+
-- npm
-- [Expo CLI](https://docs.expo.dev/get-started/installation/) (`npm install -g expo-cli`)
-- [Expo Go](https://expo.dev/go) app on your device, **or** Android Studio / Xcode for native builds
+- npm or yarn
+- [Expo Go](https://expo.dev/go) app on your device (for quick preview), **or** Android Studio / Xcode for native builds
 - Access to the team's environment variables (`.env` file)
+
+## CLI Setup
+
+Install the required global CLIs before anything else.
+
+### Expo CLI
+
+Used to start the Metro dev server, open simulators, and run local builds.
+
+```bash
+npm install -g expo-cli
+```
+
+Verify:
+
+```bash
+expo --version
+```
+
+> Expo CLI is also available without a global install via `npx expo <command>`. Both work.
+
+### EAS CLI
+
+Used for cloud builds, submitting to stores, and managing environment variables on expo.dev.
+
+```bash
+npm install -g eas-cli
+```
+
+Verify:
+
+```bash
+eas --version
+```
+
+Log in to your Expo account (required for EAS builds):
+
+```bash
+eas login
+```
+
+### Confirm the project is linked
+
+```bash
+eas project:info
+```
+
+This should print the project slug and owner. If it errors, run `eas init` to link the project to your expo.dev account.
 
 ## Setup
 
@@ -32,13 +79,9 @@ npm install
 
 ### 2. Environment variables
 
-Create a `.env` file in the project root with the following keys:
+Create a `.env` file in the project root with the following keys (Keys are sent through Discord Company Server):
 
 ```env
-# Supabase (auth only — data is served from the web API)
-EXPO_PUBLIC_SUPABASE_URL=
-EXPO_PUBLIC_SUPABASE_ANON_KEY=
-
 # Mapbox
 EXPO_PUBLIC_MAPBOX_TOKEN=
 
@@ -106,7 +149,7 @@ app/
 
 components/             # Reusable UI components
 lib/                    # Data fetchers and utilities
-utils/supabase/         # Supabase auth client
+utils/auth/             # Session storage (AsyncStorage)
 polyfills/              # React Native compatibility patches
 ```
 
@@ -118,23 +161,45 @@ React Native 0.76+ defines `Event.prototype.NONE` and related phase constants as
 
 **Fix:** `polyfills/EventPatch.js` intercepts `Object.defineProperty` before the base polyfills run and replaces non-writable data descriptors for these constants with getter/setter pairs (no-op setter). This is loaded first in `metro.config.js` via `getPolyfills`.
 
-### Supabase DB quota
+### Landing page data stubs
 
-Landing page data (`flight_deals`, `unique_stays`, etc.) was previously fetched directly from Supabase. It has been stubbed out in `lib/landing.ts` pending migration to the web API. Supabase is still used for **authentication only**.
+Landing page data (`flight_deals`, `unique_stays`, etc.) is stubbed out in `lib/landing.ts` returning empty arrays, pending web API endpoints.
 
-## Building for Production
+## Building
+
+### Local dev build (requires Android Studio / Xcode)
 
 ```bash
-# Android
-npx expo run:android --variant release
-
-# iOS
-npx expo run:ios --configuration Release
-
-# EAS Build (recommended)
-eas build --platform android
-eas build --platform ios
+npx expo run:android
+npx expo run:ios
 ```
+
+### EAS Cloud Build
+
+Profiles are defined in `eas.json`:
+
+| Profile | Purpose | Distribution |
+|---|---|---|
+| `development` | Dev client APK | Internal |
+| `staging` | Internal test APK | Internal |
+| `production` | Internal release APK | Internal |
+| `production-store` | Play Store AAB | Store |
+
+```bash
+# Staging (internal testers)
+eas build --platform android --profile staging
+eas build --platform ios --profile staging
+
+# Production
+eas build --platform android --profile production
+eas build --platform ios --profile production
+```
+
+> **Environment variables for EAS builds:** The local `.env` file is not sent to EAS servers. You must add all `EXPO_PUBLIC_*` variables to the EAS dashboard under the correct environment:
+> - `staging` profile → **preview** environment
+> - `production` profile → **production** environment
+>
+> Go to [expo.dev](https://expo.dev) → your project → **Environment Variables** to add them.
 
 ## Environment Notes
 

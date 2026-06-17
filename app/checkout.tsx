@@ -98,7 +98,12 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
             setPrebooking(true);
             setPrebookError(null);
             try {
-                const result = await prebookRoom({ offerId, currency: roomCurrency });
+                const result = await prebookRoom({
+                    offerId,
+                    currency: roomCurrency,
+                    adults,
+                    roomName: params.roomName as string || undefined,
+                });
                 setPrebookData(result);
             } catch (err: any) {
                 setPrebookError(err.message || 'Failed to verify room availability');

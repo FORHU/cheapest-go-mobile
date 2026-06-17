@@ -4,13 +4,9 @@ import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
-import * as WebBrowser from 'expo-web-browser';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-
-// Required for OAuth browser sessions to complete properly on Android
-WebBrowser.maybeCompleteAuthSession();
 
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { SettingsProvider } from '../context/SettingsContext';
