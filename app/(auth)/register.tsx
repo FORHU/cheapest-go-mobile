@@ -547,28 +547,30 @@ export default function RegisterScreen() {
               {!!passwordErr && <Text style={[s.fieldErrText, { color: C.fieldErr }]}>{passwordErr}</Text>}
 
               {/* Password requirement chips */}
-              <View style={s.chipsRow}>
-                {passwordChecks.map(({ label, met }) => (
-                  <View
-                    key={label}
-                    style={[
-                      s.chip,
-                      {
-                        backgroundColor: met ? C.chipMetBg : C.chipBg,
-                        borderColor:     met ? C.chipMetBorder : C.chipBorder,
-                      },
-                    ]}
-                  >
-                    <View style={[
-                      s.chipDot,
-                      { backgroundColor: met ? C.chipDotMet : 'transparent', borderColor: met ? C.chipDotMet : C.chipDot },
-                    ]} />
-                    <Text style={[s.chipText, { color: met ? C.chipMetText : C.chipText }]}>
-                      {label}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+              {password.length > 0 && !passwordChecks.every(c => c.met) && (
+                <View style={s.chipsRow}>
+                  {passwordChecks.map(({ label, met }) => (
+                    <View
+                      key={label}
+                      style={[
+                        s.chip,
+                        {
+                          backgroundColor: met ? C.chipMetBg : C.chipBg,
+                          borderColor:     met ? C.chipMetBorder : C.chipBorder,
+                        },
+                      ]}
+                    >
+                      <View style={[
+                        s.chipDot,
+                        { backgroundColor: met ? C.chipDotMet : 'transparent', borderColor: met ? C.chipDotMet : C.chipDot },
+                      ]} />
+                      <Text style={[s.chipText, { color: met ? C.chipMetText : C.chipText }]}>
+                        {label}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              )}
             </View>
 
             <View style={s.fieldGroup}>
