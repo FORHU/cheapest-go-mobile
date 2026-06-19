@@ -1,363 +1,819 @@
-import React, { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import type { RegisterInput } from '@/lib/schemas/auth';
+import { Link, useRouter } from 'expo-router';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle,
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+  User,
+} from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import {
   ActivityIndicator,
+  Animated,
+  Dimensions,
+  Easing,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from 'react-native';
-import { Link, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { User, Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
-import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/useColorScheme';
+import Svg, {
+  Defs,
+  Line,
+  Path,
+  Pattern,
+  RadialGradient,
+  Rect,
+  Stop,
+} from 'react-native-svg';
 
-const dark = {
-  bg: '#0B1018',
-  inputBg: '#141C2A',
-  border: '#1F2D3D',
-  text: '#FFFFFF',
-  muted: '#8896AA',
-  label: '#B8C4D0',
-  blue: '#3B82F6',
-  btnBg: '#EEF0F3',
-  btnText: '#0F172A',
-  placeholder: '#3D4D5E',
-  divider: '#1A2535',
-  green: '#22c55e',
+const { width: SW, height: SH } = Dimensions.get('window');
+
+// ─── Palette ──────────────────────────────────────────────────────────────────
+const DARK = {
+  safe:            '#060d1a',
+  bg:              '#0b1329',
+  cardBg:          '#0c1424',
+  cardBorder:      '#172036',
+  inputBg:         '#070e1c',
+  inputBorder:     '#1a2640',
+  inputBorderErr:  '#dc2626',
+  inputBgErr:      '#0f0808',
+  label:           '#64748b',
+  inputText:       '#e2e8f0',
+  placeholder:     '#2d3a52',
+  title:           '#f1f5f9',
+  subtitle:        '#4a5568',
+  fieldErr:        '#ef4444',
+  bannerErrBg:     '#160808',
+  bannerErrBorder: '#7f1d1d',
+  bannerErrText:   '#f87171',
+  successBg:       '#061410',
+  successBorder:   '#064e3b',
+  successText:     '#34d399',
+  submitBg:        '#2563eb',
+  submitText:      '#ffffff',
+  backBg:          'rgba(6,13,26,0.85)',
+  backBorder:      '#172036',
+  backIcon:        '#64748b',
+  signUpPrompt:    '#475569',
+  signUpLink:      '#3b82f6',
+  divider:         '#111c30',
+  gridLine:        'rgba(255,255,255,0.03)',
+  sparkle:         '#60a5fa',
+  sparkleGlow:     'rgba(96,165,250,0.35)',
+  chipBg:          '#070e1c',
+  chipBorder:      '#1a2640',
+  chipText:        '#64748b',
+  chipMetBg:       'rgba(34,197,94,0.08)',
+  chipMetBorder:   'rgba(34,197,94,0.5)',
+  chipMetText:     '#22c55e',
+  chipDot:         '#64748b',
+  chipDotMet:      '#22c55e',
 };
 
-const light = {
-  bg: '#F8FAFC',
-  inputBg: '#FFFFFF',
-  border: '#E2E8F0',
-  text: '#0F172A',
-  muted: '#64748B',
-  label: '#475569',
-  blue: '#2563EB',
-  btnBg: '#0F172A',
-  btnText: '#FFFFFF',
-  placeholder: '#94A3B8',
-  divider: '#E2E8F0',
-  green: '#16a34a',
+const LIGHT = {
+  safe:            '#f0f6ff',
+  bg:              '#f8fafc',
+  cardBg:          '#ffffff',
+  cardBorder:      '#e2e8f0',
+  inputBg:         '#f8fafc',
+  inputBorder:     '#e2e8f0',
+  inputBorderErr:  '#ef4444',
+  inputBgErr:      '#fff5f5',
+  label:           '#64748b',
+  inputText:       '#0f172a',
+  placeholder:     '#94a3b8',
+  title:           '#0f172a',
+  subtitle:        '#64748b',
+  fieldErr:        '#ef4444',
+  bannerErrBg:     '#fef2f2',
+  bannerErrBorder: '#fecaca',
+  bannerErrText:   '#dc2626',
+  successBg:       '#f0fdf4',
+  successBorder:   '#bbf7d0',
+  successText:     '#15803d',
+  submitBg:        '#2563eb',
+  submitText:      '#ffffff',
+  backBg:          'rgba(255,255,255,0.92)',
+  backBorder:      '#e2e8f0',
+  backIcon:        '#475569',
+  signUpPrompt:    '#94a3b8',
+  signUpLink:      '#2563eb',
+  divider:         '#f1f5f9',
+  gridLine:        'rgba(37,99,235,0.045)',
+  sparkle:         '#3b82f6',
+  sparkleGlow:     'rgba(59,130,246,0.18)',
+  chipBg:          '#f8fafc',
+  chipBorder:      '#e2e8f0',
+  chipText:        '#64748b',
+  chipMetBg:       'rgba(22,163,74,0.08)',
+  chipMetBorder:   'rgba(22,163,74,0.4)',
+  chipMetText:     '#16a34a',
+  chipDot:         '#94a3b8',
+  chipDotMet:      '#16a34a',
 };
 
+// ─── Animated Grid ──────────────────────────────────────────────────────
+const GRID_SIZE = 40;
+const EXTRA     = GRID_SIZE * 3;
+
+function DriftGrid({ color }: { color: string }) {
+  const anim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.loop(
+      Animated.timing(anim, {
+        toValue: GRID_SIZE,
+        duration: 4000,
+        easing: Easing.linear,
+        useNativeDriver: true,
+      })
+    ).start();
+  }, []);
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          left: -EXTRA,
+          top: -EXTRA,
+          width: SW + EXTRA * 2,
+          height: SH + EXTRA * 2,
+          transform: [{ translateX: anim }, { translateY: anim }],
+        },
+      ]}
+    >
+      <Svg width="100%" height="100%">
+        <Defs>
+          <Pattern
+            id="rgrid"
+            x="0"
+            y="0"
+            width={GRID_SIZE}
+            height={GRID_SIZE}
+            patternUnits="userSpaceOnUse"
+          >
+            <Line x1={GRID_SIZE} y1="0" x2={GRID_SIZE} y2={GRID_SIZE} stroke={color} strokeWidth="0.8" />
+            <Line x1="0" y1={GRID_SIZE} x2={GRID_SIZE} y2={GRID_SIZE} stroke={color} strokeWidth="0.8" />
+          </Pattern>
+        </Defs>
+        <Rect x="0" y="0" width="100%" height="100%" fill="url(#rgrid)" />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+// ─── Sparkle/Animation configs ──────────────────────────────────────────────────────────
+const SPARKLE_CONFIGS = [
+  { top: SH * 0.08,  left: SW * 0.10, size: 16, duration: 2800, delay: 0 },
+  { top: SH * 0.14,  left: SW * 0.48, size: 13, duration: 2100, delay: 400 },
+  { top: SH * 0.24,  left: SW * 0.82, size: 20, duration: 3200, delay: 800 },
+  { top: SH * 0.42,  left: SW * 0.92, size: 12, duration: 2500, delay: 200 },
+  { top: SH * 0.54,  left: SW * 0.06, size: 22, duration: 2000, delay: 600 },
+  { top: SH * 0.62,  left: SW * 0.60, size: 15, duration: 3000, delay: 1000 },
+  { top: SH * 0.75,  left: SW * 0.12, size: 16, duration: 2600, delay: 300 },
+  { top: SH * 0.90,  left: SW * 0.68, size: 14, duration: 2200, delay: 700 },
+];
+
+const STAR_PATH =
+  'M12 2 C12 2 12.3 8.7 15.5 11.5 C15.5 11.5 18.7 12 22 12 ' +
+  'C22 12 15.5 12.3 12.5 15.5 C12.5 15.5 12 18.7 12 22 ' +
+  'C12 22 11.7 15.5 8.5 12.5 C8.5 12.5 5.3 12 2 12 ' +
+  'C2 12 8.5 11.7 11.5 8.5 C11.5 8.5 12 5.3 12 2 Z';
+
+function Sparkle({
+  top, left, size, duration, delay, color, glowColor,
+}: {
+  top: number; left: number; size: number;
+  duration: number; delay: number;
+  color: string; glowColor: string;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const scale   = useRef(new Animated.Value(0.5)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.delay(delay),
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 1,   duration: duration * 0.4, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(scale,   { toValue: 1,   duration: duration * 0.4, easing: Easing.out(Easing.back(1.4)), useNativeDriver: true }),
+        ]),
+        Animated.parallel([
+          Animated.timing(opacity, { toValue: 0,   duration: duration * 0.6, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.timing(scale,   { toValue: 0.4, duration: duration * 0.6, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+        ]),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, []);
+
+  const glowId = `rglow${size}${delay}`;
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{ position: 'absolute', top, left, opacity, transform: [{ scale }] }}
+    >
+      <Svg
+        width={size * 2.4}
+        height={size * 2.4}
+        style={{ position: 'absolute', top: -size * 0.7, left: -size * 0.7 }}
+      >
+        <Defs>
+          <RadialGradient id={glowId} cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor={glowColor} stopOpacity="1" />
+            <Stop offset="100%" stopColor={glowColor} stopOpacity="0" />
+          </RadialGradient>
+        </Defs>
+        <Rect x="0" y="0" width={size * 2.4} height={size * 2.4} fill={`url(#${glowId})`} />
+      </Svg>
+      <Svg width={size} height={size} viewBox="0 0 24 24">
+        <Path d={STAR_PATH} fill={color} />
+      </Svg>
+    </Animated.View>
+  );
+}
+
+function SparkleLayer({ color, glowColor }: { color: string; glowColor: string }) {
+  return (
+    <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+      {SPARKLE_CONFIGS.map((cfg, i) => (
+        <Sparkle key={i} {...cfg} color={color} glowColor={glowColor} />
+      ))}
+    </View>
+  );
+}
+
+// ─── Logo ─────────────────────────────────────────────────────────────────────
+function Logo({ dark }: { dark: boolean }) {
+  const textColor   = dark ? '#f1f5f9' : '#0f172a';
+  const accentColor = dark ? '#60a5fa' : '#2563eb';
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
+      <View style={ls.box}>
+        <Svg width={26} height={26} viewBox="0 0 44 44">
+          <Rect width="44" height="44" rx="10" fill="#2563eb" />
+          <Path d="M8 34 L18 14 L26 26 L30 20 L38 34 Z" fill="white" opacity="0.95" />
+          <Path d="M26 26 L30 20 L38 34 Z" fill="rgba(255,255,255,0.6)" />
+        </Svg>
+      </View>
+      <Text style={[ls.text, { color: textColor }]}>
+        Cheapest<Text style={{ color: accentColor, fontWeight: '800' }}>Go</Text>
+      </Text>
+    </View>
+  );
+}
+const ls = StyleSheet.create({
+  box:  { width: 44, height: 44, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2563eb' },
+  text: { fontSize: 24, fontWeight: '700', letterSpacing: -0.3 },
+});
+
+// ─── Main Screen ──────────────────────────────────────────────────────────────
 export default function RegisterScreen() {
   const router = useRouter();
   const { register, isLoading } = useAuth();
   const colorScheme = useColorScheme();
-  const C = colorScheme === 'dark' ? dark : light;
+  const isDark = colorScheme === 'dark';
+  const C = isDark ? DARK : LIGHT;
 
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [firstName, setFirstName]         = useState('');
+  const [lastName, setLastName]           = useState('');
+  const [email, setEmail]                 = useState('');
+  const [password, setPassword]           = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [error, setError] = useState('');
+  const [showPassword, setShowPassword]   = useState(false);
+  const [showConfirm, setShowConfirm]     = useState(false);
+
+  const [firstNameErr, setFirstNameErr]   = useState('');
+  const [lastNameErr, setLastNameErr]     = useState('');
+  const [emailErr, setEmailErr]           = useState('');
+  const [passwordErr, setPasswordErr]     = useState('');
+  const [confirmErr, setConfirmErr]       = useState('');
+  const [generalError, setGeneralError]   = useState('');
+  const [successMessage, setSuccess]      = useState('');
+
+  const slideAnim = useRef(new Animated.Value(20)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(fadeAnim,  { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+    ]).start();
+  }, []);
 
   const passwordChecks = [
-    { label: '8+ chars', met: password.length >= 8 },
-    { label: 'Uppercase', met: /[A-Z]/.test(password) },
-    { label: 'Number', met: /[0-9]/.test(password) },
+    { label: 'At least 8 characters',       met: password.length >= 8 },
+    { label: 'Contains an uppercase letter', met: /[A-Z]/.test(password) },
+    { label: 'Contains a number',            met: /[0-9]/.test(password) },
   ];
 
+  const clearErrors = () => {
+    setFirstNameErr(''); setLastNameErr('');
+    setEmailErr(''); setPasswordErr('');
+    setConfirmErr(''); setGeneralError('');
+  };
+
   const handleRegister = async () => {
-    setError('');
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
+    clearErrors();
+    let ok = true;
+
+    if (!firstName.trim()) { setFirstNameErr('First name is required'); ok = false; }
+    if (!lastName.trim())  { setLastNameErr('Last name is required');   ok = false; }
+
+    if (!email.trim()) {
+      setEmailErr('Email is required'); ok = false;
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      setEmailErr('Please enter a valid email address'); ok = false;
     }
+
+    if (!password) {
+      setPasswordErr('Password is required'); ok = false;
+    } else if (!passwordChecks.every(c => c.met)) {
+      setPasswordErr('Password does not meet all requirements'); ok = false;
+    }
+
+    if (!confirmPassword) {
+      setConfirmErr('Please confirm your password'); ok = false;
+    } else if (password !== confirmPassword) {
+      setConfirmErr('Passwords do not match'); ok = false;
+    }
+
+    if (!ok) return;
+
     try {
-      const { needsEmailVerification } = await register({
-        firstName, lastName, email: email.trim(), password,
-      });
-      if (needsEmailVerification) {
-        router.replace({ pathname: '/(auth)/verify-email', params: { email: email.trim() } });
+      const data: RegisterInput = {
+        email: email.trim(), password,
+        firstName: firstName.trim(), lastName: lastName.trim(),
+      };
+      const result = await register(data);
+      if (result.needsEmailVerification) {
+        setSuccess('Check your inbox to verify your email.');
       } else {
         router.replace('/(tabs)');
       }
     } catch (e: any) {
-      const msg = e?.message || 'Something went wrong. Please try again.';
-      if (msg.toLowerCase().includes('already registered')) {
-        setError('An account with this email already exists.');
+      const msg: string = e?.message ?? 'Something went wrong. Please try again.';
+      if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('exists')) {
+        setEmailErr('An account with this email already exists.');
       } else if (e?.errors) {
-        setError(e.errors[0]?.message || msg);
+        setGeneralError(e.errors[0]?.message || msg);
       } else {
-        setError(msg);
+        setGeneralError(msg);
       }
     }
   };
 
-
-  const s = makeStyles(C);
-
   return (
     <SafeAreaView style={[s.safe, { backgroundColor: C.bg }]}>
+      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+        <DriftGrid color={C.gridLine} />
+        <SparkleLayer color={C.sparkle} glowColor={C.sparkleGlow} />
+      </View>
+
       <KeyboardAvoidingView
-        style={{ flex: 1 }}
+        style={s.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <ScrollView
-          contentContainerStyle={{ flexGrow: 1 }}
+          style={s.flex}
+          contentContainerStyle={s.scrollContent}
           keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
         >
-          <View style={s.container}>
-            {/* Logo */}
-            <Text style={[s.logo, { color: C.text }]}>
-              Cheapest<Text style={{ color: C.blue }}>Go</Text>
+
+          {/* ── Header ── */}
+          <View style={s.header}>
+            <View style={s.topBar}>
+              <TouchableOpacity
+                style={[s.iconBtn, { backgroundColor: C.backBg, borderColor: C.backBorder }]}
+                onPress={() => router.canGoBack() ? router.back() : router.replace('/(auth)/login')}
+                disabled={isLoading}
+                activeOpacity={0.75}
+              >
+                <ArrowLeft size={18} color={C.backIcon} strokeWidth={2.2} />
+              </TouchableOpacity>
+            </View>
+            <Logo dark={isDark} />
+          </View>
+
+          <Animated.View
+            style={[
+              s.card,
+              {
+                backgroundColor: C.cardBg,
+                borderColor: C.cardBorder,
+                transform: [{ translateY: slideAnim }],
+                opacity: fadeAnim,
+              },
+            ]}
+          >
+            <Text style={[s.title, { color: C.title }]}>Create Account</Text>
+            <Text style={[s.subtitle, { color: C.subtitle }]}>
+              Join CheapestGo today for premium travel rates
             </Text>
 
-            {/* Header */}
-            <View style={{ marginBottom: 32 }}>
-              <Text style={[s.title, { color: C.text }]}>{'Create your\naccount.'}</Text>
-              <Text style={s.subtitle}>Start finding the best deals today</Text>
-            </View>
+            {!!successMessage && (
+              <View style={[s.banner, { backgroundColor: C.successBg, borderColor: C.successBorder }]}>
+                <CheckCircle size={14} color={C.successText} strokeWidth={2.2} />
+                <Text style={[s.bannerText, { color: C.successText }]}>{successMessage}</Text>
+              </View>
+            )}
+            {!!generalError && (
+              <View style={[s.banner, { backgroundColor: C.bannerErrBg, borderColor: C.bannerErrBorder }]}>
+                <AlertCircle size={14} color={C.bannerErrText} strokeWidth={2.2} />
+                <Text style={[s.bannerText, { color: C.bannerErrText }]}>{generalError}</Text>
+              </View>
+            )}
 
-            {/* Name row */}
-            <View style={{ flexDirection: 'row', gap: 12, marginBottom: 16 }}>
-              <View style={{ flex: 1 }}>
-                <Text style={s.label}>First Name</Text>
-                <View style={s.inputWrap}>
-                  <User size={15} color={C.muted} />
+            <View style={[s.divider, { backgroundColor: C.divider }]} />
+
+            <View style={s.nameRow}>
+              <View style={[s.fieldGroup, s.flex]}>
+                <Text style={[s.label, { color: C.label }]}>FIRST NAME</Text>
+                <View style={[
+                  s.inputWrapper,
+                  { backgroundColor: firstNameErr ? C.inputBgErr : C.inputBg, borderColor: firstNameErr ? C.inputBorderErr : C.inputBorder },
+                ]}>
+                  <User size={15} color={C.label} />
                   <TextInput
-                    style={s.input}
-                    placeholder="John"
-                    placeholderTextColor={C.placeholder}
+                    style={[s.input, s.flex, { color: C.inputText }]}
                     value={firstName}
-                    onChangeText={setFirstName}
-                    autoCapitalize="words"
-                    autoComplete="given-name"
-                  />
-                </View>
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={s.label}>Last Name</Text>
-                <View style={s.inputWrap}>
-                  <User size={15} color={C.muted} />
-                  <TextInput
-                    style={s.input}
-                    placeholder="Doe"
+                    onChangeText={v => { setFirstName(v); setFirstNameErr(''); }}
+                    placeholder="Alex"
                     placeholderTextColor={C.placeholder}
-                    value={lastName}
-                    onChangeText={setLastName}
                     autoCapitalize="words"
-                    autoComplete="family-name"
+                    autoCorrect={false}
+                    editable={!isLoading}
                   />
                 </View>
+                {!!firstNameErr && <Text style={[s.fieldErrText, { color: C.fieldErr }]}>{firstNameErr}</Text>}
+              </View>
+
+              <View style={[s.fieldGroup, s.flex]}>
+                <Text style={[s.label, { color: C.label }]}>LAST NAME</Text>
+                <View style={[
+                  s.inputWrapper,
+                  { backgroundColor: lastNameErr ? C.inputBgErr : C.inputBg, borderColor: lastNameErr ? C.inputBorderErr : C.inputBorder },
+                ]}>
+                  <User size={15} color={C.label} />
+                  <TextInput
+                    style={[s.input, s.flex, { color: C.inputText }]}
+                    value={lastName}
+                    onChangeText={v => { setLastName(v); setLastNameErr(''); }}
+                    placeholder="Travels"
+                    placeholderTextColor={C.placeholder}
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    editable={!isLoading}
+                  />
+                </View>
+                {!!lastNameErr && <Text style={[s.fieldErrText, { color: C.fieldErr }]}>{lastNameErr}</Text>}
               </View>
             </View>
 
-            {/* Email */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={s.label}>Email</Text>
-              <View style={s.inputWrap}>
-                <Mail size={16} color={C.muted} />
+            <View style={s.fieldGroup}>
+              <Text style={[s.label, { color: C.label }]}>EMAIL ADDRESS</Text>
+              <View style={[
+                s.inputWrapper,
+                { backgroundColor: emailErr ? C.inputBgErr : C.inputBg, borderColor: emailErr ? C.inputBorderErr : C.inputBorder },
+              ]}>
+                <Mail size={16} color={C.label} />
                 <TextInput
-                  style={s.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor={C.placeholder}
+                  style={[s.input, s.flex, { color: C.inputText }]}
                   value={email}
-                  onChangeText={setEmail}
-                  autoCapitalize="none"
+                  onChangeText={v => { setEmail(v); setEmailErr(''); setGeneralError(''); }}
+                  placeholder="Enter your email address"
+                  placeholderTextColor={C.placeholder}
                   keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   autoComplete="email"
+                  returnKeyType="next"
+                  editable={!isLoading}
                 />
+                {!!emailErr && <AlertCircle size={18} color={C.fieldErr} strokeWidth={2.2} />}
               </View>
+              {!!emailErr && <Text style={[s.fieldErrText, { color: C.fieldErr }]}>{emailErr}</Text>}
             </View>
 
-            {/* Password */}
-            <View style={{ marginBottom: 16 }}>
-              <Text style={s.label}>Password</Text>
-              <View style={[s.inputWrap, { marginBottom: 10 }]}>
-                <Lock size={16} color={C.muted} />
+            <View style={s.fieldGroup}>
+              <Text style={[s.label, { color: C.label }]}>PASSWORD</Text>
+              <View style={[
+                s.inputWrapper,
+                { backgroundColor: passwordErr ? C.inputBgErr : C.inputBg, borderColor: passwordErr ? C.inputBorderErr : C.inputBorder },
+              ]}>
+                <Lock size={16} color={C.label} />
                 <TextInput
-                  style={s.input}
+                  style={[s.input, s.flex, { color: C.inputText }]}
+                  value={password}
+                  onChangeText={v => { setPassword(v); setPasswordErr(''); }}
                   placeholder="Min. 8 characters"
                   placeholderTextColor={C.placeholder}
-                  value={password}
-                  onChangeText={setPassword}
                   secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   autoComplete="new-password"
+                  editable={!isLoading}
                 />
-                <TouchableOpacity onPress={() => setShowPassword(v => !v)} hitSlop={8}>
+                <TouchableOpacity
+                  onPress={() => setShowPassword(v => !v)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  disabled={isLoading}
+                >
                   {showPassword
-                    ? <EyeOff size={16} color={C.muted} />
-                    : <Eye size={16} color={C.muted} />
+                    ? <Eye    size={18} color={C.placeholder} strokeWidth={2} />
+                    : <EyeOff size={18} color={C.placeholder} strokeWidth={2} />
                   }
                 </TouchableOpacity>
               </View>
+              {!!passwordErr && <Text style={[s.fieldErrText, { color: C.fieldErr }]}>{passwordErr}</Text>}
 
-              {/* Validation chips */}
-              <View style={{ flexDirection: 'row', gap: 8 }}>
+              {/* Password requirement chips */}
+              <View style={s.chipsRow}>
                 {passwordChecks.map(({ label, met }) => (
-                  <View key={label} style={[s.chip, met && s.chipMet]}>
-                    <View style={[s.chipDot, met && s.chipDotMet]} />
-                    <Text style={[s.chipText, met && s.chipTextMet]}>{label}</Text>
+                  <View
+                    key={label}
+                    style={[
+                      s.chip,
+                      {
+                        backgroundColor: met ? C.chipMetBg : C.chipBg,
+                        borderColor:     met ? C.chipMetBorder : C.chipBorder,
+                      },
+                    ]}
+                  >
+                    <View style={[
+                      s.chipDot,
+                      { backgroundColor: met ? C.chipDotMet : 'transparent', borderColor: met ? C.chipDotMet : C.chipDot },
+                    ]} />
+                    <Text style={[s.chipText, { color: met ? C.chipMetText : C.chipText }]}>
+                      {label}
+                    </Text>
                   </View>
                 ))}
               </View>
             </View>
 
-            {/* Confirm Password */}
-            <View style={{ marginBottom: 8 }}>
-              <Text style={s.label}>Confirm Password</Text>
-              <View style={s.inputWrap}>
-                <Lock size={16} color={C.muted} />
+            <View style={s.fieldGroup}>
+              <Text style={[s.label, { color: C.label }]}>CONFIRM PASSWORD</Text>
+              <View style={[
+                s.inputWrapper,
+                { backgroundColor: confirmErr ? C.inputBgErr : C.inputBg, borderColor: confirmErr ? C.inputBorderErr : C.inputBorder },
+              ]}>
+                <Lock size={16} color={C.label} />
                 <TextInput
-                  style={s.input}
-                  placeholder="Repeat password"
-                  placeholderTextColor={C.placeholder}
+                  style={[s.input, s.flex, { color: C.inputText }]}
                   value={confirmPassword}
-                  onChangeText={setConfirmPassword}
+                  onChangeText={v => { setConfirmPassword(v); setConfirmErr(''); }}
+                  placeholder="Repeat your password"
+                  placeholderTextColor={C.placeholder}
                   secureTextEntry={!showConfirm}
+                  autoCapitalize="none"
+                  autoCorrect={false}
                   autoComplete="new-password"
+                  returnKeyType="done"
+                  onSubmitEditing={handleRegister}
+                  editable={!isLoading}
                 />
-                <TouchableOpacity onPress={() => setShowConfirm(v => !v)} hitSlop={8}>
+                <TouchableOpacity
+                  onPress={() => setShowConfirm(v => !v)}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  disabled={isLoading}
+                >
                   {showConfirm
-                    ? <EyeOff size={16} color={C.muted} />
-                    : <Eye size={16} color={C.muted} />
+                    ? <Eye    size={18} color={C.placeholder} strokeWidth={2} />
+                    : <EyeOff size={18} color={C.placeholder} strokeWidth={2} />
                   }
                 </TouchableOpacity>
               </View>
+              {!!confirmErr && <Text style={[s.fieldErrText, { color: C.fieldErr }]}>{confirmErr}</Text>}
             </View>
 
-            {/* Error */}
-            {error ? (
-              <View style={s.errorBox}>
-                <Text style={s.errorText}>{error}</Text>
-              </View>
-            ) : null}
-
-            {/* Create account */}
             <TouchableOpacity
-              style={[s.primaryBtn, isLoading && s.dimmed]}
+              style={[s.submitBtn, { backgroundColor: C.submitBg }, isLoading && s.submitDisabled]}
               onPress={handleRegister}
+              activeOpacity={0.85}
               disabled={isLoading}
-              activeOpacity={0.9}
             >
               {isLoading
-                ? <ActivityIndicator color={C.btnText} />
-                : <Text style={s.primaryBtnText}>Create account</Text>
+                ? <ActivityIndicator color="#fff" size="small" />
+                : <Text style={[s.submitText, { color: C.submitText }]}>Create Account</Text>
               }
             </TouchableOpacity>
 
-            {/* Footer */}
-            <View style={s.footerRow}>
-              <Text style={s.footerText}>Already have an account? </Text>
+            <View style={s.switchRow}>
+              <Text style={[s.switchPrompt, { color: C.signUpPrompt }]}>Already have an account? </Text>
               <Link href="/(auth)/login" asChild>
-                <TouchableOpacity>
-                  <Text style={s.link}>Sign in</Text>
+                <TouchableOpacity disabled={isLoading}>
+                  <Text style={[s.switchLink, { color: C.signUpLink }]}>Sign In</Text>
                 </TouchableOpacity>
               </Link>
             </View>
 
             {/* Legal */}
-            <Text style={s.legal}>
+            <Text style={[s.legal, { color: C.signUpPrompt }]}>
               By creating an account you agree to our{' '}
-              <Text style={s.link}>Terms of Service</Text>
+              <Text style={{ color: C.signUpLink, fontWeight: '600' }}>Terms of Service</Text>
               {' '}and{' '}
-              <Text style={s.link}>Privacy Policy</Text>
+              <Text style={{ color: C.signUpLink, fontWeight: '600' }}>Privacy Policy</Text>
             </Text>
-          </View>
+          </Animated.View>
+
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
-function makeStyles(C: typeof dark) {
-  return StyleSheet.create({
-    safe: { flex: 1 },
-    container: { flex: 1, paddingHorizontal: 24, paddingTop: 20, paddingBottom: 32 },
-    logo: { fontSize: 20, fontWeight: '700', marginBottom: 32 },
-    title: { fontSize: 34, fontWeight: '800', marginBottom: 8, letterSpacing: -0.5 },
-    subtitle: { fontSize: 15, color: C.muted, lineHeight: 22 },
+// ─── Styles ───────────────────────────────────────────────────────────────────
+const s = StyleSheet.create({
+  safe:          { flex: 1 },
+  flex:          { flex: 1 },
+  scrollContent: { flexGrow: 1 },
 
-    dimmed: { opacity: 0.55 },
+  header: {
+    paddingTop: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 36,
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    minHeight: 190,
+  },
+  topBar: {
+    position: 'absolute',
+    top: 8,
+    left: 20,
+    right: 20,
+    flexDirection: 'row',
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  iconBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-    label: {
-      fontSize: 11,
-      fontWeight: '600',
-      color: C.label,
-      letterSpacing: 0.8,
-      textTransform: 'uppercase',
-      marginBottom: 8,
-    },
-    inputWrap: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: C.inputBg,
-      borderWidth: 1,
-      borderColor: C.border,
-      borderRadius: 12,
-      paddingHorizontal: 14,
-      gap: 10,
-    },
-    input: {
-      flex: 1,
-      fontSize: 15,
-      color: C.text,
-      paddingVertical: 13,
-      paddingHorizontal: 0,
-    },
+  card: {
+    flex: 1,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    paddingHorizontal: 24,
+    paddingTop: 32,
+    paddingBottom: 44,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 16,
+    elevation: 8,
+  },
 
-    chip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 5,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: 20,
-      backgroundColor: C.inputBg,
-      borderWidth: 1,
-      borderColor: C.border,
-    },
-    chipMet: {
-      borderColor: 'rgba(34,197,94,0.5)',
-      backgroundColor: 'rgba(34,197,94,0.08)',
-    },
-    chipDot: {
-      width: 7,
-      height: 7,
-      borderRadius: 4,
-      borderWidth: 1.5,
-      borderColor: C.muted,
-    },
-    chipDotMet: { backgroundColor: C.green, borderColor: C.green },
-    chipText: { fontSize: 12, color: C.muted, fontWeight: '500' },
-    chipTextMet: { color: C.green },
+  title: {
+    fontSize: 24,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: -0.3,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '400',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 18,
+  },
 
-    link: { fontSize: 14, color: C.blue, fontWeight: '600' },
+  banner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 16,
+  },
+  bannerText: {
+    fontSize: 12,
+    fontWeight: '500',
+    flex: 1,
+    lineHeight: 16,
+  },
 
-    errorBox: {
-      backgroundColor: 'rgba(239,68,68,0.1)',
-      borderWidth: 1,
-      borderColor: 'rgba(239,68,68,0.3)',
-      borderRadius: 10,
-      padding: 12,
-      marginVertical: 8,
-    },
-    errorText: { fontSize: 13, color: '#f87171', textAlign: 'center' },
+  divider:  { height: 1, marginBottom: 20 },
+  nameRow:  { flexDirection: 'row', gap: 12 },
+  fieldGroup: { marginBottom: 16 },
 
-    primaryBtn: {
-      backgroundColor: C.btnBg,
-      borderRadius: 14,
-      paddingVertical: 16,
-      alignItems: 'center',
-      marginTop: 16,
-      marginBottom: 24,
-    },
-    primaryBtnText: { fontSize: 16, fontWeight: '700', color: C.btnText },
+  label: {
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 1.2,
+    marginBottom: 8,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    gap: 8,
+    minHeight: 52,
+  },
+  input: {
+    height: 52,
+    fontSize: 14,
+    fontWeight: '400',
+    paddingVertical: 0,
+  },
+  fieldErrText: {
+    fontSize: 11,
+    fontWeight: '600',
+    marginTop: 5,
+  },
 
-    footerRow: { flexDirection: 'row', justifyContent: 'center', marginBottom: 20 },
-    footerText: { fontSize: 14, color: C.muted },
+  chipsRow: {
+    flexDirection: 'column',
+    gap: 6,
+    marginTop: 10,
+  },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignSelf: 'flex-start',
+  },
+  chipDot: {
+    width: 7,
+    height: 7,
+    borderRadius: 4,
+    borderWidth: 1.5,
+  },
+  chipText: {
+    fontSize: 12,
+    fontWeight: '500',
+  },
 
-    legal: { fontSize: 12, color: C.muted, textAlign: 'center', lineHeight: 18 },
-  });
-}
+  submitBtn: {
+    borderRadius: 14,
+    height: 54,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 10,
+    shadowColor: '#1d4ed8',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  submitDisabled: { opacity: 0.65 },
+  submitText: {
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+  },
+
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+    marginBottom: 12,
+  },
+  switchPrompt: { fontSize: 13, fontWeight: '400' },
+  switchLink:   { fontSize: 13, fontWeight: '700' },
+
+  legal: {
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 4,
+  },
+});
