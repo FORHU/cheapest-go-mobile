@@ -261,6 +261,7 @@ const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, from
     const price = rateCurrency !== currency.code.toUpperCase()
         ? Math.round(convertCurrency(rawPrice, rateCurrency, currency.code))
         : rawPrice;
+    console.log('[RoomName debug]', { ratesDotName: room.rates?.[0]?.name, roomDotName: room.name, matchedRoomName: matchedRoom?.roomName, fullRoom: JSON.stringify(room, null, 2) });
     const roomName = room.rates?.[0]?.name || room.name || matchedRoom?.roomName || 'Room';
     const maxOccupancy = room.rates?.[0]?.maxOccupancy || room.maxOccupancy || matchedRoom?.maxOccupancy || 2;
     const boardName = room.rates?.[0]?.boardName;
