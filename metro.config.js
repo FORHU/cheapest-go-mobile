@@ -17,6 +17,7 @@ config.serializer = {
     getPolyfills: ({ platform }) => {
         const base = originalGetPolyfills ? originalGetPolyfills({ platform }) : [];
         return [
+            require.resolve('./polyfills/EventPatch.js'), // must run before base to intercept defineProperty
             require.resolve('./polyfills/DOMException.js'),
             ...base,
         ];

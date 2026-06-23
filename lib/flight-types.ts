@@ -81,6 +81,7 @@ export interface FlightOffer {
     resultIndex?: string;
     traceId?: string;
     alternatives?: FlightOffer[];
+    _rawOffer?: any;
 }
 
 export interface FilterState {
@@ -238,5 +239,8 @@ export function normalizeFlightOffer(nf: any, tripType?: FlightOffer['tripType']
         resultIndex: nf.resultIndex,
         traceId: nf.traceId,
         alternatives: nf.alternatives,
+        ...(nf.provider === 'duffel' ? {
+            _rawOffer: nf._rawOffer || nf.raw || nf.rawOffer,
+        } : {}),
     };
 }

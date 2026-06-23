@@ -157,6 +157,11 @@ const normalizeRoomOptions = (hotel: any) => {
     const rawRooms = hotel.roomTypes || hotel.details?.roomTypes || hotel.details?.rooms || hotel.rooms || [];
     const rooms = Array.isArray(rawRooms) ? rawRooms : [rawRooms];
 
+    if (rooms.length > 0) {
+        console.log('[normalizeRoomOptions] raw room[0] keys:', Object.keys(rooms[0]));
+        console.log('[normalizeRoomOptions] raw room[0]:', JSON.stringify(rooms[0], null, 2));
+    }
+
     return rooms
         .map((room: any, index: number) => {
             const rawRates = room.rates || room.rate || [];
@@ -261,8 +266,7 @@ const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, from
     const price = rateCurrency !== currency.code.toUpperCase()
         ? Math.round(convertCurrency(rawPrice, rateCurrency, currency.code))
         : rawPrice;
-    console.log('[RoomName debug]', { ratesDotName: room.rates?.[0]?.name, roomDotName: room.name, matchedRoomName: matchedRoom?.roomName, fullRoom: JSON.stringify(room, null, 2) });
-    const roomName = room.rates?.[0]?.name || room.name || matchedRoom?.roomName || 'Room';
+    const roomName = room.rates?.[0]?.name || room.name || room.description || matchedRoom?.roomName || 'Room';
     const maxOccupancy = room.rates?.[0]?.maxOccupancy || room.maxOccupancy || matchedRoom?.maxOccupancy || 2;
     const boardName = room.rates?.[0]?.boardName;
     const refundableTag = room.rates?.[0]?.cancellationPolicies?.refundableTag || room.cancellationPolicies?.refundableTag;
@@ -496,7 +500,7 @@ export default function HotelDetailsScreen() {
             pathname: '/checkout',
             params: {
                 offerId,
-                roomName: rate.name || room.name || room.roomName || 'Room',
+                roomName: rate.name || room.name || room.description || room.roomName || 'Room',
                 roomPrice: String(displayAmt),
                 roomCurrency: currency.code,
                 hotelName: hotel?.name || '',

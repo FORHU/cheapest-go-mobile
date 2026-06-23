@@ -84,7 +84,6 @@ export interface WebSearchResult {
 }
 
 export async function webSearchFlights(params: WebSearchParams): Promise<WebSearchResult> {
-    console.log('[webSearchFlights] params:', JSON.stringify(params, null, 2));
     return post('/api/flights/search', params);
 }
 
@@ -240,7 +239,7 @@ export interface MobileBookParams {
         gender: string;
         birthDate: string;
     }>;
-    contact: { email: string; phone: string; countryCode: string };
+    contact: { email: string; phone: string; countryCode: string; addressLine: string; city: string; postalCode: string; country: string };
     idempotencyKey: string;
     seatServiceIds?: string[];
     seatTotal?: number;

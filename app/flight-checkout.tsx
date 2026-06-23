@@ -35,9 +35,10 @@ import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
 import {
     webFetchBags, webFetchSeatMap, webMobileBook, webMobileConfirm, webRefreshOffer,
-    type NormalizedBagOption, type NormalizedSegmentSeatMap,
+    type MobileBookResult, type NormalizedBagOption, type NormalizedSegmentSeatMap,
 } from '../lib/booking-api';
 import { FlightOffer, formatDuration } from '../lib/flight-types';
+import { getAirportByIata } from '../data/airports';
 
 let StripeProvider: React.ComponentType<any> | null = null;
 let useStripeHook: (() => { initPaymentSheet: any; presentPaymentSheet: any }) | null = null;
@@ -195,11 +196,22 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     const [email, setEmail] = useState(user?.email ?? '');
     const [phone, setPhone] = useState('');
 
-    const [countryCode, setCountryCode] = useState('');
+    const [countryCode, setCountryCode] = useState(() => {
+        if (!params.offerData) return '';
+        try {
+            const o = JSON.parse(params.offerData as string);
+            const originIata = o?.segments?.[0]?.origin ?? o?.origin ?? '';
+            const airport = getAirportByIata(originIata);
+            const country = COUNTRIES.find(c => c.code === airport?.countryCode);
+            return country?.dialCode ?? '';
+        } catch {
+            return '';
+        }
+    });
 
     // Billing Address
     const [addressLine1, setAddressLine1] = useState('');
-    const [addressLine2, setAddressLine2] = useState('');
+    const [city, setCity] = useState('');
     const [postalCode, setPostalCode] = useState('');
     const [billingCountry, setBillingCountry] = useState('');
 
@@ -393,6 +405,12 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             errs.passportExpiry = 'Expiry required (YYYY-MM-DD)';
         }
 
+        // Billing address
+        if (!addressLine1.trim()) errs.addressLine1 = 'Address is required';
+        if (!city.trim()) errs.city = 'City is required';
+        if (!postalCode.trim()) errs.postalCode = 'Postal code is required';
+        if (!billingCountry) errs.billingCountry = 'Country is required';
+
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
@@ -436,26 +454,71 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                 }
             }
 
-            // Step 1: Duffel pre-order + Stripe PaymentIntent (via web API)
-            const bookResult = await webMobileBook({
+            const passengerPayload = passengers.map(p => ({
+                type: p.type,
+                firstName: p.firstName,
+                lastName: p.lastName,
+                gender: p.gender as string,
+                birthDate: p.birthDate,
+                nationality: p.nationality,
+                passport: p.passport,
+                passportExpiry: p.passportExpiry,
+            }));
+            const contactPayload = {
+                email,
+                phone,
+                countryCode,
+                addressLine: addressLine1,
+                city,
+                postalCode,
+                country: billingCountry,
+            };
+
+            // Seat/bag service IDs are scoped to one Duffel offer, so they're only
+            // sent with the offer they were fetched against. After a refresh the
+            // refreshed offer has different service IDs, so ancillaries are dropped.
+            const buildBookPayload = (activeOffer: FlightOffer, includeAncillaries: boolean) => ({
                 provider: 'duffel',
-                flight: offer,
-                passengers: passengers.map(p => ({
-                    type: p.type,
-                    firstName: p.firstName,
-                    lastName: p.lastName,
-                    gender: p.gender as string,
-                    birthDate: p.birthDate,
-                    nationality: p.nationality,
-                    passport: p.passport,
-                    passportExpiry: p.passportExpiry,
-                })),
-                contact: { email, phone, countryCode },
+                flight: activeOffer,
+                passengers: passengerPayload,
+                contact: contactPayload,
                 idempotencyKey: `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                ...(seatServiceIds.length ? { seatServiceIds, seatTotal } : {}),
-                ...(bagServiceIds.length ? { bagServiceIds, bagTotal } : {}),
-                confirmedPrice: offer.price?.total,
+                ...(includeAncillaries && seatServiceIds.length ? { seatServiceIds, seatTotal } : {}),
+                ...(includeAncillaries && bagServiceIds.length ? { bagServiceIds, bagTotal } : {}),
+                confirmedPrice: activeOffer.price?.total,
             });
+
+            // Step 1: Duffel pre-order + Stripe PaymentIntent (via web API).
+            // Offers expire a few minutes after search; if the form took long enough
+            // that the offer is gone, refresh it once and retry so the user isn't
+            // bounced back to search ("This flight is no longer available").
+            let bookResult: MobileBookResult;
+            try {
+                bookResult = await webMobileBook(buildBookPayload(offer, true));
+            } catch (bookErr: any) {
+                const rawOffer = (offer as any)._rawOffer;
+                const offerExpired =
+                    !bookErr.priceChanged &&
+                    (bookErr.status === 404 ||
+                        /no longer available|expired|not available/i.test(bookErr.message ?? ''));
+                if (!offerExpired || !rawOffer) throw bookErr;
+
+                const refreshed = await webRefreshOffer(rawOffer);
+                if (!refreshed?.success || !refreshed.newOffer) throw bookErr;
+
+                // Don't silently charge more than the user agreed to: if the
+                // refreshed fare is higher, route to the price-changed handler.
+                const oldTotal = offer.price?.total ?? 0;
+                const newTotal = refreshed.newOffer.price?.total ?? 0;
+                if (newTotal - oldTotal > 0.01) {
+                    const priceErr: any = new Error('The flight price has changed.');
+                    priceErr.priceChanged = true;
+                    priceErr.newPrice = newTotal;
+                    throw priceErr;
+                }
+
+                bookResult = await webMobileBook(buildBookPayload(refreshed.newOffer, false));
+            }
 
             if (!bookResult.clientSecret) {
                 throw new Error('Failed to create payment session');
@@ -905,37 +968,40 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
 
                         <View style={styles.inputGroup}>
                             <TextInput
-                                style={styles.input}
-                                placeholder="Address Line 1"
+                                style={[styles.input, errors.addressLine1 ? styles.inputError : null]}
+                                placeholder="Address Line 1 *"
                                 placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
                                 value={addressLine1}
                                 onChangeText={setAddressLine1}
                             />
+                            {errors.addressLine1 ? <Text style={styles.errorText}>{errors.addressLine1}</Text> : null}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <TextInput
-                                style={styles.input}
-                                placeholder="Address Line 2"
+                                style={[styles.input, errors.city ? styles.inputError : null]}
+                                placeholder="City *"
                                 placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-                                value={addressLine2}
-                                onChangeText={setAddressLine2}
+                                value={city}
+                                onChangeText={setCity}
                             />
+                            {errors.city ? <Text style={styles.errorText}>{errors.city}</Text> : null}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <TextInput
-                                style={styles.input}
-                                placeholder="Postal Code"
+                                style={[styles.input, errors.postalCode ? styles.inputError : null]}
+                                placeholder="Postal Code *"
                                 placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
                                 value={postalCode}
                                 onChangeText={setPostalCode}
                             />
+                            {errors.postalCode ? <Text style={styles.errorText}>{errors.postalCode}</Text> : null}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <Pressable
-                                style={styles.dropdownPlaceholder}
+                                style={[styles.dropdownPlaceholder, errors.billingCountry ? styles.inputError : null]}
                                 onPress={() => {
                                     setDropdownTarget('billingCountry');
                                     setDropdownSearch('');
@@ -951,6 +1017,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                                 </Text>
                                 <ChevronDown size={16} color={isDark ? '#94a3b8' : '#64748b'} />
                             </Pressable>
+                            {errors.billingCountry ? <Text style={styles.errorText}>{errors.billingCountry}</Text> : null}
                         </View>
                     </View>
 

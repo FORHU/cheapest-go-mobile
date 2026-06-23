@@ -227,6 +227,10 @@ const INDEXED = AIRPORTS.map(a => ({
     _countryLower: a.country.toLowerCase(),
 }));
 
+export function getAirportByIata(iata: string): Airport | undefined {
+    return AIRPORTS.find(a => a.iata.toUpperCase() === iata.toUpperCase());
+}
+
 export function searchAirports(query: string, limit: number = 8): Airport[] {
     const q = query.trim().toLowerCase();
     if (!q) return [];
