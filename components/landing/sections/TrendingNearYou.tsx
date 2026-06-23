@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Pressable, ScrollView, useColorScheme } from 'react-native';
 import { Image } from 'expo-image';
-import { TrendingUp, MapPin, Star } from 'lucide-react-native';
+import { MapPin, Star, TrendingUp } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, useColorScheme, View } from 'react-native';
 import { useSettings } from '../../../context/SettingsContext';
-import { fetchWeekendDeals, WeekendDeal } from '../../../lib/landing';
 import { convertCurrency } from '../../../lib/currency';
+import { fetchWeekendDeals, WeekendDeal } from '../../../lib/landing';
 
 export default function TrendingNearYou() {
     const colorScheme = useColorScheme();
