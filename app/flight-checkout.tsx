@@ -1,25 +1,57 @@
-import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
-import {
-    View, Text, StyleSheet, Pressable, ScrollView, TextInput,
-    ActivityIndicator, Alert, useColorScheme, KeyboardAvoidingView,
-    Platform, Dimensions, Modal, FlatList
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import {
-    ArrowLeft, ChevronDown, ChevronUp, User, Mail, Phone,
-    MapPin, Briefcase, Plus, CheckCircle, ShieldAlert, Check,
-    AlertTriangle, Ticket, Globe, ChevronLeft, ChevronRight
+    AlertTriangle,
+    ArrowLeft,
+    Briefcase,
+    Check,
+    CheckCircle,
+    ChevronDown,
+    ChevronLeft, ChevronRight,
+    ChevronUp,
+    Globe,
+    Mail,
+    MapPin,
+    Plus,
+    ShieldAlert,
+    Ticket,
+    User
 } from 'lucide-react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+    ActivityIndicator, Alert,
+    Dimensions,
+    KeyboardAvoidingView,
+    Modal,
+    Platform,
+    Pressable, ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    useColorScheme,
+    View
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
-import { FlightOffer, formatDuration } from '../lib/flight-types';
 import {
     webFetchBags, webFetchSeatMap, webMobileBook, webMobileConfirm, webRefreshOffer,
     type NormalizedBagOption, type NormalizedSegmentSeatMap,
 } from '../lib/booking-api';
+import { FlightOffer, formatDuration } from '../lib/flight-types';
+
+let StripeProvider: React.ComponentType<any> | null = null;
+let useStripeHook: (() => { initPaymentSheet: any; presentPaymentSheet: any }) | null = null;
+
+try {
+    const stripe = require('@stripe/stripe-react-native');
+    StripeProvider = stripe.StripeProvider;
+    useStripeHook = stripe.useStripe;
+} catch (e) {
+    // eslint-disable-next-line no-console
+    console.warn('Stripe is not available:', e);
+}
 
 const { width } = Dimensions.get('window');
-
 const BOOKING_STEPS = [
     'Verifying rate...',
     'Securing your airline reservation...',
@@ -27,14 +59,126 @@ const BOOKING_STEPS = [
     'Issuing e-ticket PNR...',
 ] as const;
 
+interface SeatConfig {
+    code: string;
+    type: 'taken' | 'paid' | 'legroom' | 'exit' | 'free';
+    price?: number;
+}
+
+interface RowConfig {
+    row: number;
+    seats: SeatConfig[];
+}
+
+const SEAT_ROWS: RowConfig[] = [
+    { row: 12, seats: [{ code: 'A', type: 'legroom' }, { code: 'B', type: 'taken' }, { code: 'C', type: 'legroom' }, { code: 'D', type: 'taken' }, { code: 'E', type: 'legroom' }] },
+    { row: 14, seats: [{ code: 'A', type: 'exit' }, { code: 'B', type: 'free' }, { code: 'C', type: 'exit' }, { code: 'D', type: 'free' }, { code: 'E', type: 'exit' }] },
+    { row: 15, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'free' }, { code: 'C', type: 'taken' }, { code: 'D', type: 'free' }, { code: 'E', type: 'free' }] },
+    { row: 16, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'taken' }, { code: 'C', type: 'free' }, { code: 'D', type: 'free' }, { code: 'E', type: 'taken' }] },
+    { row: 17, seats: [{ code: 'A', type: 'paid', price: 15 }, { code: 'B', type: 'free' }, { code: 'C', type: 'paid', price: 15 }, { code: 'D', type: 'free' }, { code: 'E', type: 'paid', price: 15 }] },
+    { row: 18, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'free' }, { code: 'C', type: 'free' }, { code: 'D', type: 'taken' }, { code: 'E', type: 'free' }] },
+    { row: 19, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'free' }, { code: 'C', type: 'free' }, { code: 'D', type: 'free' }, { code: 'E', type: 'free' }] },
+    { row: 20, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'taken' }, { code: 'C', type: 'free' }, { code: 'D', type: 'taken' }, { code: 'E', type: 'free' }] },
+];
+
+const COUNTRIES = [
+    { code: 'KR', name: 'South Korea', dialCode: '82' },
+    { code: 'PH', name: 'Philippines', dialCode: '63' },
+    { code: 'US', name: 'United States', dialCode: '1' },
+    { code: 'JP', name: 'Japan', dialCode: '81' },
+    { code: 'SG', name: 'Singapore', dialCode: '65' },
+    { code: 'TH', name: 'Thailand', dialCode: '66' },
+    { code: 'VN', name: 'Vietnam', dialCode: '84' },
+    { code: 'MY', name: 'Malaysia', dialCode: '60' },
+    { code: 'ID', name: 'Indonesia', dialCode: '62' },
+    { code: 'GB', name: 'United Kingdom', dialCode: '44' },
+    { code: 'CA', name: 'Canada', dialCode: '1' },
+    { code: 'AU', name: 'Australia', dialCode: '61' },
+    { code: 'CN', name: 'China', dialCode: '86' },
+    { code: 'IN', name: 'India', dialCode: '91' },
+    { code: 'DE', name: 'Germany', dialCode: '49' },
+    { code: 'FR', name: 'France', dialCode: '33' },
+    { code: 'IT', name: 'Italy', dialCode: '39' },
+    { code: 'ES', name: 'Spain', dialCode: '34' },
+    { code: 'AE', name: 'United Arab Emirates', dialCode: '971' },
+    { code: 'HK', name: 'Hong Kong', dialCode: '852' },
+    { code: 'TW', name: 'Taiwan', dialCode: '886' },
+    { code: 'NZ', name: 'New Zealand', dialCode: '64' },
+    { code: 'BR', name: 'Brazil', dialCode: '55' },
+    { code: 'MX', name: 'Mexico', dialCode: '52' },
+    { code: 'ZA', name: 'South Africa', dialCode: '27' },
+    { code: 'RU', name: 'Russia', dialCode: '7' },
+    { code: 'NL', name: 'Netherlands', dialCode: '31' },
+    { code: 'CH', name: 'Switzerland', dialCode: '41' },
+    { code: 'SE', name: 'Sweden', dialCode: '46' },
+    { code: 'NO', name: 'Norway', dialCode: '47' },
+    { code: 'FI', name: 'Finland', dialCode: '358' },
+    { code: 'DK', name: 'Denmark', dialCode: '45' },
+    { code: 'IE', name: 'Ireland', dialCode: '353' },
+    { code: 'BE', name: 'Belgium', dialCode: '32' },
+    { code: 'AT', name: 'Austria', dialCode: '43' },
+    { code: 'PT', name: 'Portugal', dialCode: '351' },
+    { code: 'GR', name: 'Greece', dialCode: '30' },
+    { code: 'TR', name: 'Turkey', dialCode: '90' },
+    { code: 'SA', name: 'Saudi Arabia', dialCode: '966' },
+    { code: 'QA', name: 'Qatar', dialCode: '974' },
+    { code: 'IL', name: 'Israel', dialCode: '972' },
+    { code: 'EG', name: 'Egypt', dialCode: '20' },
+    { code: 'PK', name: 'Pakistan', dialCode: '92' },
+    { code: 'BD', name: 'Bangladesh', dialCode: '880' },
+];
+
+const GENDER_OPTIONS = [
+    { label: 'Male', value: 'M' },
+    { label: 'Female', value: 'F' }
+];
+
+const getFlagEmoji = (countryCode: string) => {
+    const codePoints = countryCode
+        .toUpperCase()
+        .split('')
+        .map(char => 127397 + char.charCodeAt(0));
+    try {
+        return String.fromCodePoint(...codePoints);
+    } catch {
+        return '🏳️';
+    }
+};
+
+const getCountryName = (code: string) => {
+    const found = COUNTRIES.find(c => c.code.toUpperCase() === code.toUpperCase());
+    return found ? found.name : code;
+};
 
 export default function FlightCheckoutScreen() {
+    const STRIPE_KEY = process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY ?? '';
+    if (StripeProvider && STRIPE_KEY) {
+        const SP = StripeProvider;
+        return (
+            <SP
+                publishableKey={STRIPE_KEY}
+                merchantIdentifier="com.cheapestgo.mobile"
+                urlScheme="mobileapp"
+            >
+                <FlightCheckoutContent stripeAvailable />
+            </SP>
+        );
+    }
+    return <FlightCheckoutContent stripeAvailable={false} />;
+}
+
+function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { currency } = useSettings();
+    const { user } = useAuth();
     const styles = getStyles(isDark);
+
+    const stripeHook = stripeAvailable && useStripeHook ? useStripeHook() : null;
+    const initPaymentSheet = stripeHook?.initPaymentSheet;
+    const presentPaymentSheet = stripeHook?.presentPaymentSheet;
 
     // Parse Selected Offer
     const offer: FlightOffer | null = useMemo(() => {
@@ -54,22 +198,24 @@ export default function FlightCheckoutScreen() {
     const [bookingResult, setBookingResult] = useState<any>(null);
 
     // Form State (Single Passenger for GDS validation)
+    // Passengers — pre-fill name from logged-in user
     const [passengers, setPassengers] = useState<any[]>([
         {
             type: 'ADT',
-            firstName: 'billy',
-            lastName: 'basilan',
-            gender: 'M',
-            birthDate: '1995-08-15',
-            nationality: 'KR',
-            passport: 'M12345678',
-            passportExpiry: '2030-12-31'
+            firstName: user?.firstName ?? '',
+            lastName: user?.lastName ?? '',
+            gender: '',
+            birthDate: '',
+            nationality: '',
+            passport: '',
+            passportExpiry: ''
         }
     ]);
 
-    // Contact Information
-    const [email, setEmail] = useState('billythepilot@gmail.com');
-    const [phone, setPhone] = useState('9171234567');
+    // Contact — pre-fill email from logged-in user
+    const [email, setEmail] = useState(user?.email ?? '');
+    const [phone, setPhone] = useState('');
+
     const [countryCode, setCountryCode] = useState('63');
 
     // Billing Address
@@ -94,6 +240,11 @@ export default function FlightCheckoutScreen() {
     const [pickerDay, setPickerDay] = useState(15);
     const [monthDropdownOpen, setMonthDropdownOpen] = useState(false);
     const [yearDropdownOpen, setYearDropdownOpen] = useState(false);
+
+    // Custom Dropdown Modal State
+    const [dropdownVisible, setDropdownVisible] = useState(false);
+    const [dropdownTarget, setDropdownTarget] = useState<'gender' | 'nationality' | 'billingCountry' | 'countryCode' | null>(null);
+    const [dropdownSearch, setDropdownSearch] = useState('');
 
     // Seat Selection State (live from API)
     const [selectedSeats, setSelectedSeats] = useState<Record<string, string>>({}); // designator → serviceId
@@ -148,7 +299,7 @@ export default function FlightCheckoutScreen() {
         setBagLoading(true);
         webFetchBags(rawOffer.id, duffelPassengerIds)
             .then(res => { if (res.success) setBagOptions(res.bagOptions); })
-            .catch(() => {/* silently skip — airline may not support ancillaries */})
+            .catch(() => { })
             .finally(() => setBagLoading(false));
 
         // Seat map
@@ -170,7 +321,7 @@ export default function FlightCheckoutScreen() {
                                 if (retry.success) setSeatMaps(retry.seatMaps);
                             }
                         }
-                    } catch {/* seat map optional */}
+                    } catch {/* seat map optional */ }
                 }
             })
             .finally(() => setSeatMapLoading(false));
@@ -253,9 +404,11 @@ export default function FlightCheckoutScreen() {
         const p1 = passengers[0];
         if (!p1.firstName.trim()) errs.firstName = 'First name is required';
         if (!p1.lastName.trim()) errs.lastName = 'Last name is required';
+        if (!p1.gender) errs.gender = 'Gender is required';
         if (!p1.birthDate.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(p1.birthDate)) {
             errs.birthDate = 'Birthdate required (YYYY-MM-DD)';
         }
+        if (!p1.nationality) errs.nationality = 'Nationality is required';
         if (!p1.passport.trim()) errs.passport = 'Passport number is required';
         if (!p1.passportExpiry.trim() || !/^\d{4}-\d{2}-\d{2}$/.test(p1.passportExpiry)) {
             errs.passportExpiry = 'Expiry required (YYYY-MM-DD)';
@@ -275,9 +428,15 @@ export default function FlightCheckoutScreen() {
             return;
         }
 
-        setStep('confirming');
+        if (!stripeAvailable || !initPaymentSheet || !presentPaymentSheet) {
+            Alert.alert(
+                'Payment unavailable',
+                'Stripe payments require an EAS development build. Run:\n\neas build --profile development --platform android\n\nThen install the APK and open with "expo start --dev-client".'
+            );
+            return;
+        }
+
         setBooking(true);
-        setBookingStepIdx(0);
 
         try {
             // Collect selected seat service IDs
@@ -298,18 +457,20 @@ export default function FlightCheckoutScreen() {
                 }
             }
 
-            setBookingStepIdx(1);
-
             // Step 1: Duffel pre-order + Stripe PaymentIntent (via web API)
             const bookResult = await webMobileBook({
                 provider: 'duffel',
                 flight: offer,
                 passengers: passengers.map(p => ({
                     type: p.type,
+                    title: p.gender === 'F' ? 'ms' : 'mr',
                     firstName: p.firstName,
                     lastName: p.lastName,
-                    gender: p.gender,
+                    gender: p.gender as string,
                     birthDate: p.birthDate,
+                    nationality: p.nationality || undefined,
+                    passport: p.passport || undefined,
+                    passportExpiry: p.passportExpiry || undefined,
                 })),
                 contact: { email, phone, countryCode },
                 idempotencyKey: `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -318,31 +479,47 @@ export default function FlightCheckoutScreen() {
                 confirmedPrice: offer.price?.total,
             });
 
-            setBookingStepIdx(2);
+            if (!bookResult.clientSecret) {
+                throw new Error('Failed to create payment session');
+            }
 
-            // Step 2: Payment
-            // bookResult.clientSecret is the Stripe PaymentIntent client secret.
-            // When @stripe/stripe-react-native is installed (requires eas build),
-            // replace this block with initPaymentSheet + presentPaymentSheet.
-            //
-            // For now we confirm the payment intent directly server-side
-            // since the Duffel pre-order has already locked the fare.
-            // This works in sandbox mode. Production requires the Stripe payment sheet.
-            //
-            // TODO: Replace with Stripe payment sheet once stripe-react-native is set up:
-            //   const { error } = await presentPaymentSheet();
-            //   if (error) throw new Error(error.message);
+            // Step 2: Initialize Stripe payment sheet
+            const { error: initError } = await initPaymentSheet({
+                paymentIntentClientSecret: bookResult.clientSecret,
+                merchantDisplayName: 'CheapestGo',
+                applePay: { merchantCountryCode: 'US' },
+                googlePay: { merchantCountryCode: 'US', testEnv: __DEV__ },
+                style: isDark ? 'alwaysDark' : 'alwaysLight',
+                returnURL: 'mobileapp://flight-checkout-return',
+                defaultBillingDetails: { email, name: `${passengers[0].firstName} ${passengers[0].lastName}` },
+            });
+            if (initError) throw new Error(initError.message);
+
+            // Present Payment Sheet
+            const { error: paymentError } = await presentPaymentSheet();
+            if (paymentError) {
+                if (paymentError.code === 'Canceled') {
+                    return;
+                }
+                throw new Error(paymentError.message);
+            }
+
             const paymentIntentId = bookResult.clientSecret.split('_secret_')[0];
 
-            setBookingStepIdx(3);
-
-            // Step 3: Confirm booking + issue ticket (via web API)
+            // Confirm booking + issue ticket (via web API)
             const confirmResult = await webMobileConfirm(paymentIntentId, bookResult.sessionId);
 
             setBookingResult(confirmResult);
             setStep('success');
         } catch (err: any) {
             const isPriceChanged = err.priceChanged;
+            if (isPriceChanged) {
+                // Only show the animated steps screen on price change so user sees the verification step
+                setStep('confirming');
+                setBookingStepIdx(0);
+            } else {
+                setStep('form');
+            }
             Alert.alert(
                 isPriceChanged ? 'Price Changed' : 'Booking Failed',
                 isPriceChanged
@@ -495,6 +672,16 @@ export default function FlightCheckoutScreen() {
                         </View>
                     )}
 
+                    {/* Expo Go warning — Stripe not available */}
+                    {!stripeAvailable && (
+                        <View style={styles.errorBanner}>
+                            <AlertTriangle size={18} color="#d97706" />
+                            <Text style={[styles.errorBannerText, { color: '#d97706' }]}>
+                                Stripe payments require an EAS dev build — not available in Expo Go.
+                            </Text>
+                        </View>
+                    )}
+
                     {/* Explore prices section */}
                     <View style={styles.exploreSection}>
                         <Globe size={16} color={isDark ? '#38bdf8' : '#2563eb'} />
@@ -585,14 +772,30 @@ export default function FlightCheckoutScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <View style={styles.dropdownPlaceholder}>
-                                <Text style={styles.dropdownValue}>Male</Text>
+                            <Pressable
+                                style={[styles.dropdownPlaceholder, errors.gender ? styles.inputError : null]}
+                                onPress={() => {
+                                    setDropdownTarget('gender');
+                                    setDropdownSearch('');
+                                    setDropdownVisible(true);
+                                }}
+                            >
+                                <Text style={{
+                                    fontSize: 14,
+                                    color: passengers[0].gender ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#475569' : '#94a3b8'),
+                                    fontWeight: passengers[0].gender ? '500' : 'normal'
+                                }}>
+                                    {passengers[0].gender
+                                        ? (passengers[0].gender === 'M' ? 'Male' : 'Female')
+                                        : 'Gender *'}
+                                </Text>
                                 <ChevronDown size={16} color={isDark ? '#94a3b8' : '#64748b'} />
-                            </View>
+                            </Pressable>
+                            {errors.gender && <Text style={styles.errorText}>{errors.gender}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Pressable 
+                            <Pressable
                                 style={[styles.input, errors.birthDate ? styles.inputError : null, { justifyContent: 'center' }]}
                                 onPress={() => openDatePicker('birthDate', passengers[0].birthDate)}
                             >
@@ -608,10 +811,26 @@ export default function FlightCheckoutScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <View style={styles.dropdownPlaceholder}>
-                                <Text style={styles.dropdownValue}>South Korea</Text>
+                            <Pressable
+                                style={[styles.dropdownPlaceholder, errors.nationality ? styles.inputError : null]}
+                                onPress={() => {
+                                    setDropdownTarget('nationality');
+                                    setDropdownSearch('');
+                                    setDropdownVisible(true);
+                                }}
+                            >
+                                <Text style={{
+                                    fontSize: 14,
+                                    color: passengers[0].nationality ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#475569' : '#94a3b8'),
+                                    fontWeight: passengers[0].nationality ? '500' : 'normal'
+                                }}>
+                                    {passengers[0].nationality
+                                        ? getCountryName(passengers[0].nationality)
+                                        : 'Nationality *'}
+                                </Text>
                                 <ChevronDown size={16} color={isDark ? '#94a3b8' : '#64748b'} />
-                            </View>
+                            </Pressable>
+                            {errors.nationality && <Text style={styles.errorText}>{errors.nationality}</Text>}
                         </View>
 
                         <View style={styles.inputGroup}>
@@ -630,7 +849,7 @@ export default function FlightCheckoutScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <Pressable 
+                            <Pressable
                                 style={[styles.input, errors.passportExpiry ? styles.inputError : null, { justifyContent: 'center' }]}
                                 onPress={() => openDatePicker('passportExpiry', passengers[0].passportExpiry)}
                             >
@@ -673,10 +892,17 @@ export default function FlightCheckoutScreen() {
                         </View>
 
                         <View style={styles.phoneInputRow}>
-                            <View style={styles.countryCodeSelector}>
+                            <Pressable
+                                style={styles.countryCodeSelector}
+                                onPress={() => {
+                                    setDropdownTarget('countryCode');
+                                    setDropdownSearch('');
+                                    setDropdownVisible(true);
+                                }}
+                            >
                                 <Text style={styles.countryCodeText}>+{countryCode}</Text>
                                 <ChevronDown size={14} color={isDark ? '#94a3b8' : '#64748b'} />
-                            </View>
+                            </Pressable>
 
                             <View style={{ flex: 1 }}>
                                 <TextInput
@@ -730,10 +956,23 @@ export default function FlightCheckoutScreen() {
                         </View>
 
                         <View style={styles.inputGroup}>
-                            <View style={styles.dropdownPlaceholder}>
-                                <Text style={styles.dropdownValue}>South Korea</Text>
+                            <Pressable
+                                style={styles.dropdownPlaceholder}
+                                onPress={() => {
+                                    setDropdownTarget('billingCountry');
+                                    setDropdownSearch('');
+                                    setDropdownVisible(true);
+                                }}
+                            >
+                                <Text style={{
+                                    fontSize: 14,
+                                    color: billingCountry ? (isDark ? '#ffffff' : '#0f172a') : (isDark ? '#475569' : '#94a3b8'),
+                                    fontWeight: billingCountry ? '500' : 'normal'
+                                }}>
+                                    {billingCountry ? getCountryName(billingCountry) : 'Billing Country *'}
+                                </Text>
                                 <ChevronDown size={16} color={isDark ? '#94a3b8' : '#64748b'} />
-                            </View>
+                            </Pressable>
                         </View>
                     </View>
 
@@ -831,12 +1070,12 @@ export default function FlightCheckoutScreen() {
                                         </View>
 
                                         {/* Grid Rows */}
-                                        {SEAT_ROWS.map((rowConfig) => (
+                                        {SEAT_ROWS.map((rowConfig: RowConfig) => (
                                             <View key={rowConfig.row} style={styles.cabinRow}>
                                                 <Text style={styles.cabinRowLabel}>{rowConfig.row}</Text>
-                                                
+
                                                 {/* Seat A, B, C */}
-                                                {rowConfig.seats.slice(0, 3).map((seat) => {
+                                                {rowConfig.seats.slice(0, 3).map((seat: SeatConfig) => {
                                                     const seatCode = `${rowConfig.row}${seat.code}`;
                                                     const isSelected = selectedSeats[activeSegmentTab] === seatCode;
                                                     const isTaken = seat.type === 'taken';
@@ -888,7 +1127,7 @@ export default function FlightCheckoutScreen() {
                                                 <View style={styles.cabinAisleSpace} />
 
                                                 {/* Seat D, E */}
-                                                {rowConfig.seats.slice(3, 5).map((seat) => {
+                                                {rowConfig.seats.slice(3, 5).map((seat: SeatConfig) => {
                                                     const seatCode = `${rowConfig.row}${seat.code}`;
                                                     const isSelected = selectedSeats[activeSegmentTab] === seatCode;
                                                     const isTaken = seat.type === 'taken';
@@ -972,14 +1211,14 @@ export default function FlightCheckoutScreen() {
 
                                     {/* Bottom Buttons matching Screenshot 3 */}
                                     <View style={styles.seatAccordionFooter}>
-                                        <Pressable 
+                                        <Pressable
                                             style={styles.seatSkipButton}
                                             onPress={() => setSeatsExpanded(false)}
                                         >
                                             <Text style={styles.seatSkipButtonText}>Skip</Text>
                                         </Pressable>
 
-                                        <Pressable 
+                                        <Pressable
                                             style={styles.seatScrollTopButton}
                                             onPress={() => setSeatsExpanded(false)}
                                         >
@@ -991,158 +1230,307 @@ export default function FlightCheckoutScreen() {
                         })()}
                     </View>
 
-            {/* Custom Date Picker Modal */}
-            <Modal
-                visible={pickerVisible}
-                transparent={true}
-                animationType="fade"
-                onRequestClose={() => setPickerVisible(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.datePickerContainer}>
-                        {/* Header Month / Year Selectors */}
-                        <View style={styles.datePickerHeader}>
-                            <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
-                                {/* Month Toggle */}
-                                <Pressable 
-                                    style={styles.selectorPressable}
-                                    onPress={() => {
-                                        setMonthDropdownOpen(!monthDropdownOpen);
-                                        setYearDropdownOpen(false);
-                                    }}
-                                >
-                                    <Text style={styles.selectorText}>{MONTHS[pickerMonth]}</Text>
-                                    <ChevronDown size={14} color="#3b82f6" />
-                                </Pressable>
-
-                                {/* Year Toggle */}
-                                <Pressable 
-                                    style={styles.selectorPressable}
-                                    onPress={() => {
-                                        setYearDropdownOpen(!yearDropdownOpen);
-                                        setMonthDropdownOpen(false);
-                                    }}
-                                >
-                                    <Text style={styles.selectorText}>{pickerYear}</Text>
-                                    <ChevronDown size={14} color="#3b82f6" />
-                                </Pressable>
-                            </View>
-
-                            {/* Arrow Navs */}
-                            <View style={{ flexDirection: 'row', gap: 14 }}>
-                                <Pressable onPress={handlePrevMonth} style={styles.arrowButton}>
-                                    <ChevronLeft size={18} color="#94a3b8" />
-                                </Pressable>
-                                <Pressable onPress={handleNextMonth} style={styles.arrowButton}>
-                                    <ChevronRight size={18} color="#94a3b8" />
-                                </Pressable>
-                            </View>
-                        </View>
-
-                        {/* Month Dropdown Grid Overlay */}
-                        {monthDropdownOpen && (
-                            <View style={styles.dropdownOverlayContainer}>
-                                <Text style={styles.dropdownTitle}>Select Month</Text>
-                                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
-                                    {MONTHS.map((m, idx) => (
-                                        <Pressable 
-                                            key={m}
-                                            style={[styles.dropdownItem, pickerMonth === idx && styles.dropdownItemActive]}
+                    {/* Custom Date Picker Modal */}
+                    <Modal
+                        visible={pickerVisible}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setPickerVisible(false)}
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={styles.datePickerContainer}>
+                                {/* Header Month / Year Selectors */}
+                                <View style={styles.datePickerHeader}>
+                                    <View style={{ flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+                                        {/* Month Toggle */}
+                                        <Pressable
+                                            style={styles.selectorPressable}
                                             onPress={() => {
-                                                setPickerMonth(idx);
+                                                setMonthDropdownOpen(!monthDropdownOpen);
+                                                setYearDropdownOpen(false);
+                                            }}
+                                        >
+                                            <Text style={styles.selectorText}>{MONTHS[pickerMonth]}</Text>
+                                            <ChevronDown size={14} color="#3b82f6" />
+                                        </Pressable>
+
+                                        {/* Year Toggle */}
+                                        <Pressable
+                                            style={styles.selectorPressable}
+                                            onPress={() => {
+                                                setYearDropdownOpen(!yearDropdownOpen);
                                                 setMonthDropdownOpen(false);
                                             }}
                                         >
-                                            <Text style={[styles.dropdownItemText, pickerMonth === idx && styles.dropdownItemTextActive]}>{m}</Text>
+                                            <Text style={styles.selectorText}>{pickerYear}</Text>
+                                            <ChevronDown size={14} color="#3b82f6" />
                                         </Pressable>
-                                    ))}
+                                    </View>
+
+                                    {/* Arrow Navs */}
+                                    <View style={{ flexDirection: 'row', gap: 14 }}>
+                                        <Pressable onPress={handlePrevMonth} style={styles.arrowButton}>
+                                            <ChevronLeft size={18} color="#94a3b8" />
+                                        </Pressable>
+                                        <Pressable onPress={handleNextMonth} style={styles.arrowButton}>
+                                            <ChevronRight size={18} color="#94a3b8" />
+                                        </Pressable>
+                                    </View>
+                                </View>
+
+                                {/* Month Dropdown Grid Overlay */}
+                                {monthDropdownOpen && (
+                                    <View style={styles.dropdownOverlayContainer}>
+                                        <Text style={styles.dropdownTitle}>Select Month</Text>
+                                        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                                            {MONTHS.map((m, idx) => (
+                                                <Pressable
+                                                    key={m}
+                                                    style={[styles.dropdownItem, pickerMonth === idx && styles.dropdownItemActive]}
+                                                    onPress={() => {
+                                                        setPickerMonth(idx);
+                                                        setMonthDropdownOpen(false);
+                                                    }}
+                                                >
+                                                    <Text style={[styles.dropdownItemText, pickerMonth === idx && styles.dropdownItemTextActive]}>{m}</Text>
+                                                </Pressable>
+                                            ))}
+                                        </View>
+                                    </View>
+                                )}
+
+                                {/* Year Dropdown Scroll Overlay */}
+                                {yearDropdownOpen && (
+                                    <View style={styles.dropdownOverlayContainer}>
+                                        <Text style={styles.dropdownTitle}>Select Year</Text>
+                                        <ScrollView
+                                            style={{ maxHeight: 200 }}
+                                            showsVerticalScrollIndicator={false}
+                                            contentContainerStyle={{ gap: 6 }}
+                                        >
+                                            {Array.from({ length: pickerTarget === 'birthDate' ? 80 : 30 }, (_, i) => {
+                                                const y = pickerTarget === 'birthDate' ? 2026 - i : 2026 + i;
+                                                return (
+                                                    <Pressable
+                                                        key={y}
+                                                        style={[styles.dropdownItemYear, pickerYear === y && styles.dropdownItemYearActive]}
+                                                        onPress={() => {
+                                                            setPickerYear(y);
+                                                            setYearDropdownOpen(false);
+                                                        }}
+                                                    >
+                                                        <Text style={[styles.dropdownItemText, pickerYear === y && styles.dropdownItemTextActive]}>{y}</Text>
+                                                    </Pressable>
+                                                );
+                                            })}
+                                        </ScrollView>
+                                    </View>
+                                )}
+
+                                {/* Day names headers: S M T W T F S */}
+                                {!monthDropdownOpen && !yearDropdownOpen && (
+                                    <>
+                                        <View style={styles.calendarDayNamesRow}>
+                                            {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
+                                                <Text key={i} style={styles.calendarDayName}>{day}</Text>
+                                            ))}
+                                        </View>
+
+                                        {/* Days Grid */}
+                                        <View style={styles.calendarDaysGrid}>
+                                            {cells.map((dayNum, idx) => {
+                                                const isSelected = dayNum === pickerDay;
+                                                return (
+                                                    <Pressable
+                                                        key={idx}
+                                                        disabled={dayNum === null}
+                                                        style={[
+                                                            styles.calendarDayCell,
+                                                            dayNum === null && { opacity: 0 },
+                                                            isSelected && styles.calendarDayCellSelected
+                                                        ]}
+                                                        onPress={() => dayNum !== null && setPickerDay(dayNum)}
+                                                    >
+                                                        <Text style={[
+                                                            styles.calendarDayText,
+                                                            isSelected && styles.calendarDayTextSelected
+                                                        ]}>
+                                                            {dayNum || ''}
+                                                        </Text>
+                                                    </Pressable>
+                                                );
+                                            })}
+                                        </View>
+                                    </>
+                                )}
+
+                                {/* Footer Actions */}
+                                <View style={styles.datePickerFooter}>
+                                    <Pressable
+                                        style={styles.datePickerCancelBtn}
+                                        onPress={() => setPickerVisible(false)}
+                                    >
+                                        <Text style={styles.datePickerCancelBtnText}>Cancel</Text>
+                                    </Pressable>
+                                    <Pressable
+                                        style={styles.datePickerConfirmBtn}
+                                        onPress={handleSelectDate}
+                                    >
+                                        <Text style={styles.datePickerConfirmBtnText}>Select</Text>
+                                    </Pressable>
                                 </View>
                             </View>
-                        )}
+                        </View>
+                    </Modal>
 
-                        {/* Year Dropdown Scroll Overlay */}
-                        {yearDropdownOpen && (
-                            <View style={styles.dropdownOverlayContainer}>
-                                <Text style={styles.dropdownTitle}>Select Year</Text>
-                                <ScrollView 
-                                    style={{ maxHeight: 200 }} 
-                                    showsVerticalScrollIndicator={false}
-                                    contentContainerStyle={{ gap: 6 }}
+                    {/* Custom Dropdown Picker Modal */}
+                    <Modal
+                        visible={dropdownVisible}
+                        transparent={true}
+                        animationType="fade"
+                        onRequestClose={() => setDropdownVisible(false)}
+                    >
+                        <View style={styles.modalOverlay}>
+                            <View style={[styles.datePickerContainer, { maxHeight: '80%' }]}>
+                                <View style={styles.dropdownModalHeader}>
+                                    <Text style={styles.dropdownModalTitle}>
+                                        {dropdownTarget === 'gender' && 'Select Gender'}
+                                        {dropdownTarget === 'nationality' && 'Select Nationality'}
+                                        {dropdownTarget === 'billingCountry' && 'Select Billing Country'}
+                                        {dropdownTarget === 'countryCode' && 'Select Country Code'}
+                                    </Text>
+                                    <Pressable
+                                        style={styles.dropdownModalCloseBtn}
+                                        onPress={() => setDropdownVisible(false)}
+                                    >
+                                        <Text style={styles.datePickerCancelBtnText}>Close</Text>
+                                    </Pressable>
+                                </View>
+
+                                {dropdownTarget !== 'gender' && (
+                                    <View style={styles.searchBarContainer}>
+                                        <TextInput
+                                            style={styles.searchBarInput}
+                                            placeholder="Search country..."
+                                            placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
+                                            value={dropdownSearch}
+                                            onChangeText={setDropdownSearch}
+                                        />
+                                    </View>
+                                )}
+
+                                <ScrollView
+                                    style={{ height: dropdownTarget === 'gender' ? 120 : 300, marginTop: 8 }}
+                                    showsVerticalScrollIndicator={true}
+                                    keyboardShouldPersistTaps="handled"
                                 >
-                                    {Array.from({ length: pickerTarget === 'birthDate' ? 80 : 30 }, (_, i) => {
-                                        const y = pickerTarget === 'birthDate' ? 2026 - i : 2026 + i;
-                                        return (
-                                            <Pressable 
-                                                key={y}
-                                                style={[styles.dropdownItemYear, pickerYear === y && styles.dropdownItemYearActive]}
-                                                onPress={() => {
-                                                    setPickerYear(y);
-                                                    setYearDropdownOpen(false);
-                                                }}
-                                            >
-                                                <Text style={[styles.dropdownItemText, pickerYear === y && styles.dropdownItemTextActive]}>{y}</Text>
-                                            </Pressable>
+                                    {dropdownTarget === 'gender' && (
+                                        <View style={{ gap: 8, paddingHorizontal: 4 }}>
+                                            {GENDER_OPTIONS.map((opt) => {
+                                                const isSelected = passengers[0].gender === opt.value;
+                                                return (
+                                                    <Pressable
+                                                        key={opt.value}
+                                                        style={[
+                                                            styles.dropdownOptionItem,
+                                                            isSelected && styles.dropdownOptionItemActive
+                                                        ]}
+                                                        onPress={() => {
+                                                            const next = [...passengers];
+                                                            next[0].gender = opt.value;
+                                                            setPassengers(next);
+                                                            setDropdownVisible(false);
+                                                        }}
+                                                    >
+                                                        <Text style={[
+                                                            styles.dropdownOptionText,
+                                                            isSelected && styles.dropdownOptionTextActive
+                                                        ]}>
+                                                            {opt.label}
+                                                        </Text>
+                                                        {isSelected && (
+                                                            <Check size={16} color="#3b82f6" />
+                                                        )}
+                                                    </Pressable>
+                                                );
+                                            })}
+                                        </View>
+                                    )}
+
+                                    {dropdownTarget !== 'gender' && (() => {
+                                        const filtered = COUNTRIES.filter(c =>
+                                            c.name.toLowerCase().includes(dropdownSearch.toLowerCase()) ||
+                                            c.code.toLowerCase().includes(dropdownSearch.toLowerCase()) ||
+                                            c.dialCode.includes(dropdownSearch)
                                         );
-                                    })}
+
+                                        if (filtered.length === 0) {
+                                            return (
+                                                <Text style={styles.noResultsText}>No countries found</Text>
+                                            );
+                                        }
+
+                                        return (
+                                            <View style={{ gap: 4, paddingHorizontal: 4 }}>
+                                                {filtered.map((country) => {
+                                                    let isSelected = false;
+                                                    if (dropdownTarget === 'nationality') {
+                                                        isSelected = passengers[0].nationality === country.code;
+                                                    } else if (dropdownTarget === 'billingCountry') {
+                                                        isSelected = billingCountry === country.code;
+                                                    } else if (dropdownTarget === 'countryCode') {
+                                                        isSelected = countryCode === country.dialCode;
+                                                    }
+
+                                                    return (
+                                                        <Pressable
+                                                            key={country.code}
+                                                            style={[
+                                                                styles.dropdownOptionItem,
+                                                                isSelected && styles.dropdownOptionItemActive
+                                                            ]}
+                                                            onPress={() => {
+                                                                if (dropdownTarget === 'nationality') {
+                                                                    const next = [...passengers];
+                                                                    next[0].nationality = country.code;
+                                                                    setPassengers(next);
+                                                                } else if (dropdownTarget === 'billingCountry') {
+                                                                    setBillingCountry(country.code);
+                                                                } else if (dropdownTarget === 'countryCode') {
+                                                                    setCountryCode(country.dialCode);
+                                                                }
+                                                                setDropdownVisible(false);
+                                                            }}
+                                                        >
+                                                            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                                                <Text style={styles.countryFlagText}>
+                                                                    {getFlagEmoji(country.code)}
+                                                                </Text>
+                                                                <Text style={[
+                                                                    styles.dropdownOptionText,
+                                                                    isSelected && styles.dropdownOptionTextActive
+                                                                ]}>
+                                                                    {country.name}
+                                                                </Text>
+                                                                {dropdownTarget === 'countryCode' && (
+                                                                    <Text style={styles.countryDialCodeText}>
+                                                                        (+{country.dialCode})
+                                                                    </Text>
+                                                                )}
+                                                            </View>
+                                                            {isSelected && (
+                                                                <Check size={16} color="#3b82f6" />
+                                                            )}
+                                                        </Pressable>
+                                                    );
+                                                })}
+                                            </View>
+                                        );
+                                    })()}
                                 </ScrollView>
                             </View>
-                        )}
-
-                        {/* Day names headers: S M T W T F S */}
-                        {!monthDropdownOpen && !yearDropdownOpen && (
-                            <>
-                                <View style={styles.calendarDayNamesRow}>
-                                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((day, i) => (
-                                        <Text key={i} style={styles.calendarDayName}>{day}</Text>
-                                    ))}
-                                </View>
-
-                                {/* Days Grid */}
-                                <View style={styles.calendarDaysGrid}>
-                                    {cells.map((dayNum, idx) => {
-                                        const isSelected = dayNum === pickerDay;
-                                        return (
-                                            <Pressable
-                                                key={idx}
-                                                disabled={dayNum === null}
-                                                style={[
-                                                    styles.calendarDayCell,
-                                                    dayNum === null && { opacity: 0 },
-                                                    isSelected && styles.calendarDayCellSelected
-                                                ]}
-                                                onPress={() => dayNum !== null && setPickerDay(dayNum)}
-                                            >
-                                                <Text style={[
-                                                    styles.calendarDayText,
-                                                    isSelected && styles.calendarDayTextSelected
-                                                ]}>
-                                                    {dayNum || ''}
-                                                </Text>
-                                            </Pressable>
-                                        );
-                                    })}
-                                </View>
-                            </>
-                        )}
-
-                        {/* Footer Actions */}
-                        <View style={styles.datePickerFooter}>
-                            <Pressable 
-                                style={styles.datePickerCancelBtn}
-                                onPress={() => setPickerVisible(false)}
-                            >
-                                <Text style={styles.datePickerCancelBtnText}>Cancel</Text>
-                            </Pressable>
-                            <Pressable 
-                                style={styles.datePickerConfirmBtn}
-                                onPress={handleSelectDate}
-                            >
-                                <Text style={styles.datePickerConfirmBtnText}>Select</Text>
-                            </Pressable>
                         </View>
-                    </View>
-                </View>
-            </Modal>
+                    </Modal>
 
                     {/* Action button */}
                     <Pressable
@@ -1189,6 +1577,24 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flex: 1,
         paddingHorizontal: 16,
         paddingTop: 16,
+    },
+    errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 10,
+        marginTop: 12,
+        padding: 12,
+        backgroundColor: isDark ? '#2a0a0a' : '#fef2f2',
+        borderRadius: 12,
+        borderWidth: 1,
+        borderColor: isDark ? '#7f1d1d' : '#fecaca',
+        marginBottom: 16,
+    },
+    errorBannerText: {
+        flex: 1,
+        fontSize: 13,
+        color: isDark ? '#fca5a5' : '#dc2626',
+        fontWeight: '500',
     },
     // Selected Flight Card
     summaryCard: {
@@ -1469,6 +1875,71 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     },
     inputError: {
         borderColor: '#ef4444',
+    },
+    dropdownModalHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingBottom: 14,
+        borderBottomWidth: 1,
+        borderBottomColor: isDark ? '#1e293b' : '#f1f5f9',
+        marginBottom: 10,
+    },
+    dropdownModalTitle: {
+        fontSize: 16,
+        fontWeight: '700',
+        color: isDark ? '#ffffff' : '#0f172a',
+    },
+    dropdownModalCloseBtn: {
+        paddingVertical: 4,
+        paddingHorizontal: 8,
+    },
+    searchBarContainer: {
+        marginBottom: 10,
+    },
+    searchBarInput: {
+        borderWidth: 1,
+        borderColor: isDark ? '#1e293b' : '#cbd5e1',
+        borderRadius: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        fontSize: 14,
+        color: isDark ? '#ffffff' : '#0f172a',
+        backgroundColor: isDark ? '#090d16' : '#ffffff',
+    },
+    dropdownOptionItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        paddingVertical: 12,
+        paddingHorizontal: 14,
+        borderRadius: 8,
+        backgroundColor: 'transparent',
+    },
+    dropdownOptionItemActive: {
+        backgroundColor: isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)',
+    },
+    dropdownOptionText: {
+        fontSize: 14,
+        color: isDark ? '#cbd5e1' : '#334155',
+    },
+    dropdownOptionTextActive: {
+        color: '#3b82f6',
+        fontWeight: '600',
+    },
+    noResultsText: {
+        textAlign: 'center',
+        color: isDark ? '#64748b' : '#94a3b8',
+        fontSize: 14,
+        paddingVertical: 20,
+    },
+    countryFlagText: {
+        fontSize: 18,
+    },
+    countryDialCodeText: {
+        fontSize: 13,
+        color: isDark ? '#64748b' : '#94a3b8',
+        marginLeft: 4,
     },
     dropdownPlaceholder: {
         flexDirection: 'row',
