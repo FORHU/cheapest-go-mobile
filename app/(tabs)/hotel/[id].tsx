@@ -512,6 +512,14 @@ export default function HotelDetailsScreen() {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            console.log('[HotelDetails] Fetching:', {
+                id: params.id,
+                checkIn: params.checkIn,
+                checkOut: params.checkOut,
+                adults: params.adults,
+                rooms: params.rooms,
+                currency: params.currency,
+            });
             try {
                 const [details, reviewData] = await Promise.all([
                     getHotelDetails(params.id as string, {
@@ -523,10 +531,25 @@ export default function HotelDetailsScreen() {
                     }),
                     getHotelReviews(params.id as string, 100)
                 ]);
+                console.log('[HotelDetails] Response keys:', details ? Object.keys(details) : 'null');
+                console.log('[HotelDetails] thumbnailUrl:', details?.thumbnailUrl);
+                console.log('[HotelDetails] detailRooms:', details?.detailRooms ? `${details.detailRooms.length} rooms` : 'undefined');
+                console.log('[HotelDetails] roomTypes count:', details?.roomTypes?.length ?? 'undefined');
+                if (details?.roomTypes?.length > 0) {
+                    const r = details.roomTypes[0];
+                    console.log('[HotelDetails] roomTypes[0] keys:', Object.keys(r));
+                    console.log('[HotelDetails] roomTypes[0] image fields:', {
+                        roomPhotos: r.roomPhotos,
+                        images: r.images,
+                        photos: r.photos,
+                        mappedRoomId: r.rates?.[0]?.mappedRoomId,
+                    });
+                }
+                console.log('[HotelDetails] reviews:', reviewData?.length ?? 0);
                 setHotel(details);
                 setReviews(reviewData);
             } catch (err) {
-                console.error('Failed to fetch hotel details:', err);
+                console.error('[HotelDetails] Error:', err);
             } finally {
                 setLoading(false);
             }
@@ -579,13 +602,14 @@ export default function HotelDetailsScreen() {
         ? rawImages.map((img: any) => typeof img === 'string' ? img : (img.url || img.urlHd || img.hdUrl || img.image || '')).filter((url: string) => url.trim().length > 0)
         : [];
 
-    if (hotel.thumbnailUrl && !validImages.includes(hotel.thumbnailUrl)) {
-        validImages.unshift(hotel.thumbnailUrl);
+    const hotelThumbnail = hotel.thumbnailUrl || hotel.image || '';
+    if (hotelThumbnail && !validImages.includes(hotelThumbnail)) {
+        validImages.unshift(hotelThumbnail);
     }
 
     const hotelImages = validImages.length > 0
         ? validImages
-        : [hotel.thumbnailUrl || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'];
+        : [hotelThumbnail || 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80'];
 
     return (
         <View style={styles.container}>
@@ -759,7 +783,7 @@ export default function HotelDetailsScreen() {
                             <RoomCard
                                 key={room.selectorId || i}
                                 room={room}
-                                hotelThumbnail={hotel.thumbnailUrl}
+                                hotelThumbnail={hotelImages[i % Math.max(hotelImages.length, 1)] || hotelThumbnail}
                                 detailRooms={hotel.detailRooms}
                                 currency={currency}
                                 fromCurrency={params.currency as string || 'USD'}

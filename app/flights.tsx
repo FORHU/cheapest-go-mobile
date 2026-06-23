@@ -177,8 +177,7 @@ export default function FlightsScreen() {
                     return;
                 }
 
-                // The unified-flight-search edge function returns data in the same shape as the web app's 
-                // POST /api/flights/search → { success: true, data: { offers: [...] } }
+                // POST /api/flights/search returns { success: true, data: { offers: [...] } }
                 // OR directly as { flights: [...] } or { data: { offers: [...] } }
                 let rawOffers: any[] = [];
                 if (result.data?.offers) {

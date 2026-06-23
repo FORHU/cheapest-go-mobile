@@ -6,14 +6,17 @@
     "start": "expo start",
     "android": "expo run:android",
     "ios": "expo run:ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "lint": "eslint . --ext .ts,.tsx",
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-masked-view/masked-view": "0.3.2",
+    "@rnmapbox/maps": "^10.3.1",
     "@stripe/stripe-react-native": "0.64.0",
-    "@supabase/supabase-js": "^2.106.2",
     "buffer": "^6.0.3",
     "expo": "^56.0.12",
     "expo-blur": "~56.0.3",
@@ -47,8 +50,12 @@
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@testing-library/react-native": "^14.0.0",
     "@types/react": "~19.2.14",
-    "react-test-renderer": "19.1.0",
+    "eslint": "^8.57.1",
+    "eslint-config-expo": "^56.0.4",
+    "jest-expo": "~56.0.0",
+    "react-test-renderer": "^19.2.3",
     "typescript": "~6.0.3"
   },
   "private": true

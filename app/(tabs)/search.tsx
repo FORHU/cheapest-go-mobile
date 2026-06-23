@@ -109,11 +109,11 @@ type HotelCardProps = {
     isFavorite: boolean;
     onSelect: (hotel: any) => void;
     onNavigate: (hotel: any) => void;
-    onToggleFav: (id: string, hotel?: any) => void;
+    // onToggleFav: (id: string, hotel?: any) => void;
     styles: any;
 };
 
-const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorite, onSelect, onNavigate, onToggleFav, styles }: HotelCardProps) => {
+const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorite, onSelect, onNavigate, styles }: HotelCardProps) => {
     const score = hotel.reviewRating || hotel.rating;
     const ratingLabel = score >= 9 ? 'Excellent' : score >= 8 ? 'Very Good' : score >= 7 ? 'Good' : 'Fair';
     const fallback = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
@@ -139,7 +139,7 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
 
             <Pressable
                 style={styles.heartBtn}
-                onPress={() => onToggleFav(hotel.hotelId, hotel)}
+                // onPress={() => onToggleFav(hotel.hotelId, hotel)}
             >
                 <Heart
                     size={14}
@@ -347,6 +347,16 @@ export default function SearchScreen() {
             setLoading(true);
             setError(null);
             try {
+                console.log('[Search] Fetching hotels:', {
+                    destination: params.destination,
+                    placeId: params.placeId,
+                    countryCode: params.countryCode,
+                    checkIn: params.checkIn,
+                    checkOut: params.checkOut,
+                    adults: params.adults,
+                    children: params.children,
+                    rooms: params.rooms,
+                });
 
                 const results = await searchHotels({
                     destination:     params.destination as string,
@@ -359,12 +369,12 @@ export default function SearchScreen() {
                     children:        parseInt(params.children as string || '0'),
                     childrenAges:    params.childrenAges as string,
                     rooms:           parseInt(params.rooms as string || '1'),
-                    currency:        'USD',
+                    currency:        currency.code,
                 });
-                
-                const hotelData = results?.data || [];
 
-                
+                const hotelData = results?.data || [];
+                console.log('[Search] Response: total raw =', hotelData.length, '| sample keys:', hotelData[0] ? Object.keys(hotelData[0]) : 'n/a');
+
                 // Transform data into a standardized format and filter out low-quality results
                 const standardizedData = hotelData
                     .map((h: any) => {
@@ -416,9 +426,10 @@ export default function SearchScreen() {
                     })
                     .filter((h: any) => h !== null && h.displayPrice !== '???');
 
+                console.log('[Search] After filter: kept =', standardizedData.length, '| dropped =', hotelData.length - standardizedData.length);
                 setRawHotels(standardizedData);
             } catch (error: any) {
-
+                console.error('[Search] Error:', error);
                 setError(error.message || 'Failed to fetch hotels');
             } finally {
                 setLoading(false);
@@ -429,7 +440,7 @@ export default function SearchScreen() {
         if (params.destination) {
             fetchResults();
         }
-    }, [params.destination, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms]);
+    }, [params.destination, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
 
     const toggleFav = useCallback(async (id: string, hotelData?: any) => {
         const added = await toggleFavorite(id, hotelData);
@@ -735,9 +746,8 @@ export default function SearchScreen() {
                                                 if (index !== lastScrolledIndex.current && hotels[index]) {
                                                     lastScrolledIndex.current = index;
                                                     if (selectedHotel?.hotelId !== hotels[index].hotelId) {
-                                                        // Only update visual selection — do NOT set flyToHotelId
-                                                        // so the map stays where it is during carousel swipes
                                                         setSelectedHotel(hotels[index]);
+                                                        setFlyToHotelId(hotels[index].hotelId);
                                                     }
                                                 }
                                             }}
@@ -752,7 +762,7 @@ export default function SearchScreen() {
                                                     isFavorite={favorites.includes(hotel.hotelId)}
                                                     onSelect={handleHotelSelect}
                                                     onNavigate={navigateToHotel}
-                                                    onToggleFav={toggleFav}
+                                                    // onToggleFav={toggleFav}
                                                     styles={styles}
                                                 />
                                             )}
