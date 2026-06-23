@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { rError, rLog } from '../lib/remoteLog';
 import { AlertTriangle, ArrowLeft, Check, CheckCircle, Mail, Tag } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -98,14 +99,17 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
             setPrebooking(true);
             setPrebookError(null);
             try {
+                rLog('Checkout', 'checkout', 'Prebooking room', { offerId, hotelName, checkIn, checkOut, adults });
                 const result = await prebookRoom({
                     offerId,
                     currency: roomCurrency,
                     adults,
                     roomName: params.roomName as string || undefined,
                 });
+                rLog('Checkout', 'checkout', 'Prebook success', { prebookId: result.prebookId, price: result.price });
                 setPrebookData(result);
             } catch (err: any) {
+                rError('Checkout', 'checkout', 'Prebook failed', { offerId, hotelName, error: err.message });
                 setPrebookError(err.message || 'Failed to verify room availability');
             } finally {
                 setPrebooking(false);
@@ -167,6 +171,7 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
         }
 
         setProcessing(true);
+        rLog('Checkout', 'checkout', 'Pay now tapped', { offerId, hotelName, checkIn, checkOut, total, email });
         try {
             // Step 1: Create Stripe PaymentIntent via web backend
             const chargeAmount = appliedPromo?.finalPrice ?? total;
@@ -181,6 +186,7 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
                 checkOut,
             });
 
+            rLog('Checkout', 'checkout', 'Payment intent created', { paymentIntentId: paymentResult.data?.paymentIntentId, amount: chargeAmount });
             if (!paymentResult.success || !paymentResult.data?.clientSecret) {
                 throw new Error((paymentResult as any).error || 'Failed to create payment session');
             }
@@ -232,9 +238,11 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
                 throw new Error((confirmResult as any).error || 'Booking confirmation failed');
             }
 
+            rLog('Checkout', 'checkout', 'Hotel booking confirmed', { bookingId: confirmResult.data?.bookingId, hotelName, checkIn, checkOut });
             setBookingId(confirmResult.data?.bookingId || paymentIntentId);
             setStep('success');
         } catch (err: any) {
+            rError('Checkout', 'checkout', 'Hotel booking failed', { hotelName, checkIn, checkOut, error: err.message });
             setStep('form');
             Alert.alert('Booking Failed', err.message || 'Something went wrong. Please try again.');
         } finally {

@@ -33,6 +33,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
 import { useSettings } from '../context/SettingsContext';
+import { rError, rLog } from '../lib/remoteLog';
 import {
     webFetchBags, webFetchSeatMap, webMobileBook, webMobileConfirm, webRefreshOffer,
     type NormalizedBagOption, type NormalizedSegmentSeatMap,
@@ -416,6 +417,9 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
         }
 
         setBooking(true);
+        const seg0 = offer.segments?.[0];
+        const route = seg0 ? `${seg0.origin} → ${seg0.destination}` : offer.offerId;
+        rLog('FlightCheckout', 'flight-checkout', 'Booking flight', { route, price: offer.price?.total, passengers: passengers.length });
 
         try {
             // Collect selected seat service IDs
@@ -491,6 +495,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             setStep('success');
         } catch (err: any) {
             const isPriceChanged = err.priceChanged;
+            rError('FlightCheckout', 'flight-checkout', isPriceChanged ? 'Price changed' : 'Flight booking failed', { route, error: err.message, priceChanged: isPriceChanged });
             if (isPriceChanged) {
                 // Only show the animated steps screen on price change so user sees the verification step
                 setStep('confirming');

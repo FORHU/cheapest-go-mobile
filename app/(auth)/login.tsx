@@ -1,5 +1,6 @@
 import LogoSvg from '@/assets/images/logo.svg';
 import { useAuth } from '@/context/AuthContext';
+import { rError, rLog } from '@/lib/remoteLog';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { Link, useRouter } from 'expo-router';
 import {
@@ -329,9 +330,11 @@ export default function LoginScreen() {
     clearErrors();
     if (!validateEmail(email) || !validatePassword(password)) return;
     setIsLoading(true);
-    try { await login(email.trim(), password); }
+    rLog('Login', 'login', 'Sign-in attempt', { email: email.trim() });
+    try { await login(email.trim(), password); rLog('Login', 'login', 'Sign-in success'); }
     catch (err: any) {
       const msg: string = err?.message ?? 'Something went wrong.';
+      rError('Login', 'login', 'Sign-in failed', { email: email.trim(), error: msg });
       if (msg.toLowerCase().includes('password') || msg.toLowerCase().includes('invalid'))
         setPasswordErr('Incorrect password. Please try again.');
       else if (msg.toLowerCase().includes('email') || msg.toLowerCase().includes('not found'))
@@ -344,10 +347,14 @@ export default function LoginScreen() {
     clearErrors();
     if (!validateEmail(email)) return;
     setIsLoading(true);
+    rLog('Login', 'login', 'Password reset requested', { email: email.trim() });
     try {
       await resetPassword(email.trim());
       setSuccess('Instructions sent! Check your inbox.');
-    } catch (err: any) { setGenError(err?.message ?? 'Failed to send reset email.'); }
+    } catch (err: any) {
+      rError('Login', 'login', 'Password reset failed', { email: email.trim(), error: err?.message });
+      setGenError(err?.message ?? 'Failed to send reset email.');
+    }
     finally { setIsLoading(false); }
   };
 

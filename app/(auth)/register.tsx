@@ -1,5 +1,6 @@
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { rError, rLog } from '@/lib/remoteLog';
 import type { RegisterInput } from '@/lib/schemas/auth';
 import { Link, useRouter } from 'expo-router';
 import {
@@ -357,6 +358,7 @@ export default function RegisterScreen() {
 
     if (!ok) return;
 
+    rLog('Register', 'register', 'Registration attempt', { email: email.trim(), firstName: firstName.trim() });
     try {
       const data: RegisterInput = {
         email: email.trim(), password,
@@ -364,12 +366,15 @@ export default function RegisterScreen() {
       };
       const result = await register(data);
       if (result.needsEmailVerification) {
+        rLog('Register', 'register', 'Registration success — needs email verification', { email: email.trim() });
         setSuccess('Check your inbox to verify your email.');
       } else {
+        rLog('Register', 'register', 'Registration success — auto logged in', { email: email.trim() });
         router.replace('/(tabs)');
       }
     } catch (e: any) {
       const msg: string = e?.message ?? 'Something went wrong. Please try again.';
+      rError('Register', 'register', 'Registration failed', { email: email.trim(), error: msg, errors: e?.errors });
       if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('exists')) {
         setEmailErr('An account with this email already exists.');
       } else if (e?.errors) {
