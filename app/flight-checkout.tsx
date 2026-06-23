@@ -59,27 +59,6 @@ const BOOKING_STEPS = [
     'Issuing e-ticket PNR...',
 ] as const;
 
-interface SeatConfig {
-    code: string;
-    type: 'taken' | 'paid' | 'legroom' | 'exit' | 'free';
-    price?: number;
-}
-
-interface RowConfig {
-    row: number;
-    seats: SeatConfig[];
-}
-
-const SEAT_ROWS: RowConfig[] = [
-    { row: 12, seats: [{ code: 'A', type: 'legroom' }, { code: 'B', type: 'taken' }, { code: 'C', type: 'legroom' }, { code: 'D', type: 'taken' }, { code: 'E', type: 'legroom' }] },
-    { row: 14, seats: [{ code: 'A', type: 'exit' }, { code: 'B', type: 'free' }, { code: 'C', type: 'exit' }, { code: 'D', type: 'free' }, { code: 'E', type: 'exit' }] },
-    { row: 15, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'free' }, { code: 'C', type: 'taken' }, { code: 'D', type: 'free' }, { code: 'E', type: 'free' }] },
-    { row: 16, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'taken' }, { code: 'C', type: 'free' }, { code: 'D', type: 'free' }, { code: 'E', type: 'taken' }] },
-    { row: 17, seats: [{ code: 'A', type: 'paid', price: 15 }, { code: 'B', type: 'free' }, { code: 'C', type: 'paid', price: 15 }, { code: 'D', type: 'free' }, { code: 'E', type: 'paid', price: 15 }] },
-    { row: 18, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'free' }, { code: 'C', type: 'free' }, { code: 'D', type: 'taken' }, { code: 'E', type: 'free' }] },
-    { row: 19, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'free' }, { code: 'C', type: 'free' }, { code: 'D', type: 'free' }, { code: 'E', type: 'free' }] },
-    { row: 20, seats: [{ code: 'A', type: 'free' }, { code: 'B', type: 'taken' }, { code: 'C', type: 'free' }, { code: 'D', type: 'taken' }, { code: 'E', type: 'free' }] },
-];
 
 const COUNTRIES = [
     { code: 'KR', name: 'South Korea', dialCode: '82' },
@@ -216,13 +195,13 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     const [email, setEmail] = useState(user?.email ?? '');
     const [phone, setPhone] = useState('');
 
-    const [countryCode, setCountryCode] = useState('63');
+    const [countryCode, setCountryCode] = useState('');
 
     // Billing Address
-    const [addressLine1, setAddressLine1] = useState('123');
-    const [addressLine2, setAddressLine2] = useState('123');
-    const [postalCode, setPostalCode] = useState('1000');
-    const [billingCountry, setBillingCountry] = useState('KR');
+    const [addressLine1, setAddressLine1] = useState('');
+    const [addressLine2, setAddressLine2] = useState('');
+    const [postalCode, setPostalCode] = useState('');
+    const [billingCountry, setBillingCountry] = useState('');
 
     // Accordions
     const [bagsExpanded, setBagsExpanded] = useState(false);
@@ -463,14 +442,13 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                 flight: offer,
                 passengers: passengers.map(p => ({
                     type: p.type,
-                    title: p.gender === 'F' ? 'ms' : 'mr',
                     firstName: p.firstName,
                     lastName: p.lastName,
                     gender: p.gender as string,
                     birthDate: p.birthDate,
-                    nationality: p.nationality || undefined,
-                    passport: p.passport || undefined,
-                    passportExpiry: p.passportExpiry || undefined,
+                    nationality: p.nationality,
+                    passport: p.passport,
+                    passportExpiry: p.passportExpiry,
                 })),
                 contact: { email, phone, countryCode },
                 idempotencyKey: `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`,
@@ -1057,124 +1035,95 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
 
                                     {/* Cabin outer container */}
                                     <View style={styles.cabinContainer}>
-                                        <Text style={styles.cabinClassLabel}>ECONOMY</Text>
+                                        {seatMapLoading ? (
+                                            <ActivityIndicator size="small" color="#2563eb" style={{ marginVertical: 24 }} />
+                                        ) : seatMapUnavailable || seatMaps.length === 0 ? (
+                                            <Text style={{ textAlign: 'center', color: '#94a3b8', paddingVertical: 16, fontSize: 13 }}>
+                                                Seat map not available for this flight
+                                            </Text>
+                                        ) : (() => {
+                                            const activeMap = seatMaps[activeSegmentTab] ?? seatMaps[0];
+                                            if (!activeMap) return null;
+                                            return (
+                                                <>
+                                                    <Text style={styles.cabinClassLabel}>{activeMap.cabinClass.toUpperCase()}</Text>
 
-                                        {/* Column Headers */}
-                                        <View style={styles.cabinHeaderRow}>
-                                            <Text style={styles.cabinColumnHeader}>A</Text>
-                                            <Text style={styles.cabinColumnHeader}>B</Text>
-                                            <Text style={styles.cabinColumnHeader}>C</Text>
-                                            <View style={styles.cabinAisleSpace} />
-                                            <Text style={styles.cabinColumnHeader}>D</Text>
-                                            <Text style={styles.cabinColumnHeader}>E</Text>
-                                        </View>
+                                                    {/* Column Headers */}
+                                                    <View style={styles.cabinHeaderRow}>
+                                                        {activeMap.columnHeaders.map((section, sIdx) => (
+                                                            <React.Fragment key={sIdx}>
+                                                                {sIdx > 0 && <View style={styles.cabinAisleSpace} />}
+                                                                {section.map(col => (
+                                                                    <Text key={col} style={styles.cabinColumnHeader}>{col}</Text>
+                                                                ))}
+                                                            </React.Fragment>
+                                                        ))}
+                                                    </View>
 
-                                        {/* Grid Rows */}
-                                        {SEAT_ROWS.map((rowConfig: RowConfig) => (
-                                            <View key={rowConfig.row} style={styles.cabinRow}>
-                                                <Text style={styles.cabinRowLabel}>{rowConfig.row}</Text>
+                                                    {/* Grid Rows */}
+                                                    {activeMap.rows.map(row => (
+                                                        <View key={row.rowNumber} style={styles.cabinRow}>
+                                                            <Text style={styles.cabinRowLabel}>{row.rowNumber}</Text>
+                                                            {row.sections.map((section, sIdx) => (
+                                                                <React.Fragment key={sIdx}>
+                                                                    {sIdx > 0 && <View style={styles.cabinAisleSpace} />}
+                                                                    {section.map((seat, seIdx) => {
+                                                                        if (seat.elementType === 'empty') {
+                                                                            return <View key={seIdx} style={styles.seatButton} />;
+                                                                        }
+                                                                        const isUnavailable = seat.status !== 'available' || !seat.serviceId;
+                                                                        const isSelected = selectedSeats[activeSegmentTab] === seat.serviceId;
 
-                                                {/* Seat A, B, C */}
-                                                {rowConfig.seats.slice(0, 3).map((seat: SeatConfig) => {
-                                                    const seatCode = `${rowConfig.row}${seat.code}`;
-                                                    const isSelected = selectedSeats[activeSegmentTab] === seatCode;
-                                                    const isTaken = seat.type === 'taken';
+                                                                        let seatStyle: any = styles.seatFree;
+                                                                        let textStyle: any = styles.seatTextFree;
 
-                                                    // Seat classes based on type
-                                                    let seatStyle: any = styles.seatFree;
-                                                    let textStyle: any = styles.seatTextFree;
+                                                                        if (isUnavailable) {
+                                                                            seatStyle = styles.seatTaken;
+                                                                            textStyle = styles.seatTextTaken;
+                                                                        } else if (isSelected) {
+                                                                            seatStyle = styles.seatSelected;
+                                                                            textStyle = styles.seatTextSelected;
+                                                                        } else if (seat.isExit) {
+                                                                            seatStyle = styles.seatExit;
+                                                                            textStyle = styles.seatTextExit;
+                                                                        } else if (seat.extraLegroom) {
+                                                                            seatStyle = styles.seatLegroom;
+                                                                            textStyle = styles.seatTextLegroom;
+                                                                        } else if (seat.price && seat.price > 0) {
+                                                                            seatStyle = styles.seatPaid;
+                                                                            textStyle = styles.seatTextPaid;
+                                                                        }
 
-                                                    if (isTaken) {
-                                                        seatStyle = styles.seatTaken;
-                                                        textStyle = styles.seatTextTaken;
-                                                    } else if (isSelected) {
-                                                        seatStyle = styles.seatSelected;
-                                                        textStyle = styles.seatTextSelected;
-                                                    } else if (seat.type === 'paid') {
-                                                        seatStyle = styles.seatPaid;
-                                                        textStyle = styles.seatTextPaid;
-                                                    } else if (seat.type === 'legroom') {
-                                                        seatStyle = styles.seatLegroom;
-                                                        textStyle = styles.seatTextLegroom;
-                                                    } else if (seat.type === 'exit') {
-                                                        seatStyle = styles.seatExit;
-                                                        textStyle = styles.seatTextExit;
-                                                    }
+                                                                        const colLabel = seat.designator.slice(String(row.rowNumber).length);
 
-                                                    return (
-                                                        <Pressable
-                                                            key={seat.code}
-                                                            disabled={isTaken}
-                                                            style={[styles.seatButton, seatStyle]}
-                                                            onPress={() => {
-                                                                const next = { ...selectedSeats };
-                                                                if (next[activeSegmentTab] === seatCode) {
-                                                                    delete next[activeSegmentTab];
-                                                                } else {
-                                                                    next[activeSegmentTab] = seatCode;
-                                                                }
-                                                                setSelectedSeats(next);
-                                                            }}
-                                                        >
-                                                            <Text style={[styles.seatButtonText, textStyle]}>
-                                                                {seat.code}
-                                                            </Text>
-                                                        </Pressable>
-                                                    );
-                                                })}
-
-                                                {/* Aisle */}
-                                                <View style={styles.cabinAisleSpace} />
-
-                                                {/* Seat D, E */}
-                                                {rowConfig.seats.slice(3, 5).map((seat: SeatConfig) => {
-                                                    const seatCode = `${rowConfig.row}${seat.code}`;
-                                                    const isSelected = selectedSeats[activeSegmentTab] === seatCode;
-                                                    const isTaken = seat.type === 'taken';
-
-                                                    let seatStyle: any = styles.seatFree;
-                                                    let textStyle: any = styles.seatTextFree;
-
-                                                    if (isTaken) {
-                                                        seatStyle = styles.seatTaken;
-                                                        textStyle = styles.seatTextTaken;
-                                                    } else if (isSelected) {
-                                                        seatStyle = styles.seatSelected;
-                                                        textStyle = styles.seatTextSelected;
-                                                    } else if (seat.type === 'paid') {
-                                                        seatStyle = styles.seatPaid;
-                                                        textStyle = styles.seatTextPaid;
-                                                    } else if (seat.type === 'legroom') {
-                                                        seatStyle = styles.seatLegroom;
-                                                        textStyle = styles.seatTextLegroom;
-                                                    } else if (seat.type === 'exit') {
-                                                        seatStyle = styles.seatExit;
-                                                        textStyle = styles.seatTextExit;
-                                                    }
-
-                                                    return (
-                                                        <Pressable
-                                                            key={seat.code}
-                                                            disabled={isTaken}
-                                                            style={[styles.seatButton, seatStyle]}
-                                                            onPress={() => {
-                                                                const next = { ...selectedSeats };
-                                                                if (next[activeSegmentTab] === seatCode) {
-                                                                    delete next[activeSegmentTab];
-                                                                } else {
-                                                                    next[activeSegmentTab] = seatCode;
-                                                                }
-                                                                setSelectedSeats(next);
-                                                            }}
-                                                        >
-                                                            <Text style={[styles.seatButtonText, textStyle]}>
-                                                                {seat.code}
-                                                            </Text>
-                                                        </Pressable>
-                                                    );
-                                                })}
-                                            </View>
-                                        ))}
+                                                                        return (
+                                                                            <Pressable
+                                                                                key={seat.designator}
+                                                                                disabled={isUnavailable}
+                                                                                style={[styles.seatButton, seatStyle]}
+                                                                                onPress={() => {
+                                                                                    const next = { ...selectedSeats };
+                                                                                    if (next[activeSegmentTab] === seat.serviceId) {
+                                                                                        delete next[activeSegmentTab];
+                                                                                    } else {
+                                                                                        next[activeSegmentTab] = seat.serviceId!;
+                                                                                    }
+                                                                                    setSelectedSeats(next);
+                                                                                }}
+                                                                            >
+                                                                                <Text style={[styles.seatButtonText, textStyle]}>
+                                                                                    {colLabel}
+                                                                                </Text>
+                                                                            </Pressable>
+                                                                        );
+                                                                    })}
+                                                                </React.Fragment>
+                                                            ))}
+                                                        </View>
+                                                    ))}
+                                                </>
+                                            );
+                                        })()}
                                     </View>
 
                                     {/* Legend Grid */}
