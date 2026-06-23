@@ -61,14 +61,14 @@ export default function MapboxWebView({
         if (!flyToOnSelectId) return;
         const hotel = hotels.find(h => h.hotelId === flyToOnSelectId);
         if (hotel) {
-            cameraRef.current?.flyTo([hotel.longitude, hotel.latitude], 3000);
+            cameraRef.current?.flyTo([hotel.longitude, hotel.latitude], 8000);
         }
     }, [flyToOnSelectId, hotels]);
 
     // Fly to new search destination
     useEffect(() => {
         if (!center) return;
-        cameraRef.current?.flyTo(center, 3000);
+        cameraRef.current?.flyTo(center, 8000);
     }, [center]);
 
     // Render selected hotel last so it appears on top

@@ -11,7 +11,7 @@ module.exports = {
     splash: {
       image: './assets/images/splash-icon.png',
       resizeMode: 'contain',
-      backgroundColor: '#1d4ed8',
+      backgroundColor: '#ffffff',
     },
     ios: {
       supportsTablet: true,
@@ -21,7 +21,7 @@ module.exports = {
       package: 'com.cheapestgo.mobile',
       adaptiveIcon: {
         foregroundImage: './assets/images/adaptive-icon.png',
-        backgroundColor: '#1d4ed8',
+        backgroundColor: '#ffffff',
       },
       predictiveBackGestureEnabled: false,
     },
@@ -36,7 +36,7 @@ module.exports = {
         'expo-notifications',
         {
           icon: './assets/images/icon.png',
-          color: '#1d4ed8',
+          color: '#f3f3f3',
           sounds: [],
         },
       ],
