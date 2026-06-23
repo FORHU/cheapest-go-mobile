@@ -3,13 +3,11 @@ name: Staging
 on:
   push:
     branches: [staging]
-  pull_request:
-    branches: [main]
   workflow_dispatch:
 
 jobs:
-  type-check:
-    name: Type Check
+  validate:
+    name: Validate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,9 +23,15 @@ jobs:
       - name: TypeScript
         run: npx tsc --noEmit
 
-  build-android-staging:
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test -- --ci --passWithNoTests
+
+  build-android:
     name: Build Android (Staging)
-    needs: type-check
+    needs: validate
     runs-on: ubuntu-latest
     environment: staging
     steps:

@@ -1,7 +1,19 @@
-import React, { useEffect, useMemo, useRef } from 'react';
-import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import { WebView } from 'react-native-webview';
+import Mapbox, { Camera, MapView, MarkerView } from '@rnmapbox/maps';
+import { Layers } from 'lucide-react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAPBOX_TOKEN } from '../../lib/config';
+
+Mapbox.setAccessToken(MAPBOX_TOKEN);
+
+const MAP_STYLES = {
+    dark: 'mapbox://styles/mapbox/dark-v11',
+    streets: 'mapbox://styles/mapbox/streets-v12',
+    satellite: 'mapbox://styles/mapbox/satellite-streets-v12',
+    outdoors: 'mapbox://styles/mapbox/outdoors-v12',
+} as const;
+
+type StyleKey = keyof typeof MAP_STYLES;
 
 interface MapboxWebViewProps {
     hotels: any[];
@@ -15,491 +27,185 @@ interface MapboxWebViewProps {
     currencySymbol: string;
 }
 
-export default function MapboxWebView({ hotels, selectedHotelId, flyToOnSelectId, onHotelSelect, onHotelNavigate, onDeselect, isDark, center, currencySymbol }: MapboxWebViewProps) {
-    const webViewRef = useRef<WebView>(null);
-    const hasLoadedRef = useRef(false);
+const FALLBACK_IMG = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
+const DEFAULT_CENTER: [number, number] = [120.596, 16.402];
 
-    const htmlContent = useMemo(() => {
-        const styleUrl = 'mapbox://styles/mapbox/dark-v11';
-        
-        return `
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <meta charset="utf-8">
-                <meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
-                <link href="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.css" rel="stylesheet">
-                <script src="https://api.mapbox.com/mapbox-gl-js/v3.1.2/mapbox-gl.js"></script>
-                <style>
-                    body { margin: 0; padding: 0; overflow: hidden; background: ${isDark ? '#020617' : '#f8fafc'}; }
-                    #map { position: absolute; top: 0; bottom: 0; width: 100%; }
-                    
-                    .marker {
-                        cursor: pointer;
-                        transition: all 0.2s ease;
-                        transform-origin: bottom center;
-                    }
-                    .marker-pill {
-                        display: flex;
-                        align-items: center;
-                        background: white;
-                        padding: 3px 7px 3px 3px;
-                        border-radius: 20px;
-                        border: 1px solid #e2e8f0;
-                        box-shadow: 0 3px 5px -1px rgba(0,0,0,0.12);
-                        gap: 4px;
-                    }
-                    .marker-num {
-                        width: 16px;
-                        height: 16px;
-                        background: #3b82f6;
-                        border-radius: 50%;
-                        display: flex;
-                        align-items: center;
-                        justify-content: center;
-                        color: white;
-                        font-family: -apple-system, system-ui, sans-serif;
-                        font-size: 9px;
-                        font-weight: 800;
-                        flex-shrink: 0;
-                    }
-                    .marker-price {
-                        font-family: -apple-system, system-ui, sans-serif;
-                        font-size: 11px;
-                        font-weight: 800;
-                        color: #1e293b;
-                    }
-                    .marker.selected {
-                        z-index: 100 !important;
-                    }
-                    .marker.selected .marker-pill {
-                        background: #2563eb;
-                        border-color: #1d4ed8;
-                        transform: scale(1.1) translateY(-4px);
-                        box-shadow: 0 8px 12px -2px rgba(37, 99, 235, 0.4);
-                    }
-                    .marker.selected .marker-price {
-                        color: white;
-                    }
-                    .marker.selected .marker-num {
-                        background: white;
-                        color: #2563eb;
-                    }
+export default function MapboxWebView({
+    hotels,
+    selectedHotelId,
+    flyToOnSelectId,
+    onHotelSelect,
+    onHotelNavigate,
+    onDeselect,
+    isDark,
+    center,
+    currencySymbol,
+}: MapboxWebViewProps) {
+    const cameraRef = useRef<Camera>(null);
+    const [styleKey, setStyleKey] = useState<StyleKey>('dark');
+    const [showLayers, setShowLayers] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
-                    /* Pin Point Style */
-                    .marker-pin-container {
-                        display: flex;
-                        flex-direction: column;
-                        align-items: center;
-                        margin-top: -1px;
-                    }
-                    .marker-pin-line {
-                        width: 2px;
-                        height: 8px;
-                        background: #3b82f6;
-                    }
-                    .marker.selected .marker-pin-line {
-                        background: #2563eb;
-                        height: 12px;
-                    }
-                    .marker-pin-dot {
-                        width: 6px;
-                        height: 6px;
-                        background: #3b82f6;
-                        border-radius: 50%;
-                        border: 1.5px solid white;
-                        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                    }
-                    .marker.selected .marker-pin-dot {
-                        background: #2563eb;
-                        transform: scale(1.2);
-                    }
-
-                    /* Preview Card Style */
-                    .marker-card {
-                        display: none;
-                        position: absolute;
-                        bottom: 100%;
-                        left: 50%;
-                        transform: translateX(-50%) translateY(-10px);
-                        width: 210px;
-                        border-radius: 14px;
-                        overflow: hidden;
-                        box-shadow: 0 12px 28px -4px rgba(0,0,0,0.28);
-                        z-index: 200;
-                        pointer-events: auto;
-                        cursor: pointer;
-                    }
-                    .marker.selected .marker-card {
-                        display: block;
-                        animation: markerPopup 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-                    }
-                    .card-img-grid {
-                        display: grid;
-                        grid-template-columns: 1fr 1fr;
-                        grid-template-rows: 74px 74px;
-                        gap: 2px;
-                        width: 100%;
-                        height: 150px;
-                        overflow: hidden;
-                        background: ${isDark ? '#1e293b' : '#f1f5f9'};
-                    }
-                    .grid-img {
-                        width: 100%;
-                        height: 100%;
-                        object-fit: cover;
-                        display: block;
-                        min-width: 0;
-                        min-height: 0;
-                    }
-
-                    @keyframes markerPopup {
-                        from { opacity: 0; transform: translateX(-50%) translateY(0) scale(0.9); }
-                        to { opacity: 1; transform: translateX(-50%) translateY(-12px) scale(1); }
-                    }
-
-                    .layers-btn {
-                        position: absolute; top: 16px; left: 16px; z-index: 10;
-                        background: ${isDark ? '#1e293b' : 'white'};
-                        color: ${isDark ? 'white' : '#1e293b'};
-                        border: 1px solid ${isDark ? '#334155' : '#e2e8f0'};
-                        border-radius: 50%; width: 44px; height: 44px; cursor: pointer;
-                        box-shadow: 0 4px 12px rgba(0,0,0,0.15); display: flex; align-items: center; justify-content: center;
-                    }
-                    .layers-panel {
-                        display: none; position: absolute; top: 70px; left: 20px; z-index: 10;
-                        background: ${isDark ? '#1e293b' : 'white'};
-                        border: 1px solid ${isDark ? '#334155' : '#e2e8f0'};
-                        border-radius: 16px; padding: 8px; width: 150px;
-                        box-shadow: 0 10px 15px rgba(0,0,0,0.1);
-                    }
-                    .layer-opt {
-                        padding: 10px 14px; cursor: pointer; border-radius: 8px;
-                        font-family: sans-serif; font-size: 13px; color: ${isDark ? '#cbd5e1' : '#475569'};
-                    }
-                    .layer-opt.active { background: #2563eb; color: white; }
-                </style>
-            </head>
-            <body>
-                <div id="map"></div>
-
-                <div class="layers-btn" onclick="toggleLayers()">
-                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>
-                </div>
-                <div id="layers-panel" class="layers-panel">
-                    <div class="layer-opt" onclick="setStyle('streets-v12', this)">Standard</div>
-                    <div class="layer-opt active" onclick="setStyle('dark-v11', this)">Dark</div>
-                    <div class="layer-opt" onclick="setStyle('satellite-streets-v12', this)">Satellite</div>
-                    <div class="layer-opt" onclick="setStyle('outdoors-v12', this)">Outdoors</div>
-                </div>
-
-                <script>
-                    function log(msg) {}
-
-                    mapboxgl.accessToken = '${MAPBOX_TOKEN}';
-                    const map = new mapboxgl.Map({
-                        container: 'map',
-                        style: '${styleUrl}',
-                        center: ${JSON.stringify(center || [120.596, 16.402])},
-                        zoom: 12,
-                        pitch: 0,
-                        maxPitch: 0,
-                        bearing: 0,
-                        dragRotate: false,
-                        antialias: false,
-                        attributionControl: false
-                    });
-
-                    let markers = {};
-
-                    function toggleLayers() {
-                        const panel = document.getElementById('layers-panel');
-                        panel.style.display = panel.style.display === 'block' ? 'none' : 'block';
-                    }
-
-                    function applyBuildingStyle() {
-                        if (map.getLayer('building')) {
-                            map.setPaintProperty('building', 'fill-color', '#2a2d35');
-                            map.setPaintProperty('building', 'fill-opacity', 0.3);
-                        }
-                        if (map.getLayer('building-extrusion')) {
-                            map.setLayoutProperty('building-extrusion', 'visibility', 'none');
-                        }
-                        ['building-number-label', 'building-entrance'].forEach(function(id) {
-                            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
-                        });
-                    }
-
-                    function applyPoiStyle() {
-                        // Hide default Mapbox POI circular icons (restaurants, shops, etc.)
-                        ['poi-label', 'transit-label', 'airport-label'].forEach(function(id) {
-                            if (map.getLayer(id)) map.setLayoutProperty(id, 'visibility', 'none');
-                        });
-                    }
-
-                    function setStyle(style, el) {
-                        map.setStyle('mapbox://styles/mapbox/' + style);
-                        document.querySelectorAll('.layer-opt').forEach(opt => opt.classList.remove('active'));
-                        el.classList.add('active');
-                        toggleLayers();
-                        map.once('idle', function() {
-                            applyBuildingStyle();
-                            applyPoiStyle();
-                        });
-                    }
-
-                    let currentHotels = [];
-
-                    function updateMarkers(hotelsData, selectedId, symbol) {
-                        currentHotels = hotelsData;
-
-                        renderHtmlMarkers(hotelsData, selectedId, symbol);
-
-                        const bounds = new mapboxgl.LngLatBounds();
-                        let validCount = 0;
-                        hotelsData.forEach(h => {
-                            if (h.latitude && h.longitude) {
-                                bounds.extend([h.longitude, h.latitude]);
-                                validCount++;
-                            }
-                        });
-
-                        if (validCount > 0 && !selectedId) {
-                            map.fitBounds(bounds, { padding: 80, maxZoom: 15, duration: 1000 });
-                        }
-                    }
-
-                    function renderHtmlMarkers(hotelsData, selectedId, symbol) {
-                        // Remove old markers
-                        const currentIds = new Set(hotelsData.map(h => h.hotelId));
-                        Object.keys(markers).forEach(id => {
-                            if (!currentIds.has(id)) {
-                                markers[id].remove();
-                                delete markers[id];
-                            }
-                        });
-
-                        const fallbackImg = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
-                        hotelsData.forEach((hotel, idx) => {
-                            const hotelIndex = idx + 1;
-                            const imgList = (Array.isArray(hotel.imageUrls) && hotel.imageUrls.length > 0)
-                                ? hotel.imageUrls
-                                : [hotel.thumbnailUrl || fallbackImg];
-                            const imgs = [0,1,2,3].map(function(i) { return imgList[i] || imgList[0] || fallbackImg; });
-                            const gridHtml = imgs.map(function(url) { return '<img src="' + url + '" class="grid-img" />'; }).join('');
-
-                            if (!markers[hotel.hotelId]) {
-                                const el = document.createElement('div');
-                                el.className = 'marker';
-                                el.id = 'marker-' + hotel.hotelId;
-
-                                const price = hotel.displayConvertedPrice || hotel.displayPrice || '???';
-                                el.innerHTML = \`
-                                    <div class="marker-card">
-                                        <div class="card-img-grid">\${gridHtml}</div>
-                                    </div>
-                                    <div class="marker-pill">
-                                        <div class="marker-num">\${hotelIndex}</div>
-                                        <span class="marker-price">\${symbol}\${price}</span>
-                                    </div>
-                                    <div class="marker-pin-container">
-                                        <div class="marker-pin-line"></div>
-                                        <div class="marker-pin-dot"></div>
-                                    </div>
-                                \`;
-
-                                el.onclick = (e) => {
-                                    e.stopPropagation();
-                                    window.ReactNativeWebView.postMessage(JSON.stringify({
-                                        type: 'HOTEL_SELECT',
-                                        hotelId: hotel.hotelId
-                                    }));
-                                };
-
-                                const cardEl = el.querySelector('.marker-card');
-                                if (cardEl) {
-                                    cardEl.addEventListener('click', function(e) {
-                                        e.stopPropagation();
-                                        window.ReactNativeWebView.postMessage(JSON.stringify({
-                                            type: 'HOTEL_NAVIGATE',
-                                            hotelId: hotel.hotelId
-                                        }));
-                                    });
-                                }
-
-                                markers[hotel.hotelId] = new mapboxgl.Marker({
-                                    element: el,
-                                    anchor: 'bottom'
-                                })
-                                .setLngLat([hotel.longitude, hotel.latitude])
-                                .addTo(map);
-                            } else {
-                                const el = markers[hotel.hotelId].getElement();
-                                const numEl = el.querySelector('.marker-num');
-                                if (numEl) numEl.textContent = hotelIndex;
-                                const priceEl = el.querySelector('.marker-price');
-                                if (priceEl) priceEl.textContent = symbol + (hotel.displayConvertedPrice || hotel.displayPrice || '???');
-                            }
-
-                            const mEl = markers[hotel.hotelId].getElement();
-                            if (hotel.hotelId === selectedId) {
-                                mEl.classList.add('selected');
-                            } else {
-                                mEl.classList.remove('selected');
-                            }
-                        });
-                    }
-
-                    map.on('dragstart', () => {
-                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_DRAG_START' }));
-                        // Deselect all markers in map
-                        Object.keys(markers).forEach(id => markers[id].getElement().classList.remove('selected'));
-                    });
-
-                    map.on('load', () => {
-                        map.resize();
-                        applyBuildingStyle();
-                        applyPoiStyle();
-                        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'MAP_LOADED' }));
-                    });
-
-                    // Handler for messages from React Native
-                    function handleRNMessage(event) {
-                        try {
-                            const raw = event.data;
-                            if (!raw || typeof raw !== 'string') return;
-                            const data = JSON.parse(raw);
-                            log('Received: ' + data.type);
-                            if (data.type === 'SET_HOTELS') {
-                                updateMarkers(data.hotels, data.selectedHotelId, data.currencySymbol);
-                            } else if (data.type === 'FLY_TO') {
-                                map.flyTo({ center: data.center, zoom: 14, duration: 1500 });
-                            } else if (data.type === 'HIGHLIGHT_HOTEL') {
-                                // Visual-only: update marker CSS classes, no map movement
-                                Object.keys(markers).forEach(id => {
-                                    const el = markers[id].getElement();
-                                    if (id === data.hotelId) el.classList.add('selected');
-                                    else el.classList.remove('selected');
-                                });
-                            } else if (data.type === 'SELECT_HOTEL') {
-                                // Fly to hotel + update marker CSS classes
-                                const m = markers[data.hotelId];
-                                if (m) {
-                                    map.flyTo({ center: m.getLngLat(), zoom: 15, duration: 1000 });
-                                    Object.keys(markers).forEach(id => {
-                                        const el = markers[id].getElement();
-                                        if (id === data.hotelId) el.classList.add('selected');
-                                        else el.classList.remove('selected');
-                                    });
-                                }
-                            }
-                        } catch(e) {
-                            // Ignore non-JSON messages (e.g. from Mapbox internals)
-                        }
-                    }
-
-                    // Android WebView fires 'message' on document, iOS on window — listen on both
-                    document.addEventListener('message', handleRNMessage);
-                    window.addEventListener('message', handleRNMessage);
-                </script>
-            </body>
-            </html>
-        `;
-    }, [isDark]);
-
+    // Fit bounds to all hotels when they load (only when nothing is selected yet)
     useEffect(() => {
-        if (hasLoadedRef.current && webViewRef.current) {
-
-            webViewRef.current.postMessage(JSON.stringify({
-                type: 'SET_HOTELS',
-                hotels,
-                selectedHotelId,
-                currencySymbol
-            }));
-        }
+        if (!hotels.length || selectedHotelId) return;
+        const lngs = hotels.map(h => h.longitude);
+        const lats = hotels.map(h => h.latitude);
+        const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
+        const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
+        cameraRef.current?.fitBounds(ne, sw, [80, 80, 80, 80], 1000);
     }, [hotels]);
 
+    // Fly to hotel when selected via card swipe
     useEffect(() => {
-        if (hasLoadedRef.current && center && webViewRef.current) {
-            webViewRef.current.postMessage(JSON.stringify({
-                type: 'FLY_TO',
-                center: center
-            }));
+        if (!flyToOnSelectId) return;
+        const hotel = hotels.find(h => h.hotelId === flyToOnSelectId);
+        if (hotel) {
+            cameraRef.current?.flyTo([hotel.longitude, hotel.latitude], 3000);
         }
+    }, [flyToOnSelectId, hotels]);
+
+    // Fly to new search destination
+    useEffect(() => {
+        if (!center) return;
+        cameraRef.current?.flyTo(center, 3000);
     }, [center]);
 
-    useEffect(() => {
-        if (hasLoadedRef.current && selectedHotelId && webViewRef.current) {
-            webViewRef.current.postMessage(JSON.stringify({
-                type: 'HIGHLIGHT_HOTEL',
-                hotelId: selectedHotelId
-            }));
-        }
-    }, [selectedHotelId]);
-
-    useEffect(() => {
-        if (hasLoadedRef.current && flyToOnSelectId && webViewRef.current) {
-            webViewRef.current.postMessage(JSON.stringify({
-                type: 'SELECT_HOTEL',
-                hotelId: flyToOnSelectId
-            }));
-        }
-    }, [flyToOnSelectId]);
-
-    const onMessage = (event: any) => {
-        try {
-            const data = JSON.parse(event.nativeEvent.data);
-            if (data.type === 'MAP_LOADED') {
-
-                hasLoadedRef.current = true;
-                
-                // Send initial data
-                if (hotels.length > 0) {
-                    webViewRef.current?.postMessage(JSON.stringify({
-                        type: 'SET_HOTELS',
-                        hotels,
-                        selectedHotelId,
-                        currencySymbol
-                    }));
-                }
-
-                // If we already have a selected hotel, make sure the map centers on it after load
-                if (selectedHotelId) {
-                    webViewRef.current?.postMessage(JSON.stringify({
-                        type: 'SELECT_HOTEL',
-                        hotelId: selectedHotelId
-                    }));
-                }
-            } else if (data.type === 'HOTEL_SELECT') {
-                const hotel = hotels.find(h => h.hotelId === data.hotelId);
-                if (hotel) onHotelSelect(hotel);
-            } else if (data.type === 'HOTEL_NAVIGATE') {
-                onHotelNavigate?.(data.hotelId);
-            } else if (data.type === 'MAP_DRAG_START') {
-                onDeselect?.();
-            }
-        } catch (e) {
-
-        }
-    };
+    // Render selected hotel last so it appears on top
+    const sortedHotels = selectedHotelId
+        ? [
+            ...hotels.filter(h => h.hotelId !== selectedHotelId),
+            ...hotels.filter(h => h.hotelId === selectedHotelId),
+          ]
+        : hotels;
 
     return (
         <View style={styles.container}>
-            <WebView
-                ref={webViewRef}
-                originWhitelist={['*']}
-                source={{ html: htmlContent }}
-                onMessage={onMessage}
+            <MapView
                 style={styles.map}
-                javaScriptEnabled={true}
-                domStorageEnabled={true}
-                startInLoadingState={true}
-                renderLoading={() => (
-                    <View style={styles.loading}>
-                        <ActivityIndicator size="large" color="#2563eb" />
-                    </View>
-                )}
-            />
+                styleURL={MAP_STYLES[styleKey]}
+                onPress={() => onDeselect?.()}
+                compassEnabled={false}
+                logoEnabled={false}
+                attributionEnabled={false}
+                pitchEnabled={false}
+                rotateEnabled={false}
+                onDidFinishLoadingMap={() => setIsLoading(false)}
+            >
+                <Camera
+                    ref={cameraRef}
+                    defaultSettings={{
+                        centerCoordinate: center ?? DEFAULT_CENTER,
+                        zoomLevel: 12,
+                    }}
+                />
+
+                {sortedHotels.map((hotel) => {
+                    const isSelected = hotel.hotelId === selectedHotelId;
+                    const originalIndex = hotels.indexOf(hotel);
+                    const price = hotel.displayConvertedPrice || hotel.displayPrice || '???';
+                    const imgs = Array.isArray(hotel.imageUrls) && hotel.imageUrls.length > 0
+                        ? hotel.imageUrls.slice(0, 4)
+                        : [hotel.thumbnailUrl || FALLBACK_IMG];
+                    while (imgs.length < 4) imgs.push(imgs[0]);
+
+                    return (
+                        <MarkerView
+                            key={hotel.hotelId}
+                            id={hotel.hotelId}
+                            coordinate={[hotel.longitude, hotel.latitude]}
+                            anchor={{ x: 0.5, y: 1 }}
+                        >
+                            <Pressable onPress={() => onHotelSelect(hotel)} style={styles.markerWrapper}>
+                                {isSelected && (
+                                    <Pressable
+                                        style={styles.popupCard}
+                                        onPress={(e) => {
+                                            e.stopPropagation();
+                                            onHotelNavigate?.(hotel.hotelId);
+                                        }}
+                                    >
+                                        <View style={styles.imgGrid}>
+                                            {imgs.map((url: string, i: number) => (
+                                                <Image
+                                                    key={i}
+                                                    source={{ uri: url }}
+                                                    style={styles.gridImg}
+                                                    resizeMode="cover"
+                                                />
+                                            ))}
+                                        </View>
+                                    </Pressable>
+                                )}
+                                <View style={[styles.pill, isSelected && styles.pillSelected]}>
+                                    <View style={[styles.pillNum, isSelected && styles.pillNumSelected]}>
+                                        <Text style={[styles.pillNumText, isSelected && styles.pillNumTextSelected]}>
+                                            {originalIndex + 1}
+                                        </Text>
+                                    </View>
+                                    <Text style={[styles.pillPrice, isSelected && styles.pillPriceSelected]}>
+                                        {currencySymbol}{price}
+                                    </Text>
+                                </View>
+                                <View style={styles.pinContainer}>
+                                    <View style={[styles.pinLine, isSelected && styles.pinLineSelected]} />
+                                    <View style={[styles.pinDot, isSelected && styles.pinDotSelected]} />
+                                </View>
+                            </Pressable>
+                        </MarkerView>
+                    );
+                })}
+            </MapView>
+
+            {/* Layer toggle */}
+            <Pressable
+                style={[
+                    styles.layersBtn,
+                    {
+                        backgroundColor: isDark ? '#1e293b' : 'white',
+                        borderColor: isDark ? '#334155' : '#e2e8f0',
+                    },
+                ]}
+                onPress={() => setShowLayers(v => !v)}
+            >
+                <Layers size={20} color={isDark ? 'white' : '#1e293b'} />
+            </Pressable>
+
+            {showLayers && (
+                <View
+                    style={[
+                        styles.layersPanel,
+                        {
+                            backgroundColor: isDark ? '#1e293b' : 'white',
+                            borderColor: isDark ? '#334155' : '#e2e8f0',
+                        },
+                    ]}
+                >
+                    {(['streets', 'dark', 'satellite', 'outdoors'] as StyleKey[]).map(key => (
+                        <Pressable
+                            key={key}
+                            style={[styles.layerOpt, styleKey === key && styles.layerOptActive]}
+                            onPress={() => { setStyleKey(key); setShowLayers(false); }}
+                        >
+                            <Text
+                                style={[
+                                    styles.layerOptText,
+                                    { color: isDark ? '#cbd5e1' : '#475569' },
+                                    styleKey === key && styles.layerOptTextActive,
+                                ]}
+                            >
+                                {key === 'streets' ? 'Standard' : key === 'dark' ? 'Dark' : key === 'satellite' ? 'Satellite' : 'Outdoors'}
+                            </Text>
+                        </Pressable>
+                    ))}
+                </View>
+            )}
+
+            {isLoading && (
+                <View style={styles.loading}>
+                    <ActivityIndicator size="large" color="#2563eb" />
+                </View>
+            )}
         </View>
     );
 }
@@ -512,5 +218,150 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.8)',
         alignItems: 'center',
         justifyContent: 'center',
-    }
+    },
+    markerWrapper: {
+        alignItems: 'center',
+    },
+    popupCard: {
+        width: 210,
+        borderRadius: 14,
+        overflow: 'hidden',
+        marginBottom: 6,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 12 },
+        shadowOpacity: 0.28,
+        shadowRadius: 28,
+        elevation: 12,
+    },
+    imgGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        width: 210,
+        height: 150,
+        gap: 2,
+    },
+    gridImg: {
+        width: 103,
+        height: 74,
+        backgroundColor: '#f1f5f9',
+    },
+    pill: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'white',
+        paddingVertical: 3,
+        paddingLeft: 3,
+        paddingRight: 7,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: '#e2e8f0',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.12,
+        shadowRadius: 5,
+        elevation: 3,
+        gap: 4,
+    },
+    pillSelected: {
+        backgroundColor: '#2563eb',
+        borderColor: '#1d4ed8',
+        shadowColor: '#2563eb',
+        shadowOpacity: 0.4,
+        shadowRadius: 12,
+        elevation: 8,
+    },
+    pillNum: {
+        width: 16,
+        height: 16,
+        borderRadius: 8,
+        backgroundColor: '#3b82f6',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    pillNumSelected: {
+        backgroundColor: 'white',
+    },
+    pillNumText: {
+        color: 'white',
+        fontSize: 9,
+        fontWeight: '800',
+    },
+    pillNumTextSelected: {
+        color: '#2563eb',
+    },
+    pillPrice: {
+        fontSize: 11,
+        fontWeight: '800',
+        color: '#1e293b',
+    },
+    pillPriceSelected: {
+        color: 'white',
+    },
+    pinContainer: {
+        alignItems: 'center',
+    },
+    pinLine: {
+        width: 2,
+        height: 8,
+        backgroundColor: '#3b82f6',
+    },
+    pinLineSelected: {
+        backgroundColor: '#2563eb',
+        height: 12,
+    },
+    pinDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#3b82f6',
+        borderWidth: 1.5,
+        borderColor: 'white',
+    },
+    pinDotSelected: {
+        backgroundColor: '#2563eb',
+    },
+    layersBtn: {
+        position: 'absolute',
+        top: 16,
+        left: 16,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 12,
+        elevation: 4,
+    },
+    layersPanel: {
+        position: 'absolute',
+        top: 70,
+        left: 20,
+        borderRadius: 16,
+        borderWidth: 1,
+        padding: 8,
+        width: 150,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.1,
+        shadowRadius: 15,
+        elevation: 5,
+    },
+    layerOpt: {
+        paddingVertical: 10,
+        paddingHorizontal: 14,
+        borderRadius: 8,
+    },
+    layerOptActive: {
+        backgroundColor: '#2563eb',
+    },
+    layerOptText: {
+        fontSize: 13,
+    },
+    layerOptTextActive: {
+        color: 'white',
+    },
 });
