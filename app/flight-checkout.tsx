@@ -379,6 +379,9 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
         if (!phone.trim()) {
             errs.phone = 'Phone number is required';
         }
+        if (!countryCode) {
+            errs.phone = 'Please select a country code';
+        }
 
         // Validate passenger 1
         const p1 = passengers[0];
@@ -419,7 +422,24 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
         setBooking(true);
         const seg0 = offer.segments?.[0];
         const route = seg0 ? `${seg0.origin} → ${seg0.destination}` : offer.offerId;
-        rLog('FlightCheckout', 'flight-checkout', 'Booking flight', { route, price: offer.price?.total, passengers: passengers.length });
+        const p0 = passengers[0];
+        rLog('FlightCheckout', 'flight-checkout', 'Booking flight', {
+            route,
+            price: offer.price?.total,
+            passengers: passengers.length,
+            // log every field so you can spot any undefined in the terminal
+            p_type: p0?.type,
+            p_firstName: p0?.firstName,
+            p_lastName: p0?.lastName,
+            p_gender: p0?.gender,
+            p_birthDate: p0?.birthDate,
+            p_nationality: p0?.nationality,
+            p_passport: p0?.passport ? '***' : undefined,
+            p_passportExpiry: p0?.passportExpiry,
+            c_email: email,
+            c_phone: phone,
+            c_countryCode: countryCode,
+        });
 
         try {
             // Collect selected seat service IDs
