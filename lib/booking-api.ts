@@ -84,6 +84,7 @@ export interface WebSearchResult {
 }
 
 export async function webSearchFlights(params: WebSearchParams): Promise<WebSearchResult> {
+    console.log('[webSearchFlights] params:', JSON.stringify(params, null, 2));
     return post('/api/flights/search', params);
 }
 
