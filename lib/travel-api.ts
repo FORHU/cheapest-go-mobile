@@ -26,7 +26,15 @@ async function webInvoke<T = any>(path: string, body?: any): Promise<T> {
             try { const j = JSON.parse(text); if (j.error) msg = j.error; } catch {}
             throw new Error(msg);
         }
-        return res.json() as Promise<T>;
+        // Defensive parse: a 200 with an empty/HTML body (gateway hiccup) would make
+        // res.json() throw a cryptic "Unexpected end of input" / "Unexpected character".
+        const text = await res.text();
+        if (!text.trim()) throw new Error(`${path} returned an empty response. Please try again.`);
+        try {
+            return JSON.parse(text) as T;
+        } catch {
+            throw new Error(`${path} returned an unexpected response. Please try again.`);
+        }
     } catch (err: any) {
         clearTimeout(timer);
         if (err.name === 'AbortError') throw new Error('Request timed out. Please check your connection.');

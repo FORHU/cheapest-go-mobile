@@ -88,6 +88,7 @@ export default function MapboxWebView({
                 compassEnabled={false}
                 logoEnabled={false}
                 attributionEnabled={false}
+                scaleBarEnabled={false}
                 pitchEnabled={false}
                 rotateEnabled={false}
                 onDidFinishLoadingMap={() => setIsLoading(false)}

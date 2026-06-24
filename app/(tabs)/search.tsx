@@ -5,7 +5,6 @@ import { ActivityIndicator, Dimensions, FlatList, Pressable, ScrollView, StyleSh
 import FilterModal from '../../components/search/FilterModal';
 import HotelSearchModal from '../../components/search/HotelSearchModal';
 import MapboxWebView from '../../components/search/MapboxWebView';
-import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
 import { searchHotels } from '../../lib/travel-api';
 import { MAPBOX_TOKEN } from '../../lib/config';
@@ -159,7 +158,10 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
                         </View>
                     )}
                     {hotel.starRating > 0 && (
-                        <StarRating rating={hotel.starRating} size={10} color="#2563eb" />
+                        <View style={styles.starRatingNumeric}>
+                            <Star size={10} color="#2563eb" fill="#2563eb" />
+                            <Text style={styles.starRatingNumericText}>{hotel.starRating.toFixed(1)}</Text>
+                        </View>
                     )}
                 </View>
 
@@ -1211,6 +1213,16 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         fontSize: 10,
         fontWeight: '600',
         color: 'rgba(255,255,255,0.9)',
+    },
+    starRatingNumeric: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    starRatingNumericText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#2563eb',
     },
     reviewCountText: {
         fontSize: 10,

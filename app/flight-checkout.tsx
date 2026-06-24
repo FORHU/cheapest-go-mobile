@@ -113,6 +113,12 @@ const GENDER_OPTIONS = [
     { label: 'Female', value: 'F' }
 ];
 
+// Price-change tolerance when an expired offer is re-quoted. Mirrors the server's
+// PRICE_TOLERANCE in /api/internal/revalidate-flight (currently $5.00). A freshly
+// re-quoted airline fare almost always differs by a few cents, so a sub-dollar
+// threshold here would spuriously flag "Price Changed" on nearly every refresh.
+const PRICE_CHANGE_TOLERANCE = 5.0;
+
 const getFlagEmoji = (countryCode: string) => {
     const codePoints = countryCode
         .toUpperCase()
@@ -161,7 +167,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     const presentPaymentSheet = stripeHook?.presentPaymentSheet;
 
     // Parse Selected Offer
-    const offer: FlightOffer | null = useMemo(() => {
+    const baseOffer: FlightOffer | null = useMemo(() => {
         if (!params.offerData) return null;
         try {
             return JSON.parse(params.offerData as string);
@@ -170,6 +176,12 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             return null;
         }
     }, [params.offerData]);
+
+    // When the user accepts a fare change, we book a freshly re-quoted offer at the
+    // new price. Holding it here makes the summary, Confirm button, and booking logic
+    // all reflect the accepted offer without threading it through every reference.
+    const [acceptedOffer, setAcceptedOffer] = useState<FlightOffer | null>(null);
+    const offer = acceptedOffer ?? baseOffer;
 
     // Booking Steps state
     const [step, setStep] = useState<'form' | 'confirming' | 'success'>('form');
@@ -222,6 +234,12 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     // Form Errors
     const [errors, setErrors] = useState<Record<string, string>>({});
     const scrollRef = useRef<ScrollView>(null);
+
+    // Idempotency key for the booking request. Generated once per checkout so that
+    // retrying after a timeout reuses the same key — Duffel then returns the order
+    // it may have created just before the timeout instead of double-booking. A fresh
+    // key per attempt (the old behaviour) would create duplicate paid orders on retry.
+    const idempotencyKeyRef = useRef(`mob-${Date.now()}-${Math.random().toString(36).slice(2)}`);
 
     // Custom Date Picker Modal State
     const [pickerVisible, setPickerVisible] = useState(false);
@@ -415,12 +433,17 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
         return Object.keys(errs).length === 0;
     };
 
-    const handleConfirmBooking = async () => {
+    const handleConfirmBooking = async (overrideOffer?: FlightOffer) => {
         if (!validateForm()) {
             scrollRef.current?.scrollTo({ y: 0, animated: true });
             return;
         }
-        if (!offer) {
+        // overrideOffer is set when re-booking a re-quoted offer after the user
+        // accepts a price change. Its ancillary service IDs differ from the original
+        // offer's, so seats/bags are dropped on that path.
+        const activeOffer = overrideOffer ?? offer;
+        const includeAncillaries = !overrideOffer;
+        if (!activeOffer) {
             Alert.alert('Error', 'No flight offer selected.');
             return;
         }
@@ -482,7 +505,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                 flight: activeOffer,
                 passengers: passengerPayload,
                 contact: contactPayload,
-                idempotencyKey: `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+                idempotencyKey: idempotencyKeyRef.current,
                 ...(includeAncillaries && seatServiceIds.length ? { seatServiceIds, seatTotal } : {}),
                 ...(includeAncillaries && bagServiceIds.length ? { bagServiceIds, bagTotal } : {}),
                 confirmedPrice: activeOffer.price?.total,
@@ -494,9 +517,9 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             // bounced back to search ("This flight is no longer available").
             let bookResult: MobileBookResult;
             try {
-                bookResult = await webMobileBook(buildBookPayload(offer, true));
+                bookResult = await webMobileBook(buildBookPayload(activeOffer, includeAncillaries));
             } catch (bookErr: any) {
-                const rawOffer = (offer as any)._rawOffer;
+                const rawOffer = (activeOffer as any)._rawOffer;
                 const offerExpired =
                     !bookErr.priceChanged &&
                     (bookErr.status === 404 ||
@@ -506,11 +529,13 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                 const refreshed = await webRefreshOffer(rawOffer);
                 if (!refreshed?.success || !refreshed.newOffer) throw bookErr;
 
-                // Don't silently charge more than the user agreed to: if the
-                // refreshed fare is higher, route to the price-changed handler.
-                const oldTotal = offer.price?.total ?? 0;
+                // Don't silently charge more than the user agreed to: only flag a
+                // price change when the refreshed fare rises beyond the tolerance the
+                // server itself uses ($5). Minor cent-level fluctuations from re-quoting
+                // an expired offer are absorbed and the booking proceeds.
+                const oldTotal = activeOffer.price?.total ?? 0;
                 const newTotal = refreshed.newOffer.price?.total ?? 0;
-                if (newTotal - oldTotal > 0.01) {
+                if (newTotal - oldTotal > PRICE_CHANGE_TOLERANCE) {
                     const priceErr: any = new Error('The flight price has changed.');
                     priceErr.priceChanged = true;
                     priceErr.newPrice = newTotal;
@@ -553,24 +578,75 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             setBookingResult(confirmResult);
             setStep('success');
         } catch (err: any) {
-            const isPriceChanged = err.priceChanged;
-            if (isPriceChanged) {
-                // Only show the animated steps screen on price change so user sees the verification step
-                setStep('confirming');
-                setBookingStepIdx(0);
+            if (err.priceChanged) {
+                await handlePriceChange(activeOffer, err.newPrice);
             } else {
                 setStep('form');
+                Alert.alert(
+                    'Booking Failed',
+                    err.message || 'Something went wrong during reservation. Please try again.',
+                    [{ text: 'OK', onPress: () => setStep('form') }]
+                );
             }
-            Alert.alert(
-                isPriceChanged ? 'Price Changed' : 'Booking Failed',
-                isPriceChanged
-                    ? `The flight price has changed. Please go back and reselect the flight.`
-                    : (err.message || 'Something went wrong during reservation. Please try again.'),
-                [{ text: 'OK', onPress: () => setStep('form') }]
-            );
         } finally {
             setBooking(false);
         }
+    };
+
+    // A fare change beyond tolerance is no longer a dead-end: re-quote a fresh,
+    // bookable offer at the current price and let the user accept it. Accepting
+    // re-runs the booking against that fresh offer (mirrors the web's
+    // confirmPriceChange). If we can't get a fresh offer, fall back to "reselect".
+    const handlePriceChange = async (changedOffer: FlightOffer, serverNewPrice?: number) => {
+        setStep('form');
+        const rawOffer = (changedOffer as any)._rawOffer;
+        const oldPrice = changedOffer.price?.total ?? 0;
+        const currency = changedOffer.price?.currency ?? 'USD';
+
+        let freshOffer: FlightOffer | null = null;
+        let newPrice = serverNewPrice ?? 0;
+        try {
+            if (rawOffer) {
+                const refreshed = await webRefreshOffer(rawOffer);
+                if (refreshed?.success && refreshed.newOffer) {
+                    freshOffer = refreshed.newOffer;
+                    newPrice = refreshed.newOffer.price?.total ?? newPrice;
+                }
+            }
+        } catch {
+            // fall through to the reselect fallback below
+        }
+
+        if (!freshOffer) {
+            Alert.alert(
+                'Price Changed',
+                'The flight price has changed and we could not refresh it. Please go back and reselect the flight.',
+                [{ text: 'OK', onPress: () => setStep('form') }]
+            );
+            return;
+        }
+
+        const fresh = freshOffer;
+        const fmt = (n: number) => `${currency} ${Math.round(n).toLocaleString()}`;
+        Alert.alert(
+            'Price Changed',
+            `The fare for this flight changed from ${fmt(oldPrice)} to ${fmt(newPrice)}.\n\nWould you like to continue at the new price?`,
+            [
+                { text: 'Cancel', style: 'cancel', onPress: () => setStep('form') },
+                {
+                    text: 'Accept & Continue',
+                    onPress: () => {
+                        // A re-quoted offer is a new logical order — use a fresh
+                        // idempotency key and drop seats/bags scoped to the old offer.
+                        idempotencyKeyRef.current = `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                        setSelectedSeats({});
+                        setSelectedBags({});
+                        setAcceptedOffer(fresh);
+                        handleConfirmBooking(fresh);
+                    },
+                },
+            ]
+        );
     };
 
     if (step === 'success') {
@@ -1551,7 +1627,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                     {/* Action button */}
                     <Pressable
                         style={[styles.confirmBtn, booking && { opacity: 0.8 }]}
-                        onPress={handleConfirmBooking}
+                        onPress={() => handleConfirmBooking()}
                         disabled={booking}
                     >
                         <Text style={styles.confirmBtnText}>

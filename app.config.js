@@ -51,7 +51,6 @@ module.exports = {
         '@rnmapbox/maps',
         {
           RNMapboxMapsImpl: 'mapbox',
-          RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOADS_TOKEN,
         },
       ],
       'expo-font',
