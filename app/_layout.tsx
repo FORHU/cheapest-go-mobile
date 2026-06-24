@@ -1,27 +1,27 @@
 import FontAwesome from '@expo/vector-icons/FontAwesome';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { SettingsProvider } from '../context/SettingsContext';
-import { AuthProvider, useAuth } from '../context/AuthContext';
 import { ForceUpdateModal } from '../components/ui/ForceUpdateModal';
+import { AuthProvider, useAuth } from '../context/AuthContext';
+import { SettingsProvider } from '../context/SettingsContext';
+import "../global.css";
 import { registerForPushNotifications } from '../lib/notifications';
 import {
-    fetchVersionConfig,
-    isUpdateRequired,
-    type VersionConfig,
+  fetchVersionConfig,
+  isUpdateRequired,
+  type VersionConfig,
 } from '../lib/version-check';
-import "../global.css";
 
 export {
-  ErrorBoundary,
+  ErrorBoundary
 } from 'expo-router';
 
 export const unstable_settings = {
@@ -62,6 +62,9 @@ export default function RootLayout() {
 }
 
 function RootLayoutNav() {
+  const ONBOARDING_KEY = 'hasSeenOnboarding';
+  const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
+
   const colorScheme = useColorScheme();
   const { user, isLoading, isPasswordRecovery, handleAuthDeepLink } = useAuth();
   const segments = useSegments();
@@ -87,12 +90,19 @@ function RootLayoutNav() {
     registerForPushNotifications(user?.id ?? undefined);
   }, [isLoading, user?.id]);
 
+  // ── Onboarding check ────────────────────────────────────────────────────────
+  useEffect(() => {
+    AsyncStorage.getItem(ONBOARDING_KEY)
+      .then(value => setHasSeenOnboarding(value === 'true'))
+      .catch(() => setHasSeenOnboarding(true));
+  }, []);
+
   // ── Deep link handling ───────────────────────────────────────────────────
   useEffect(() => {
     const handle = async (url: string) => {
       try {
         await handleAuthDeepLink(url);
-      } catch (_) {}
+      } catch (_) { }
     };
 
     Linking.getInitialURL().then(url => { if (url) handle(url); });
@@ -102,25 +112,32 @@ function RootLayoutNav() {
 
   // ── Auth redirect ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || hasSeenOnboarding === null) return;
 
     const inAuthGroup = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === 'onboarding';
 
     if (isPasswordRecovery) {
       router.replace('/(auth)/update-password');
       return;
     }
 
-    if (!user && !inAuthGroup) {
+    if (!hasSeenOnboarding && !user && !inOnboarding && !inAuthGroup) {
+      router.replace('/onboarding');
+      return;
+    }
+
+    if (!user && !inAuthGroup && !inOnboarding) {
       router.replace('/(auth)/login');
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [user, isLoading, segments, isPasswordRecovery]);
+  }, [user, isLoading, segments, isPasswordRecovery, hasSeenOnboarding]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
         <Stack.Screen name="flights" options={{ headerShown: false, presentation: 'card' }} />

@@ -39,82 +39,82 @@ const { width: SW, height: SH } = Dimensions.get('window');
 
 // ─── Palette ──────────────────────────────────────────────────────────────────
 const DARK = {
-  safe:            '#060d1a',
-  bg:              '#0b1329',
-  cardBg:          '#0c1424',
-  cardBorder:      '#172036',
-  inputBg:         '#070e1c',
-  inputBorder:     '#1a2640',
-  inputBorderFocus:'#3b82f6',
-  inputBorderErr:  '#dc2626',
-  inputBgErr:      '#0f0808',
-  label:           '#64748b',
-  inputText:       '#e2e8f0',
-  placeholder:     '#2d3a52',
-  title:           '#f1f5f9',
-  subtitle:        '#4a5568',
-  forgot:          '#3b82f6',
-  fieldErr:        '#ef4444',
-  bannerErrBg:     '#160808',
+  safe: '#060d1a',
+  bg: '#0b1329',
+  cardBg: '#0c1424',
+  cardBorder: '#172036',
+  inputBg: '#070e1c',
+  inputBorder: '#1a2640',
+  inputBorderFocus: '#3b82f6',
+  inputBorderErr: '#dc2626',
+  inputBgErr: '#0f0808',
+  label: '#64748b',
+  inputText: '#e2e8f0',
+  placeholder: '#2d3a52',
+  title: '#f1f5f9',
+  subtitle: '#4a5568',
+  forgot: '#3b82f6',
+  fieldErr: '#ef4444',
+  bannerErrBg: '#160808',
   bannerErrBorder: '#7f1d1d',
-  bannerErrText:   '#f87171',
-  successBg:       '#061410',
-  successBorder:   '#064e3b',
-  successText:     '#34d399',
-  submitBg:        '#2563eb',
-  submitText:      '#ffffff',
-  backBg:          'rgba(6,13,26,0.85)',
-  backBorder:      '#172036',
-  backIcon:        '#64748b',
-  signUpPrompt:    '#475569',
-  signUpLink:      '#3b82f6',
-  divider:         '#111c30',
-  gridLine:        'rgba(255,255,255,0.03)',
-  sparkle:         '#60a5fa',
-  sparkleGlow:     'rgba(96,165,250,0.35)',
-  topBarBg:        '#0b1329',
+  bannerErrText: '#f87171',
+  successBg: '#061410',
+  successBorder: '#064e3b',
+  successText: '#34d399',
+  submitBg: '#2563eb',
+  submitText: '#ffffff',
+  backBg: 'rgba(6,13,26,0.85)',
+  backBorder: '#172036',
+  backIcon: '#64748b',
+  signUpPrompt: '#475569',
+  signUpLink: '#3b82f6',
+  divider: '#111c30',
+  gridLine: 'rgba(255,255,255,0.03)',
+  sparkle: '#60a5fa',
+  sparkleGlow: 'rgba(96,165,250,0.35)',
+  topBarBg: '#0b1329',
 };
 
 const LIGHT = {
-  safe:            '#f0f6ff',
-  bg:              '#f8fafc',
-  cardBg:          '#ffffff',
-  cardBorder:      '#e2e8f0',
-  inputBg:         '#f8fafc',
-  inputBorder:     '#e2e8f0',
-  inputBorderFocus:'#2563eb',
-  inputBorderErr:  '#ef4444',
-  inputBgErr:      '#fff5f5',
-  label:           '#64748b',
-  inputText:       '#0f172a',
-  placeholder:     '#94a3b8',
-  title:           '#0f172a',
-  subtitle:        '#64748b',
-  forgot:          '#2563eb',
-  fieldErr:        '#ef4444',
-  bannerErrBg:     '#fef2f2',
+  safe: '#f0f6ff',
+  bg: '#f8fafc',
+  cardBg: '#ffffff',
+  cardBorder: '#e2e8f0',
+  inputBg: '#f8fafc',
+  inputBorder: '#e2e8f0',
+  inputBorderFocus: '#2563eb',
+  inputBorderErr: '#ef4444',
+  inputBgErr: '#fff5f5',
+  label: '#64748b',
+  inputText: '#0f172a',
+  placeholder: '#94a3b8',
+  title: '#0f172a',
+  subtitle: '#64748b',
+  forgot: '#2563eb',
+  fieldErr: '#ef4444',
+  bannerErrBg: '#fef2f2',
   bannerErrBorder: '#fecaca',
-  bannerErrText:   '#dc2626',
-  successBg:       '#f0fdf4',
-  successBorder:   '#bbf7d0',
-  successText:     '#15803d',
-  submitBg:        '#2563eb',
-  submitText:      '#ffffff',
-  backBg:          'rgba(255,255,255,0.92)',
-  backBorder:      '#e2e8f0',
-  backIcon:        '#475569',
-  signUpPrompt:    '#94a3b8',
-  signUpLink:      '#2563eb',
-  divider:         '#f1f5f9',
-  gridLine:        'rgba(37,99,235,0.045)',
-  sparkle:         '#3b82f6',
-  sparkleGlow:     'rgba(59,130,246,0.18)',
-  topBarBg:        '#f8fafc',
+  bannerErrText: '#dc2626',
+  successBg: '#f0fdf4',
+  successBorder: '#bbf7d0',
+  successText: '#15803d',
+  submitBg: '#2563eb',
+  submitText: '#ffffff',
+  backBg: 'rgba(255,255,255,0.92)',
+  backBorder: '#e2e8f0',
+  backIcon: '#475569',
+  signUpPrompt: '#94a3b8',
+  signUpLink: '#2563eb',
+  divider: '#f1f5f9',
+  gridLine: 'rgba(37,99,235,0.045)',
+  sparkle: '#3b82f6',
+  sparkleGlow: 'rgba(59,130,246,0.18)',
+  topBarBg: '#f8fafc',
 };
 
 // ─── Animated Drift Grid ──────────────────────────────────────────────────────
 const GRID_SIZE = 40;
-const EXTRA     = GRID_SIZE * 3;
+const EXTRA = GRID_SIZE * 3;
 
 function DriftGrid({ color }: { color: string }) {
   const anim = useRef(new Animated.Value(0)).current;
@@ -166,14 +166,14 @@ function DriftGrid({ color }: { color: string }) {
 
 // ─── Sparkle/Animation configs ──────────────────────────────
 const SPARKLE_CONFIGS = [
-  { top: SH * 0.08,  left: SW * 0.10, size: 16, duration: 2800, delay: 0 },
-  { top: SH * 0.14,  left: SW * 0.48, size: 13, duration: 2100, delay: 400 },
-  { top: SH * 0.24,  left: SW * 0.82, size: 20, duration: 3200, delay: 800 },
-  { top: SH * 0.42,  left: SW * 0.92, size: 12, duration: 2500, delay: 200 },
-  { top: SH * 0.54,  left: SW * 0.06, size: 22, duration: 2000, delay: 600 },
-  { top: SH * 0.62,  left: SW * 0.60, size: 15, duration: 3000, delay: 1000 },
-  { top: SH * 0.75,  left: SW * 0.12, size: 16, duration: 2600, delay: 300 },
-  { top: SH * 0.90,  left: SW * 0.68, size: 14, duration: 2200, delay: 700 },
+  { top: SH * 0.08, left: SW * 0.10, size: 16, duration: 2800, delay: 0 },
+  { top: SH * 0.14, left: SW * 0.48, size: 13, duration: 2100, delay: 400 },
+  { top: SH * 0.24, left: SW * 0.82, size: 20, duration: 3200, delay: 800 },
+  { top: SH * 0.42, left: SW * 0.92, size: 12, duration: 2500, delay: 200 },
+  { top: SH * 0.54, left: SW * 0.06, size: 22, duration: 2000, delay: 600 },
+  { top: SH * 0.62, left: SW * 0.60, size: 15, duration: 3000, delay: 1000 },
+  { top: SH * 0.75, left: SW * 0.12, size: 16, duration: 2600, delay: 300 },
+  { top: SH * 0.90, left: SW * 0.68, size: 14, duration: 2200, delay: 700 },
 ];
 
 const STAR_PATH =
@@ -190,19 +190,19 @@ function Sparkle({
   color: string; glowColor: string;
 }) {
   const opacity = useRef(new Animated.Value(0)).current;
-  const scale   = useRef(new Animated.Value(0.5)).current;
+  const scale = useRef(new Animated.Value(0.5)).current;
 
   useEffect(() => {
     const loop = Animated.loop(
       Animated.sequence([
         Animated.delay(delay),
         Animated.parallel([
-          Animated.timing(opacity, { toValue: 1,   duration: duration * 0.4, easing: Easing.out(Easing.quad), useNativeDriver: true }),
-          Animated.timing(scale,   { toValue: 1,   duration: duration * 0.4, easing: Easing.out(Easing.back(1.4)), useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 1, duration: duration * 0.4, easing: Easing.out(Easing.quad), useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 1, duration: duration * 0.4, easing: Easing.out(Easing.back(1.4)), useNativeDriver: true }),
         ]),
         Animated.parallel([
-          Animated.timing(opacity, { toValue: 0,   duration: duration * 0.6, easing: Easing.in(Easing.quad), useNativeDriver: true }),
-          Animated.timing(scale,   { toValue: 0.4, duration: duration * 0.6, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.timing(opacity, { toValue: 0, duration: duration * 0.6, easing: Easing.in(Easing.quad), useNativeDriver: true }),
+          Animated.timing(scale, { toValue: 0.4, duration: duration * 0.6, easing: Easing.in(Easing.quad), useNativeDriver: true }),
         ]),
       ])
     );
@@ -248,8 +248,8 @@ function SparkleLayer({ color, glowColor }: { color: string; glowColor: string }
 }
 
 // ─── CheapestGo Logo ──────────────────────────────────────────────────────────
-function Logo({ dark }: { dark: boolean }) {
-  const textColor   = dark ? '#f1f5f9' : '#0f172a';
+function Logo({ dark }: { dark: '' | boolean }) {
+  const textColor = dark ? '#f1f5f9' : '#0f172a';
   const accentColor = dark ? '#60a5fa' : '#2563eb';
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -263,7 +263,7 @@ function Logo({ dark }: { dark: boolean }) {
   );
 }
 const ls = StyleSheet.create({
-  box:  { width: 44, height: 44, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2563eb' },
+  box: { width: 44, height: 44, borderRadius: 12, overflow: 'hidden', alignItems: 'center', justifyContent: 'center', backgroundColor: '#2563eb' },
   text: { fontSize: 24, fontWeight: '700', letterSpacing: -0.3 },
 });
 
@@ -278,25 +278,25 @@ export default function LoginScreen() {
   const isDark = colorScheme === 'dark';
   const C = isDark ? DARK : LIGHT;
 
-  const [mode, setMode]               = useState<Mode>('signin');
-  const [isLoading, setIsLoading]     = useState(false);
-  const [successMessage, setSuccess]  = useState('');
-  const [generalError, setGenError]   = useState('');
+  const [mode, setMode] = useState<Mode>('signin');
+  const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccess] = useState('');
+  const [generalError, setGenError] = useState('');
 
-  const [email, setEmail]         = useState('');
-  const [password, setPassword]   = useState('');
-  const [showPw, setShowPw]       = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
 
-  const [emailErr, setEmailErr]         = useState('');
-  const [passwordErr, setPasswordErr]   = useState('');
+  const [emailErr, setEmailErr] = useState('');
+  const [passwordErr, setPasswordErr] = useState('');
 
   const slideAnim = useRef(new Animated.Value(20)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
-      Animated.timing(fadeAnim,  { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
+      Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, []);
 
@@ -364,9 +364,9 @@ export default function LoginScreen() {
   };
 
   const handleSubmit = () => {
-    if (mode === 'signin')               handleSignIn();
+    if (mode === 'signin') handleSignIn();
     else if (mode === 'forgot_password') handleForgotPassword();
-    else if (mode === 'reset_password')  handleResetPassword();
+    else if (mode === 'reset_password') handleResetPassword();
   };
 
   const handleBack = () => {
@@ -375,19 +375,19 @@ export default function LoginScreen() {
   };
 
   const titles = {
-    signin:          'Welcome Back',
+    signin: 'Welcome Back',
     forgot_password: 'Recover Password',
-    reset_password:  'Set New Password',
+    reset_password: 'Set New Password',
   };
   const subtitles = {
-    signin:          'Sign in to access your best travel deals',
+    signin: 'Sign in to access your best travel deals',
     forgot_password: 'Enter your email to receive recovery instructions',
-    reset_password:  'Create a secure new password for your account',
+    reset_password: 'Create a secure new password for your account',
   };
   const submitLabels = {
-    signin:          'Sign In',
+    signin: 'Sign In',
     forgot_password: 'Send Reset Link',
-    reset_password:  'Confirm New Password',
+    reset_password: 'Confirm New Password',
   };
 
   return (
@@ -452,7 +452,7 @@ export default function LoginScreen() {
             )}
 
             <View style={[s.divider, { backgroundColor: C.divider }]} />
-            
+
             {mode !== 'reset_password' && (
               <View style={s.fieldGroup}>
                 <Text style={[s.label, { color: C.label }]}>EMAIL ADDRESS</Text>
@@ -510,7 +510,7 @@ export default function LoginScreen() {
                     disabled={isLoading}
                   >
                     {showPw
-                      ? <Eye    size={18} color={C.placeholder} strokeWidth={2} />
+                      ? <Eye size={18} color={C.placeholder} strokeWidth={2} />
                       : <EyeOff size={18} color={C.placeholder} strokeWidth={2} />
                     }
                   </TouchableOpacity>
@@ -577,8 +577,8 @@ export default function LoginScreen() {
 
 // ─── Styles ───────────────────────────────────────────────────────────────────
 const s = StyleSheet.create({
-  safe:          { flex: 1 },
-  flex:          { flex: 1 },
+  safe: { flex: 1 },
+  flex: { flex: 1 },
   scrollContent: { flexGrow: 1 },
 
   header: {
@@ -658,7 +658,7 @@ const s = StyleSheet.create({
     lineHeight: 16,
   },
 
-  divider:    { height: 1, marginBottom: 20 },
+  divider: { height: 1, marginBottom: 20 },
   fieldGroup: { marginBottom: 16 },
 
   label: {
@@ -725,5 +725,5 @@ const s = StyleSheet.create({
     marginTop: 22,
   },
   switchPrompt: { fontSize: 13, fontWeight: '400' },
-  switchLink:   { fontSize: 13, fontWeight: '700' },
+  switchLink: { fontSize: 13, fontWeight: '700' },
 });
