@@ -55,6 +55,7 @@
     "eslint": "^8.57.1",
     "eslint-config-expo": "^56.0.4",
     "jest-expo": "~56.0.0",
+    "react-native-svg-transformer": "^1.5.3",
     "react-test-renderer": "^19.2.3",
     "typescript": "~6.0.3"
   },
