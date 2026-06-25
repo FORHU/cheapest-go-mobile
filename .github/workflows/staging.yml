@@ -65,8 +65,12 @@ jobs:
 
       - name: Sync secrets to EAS preview environment
         run: |
-          printenv | grep -E "^(MAPBOX_DOWNLOADS_TOKEN|RNMAPBOX_MAPS_DOWNLOAD_TOKEN|EXPO_PUBLIC_)" | sort > /tmp/eas-secrets.env
-          eas env:push --environment preview --path /tmp/eas-secrets.env --force --non-interactive
+          set -e
+          printenv | grep -E "^(MAPBOX_DOWNLOADS_TOKEN|RNMAPBOX_MAPS_DOWNLOAD_TOKEN|EXPO_PUBLIC_)" | sort > .env
+          echo "Syncing $(wc -l < .env) variables to EAS preview..."
+          eas env:push --environment preview --force --non-interactive
+          echo "Done syncing secrets."
+          rm -f .env
 
       - name: Build APK (staging)
         run: eas build --platform android --profile staging --non-interactive
