@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, Pressable, TextInput, ScrollView, StyleSheet, useColorScheme, ActivityIndicator } from 'react-native';
-import { Search, Plane, Calendar, Users, ArrowRight, ArrowUpDown, Plus, Trash2, Clock, TrendingUp, X, MapPin } from 'lucide-react-native';
+import { Plane, Calendar, Users, ArrowRight, ArrowUpDown, Plus, Trash2, Clock, TrendingUp, X, MapPin } from 'lucide-react-native';
 import SearchModal from './SearchModal';
 import CalendarPicker from './CalendarPicker';
 import { useRouter } from 'expo-router';
@@ -78,9 +78,16 @@ const FlightSearchModal: React.FC<FlightSearchModalProps> = ({ visible, onClose 
     useEffect(() => {
         if (visible) {
             getRecentFlightSearches().then(setRecentSearches).catch(() => {});
-            setErrors({});
         }
     }, [visible]);
+
+    // Clear validation errors when the modal opens — done during render
+    // (React's recommended alternative to a setState-in-effect).
+    const [wasVisible, setWasVisible] = useState(visible);
+    if (visible !== wasVisible) {
+        setWasVisible(visible);
+        if (visible) setErrors({});
+    }
 
     // Autocomplete effect
     useEffect(() => {
@@ -97,12 +104,12 @@ const FlightSearchModal: React.FC<FlightSearchModalProps> = ({ visible, onClose 
             query = state.multiCitySegments[idx]?.to || '';
         }
 
-        if (query.length < 2 || query.includes('(')) {
-            setSuggestions([]);
-            return;
-        }
+        const valid = query.length >= 2 && !query.includes('(');
 
+        // Both branches setState inside the timeout so it isn't a synchronous
+        // setState in the effect body (React Compiler set-state-in-effect rule).
         const timeoutId = setTimeout(async () => {
+            if (!valid) { setSuggestions([]); return; }
             setLoadingSuggestions(true);
             try {
                 const results = await autocompleteAirports(query);
@@ -112,7 +119,7 @@ const FlightSearchModal: React.FC<FlightSearchModalProps> = ({ visible, onClose 
             } finally {
                 setLoadingSuggestions(false);
             }
-        }, 300);
+        }, valid ? 300 : 0);
 
         return () => clearTimeout(timeoutId);
     }, [state.from, state.to, state.multiCitySegments, activeField]);
@@ -256,7 +263,7 @@ const FlightSearchModal: React.FC<FlightSearchModalProps> = ({ visible, onClose 
 
         if (state.tripType === 'multi-city') {
             let valid = true;
-            state.multiCitySegments.forEach((seg, idx) => {
+            state.multiCitySegments.forEach((seg) => {
                 if (!seg.from || !seg.to || !seg.departure) {
                     valid = false;
                 }

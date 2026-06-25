@@ -32,18 +32,20 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
-import { rError, rLog } from '../lib/remoteLog';
 import {
     webFetchBags, webFetchSeatMap, webMobileBook, webMobileConfirm, webRefreshOffer,
-    type NormalizedBagOption, type NormalizedSegmentSeatMap,
+    type MobileBookResult, type NormalizedBagOption, type NormalizedSegmentSeatMap,
 } from '../lib/booking-api';
 import { FlightOffer, formatDuration } from '../lib/flight-types';
+import { getAirportByIata } from '../data/airports';
 
 let StripeProvider: React.ComponentType<any> | null = null;
 let useStripeHook: (() => { initPaymentSheet: any; presentPaymentSheet: any }) | null = null;
 
 try {
+    // Optional native module — must be require()'d in a try/catch so the app still
+    // runs in environments where Stripe isn't installed (e.g. Expo Go).
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const stripe = require('@stripe/stripe-react-native');
     StripeProvider = stripe.StripeProvider;
     useStripeHook = stripe.useStripe;
@@ -113,6 +115,13 @@ const GENDER_OPTIONS = [
     { label: 'Female', value: 'F' }
 ];
 
+// Price-change tolerance when an expired offer is re-quoted. Mirrors the server's
+// PRICE_TOLERANCE in /api/internal/revalidate-flight (currently $5.00). A freshly
+// re-quoted airline fare almost always differs by a few cents, so a sub-dollar
+// threshold here would spuriously flag "Price Changed" on nearly every refresh.
+const PRICE_CHANGE_TOLERANCE = 5.0;
+
+
 const getFlagEmoji = (countryCode: string) => {
     const codePoints = countryCode
         .toUpperCase()
@@ -140,28 +149,41 @@ export default function FlightCheckoutScreen() {
                 merchantIdentifier="com.cheapestgo.mobile"
                 urlScheme="mobileapp"
             >
-                <FlightCheckoutContent stripeAvailable />
+                <StripeFlightCheckout />
             </SP>
         );
     }
-    return <FlightCheckoutContent stripeAvailable={false} />;
+    return <FlightCheckoutContent stripeAvailable={false} initPaymentSheet={null} presentPaymentSheet={null} />;
 }
 
-function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
+// Only mounted when Stripe is available, so the Stripe hook can be called
+// unconditionally here (satisfying the rules-of-hooks). useStripeHook is set in the
+// same try-block as StripeProvider, so it is non-null whenever this renders.
+function StripeFlightCheckout() {
+    const { initPaymentSheet, presentPaymentSheet } = useStripeHook!();
+    return (
+        <FlightCheckoutContent
+            stripeAvailable
+            initPaymentSheet={initPaymentSheet}
+            presentPaymentSheet={presentPaymentSheet}
+        />
+    );
+}
+
+function FlightCheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentSheet }: {
+    stripeAvailable: boolean;
+    initPaymentSheet: any;
+    presentPaymentSheet: any;
+}) {
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
-    const { currency } = useSettings();
     const { user } = useAuth();
     const styles = getStyles(isDark);
 
-    const stripeHook = stripeAvailable && useStripeHook ? useStripeHook() : null;
-    const initPaymentSheet = stripeHook?.initPaymentSheet;
-    const presentPaymentSheet = stripeHook?.presentPaymentSheet;
-
     // Parse Selected Offer
-    const offer: FlightOffer | null = useMemo(() => {
+    const baseOffer: FlightOffer | null = useMemo(() => {
         if (!params.offerData) return null;
         try {
             return JSON.parse(params.offerData as string);
@@ -170,6 +192,12 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             return null;
         }
     }, [params.offerData]);
+
+    // When the user accepts a fare change, we book a freshly re-quoted offer at the
+    // new price. Holding it here makes the summary, Confirm button, and booking logic
+    // all reflect the accepted offer without threading it through every reference.
+    const [acceptedOffer, setAcceptedOffer] = useState<FlightOffer | null>(null);
+    const offer = acceptedOffer ?? baseOffer;
 
     // Booking Steps state
     const [step, setStep] = useState<'form' | 'confirming' | 'success'>('form');
@@ -196,11 +224,22 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     const [email, setEmail] = useState(user?.email ?? '');
     const [phone, setPhone] = useState('');
 
-    const [countryCode, setCountryCode] = useState('');
+    const [countryCode, setCountryCode] = useState(() => {
+        if (!params.offerData) return '';
+        try {
+            const o = JSON.parse(params.offerData as string);
+            const originIata = o?.segments?.[0]?.origin ?? o?.origin ?? '';
+            const airport = getAirportByIata(originIata);
+            const country = COUNTRIES.find(c => c.code === airport?.countryCode);
+            return country?.dialCode ?? '';
+        } catch {
+            return '';
+        }
+    });
 
     // Billing Address
     const [addressLine1, setAddressLine1] = useState('');
-    const [addressLine2, setAddressLine2] = useState('');
+    const [city, setCity] = useState('');
     const [postalCode, setPostalCode] = useState('');
     const [billingCountry, setBillingCountry] = useState('');
 
@@ -211,6 +250,16 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     // Form Errors
     const [errors, setErrors] = useState<Record<string, string>>({});
     const scrollRef = useRef<ScrollView>(null);
+
+    // Idempotency key for the booking request. Generated once per checkout so that
+    // retrying after a timeout reuses the same key — Duffel then returns the order
+    // it may have created just before the timeout instead of double-booking. A fresh
+    // key per attempt (the old behaviour) would create duplicate paid orders on retry.
+    // Seed the idempotency key once via a lazy state initializer so the impure
+    // Date.now()/Math.random() call doesn't run on every render (React Compiler purity
+    // rule). The value is held in a ref so it can be rotated synchronously on retry.
+    const [initialIdempotencyKey] = useState(() => `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const idempotencyKeyRef = useRef(initialIdempotencyKey);
 
     // Custom Date Picker Modal State
     const [pickerVisible, setPickerVisible] = useState(false);
@@ -235,7 +284,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
 
     // Bag Selection State (live from API)
     const [bagOptions, setBagOptions] = useState<NormalizedBagOption[]>([]);
-    const [bagLoading, setBagLoading] = useState(false);
+    const [, setBagLoading] = useState(false);
     const [selectedBags, setSelectedBags] = useState<Record<string, number>>({}); // serviceId → quantity
 
     // Date Calculation Helpers
@@ -250,7 +299,10 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     // Progress animation during booking
     useEffect(() => {
         if (step !== 'confirming') return;
-        setBookingStepIdx(0);
+        // Reset to the first step outside the effect body (React Compiler
+        // set-state-in-effect rule) before the interval advances it.
+        const reset = async () => setBookingStepIdx(0);
+        reset();
         const timer = setInterval(() => {
             setBookingStepIdx(i => Math.min(i + 1, BOOKING_STEPS.length - 1));
         }, 3500);
@@ -275,23 +327,27 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             destination: s.arrival?.airport ?? s.destination ?? '',
         }));
 
-        // Bags
-        setBagLoading(true);
-        webFetchBags(rawOffer.id, duffelPassengerIds)
-            .then(res => { if (res.success) setBagOptions(res.bagOptions); })
-            .catch(() => { })
-            .finally(() => setBagLoading(false));
+        // Bags — loading flag set inside the async fn so it isn't a synchronous
+        // setState in the effect body (React Compiler set-state-in-effect rule).
+        (async () => {
+            setBagLoading(true);
+            try {
+                const res = await webFetchBags(rawOffer.id, duffelPassengerIds);
+                if (res.success) setBagOptions(res.bagOptions);
+            } catch { /* bags optional */ }
+            finally { setBagLoading(false); }
+        })();
 
         // Seat map
-        setSeatMapLoading(true);
-        webFetchSeatMap(rawOffer.id, offerSegments)
-            .then(res => {
+        (async () => {
+            setSeatMapLoading(true);
+            try {
+                const res = await webFetchSeatMap(rawOffer.id, offerSegments);
                 if (res.unavailable) { setSeatMapUnavailable(true); return; }
                 if (res.success) setSeatMaps(res.seatMaps);
-            })
-            .catch(async (err) => {
+            } catch (err: any) {
                 // Offer expired → try refresh
-                if (err.status === 404 && rawOffer) {
+                if (err?.status === 404 && rawOffer) {
                     try {
                         const refreshed = await webRefreshOffer(rawOffer);
                         if (refreshed.success && refreshed.newOffer) {
@@ -303,8 +359,10 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                         }
                     } catch {/* seat map optional */ }
                 }
-            })
-            .finally(() => setSeatMapLoading(false));
+            } finally {
+                setSeatMapLoading(false);
+            }
+        })();
     }, [offer]);
 
     const openDatePicker = (target: 'birthDate' | 'passportExpiry', currentValue: string) => {
@@ -397,16 +455,27 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             errs.passportExpiry = 'Expiry required (YYYY-MM-DD)';
         }
 
+        // Billing address
+        if (!addressLine1.trim()) errs.addressLine1 = 'Address is required';
+        if (!city.trim()) errs.city = 'City is required';
+        if (!postalCode.trim()) errs.postalCode = 'Postal code is required';
+        if (!billingCountry) errs.billingCountry = 'Country is required';
+
         setErrors(errs);
         return Object.keys(errs).length === 0;
     };
 
-    const handleConfirmBooking = async () => {
+    const handleConfirmBooking = async (overrideOffer?: FlightOffer) => {
         if (!validateForm()) {
             scrollRef.current?.scrollTo({ y: 0, animated: true });
             return;
         }
-        if (!offer) {
+        // overrideOffer is set when re-booking a re-quoted offer after the user
+        // accepts a price change. Its ancillary service IDs differ from the original
+        // offer's, so seats/bags are dropped on that path.
+        const activeOffer = overrideOffer ?? offer;
+        const includeAncillaries = !overrideOffer;
+        if (!activeOffer) {
             Alert.alert('Error', 'No flight offer selected.');
             return;
         }
@@ -420,26 +489,6 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
         }
 
         setBooking(true);
-        const seg0 = offer.segments?.[0];
-        const route = seg0 ? `${seg0.origin} → ${seg0.destination}` : offer.offerId;
-        const p0 = passengers[0];
-        rLog('FlightCheckout', 'flight-checkout', 'Booking flight', {
-            route,
-            price: offer.price?.total,
-            passengers: passengers.length,
-            // log every field so you can spot any undefined in the terminal
-            p_type: p0?.type,
-            p_firstName: p0?.firstName,
-            p_lastName: p0?.lastName,
-            p_gender: p0?.gender,
-            p_birthDate: p0?.birthDate,
-            p_nationality: p0?.nationality,
-            p_passport: p0?.passport ? '***' : undefined,
-            p_passportExpiry: p0?.passportExpiry,
-            c_email: email,
-            c_phone: phone,
-            c_countryCode: countryCode,
-        });
 
         try {
             // Collect selected seat service IDs
@@ -460,26 +509,73 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                 }
             }
 
-            // Step 1: Duffel pre-order + Stripe PaymentIntent (via web API)
-            const bookResult = await webMobileBook({
+            const passengerPayload = passengers.map(p => ({
+                type: p.type,
+                firstName: p.firstName,
+                lastName: p.lastName,
+                gender: p.gender as string,
+                birthDate: p.birthDate,
+                nationality: p.nationality,
+                passport: p.passport,
+                passportExpiry: p.passportExpiry,
+            }));
+            const contactPayload = {
+                email,
+                phone,
+                countryCode,
+                addressLine: addressLine1,
+                city,
+                postalCode,
+                country: billingCountry,
+            };
+
+            // Seat/bag service IDs are scoped to one Duffel offer, so they're only
+            // sent with the offer they were fetched against. After a refresh the
+            // refreshed offer has different service IDs, so ancillaries are dropped.
+            const buildBookPayload = (activeOffer: FlightOffer, includeAncillaries: boolean) => ({
                 provider: 'duffel',
-                flight: offer,
-                passengers: passengers.map(p => ({
-                    type: p.type,
-                    firstName: p.firstName,
-                    lastName: p.lastName,
-                    gender: p.gender as string,
-                    birthDate: p.birthDate,
-                    nationality: p.nationality,
-                    passport: p.passport,
-                    passportExpiry: p.passportExpiry,
-                })),
-                contact: { email, phone, countryCode },
-                idempotencyKey: `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`,
-                ...(seatServiceIds.length ? { seatServiceIds, seatTotal } : {}),
-                ...(bagServiceIds.length ? { bagServiceIds, bagTotal } : {}),
-                confirmedPrice: offer.price?.total,
+                flight: activeOffer,
+                passengers: passengerPayload,
+                contact: contactPayload,
+                idempotencyKey: idempotencyKeyRef.current,
+                ...(includeAncillaries && seatServiceIds.length ? { seatServiceIds, seatTotal } : {}),
+                ...(includeAncillaries && bagServiceIds.length ? { bagServiceIds, bagTotal } : {}),
+                confirmedPrice: activeOffer.price?.total,
             });
+
+            // Step 1: Duffel pre-order + Stripe PaymentIntent (via web API).
+            // Offers expire a few minutes after search; if the form took long enough
+            // that the offer is gone, refresh it once and retry so the user isn't
+            // bounced back to search ("This flight is no longer available").
+            let bookResult: MobileBookResult;
+            try {
+                bookResult = await webMobileBook(buildBookPayload(activeOffer, includeAncillaries));
+            } catch (bookErr: any) {
+                const rawOffer = (activeOffer as any)._rawOffer;
+                const offerExpired =
+                    !bookErr.priceChanged &&
+                    (bookErr.status === 404 ||
+                        /no longer available|expired|not available/i.test(bookErr.message ?? ''));
+                if (!offerExpired || !rawOffer) throw bookErr;
+
+                const refreshed = await webRefreshOffer(rawOffer);
+                if (!refreshed?.success || !refreshed.newOffer) throw bookErr;
+
+                // Don't silently charge more than the user agreed to: only flag a
+                // price change when the refreshed fare rises beyond the tolerance the
+                // server itself uses ($5). Minor cent-level fluctuations from re-quoting
+                // an expired offer are absorbed and the booking proceeds.
+                const oldTotal = activeOffer.price?.total ?? 0;
+                const newTotal = refreshed.newOffer.price?.total ?? 0;
+                if (newTotal - oldTotal > PRICE_CHANGE_TOLERANCE) {
+                    const priceErr: any = new Error('The flight price has changed.');
+                    priceErr.priceChanged = true;
+                    priceErr.newPrice = newTotal;
+                    throw priceErr;
+                }
+
+                bookResult = await webMobileBook(buildBookPayload(refreshed.newOffer, false));
+            }
 
             if (!bookResult.clientSecret) {
                 throw new Error('Failed to create payment session');
@@ -514,25 +610,75 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             setBookingResult(confirmResult);
             setStep('success');
         } catch (err: any) {
-            const isPriceChanged = err.priceChanged;
-            rError('FlightCheckout', 'flight-checkout', isPriceChanged ? 'Price changed' : 'Flight booking failed', { route, error: err.message, priceChanged: isPriceChanged });
-            if (isPriceChanged) {
-                // Only show the animated steps screen on price change so user sees the verification step
-                setStep('confirming');
-                setBookingStepIdx(0);
+            if (err.priceChanged) {
+                await handlePriceChange(activeOffer, err.newPrice);
             } else {
                 setStep('form');
+                Alert.alert(
+                    'Booking Failed',
+                    err.message || 'Something went wrong during reservation. Please try again.',
+                    [{ text: 'OK', onPress: () => setStep('form') }]
+                );
             }
-            Alert.alert(
-                isPriceChanged ? 'Price Changed' : 'Booking Failed',
-                isPriceChanged
-                    ? `The flight price has changed. Please go back and reselect the flight.`
-                    : (err.message || 'Something went wrong during reservation. Please try again.'),
-                [{ text: 'OK', onPress: () => setStep('form') }]
-            );
         } finally {
             setBooking(false);
         }
+    };
+
+    // A fare change beyond tolerance is no longer a dead-end: re-quote a fresh,
+    // bookable offer at the current price and let the user accept it. Accepting
+    // re-runs the booking against that fresh offer (mirrors the web's
+    // confirmPriceChange). If we can't get a fresh offer, fall back to "reselect".
+    const handlePriceChange = async (changedOffer: FlightOffer, serverNewPrice?: number) => {
+        setStep('form');
+        const rawOffer = (changedOffer as any)._rawOffer;
+        const oldPrice = changedOffer.price?.total ?? 0;
+        const currency = changedOffer.price?.currency ?? 'USD';
+
+        let freshOffer: FlightOffer | null = null;
+        let newPrice = serverNewPrice ?? 0;
+        try {
+            if (rawOffer) {
+                const refreshed = await webRefreshOffer(rawOffer);
+                if (refreshed?.success && refreshed.newOffer) {
+                    freshOffer = refreshed.newOffer;
+                    newPrice = refreshed.newOffer.price?.total ?? newPrice;
+                }
+            }
+        } catch {
+            // fall through to the reselect fallback below
+        }
+
+        if (!freshOffer) {
+            Alert.alert(
+                'Price Changed',
+                'The flight price has changed and we could not refresh it. Please go back and reselect the flight.',
+                [{ text: 'OK', onPress: () => setStep('form') }]
+            );
+            return;
+        }
+
+        const fresh = freshOffer;
+        const fmt = (n: number) => `${currency} ${Math.round(n).toLocaleString()}`;
+        Alert.alert(
+            'Price Changed',
+            `The fare for this flight changed from ${fmt(oldPrice)} to ${fmt(newPrice)}.\n\nWould you like to continue at the new price?`,
+            [
+                { text: 'Cancel', style: 'cancel', onPress: () => setStep('form') },
+                {
+                    text: 'Accept & Continue',
+                    onPress: () => {
+                        // A re-quoted offer is a new logical order — use a fresh
+                        // idempotency key and drop seats/bags scoped to the old offer.
+                        idempotencyKeyRef.current = `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+                        setSelectedSeats({});
+                        setSelectedBags({});
+                        setAcceptedOffer(fresh);
+                        handleConfirmBooking(fresh);
+                    },
+                },
+            ]
+        );
     };
 
     if (step === 'success') {
@@ -930,37 +1076,40 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
 
                         <View style={styles.inputGroup}>
                             <TextInput
-                                style={styles.input}
-                                placeholder="Address Line 1"
+                                style={[styles.input, errors.addressLine1 ? styles.inputError : null]}
+                                placeholder="Address Line 1 *"
                                 placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
                                 value={addressLine1}
                                 onChangeText={setAddressLine1}
                             />
+                            {errors.addressLine1 ? <Text style={styles.errorText}>{errors.addressLine1}</Text> : null}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <TextInput
-                                style={styles.input}
-                                placeholder="Address Line 2"
+                                style={[styles.input, errors.city ? styles.inputError : null]}
+                                placeholder="City *"
                                 placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-                                value={addressLine2}
-                                onChangeText={setAddressLine2}
+                                value={city}
+                                onChangeText={setCity}
                             />
+                            {errors.city ? <Text style={styles.errorText}>{errors.city}</Text> : null}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <TextInput
-                                style={styles.input}
-                                placeholder="Postal Code"
+                                style={[styles.input, errors.postalCode ? styles.inputError : null]}
+                                placeholder="Postal Code *"
                                 placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
                                 value={postalCode}
                                 onChangeText={setPostalCode}
                             />
+                            {errors.postalCode ? <Text style={styles.errorText}>{errors.postalCode}</Text> : null}
                         </View>
 
                         <View style={styles.inputGroup}>
                             <Pressable
-                                style={styles.dropdownPlaceholder}
+                                style={[styles.dropdownPlaceholder, errors.billingCountry ? styles.inputError : null]}
                                 onPress={() => {
                                     setDropdownTarget('billingCountry');
                                     setDropdownSearch('');
@@ -976,6 +1125,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                                 </Text>
                                 <ChevronDown size={16} color={isDark ? '#94a3b8' : '#64748b'} />
                             </Pressable>
+                            {errors.billingCountry ? <Text style={styles.errorText}>{errors.billingCountry}</Text> : null}
                         </View>
                     </View>
 
@@ -1509,7 +1659,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                     {/* Action button */}
                     <Pressable
                         style={[styles.confirmBtn, booking && { opacity: 0.8 }]}
-                        onPress={handleConfirmBooking}
+                        onPress={() => handleConfirmBooking()}
                         disabled={booking}
                     >
                         <Text style={styles.confirmBtnText}>

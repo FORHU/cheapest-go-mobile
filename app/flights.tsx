@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
-import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, Alert, useColorScheme, Animated } from 'react-native';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import { View, Text, StyleSheet, Pressable, FlatList, ActivityIndicator, useColorScheme, Animated } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { ChevronLeft, Filter, Plane, Search, RefreshCw } from 'lucide-react-native';
 import { searchFlights, type FlightSearchParams } from '../lib/travel-api';
-import { FlightOffer, FilterState, normalizeFlightOffer, formatDuration } from '../lib/flight-types';
+import { FlightOffer, FilterState, normalizeFlightOffer } from '../lib/flight-types';
 import FlightFilters from '../components/flights/FlightFilters';
 import FlightCard from '../components/flights/FlightCard';
 import SortBar from '../components/flights/SortBar';
@@ -31,7 +31,7 @@ function getAirlines(offers: FlightOffer[]): string[] {
 // ─── Loading Skeleton ─────────────────────────────────────────────────
 
 function FlightCardSkeleton({ isDark, delay = 0 }: { isDark: boolean; delay?: number }) {
-    const opacity = useRef(new Animated.Value(0.3)).current;
+    const [opacity] = useState(() => new Animated.Value(0.3));
 
     useEffect(() => {
         const animation = Animated.loop(
@@ -42,7 +42,7 @@ function FlightCardSkeleton({ isDark, delay = 0 }: { isDark: boolean; delay?: nu
         );
         animation.start();
         return () => animation.stop();
-    }, []);
+    }, [delay, opacity]);
 
     const bg = isDark ? '#1e293b' : '#f1f5f9';
     return (
@@ -220,7 +220,7 @@ export default function FlightsScreen() {
 
         fetchFlights();
         return () => { cancelled = true; };
-    }, [params.from, params.to, params.departure, params.returnDate, params.passengers, params.cabin, params.tripType, retryKey]);
+    }, [params.from, params.to, params.departure, params.returnDate, params.passengers, params.cabin, params.tripType, params.adults, params.children, params.infants, params.multiCitySegments, retryKey]);
 
     // ─── Derived data ─────────────────────────────────────────────────
     const airlines = useMemo(() => getAirlines(allOffers), [allOffers]);

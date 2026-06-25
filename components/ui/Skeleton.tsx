@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
-import { View, StyleSheet, Animated } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { StyleSheet, Animated } from 'react-native';
 
 const Skeleton = ({ width, height, borderRadius = 8, style }: any) => {
-    const opacity = new Animated.Value(0.3);
+    const [opacity] = useState(() => new Animated.Value(0.3));
 
     useEffect(() => {
         Animated.loop(
@@ -19,7 +19,7 @@ const Skeleton = ({ width, height, borderRadius = 8, style }: any) => {
                 }),
             ])
         ).start();
-    }, []);
+    }, [opacity]);
 
     return (
         <Animated.View

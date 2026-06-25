@@ -1,7 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { rError, rLog } from '../lib/remoteLog';
-import { AlertTriangle, ArrowLeft, Check, CheckCircle, Mail, Tag } from 'lucide-react-native';
+import { AlertTriangle, ArrowLeft, CheckCircle, Mail, Tag } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator, Alert, Image, KeyboardAvoidingView,
@@ -18,6 +17,9 @@ import { confirmHotelBooking, createHotelPayment } from '../lib/booking-api';
 let StripeProvider: React.ComponentType<any> | null = null;
 let useStripeHook: (() => { initPaymentSheet: any; presentPaymentSheet: any }) | null = null;
 try {
+    // Optional native module — must be require()'d in a try/catch so the app still
+    // runs in environments where Stripe isn't installed (e.g. Expo Go).
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const stripe = require('@stripe/stripe-react-native');
     StripeProvider = stripe.StripeProvider;
     useStripeHook = stripe.useStripe;
@@ -35,14 +37,32 @@ export default function CheckoutScreen() {
                 merchantIdentifier="com.cheapestgo.mobile"
                 urlScheme="mobileapp"
             >
-                <CheckoutContent stripeAvailable />
+                <StripeCheckout />
             </SP>
         );
     }
-    return <CheckoutContent stripeAvailable={false} />;
+    return <CheckoutContent stripeAvailable={false} initPaymentSheet={null} presentPaymentSheet={null} />;
 }
 
-function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
+// Only mounted when Stripe is available, so the Stripe hook can be called
+// unconditionally here (satisfying the rules-of-hooks). useStripeHook is set in the
+// same try-block as StripeProvider, so it is non-null whenever this renders.
+function StripeCheckout() {
+    const { initPaymentSheet, presentPaymentSheet } = useStripeHook!();
+    return (
+        <CheckoutContent
+            stripeAvailable
+            initPaymentSheet={initPaymentSheet}
+            presentPaymentSheet={presentPaymentSheet}
+        />
+    );
+}
+
+function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentSheet }: {
+    stripeAvailable: boolean;
+    initPaymentSheet: any;
+    presentPaymentSheet: any;
+}) {
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -50,9 +70,6 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
     const { currency } = useSettings();
     const insets = useSafeAreaInsets();
     const styles = getStyles(isDark, insets.bottom);
-    const stripeHook = stripeAvailable && useStripeHook ? useStripeHook() : null;
-    const initPaymentSheet = stripeHook?.initPaymentSheet;
-    const presentPaymentSheet = stripeHook?.presentPaymentSheet;
 
     // Params from room selection
     const offerId = params.offerId as string;
@@ -99,24 +116,21 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
             setPrebooking(true);
             setPrebookError(null);
             try {
-                rLog('Checkout', 'checkout', 'Prebooking room', { offerId, hotelName, checkIn, checkOut, adults });
                 const result = await prebookRoom({
                     offerId,
                     currency: roomCurrency,
                     adults,
                     roomName: params.roomName as string || undefined,
                 });
-                rLog('Checkout', 'checkout', 'Prebook success', { prebookId: result.prebookId, price: result.price });
                 setPrebookData(result);
             } catch (err: any) {
-                rError('Checkout', 'checkout', 'Prebook failed', { offerId, hotelName, error: err.message });
                 setPrebookError(err.message || 'Failed to verify room availability');
             } finally {
                 setPrebooking(false);
             }
         };
         doPrebook();
-    }, [offerId]);
+    }, [offerId, adults, params.roomName, roomCurrency]);
 
     // Pricing
     const confirmedPrice = prebookData?.price ?? roomPrice;
@@ -171,7 +185,6 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
         }
 
         setProcessing(true);
-        rLog('Checkout', 'checkout', 'Pay now tapped', { offerId, hotelName, checkIn, checkOut, total, email });
         try {
             // Step 1: Create Stripe PaymentIntent via web backend
             const chargeAmount = appliedPromo?.finalPrice ?? total;
@@ -186,7 +199,6 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
                 checkOut,
             });
 
-            rLog('Checkout', 'checkout', 'Payment intent created', { paymentIntentId: paymentResult.data?.paymentIntentId, amount: chargeAmount });
             if (!paymentResult.success || !paymentResult.data?.clientSecret) {
                 throw new Error((paymentResult as any).error || 'Failed to create payment session');
             }
@@ -238,11 +250,9 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
                 throw new Error((confirmResult as any).error || 'Booking confirmation failed');
             }
 
-            rLog('Checkout', 'checkout', 'Hotel booking confirmed', { bookingId: confirmResult.data?.bookingId, hotelName, checkIn, checkOut });
             setBookingId(confirmResult.data?.bookingId || paymentIntentId);
             setStep('success');
         } catch (err: any) {
-            rError('Checkout', 'checkout', 'Hotel booking failed', { hotelName, checkIn, checkOut, error: err.message });
             setStep('form');
             Alert.alert('Booking Failed', err.message || 'Something went wrong. Please try again.');
         } finally {

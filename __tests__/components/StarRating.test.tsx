@@ -3,7 +3,10 @@ import { act, create, type ReactTestRenderer } from 'react-test-renderer';
 import StarRating from '../../components/ui/StarRating';
 
 jest.mock('lucide-react-native', () => {
+    // jest.mock factories are hoisted above imports, so they must use require().
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const R = require('react');
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const { View } = require('react-native');
     return {
         Star: () => R.createElement(View, { testID: 'star-icon' }),

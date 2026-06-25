@@ -1,4 +1,3 @@
-import * as Location from 'expo-location';
 import {
     Bus,
     Compass,
@@ -16,7 +15,6 @@ import {
     Umbrella,
     X,
     Maximize2,
-    Minimize2,
     Plus
 } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -51,10 +49,7 @@ export default function PropertyMapWebView({
     latitude,
     longitude,
     hotelName,
-    address,
     city,
-    country,
-    imageUrl,
     isDark
 }: PropertyMapWebViewProps) {
     const webViewRef = useRef<WebView>(null);
@@ -65,7 +60,7 @@ export default function PropertyMapWebView({
 
     // Weather states
     const [weather, setWeather] = useState<any | null>(null);
-    const [loadingWeather, setLoadingWeather] = useState(false);
+    const [, setLoadingWeather] = useState(false);
     const [weatherOpen, setWeatherOpen] = useState(false);
 
     // POI & Route states
@@ -77,7 +72,7 @@ export default function PropertyMapWebView({
     // Sliding bottom sheet — collapsed by default (95px = handle + title + subtitle)
     const SHEET_COLLAPSED = 95;
     const SHEET_EXPANDED  = 260;
-    const sheetHeight = useRef(new Animated.Value(SHEET_COLLAPSED)).current;
+    const [sheetHeight] = useState(() => new Animated.Value(SHEET_COLLAPSED));
     const lastSheetHeight = useRef(SHEET_COLLAPSED);
 
     useEffect(() => {
@@ -85,7 +80,7 @@ export default function PropertyMapWebView({
             lastSheetHeight.current = value;
         });
         return () => sheetHeight.removeListener(listenerId);
-    }, []);
+    }, [sheetHeight]);
 
     // Animate when category changes (user-driven only — no auto-select on mount)
     useEffect(() => {
@@ -95,54 +90,10 @@ export default function PropertyMapWebView({
             tension: 40,
             friction: 8,
         }).start();
-    }, [activeCategory]);
+    }, [activeCategory, sheetHeight]);
 
-    // PanResponder for smooth gesture dragging of bottom sheet height
-    const panResponder = useRef(
-        PanResponder.create({
-            onStartShouldSetPanResponder: () => true,
-            onMoveShouldSetPanResponder: (_, gestureState) => {
-                return Math.abs(gestureState.dy) > 5;
-            },
-            onPanResponderGrant: () => {
-                // Set offset based on current height to allow smooth ongoing gesture delta updates
-                sheetHeight.setOffset(lastSheetHeight.current);
-                sheetHeight.setValue(0);
-            },
-            onPanResponderMove: (_, gestureState) => {
-                const newHeight = lastSheetHeight.current - gestureState.dy;
-                const maxHeight = isMaximized ? (height - 80) : 380;
-                if (newHeight >= SHEET_COLLAPSED && newHeight <= maxHeight) {
-                    sheetHeight.setValue(-gestureState.dy);
-                }
-            },
-            onPanResponderRelease: (_, gestureState) => {
-                sheetHeight.flattenOffset();
-                const finalHeight = lastSheetHeight.current;
-                const maxHeight = isMaximized ? (height - 80) : 380;
-
-                // Free resize: stay wherever released.
-                // Collapse if: swiping down with any noticeable velocity, OR released
-                // within 60px of the minimum (easy to close with a short drag down).
-                const flingDown = gestureState.vy > 0.3;
-                const nearMin   = finalHeight < SHEET_COLLAPSED + 60;
-                const targetHeight = (flingDown || nearMin)
-                    ? SHEET_COLLAPSED
-                    : Math.min(Math.max(finalHeight, SHEET_COLLAPSED), maxHeight);
-
-                Animated.spring(sheetHeight, {
-                    toValue: targetHeight,
-                    useNativeDriver: false,
-                    tension: 60,
-                    friction: 12,
-                }).start();
-
-                if (targetHeight > SHEET_COLLAPSED && !activeCategory) {
-                    handleCategorySelect('dining');
-                }
-            }
-        })
-    ).current;
+    // PanResponder for the bottom sheet is created lower down, after the handlers it
+    // references (handleCategorySelect) are declared — see below.
 
     // Directions states
     const [calculatingRoute, setCalculatingRoute] = useState(false);
@@ -274,7 +225,7 @@ export default function PropertyMapWebView({
     // No auto-select on mount — sheet starts collapsed, user expands manually
 
     // Fetch POIs from Foursquare Places Search API (replacing Mapbox Search Box API)
-    const handleCategorySelect = async (catId: string) => {
+    async function handleCategorySelect(catId: string) {
         if (activeCategory === catId) {
             // Toggle off
             setActiveCategory(null);
@@ -490,7 +441,59 @@ export default function PropertyMapWebView({
         } finally {
             setLoadingPois(false);
         }
-    };
+    }
+
+    // PanResponder for smooth gesture dragging of bottom sheet height.
+    // Declared here (after handleCategorySelect) and created once via lazy state init so
+    // it stays stable across renders. Its gesture callbacks read `lastSheetHeight.current`
+    // at runtime (never during render), so the ref access here is safe — the React Compiler
+    // ref rule can't prove that, hence the scoped disable on the initializer.
+    // eslint-disable-next-line react-hooks/refs
+    const [panResponder] = useState(() =>
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onMoveShouldSetPanResponder: (_, gestureState) => {
+                return Math.abs(gestureState.dy) > 5;
+            },
+            onPanResponderGrant: () => {
+                // Set offset based on current height to allow smooth ongoing gesture delta updates
+                sheetHeight.setOffset(lastSheetHeight.current);
+                sheetHeight.setValue(0);
+            },
+            onPanResponderMove: (_, gestureState) => {
+                const newHeight = lastSheetHeight.current - gestureState.dy;
+                const maxHeight = isMaximized ? (height - 80) : 380;
+                if (newHeight >= SHEET_COLLAPSED && newHeight <= maxHeight) {
+                    sheetHeight.setValue(-gestureState.dy);
+                }
+            },
+            onPanResponderRelease: (_, gestureState) => {
+                sheetHeight.flattenOffset();
+                const finalHeight = lastSheetHeight.current;
+                const maxHeight = isMaximized ? (height - 80) : 380;
+
+                // Free resize: stay wherever released.
+                // Collapse if: swiping down with any noticeable velocity, OR released
+                // within 60px of the minimum (easy to close with a short drag down).
+                const flingDown = gestureState.vy > 0.3;
+                const nearMin   = finalHeight < SHEET_COLLAPSED + 60;
+                const targetHeight = (flingDown || nearMin)
+                    ? SHEET_COLLAPSED
+                    : Math.min(Math.max(finalHeight, SHEET_COLLAPSED), maxHeight);
+
+                Animated.spring(sheetHeight, {
+                    toValue: targetHeight,
+                    useNativeDriver: false,
+                    tension: 60,
+                    friction: 12,
+                }).start();
+
+                if (targetHeight > SHEET_COLLAPSED && !activeCategory) {
+                    handleCategorySelect('dining');
+                }
+            }
+        })
+    );
 
     // Native Get Directions logic - Mapbox Driving-Traffic optimized routing
     const handleGetDirections = async (destLat: number, destLng: number) => {
@@ -870,7 +873,7 @@ export default function PropertyMapWebView({
                     webViewRef.current?.postMessage(JSON.stringify({ type: 'SET_POIS', pois }));
                 }
             }
-        } catch (e) { }
+        } catch { }
     };
 
     const handleCardSelect = (poiId: string, poiLat: number, poiLng: number) => {
@@ -1186,7 +1189,7 @@ export default function PropertyMapWebView({
             >
                 <View style={styles.modalContent}>
                     {/* Fullscreen Map WebView Background */}
-                    <View style={StyleSheet.absoluteFillObject}>
+                    <View style={StyleSheet.absoluteFill}>
                         <WebView
                             ref={webViewRef}
                             originWhitelist={['*']}
@@ -1318,7 +1321,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flex: 1,
     },
     mapLoading: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: isDark ? 'rgba(2, 6, 23, 0.7)' : 'rgba(255, 255, 255, 0.7)',

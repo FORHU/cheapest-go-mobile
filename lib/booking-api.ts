@@ -14,6 +14,39 @@ const TIMEOUT_MS = 30_000;
 
 // ─── Core fetch helper ────────────────────────────────────────────────────────
 
+/**
+ * Reads a response body as JSON, defensively.
+ *
+ * The booking endpoints can occasionally return a non-JSON body — an HTML error
+ * page (gateway 502/504, body starts with "<") or an empty body (a function killed
+ * mid-flight). A raw `res.json()` surfaces those as cryptic "Unexpected character: <"
+ * / "Unexpected end of input" parse errors. Instead, read the text first and map a
+ * non-JSON/empty body to a clear, status-aware error so callers see what happened.
+ */
+async function readJsonResponse(res: Response): Promise<any> {
+    const text = await res.text();
+    if (!text.trim()) {
+        const err: any = new Error(
+            res.ok
+                ? 'The server returned an empty response. Please try again.'
+                : `Server error (HTTP ${res.status}). Please try again in a moment.`,
+        );
+        err.status = res.status;
+        throw err;
+    }
+    try {
+        return JSON.parse(text);
+    } catch {
+        const err: any = new Error(
+            res.ok
+                ? 'The server returned an unexpected response. Please try again.'
+                : `Server error (HTTP ${res.status}). Please try again in a moment.`,
+        );
+        err.status = res.status;
+        throw err;
+    }
+}
+
 async function post<T = any>(
     path: string,
     body: unknown,
@@ -43,7 +76,7 @@ async function post<T = any>(
         });
 
         clearTimeout(timer);
-        const data = await res.json();
+        const data = await readJsonResponse(res);
 
         // Surface server error messages
         if (!res.ok || data.success === false) {
@@ -67,7 +100,7 @@ async function post<T = any>(
 // ─── Flight Search ────────────────────────────────────────────────────────────
 
 export interface WebSearchParams {
-    segments: Array<{ origin: string; destination: string; departureDate: string }>;
+    segments: { origin: string; destination: string; departureDate: string }[];
     passengers: { adults: number; children: number; infants: number };
     cabinClass: string;
     tripType: string;
@@ -84,7 +117,6 @@ export interface WebSearchResult {
 }
 
 export async function webSearchFlights(params: WebSearchParams): Promise<WebSearchResult> {
-    console.log('[webSearchFlights] params:', JSON.stringify(params, null, 2));
     return post('/api/flights/search', params);
 }
 
@@ -139,7 +171,7 @@ export interface NormalizedSegmentSeatMap {
 
 export async function webFetchSeatMap(
     offerId: string,
-    segments: Array<{ origin: string; destination: string }>
+    segments: { origin: string; destination: string }[]
 ): Promise<{ success: boolean; seatMaps: NormalizedSegmentSeatMap[]; unavailable?: boolean }> {
     return post('/api/flights/seat-map', { offerId, segments });
 }
@@ -233,14 +265,14 @@ export async function webAutocompleteDestinations(query: string): Promise<WebDes
 export interface MobileBookParams {
     provider: string;
     flight: FlightOffer;
-    passengers: Array<{
+    passengers: {
         type: string;
         firstName: string;
         lastName: string;
         gender: string;
         birthDate: string;
-    }>;
-    contact: { email: string; phone: string; countryCode: string };
+    }[];
+    contact: { email: string; phone: string; countryCode: string; addressLine: string; city: string; postalCode: string; country: string };
     idempotencyKey: string;
     seatServiceIds?: string[];
     seatTotal?: number;
@@ -305,7 +337,7 @@ export interface ConfirmHotelBookingParams {
     prebookId: string;
     paymentIntentId: string;
     holder: { firstName: string; lastName: string; email: string };
-    guests: Array<{ occupancyNumber: number; firstName: string; lastName: string; email: string; remarks?: string }>;
+    guests: { occupancyNumber: number; firstName: string; lastName: string; email: string; remarks?: string }[];
     payment: { method: string; transactionId?: string };
     propertyName?: string;
     propertyImage?: string;

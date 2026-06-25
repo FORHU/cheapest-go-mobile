@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import * as Linking from 'expo-linking';
 import type { User } from '@/types/auth';
 import { getStoredUser, storeUser, clearStoredUser } from '@/utils/auth/session';
@@ -22,7 +22,6 @@ async function authFetch<T = any>(
     body?: unknown,
 ): Promise<T> {
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    console.log(`[authFetch] ${method} ${AUTH_URL}${path}`, body !== undefined ? { body } : '');
     const res = await fetch(`${AUTH_URL}${path}`, {
         method,
         headers,
@@ -30,7 +29,6 @@ async function authFetch<T = any>(
         body: body !== undefined ? JSON.stringify(body) : undefined,
     });
     const json = await res.json().catch(() => ({}));
-    console.log(`[authFetch] ${res.status} ${AUTH_URL}${path}`, json);
     if (!res.ok) throw new Error(json.error ?? json.message ?? `HTTP ${res.status}`);
     return json as T;
 }
@@ -105,11 +103,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const login = (email: string, password: string) => {
         loginSchema.parse({ email, password });
         return withLoading(async () => {
-            console.log('[auth/login] →', { email, url: `${AUTH_URL}/login` });
             try {
                 const { user: u } = await authFetch<{ user: any }>('/login', 'POST', { email, password });
                 const mapped = mapUser(u);
-                console.log('[auth/login] ✓ success', { id: mapped.id, email: mapped.email, role: mapped.role });
                 await storeUser(mapped);
                 setUser(mapped);
             } catch (err: any) {
@@ -122,7 +118,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const register = (data: RegisterInput): Promise<{ needsEmailVerification: boolean }> => {
         registerSchema.parse(data);
         return withLoading(async () => {
-            console.log('[auth/signup] →', { email: data.email, firstName: data.firstName, lastName: data.lastName, url: `${AUTH_URL}/signup` });
             try {
                 const { user: u } = await authFetch<{ user: any }>('/signup', 'POST', {
                     email: data.email,
@@ -135,7 +130,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     lastName: data.lastName,
                     role: 'user',
                 });
-                console.log('[auth/signup] ✓ success', { id: mapped.id, email: mapped.email });
                 await storeUser(mapped);
                 setUser(mapped);
                 return { needsEmailVerification: false };
@@ -193,7 +187,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Handles deep links from password reset emails.
     // Expected format: mobileapp://auth/reset-password?token=<token>
-    const handleAuthDeepLink = async (url: string): Promise<void> => {
+    const handleAuthDeepLink = useCallback(async (url: string): Promise<void> => {
         if (!url.includes('auth/')) return;
         const parsed = Linking.parse(url);
         const token = parsed.queryParams?.token as string | undefined;
@@ -201,7 +195,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             setResetToken(token);
             setIsPasswordRecovery(true);
         }
-    };
+    }, []);
 
     return (
         <AuthContext.Provider value={{

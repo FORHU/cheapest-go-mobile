@@ -1,6 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { rError, rLog } from '@/lib/remoteLog';
 import type { RegisterInput } from '@/lib/schemas/auth';
 import { Link, useRouter } from 'expo-router';
 import {
@@ -13,7 +12,7 @@ import {
   Mail,
   User,
 } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -131,7 +130,7 @@ const GRID_SIZE = 40;
 const EXTRA     = GRID_SIZE * 3;
 
 function DriftGrid({ color }: { color: string }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.loop(
@@ -142,7 +141,7 @@ function DriftGrid({ color }: { color: string }) {
         useNativeDriver: true,
       })
     ).start();
-  }, []);
+  }, [anim]);
 
   return (
     <Animated.View
@@ -203,8 +202,8 @@ function Sparkle({
   duration: number; delay: number;
   color: string; glowColor: string;
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale   = useRef(new Animated.Value(0.5)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [scale]   = useState(() => new Animated.Value(0.5));
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -222,7 +221,7 @@ function Sparkle({
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [delay, duration, opacity, scale]);
 
   const glowId = `rglow${size}${delay}`;
 
@@ -309,15 +308,15 @@ export default function RegisterScreen() {
   const [generalError, setGeneralError]   = useState('');
   const [successMessage, setSuccess]      = useState('');
 
-  const slideAnim = useRef(new Animated.Value(20)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(20));
+  const [fadeAnim]  = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.timing(fadeAnim,  { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   const passwordChecks = [
     { label: 'At least 8 characters',       met: password.length >= 8 },
@@ -358,7 +357,6 @@ export default function RegisterScreen() {
 
     if (!ok) return;
 
-    rLog('Register', 'register', 'Registration attempt', { email: email.trim(), firstName: firstName.trim() });
     try {
       const data: RegisterInput = {
         email: email.trim(), password,
@@ -366,15 +364,12 @@ export default function RegisterScreen() {
       };
       const result = await register(data);
       if (result.needsEmailVerification) {
-        rLog('Register', 'register', 'Registration success — needs email verification', { email: email.trim() });
         setSuccess('Check your inbox to verify your email.');
       } else {
-        rLog('Register', 'register', 'Registration success — auto logged in', { email: email.trim() });
         router.replace('/(tabs)');
       }
     } catch (e: any) {
       const msg: string = e?.message ?? 'Something went wrong. Please try again.';
-      rError('Register', 'register', 'Registration failed', { email: email.trim(), error: msg, errors: e?.errors });
       if (msg.toLowerCase().includes('already registered') || msg.toLowerCase().includes('exists')) {
         setEmailErr('An account with this email already exists.');
       } else if (e?.errors) {

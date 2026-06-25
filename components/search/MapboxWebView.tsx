@@ -1,3 +1,4 @@
+// @ts-ignore – @rnmapbox/maps has no bundled TypeScript declarations
 import Mapbox, { Camera, MapView, MarkerView } from '@rnmapbox/maps';
 import { Layers } from 'lucide-react-native';
 import { useEffect, useRef, useState } from 'react';
@@ -54,7 +55,7 @@ export default function MapboxWebView({
         const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
         const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
         cameraRef.current?.fitBounds(ne, sw, [80, 80, 80, 80], 1000);
-    }, [hotels]);
+    }, [hotels, selectedHotelId]);
 
     // Fly to hotel when selected via card swipe
     useEffect(() => {
@@ -88,6 +89,7 @@ export default function MapboxWebView({
                 compassEnabled={false}
                 logoEnabled={false}
                 attributionEnabled={false}
+                scaleBarEnabled={false}
                 pitchEnabled={false}
                 rotateEnabled={false}
                 onDidFinishLoadingMap={() => setIsLoading(false)}
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
     container: { flex: 1 },
     map: { flex: 1 },
     loading: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
         backgroundColor: 'rgba(255,255,255,0.8)',
         alignItems: 'center',
         justifyContent: 'center',

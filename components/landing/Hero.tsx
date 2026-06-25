@@ -40,7 +40,7 @@ const Hero = () => {
                 </View>
 
                 <AISearchBar activeTab={activeTab} />
-                <AISuggestionChips onSuggestionClick={(prompt) => console.log('Prompt:', prompt)} />
+                <AISuggestionChips onSuggestionClick={() => {}} />
             </View>
         </View>
     );

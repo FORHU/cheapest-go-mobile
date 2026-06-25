@@ -11,13 +11,13 @@ interface StarRatingProps {
     gold?: boolean;
 }
 
-const StarRating = React.memo(({
+const StarRating = React.memo(function StarRating({
     rating,
     size = 16,
     color = '#2563eb',
     numeric = false,
     gold = false,
-}: StarRatingProps) => {
+}: StarRatingProps) {
     // Return nothing when there's no rating — avoids "0 ★" or 5 empty stars
     if (!rating || rating <= 0) return null;
 
