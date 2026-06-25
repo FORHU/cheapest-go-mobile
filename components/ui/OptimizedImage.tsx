@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View } from 'react-native';
 import { Image } from 'expo-image';
 
 interface OptimizedImageProps {
@@ -15,12 +15,12 @@ const FALLBACK_ROOM = 'https://images.unsplash.com/photo-1582719478250-c89cae4db
 // A neutral, dark blurhash placeholder (looks like a soft dark gradient)
 const PLACEHOLDER_BLURHASH = 'L15#hiof00of~qfQIUay00fQ-;fQ';
 
-const OptimizedImage: React.FC<OptimizedImageProps> = React.memo(({
+const OptimizedImage: React.FC<OptimizedImageProps> = React.memo(function OptimizedImage({
     uri,
     style,
     type = 'hotel',
     fallbackUri
-}) => {
+}) {
     const defaultFallback = type === 'room' ? FALLBACK_ROOM : FALLBACK_HOTEL;
     const fallback = fallbackUri || defaultFallback;
 

@@ -1,18 +1,19 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, Car, ChevronLeft, Heart, List, Map as MapIcon, MapPin, MousePointer2, Move, Search, SlidersHorizontal, Star, UtensilsCrossed, Wifi, Wind, X } from 'lucide-react-native';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Dimensions, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 import FilterModal from '../../components/search/FilterModal';
 import HotelSearchModal from '../../components/search/HotelSearchModal';
 import MapboxWebView from '../../components/search/MapboxWebView';
-import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
 import { MAPBOX_TOKEN } from '../../lib/config';
 import { convertCurrency } from '../../lib/currency';
 import { getFavorites, toggleFavorite } from '../../lib/favorites';
 import { searchHotels } from '../../lib/travel-api';
 
-const { width, height } = Dimensions.get('window');
+
+import OptimizedImage from '../../components/ui/OptimizedImage';
+
 
 const getDisplayPrice = (hotel: any) => {
     // 1. Direct price number
@@ -90,9 +91,6 @@ const getPriceCurrency = (hotel: any): string => {
 
 const getPriceColor = (_price: any) => '#2563eb';
 
-
-import OptimizedImage from '../../components/ui/OptimizedImage';
-
 const ImageWithSkeleton = ({ uri, style }: { uri: string, style: any }) => {
     return <OptimizedImage uri={uri} style={style} type="hotel" />;
 };
@@ -165,7 +163,10 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
                         </View>
                     )}
                     {hotel.starRating > 0 && (
-                        <StarRating rating={hotel.starRating} size={10} color="#2563eb" />
+                        <View style={styles.starRatingNumeric}>
+                            <Star size={10} color="#2563eb" fill="#2563eb" />
+                            <Text style={styles.starRatingNumericText}>{hotel.starRating.toFixed(1)}</Text>
+                        </View>
                     )}
                 </View>
 
@@ -210,7 +211,7 @@ type HotelListCardProps = {
     styles: any;
 };
 
-const HotelListCard = memo(({ hotel, isDark, currencySymbol, isFavorite, onNavigate, onToggleFav, styles }: HotelListCardProps) => {
+const HotelListCard = memo(function HotelListCard({ hotel, isDark, currencySymbol, isFavorite, onNavigate, onToggleFav, styles }: HotelListCardProps) {
     const score = hotel.reviewRating || hotel.rating || 0;
     const ratingLabel = score >= 9 ? 'Excellent' : score >= 8 ? 'Very Good' : score >= 7 ? 'Good' : score >= 6 ? 'Okay' : 'Fair';
     const amenities = getAmenities(hotel);
@@ -291,7 +292,7 @@ export default function SearchScreen() {
 
     const [loading, setLoading] = useState(true);
     const [rawHotels, setRawHotels] = useState<any[]>([]); // Original data from API
-    const [hotels, setHotels] = useState<any[]>([]); // Filtered & sorted data
+    // `hotels` is derived from rawHotels/filters/sortBy/currency via useMemo below.
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
     const [selectedHotel, setSelectedHotel] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
@@ -315,7 +316,6 @@ export default function SearchScreen() {
     const [sortBy, setSortBy] = useState<'price_low' | 'price_high' | 'rating' | 'name'>('price_low');
     const [favorites, setFavorites] = useState<string[]>([]);
     const [showMapHints, setShowMapHints] = useState(true);
-    const [displayLimit, setDisplayLimit] = useState(10);
     const [flyToHotelId, setFlyToHotelId] = useState<string | null>(null);
     const [mapCenter, setMapCenter] = useState<[number, number] | undefined>(undefined);
 
@@ -358,17 +358,6 @@ export default function SearchScreen() {
             setLoading(true);
             setError(null);
             try {
-                console.log('[Search] Fetching hotels:', {
-                    destination: params.destination,
-                    placeId: params.placeId,
-                    countryCode: params.countryCode,
-                    checkIn: params.checkIn,
-                    checkOut: params.checkOut,
-                    adults: params.adults,
-                    children: params.children,
-                    rooms: params.rooms,
-                });
-
                 const results = await searchHotels({
                     destination: params.destination as string,
                     countryCode: params.countryCode as string,
@@ -384,7 +373,6 @@ export default function SearchScreen() {
                 });
 
                 const hotelData = results?.data || [];
-                console.log('[Search] Response: total raw =', hotelData.length, '| sample keys:', hotelData[0] ? Object.keys(hotelData[0]) : 'n/a');
 
                 // Transform data into a standardized format and filter out low-quality results
                 const standardizedData = hotelData
@@ -437,7 +425,6 @@ export default function SearchScreen() {
                     })
                     .filter((h: any) => h !== null && h.displayPrice !== '???');
 
-                console.log('[Search] After filter: kept =', standardizedData.length, '| dropped =', hotelData.length - standardizedData.length);
                 setRawHotels(standardizedData);
             } catch (error: any) {
                 console.error('[Search] Error:', error);
@@ -451,7 +438,7 @@ export default function SearchScreen() {
         if (params.destination) {
             fetchResults();
         }
-    }, [params.destination, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
+    }, [params.destination, params.destinationCode, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
 
     const toggleFav = useCallback(async (id: string, hotelData?: any) => {
         const added = await toggleFavorite(id, hotelData);
@@ -470,15 +457,15 @@ export default function SearchScreen() {
                 currency: currency.code
             }
         });
-    }, [params.checkIn, params.checkOut, params.adults, params.rooms, currency.code]);
+    }, [params.checkIn, params.checkOut, params.adults, params.rooms, currency.code, router]);
 
     const handleHotelSelect = useCallback((hotel: any) => {
         setSelectedHotel(hotel);
         setFlyToHotelId(hotel.hotelId);
     }, []);
 
-    // Apply Filters & Sorting
-    useEffect(() => {
+    // Apply filters & sorting — derived from rawHotels during render (no effect needed).
+    const hotels = useMemo(() => {
         let result = [...rawHotels];
 
         // 1. Property Name
@@ -500,9 +487,11 @@ export default function SearchScreen() {
         if (filters.facilities.length > 0) {
             result = result.filter(h =>
                 filters.facilities.every((fid: number) =>
-                    (h.facilities || []).some((f: any) => f.id === fid || f === fid)
-                )
-            );
+                    result = result.filter(h =>
+                        filters.facilities.every((fid: number) =>
+                            (h.facilities || []).some((f: any) => f.id === fid || f === fid)
+                        )
+                    );
         }
 
         // 5. Price Range
@@ -526,19 +515,23 @@ export default function SearchScreen() {
         });
 
         // 6. Add displayConvertedPrice for rendering — converts from the actual API price currency
-        const withDisplay = result.map(h => {
+        return result.map(h => {
             if (h.displayPrice === '???') return { ...h, displayConvertedPrice: '???' };
             const from = h.priceCurrency || 'KRW';
             const convertedAmount = Math.round(convertCurrency(Number(h.displayPrice), from, currency.code));
             return { ...h, displayConvertedPrice: convertedAmount.toLocaleString() };
         });
-
-        setHotels(withDisplay);
-        if (withDisplay.length > 0 && (!selectedHotel || !withDisplay.find(h => h.hotelId === selectedHotel.hotelId))) {
-            setSelectedHotel(withDisplay[0]);
-        }
-        setDisplayLimit(10);
     }, [rawHotels, filters, sortBy, currency]);
+
+    // When the derived list changes, re-select a valid hotel.
+    // Done during render — React's recommended alternative to a setState-in-effect.
+    const [prevHotels, setPrevHotels] = useState(hotels);
+    if (hotels !== prevHotels) {
+        setPrevHotels(hotels);
+        if (hotels.length > 0 && (!selectedHotel || !hotels.find(h => h.hotelId === selectedHotel.hotelId))) {
+            setSelectedHotel(hotels[0]);
+        }
+    }
 
     useEffect(() => {
         if (selectedHotel && viewMode === 'map' && cardsFlatListRef.current) {
@@ -550,7 +543,7 @@ export default function SearchScreen() {
                 setTimeout(() => { isInternalScroll.current = false; }, 300);
             }
         }
-    }, [selectedHotel, viewMode]);
+    }, [selectedHotel, viewMode, hotels]);
 
     const handleApplyFilters = useCallback((newFilters: any) => {
         setFilters(newFilters);
@@ -561,7 +554,7 @@ export default function SearchScreen() {
         (filters.minRating > 0 ? 1 : 0) +
         (filters.hotelName ? 1 : 0);
 
-    const SortChips = () => {
+    const renderSortChips = () => {
         const sortOptions = [
             { id: 'price_low', label: 'Price: Low', icon: <ArrowDownUp size={12} color={sortBy === 'price_low' ? '#fff' : (isDark ? '#8896AA' : '#64748b')} /> },
             { id: 'rating', label: 'Rating', icon: <Star size={12} color={sortBy === 'rating' ? '#fff' : (isDark ? '#8896AA' : '#64748b')} fill={sortBy === 'rating' ? '#fff' : 'transparent'} /> },
@@ -639,7 +632,7 @@ export default function SearchScreen() {
                                     const [lng, lat] = data.features[0].center;
                                     setMapCenter([lng, lat]);
                                 }
-                            } catch (_) {
+                            } catch {
                                 // Geocoding failed — fitBounds from hotel results will center the map
                             }
                         }}
@@ -694,7 +687,7 @@ export default function SearchScreen() {
                         </View>
 
                         {/* Sort / Filter chips */}
-                        <SortChips />
+                        {renderSortChips()}
 
                         {viewMode === 'map' ? (
                             <View style={styles.mapContainer}>
@@ -1222,6 +1215,16 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         fontSize: 10,
         fontWeight: '600',
         color: 'rgba(255,255,255,0.9)',
+    },
+    starRatingNumeric: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 2,
+    },
+    starRatingNumericText: {
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#2563eb',
     },
     reviewCountText: {
         fontSize: 10,

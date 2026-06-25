@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AlertTriangle, ArrowLeft, Check, CheckCircle, Mail, Tag } from 'lucide-react-native';
+import { AlertTriangle, ArrowLeft, CheckCircle, Mail, Tag } from 'lucide-react-native';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator, Alert, Image, KeyboardAvoidingView,
@@ -17,6 +17,9 @@ import { confirmHotelBooking, createHotelPayment } from '../lib/booking-api';
 let StripeProvider: React.ComponentType<any> | null = null;
 let useStripeHook: (() => { initPaymentSheet: any; presentPaymentSheet: any }) | null = null;
 try {
+    // Optional native module — must be require()'d in a try/catch so the app still
+    // runs in environments where Stripe isn't installed (e.g. Expo Go).
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const stripe = require('@stripe/stripe-react-native');
     StripeProvider = stripe.StripeProvider;
     useStripeHook = stripe.useStripe;
@@ -34,14 +37,32 @@ export default function CheckoutScreen() {
                 merchantIdentifier="com.cheapestgo.mobile"
                 urlScheme="mobileapp"
             >
-                <CheckoutContent stripeAvailable />
+                <StripeCheckout />
             </SP>
         );
     }
-    return <CheckoutContent stripeAvailable={false} />;
+    return <CheckoutContent stripeAvailable={false} initPaymentSheet={null} presentPaymentSheet={null} />;
 }
 
-function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
+// Only mounted when Stripe is available, so the Stripe hook can be called
+// unconditionally here (satisfying the rules-of-hooks). useStripeHook is set in the
+// same try-block as StripeProvider, so it is non-null whenever this renders.
+function StripeCheckout() {
+    const { initPaymentSheet, presentPaymentSheet } = useStripeHook!();
+    return (
+        <CheckoutContent
+            stripeAvailable
+            initPaymentSheet={initPaymentSheet}
+            presentPaymentSheet={presentPaymentSheet}
+        />
+    );
+}
+
+function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentSheet }: {
+    stripeAvailable: boolean;
+    initPaymentSheet: any;
+    presentPaymentSheet: any;
+}) {
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -49,9 +70,6 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
     const { currency } = useSettings();
     const insets = useSafeAreaInsets();
     const styles = getStyles(isDark, insets.bottom);
-    const stripeHook = stripeAvailable && useStripeHook ? useStripeHook() : null;
-    const initPaymentSheet = stripeHook?.initPaymentSheet;
-    const presentPaymentSheet = stripeHook?.presentPaymentSheet;
 
     // Params from room selection
     const offerId = params.offerId as string;
@@ -112,7 +130,7 @@ function CheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
             }
         };
         doPrebook();
-    }, [offerId]);
+    }, [offerId, adults, params.roomName, roomCurrency]);
 
     // Pricing
     const confirmedPrice = prebookData?.price ?? roomPrice;

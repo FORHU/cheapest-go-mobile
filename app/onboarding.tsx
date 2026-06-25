@@ -67,7 +67,7 @@ const SLIDES: Slide[] = [
 
 // ── Float animation hook ──────────────────────────────────────────────────────
 function useFloatAnim(duration = 3000, delay = 0, amplitude = 14) {
-    const anim = useRef(new Animated.Value(0)).current;
+    const [anim] = useState(() => new Animated.Value(0));
 
     useEffect(() => {
         const loop = Animated.loop(
@@ -89,7 +89,7 @@ function useFloatAnim(duration = 3000, delay = 0, amplitude = 14) {
         );
         loop.start();
         return () => loop.stop();
-    }, []);
+    }, [anim, delay, duration]);
 
     return anim.interpolate({
         inputRange: [0, 1],
@@ -271,7 +271,7 @@ function BookIllustration({ isDark }: { isDark: boolean }) {
     const translateY1 = useFloatAnim(3000, 0, 10);
     const translateY2 = useFloatAnim(3600, 400, 7);
 
-    const pulse = useRef(new Animated.Value(1)).current;
+    const [pulse] = useState(() => new Animated.Value(1));
     useEffect(() => {
         Animated.loop(
             Animated.sequence([
@@ -279,7 +279,7 @@ function BookIllustration({ isDark }: { isDark: boolean }) {
                 Animated.timing(pulse, { toValue: 1, duration: 900, easing: Easing.inOut(Easing.ease), useNativeDriver: true }),
             ])
         ).start();
-    }, []);
+    }, [pulse]);
 
     return (
         <View style={il.root}>
@@ -409,14 +409,14 @@ export default function OnboardingScreen() {
     const listRef = useRef<FlatList<Slide>>(null);
     const isLastSlide = activeIndex === SLIDES.length - 1;
 
-    const panelSlide = useRef(new Animated.Value(40)).current;
-    const panelFade = useRef(new Animated.Value(0)).current;
+    const [panelSlide] = useState(() => new Animated.Value(40));
+    const [panelFade] = useState(() => new Animated.Value(0));
     useEffect(() => {
         Animated.parallel([
             Animated.timing(panelSlide, { toValue: 0, duration: 560, delay: 120, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
             Animated.timing(panelFade, { toValue: 1, duration: 560, delay: 120, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
         ]).start();
-    }, []);
+    }, [panelFade, panelSlide]);
 
     const finishOnboarding = async () => {
         try { await AsyncStorage.setItem(ONBOARDING_KEY, 'true'); } catch { }

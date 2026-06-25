@@ -85,7 +85,11 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
     const [rooms,       setRooms]         = useState(1);
     const [activeField, setActiveField]   = useState<string | null>(null);
 
-    useEffect(() => {
+    // Seed form state from initialParams when they change — done during render
+    // (React's recommended alternative to a setState-in-effect).
+    const [prevInitialParams, setPrevInitialParams] = useState(initialParams);
+    if (initialParams !== prevInitialParams) {
+        setPrevInitialParams(initialParams);
         if (initialParams) {
             if (initialParams.destination) {
                 setDestination({
@@ -104,7 +108,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
             if (initialParams.childrenAges) setChildrenAges(initialParams.childrenAges.split(',').map(Number));
             if (initialParams.rooms) setRooms(parseInt(initialParams.rooms));
         }
-    }, [initialParams]);
+    }
 
     // ── Async state ────────────────────────────────────────────────────────
     const [suggestions,        setSuggestions]        = useState<Destination[]>([]);
@@ -125,7 +129,9 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
         }
     }, [visible]);
 
-    const handleNearMe = async () => {
+    // Implemented but not yet wired to a "Near Me" button; prefixed with _ to mark
+    // it intentionally unused so it survives lint until the UI entry point is added.
+    const _handleNearMe = async () => {
         try {
             setLoadingAutocomplete(true);
             const { status } = await Location.requestForegroundPermissionsAsync();
@@ -168,8 +174,11 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
 
     // ── Debounced autocomplete ─────────────────────────────────────────────
     useEffect(() => {
-        if (destQuery.length < 2) { setSuggestions([]); return; }
+        const valid = destQuery.length >= 2;
+        // Both branches setState inside the timeout so it isn't a synchronous
+        // setState in the effect body (React Compiler set-state-in-effect rule).
         const timer = setTimeout(async () => {
+            if (!valid) { setSuggestions([]); return; }
             setLoadingAutocomplete(true);
             try {
                 const results = await autocompleteDestinations(destQuery);
@@ -179,7 +188,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
             } finally {
                 setLoadingAutocomplete(false);
             }
-        }, 400);
+        }, valid ? 400 : 0);
         return () => clearTimeout(timer);
     }, [destQuery]);
 

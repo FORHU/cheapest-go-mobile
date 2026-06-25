@@ -2,13 +2,12 @@ import React, { useEffect, useState, useCallback } from 'react';
 import {
     View, Text, ScrollView, RefreshControl,
     TouchableOpacity, ActivityIndicator, StyleSheet,
-    useColorScheme, Linking,
+    useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plane, Clock, CheckCircle, XCircle, AlertTriangle, RotateCcw, ChevronDown, ChevronUp } from 'lucide-react-native';
+import { Plane, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react-native';
 import { fetchMyFlightBookings, type FlightBooking } from '@/lib/trips';
 import { useAuth } from '@/context/AuthContext';
-import { useSettings } from '@/context/SettingsContext';
 import { useRouter } from 'expo-router';
 
 // ─── Theme ────────────────────────────────────────────────────────────────────
@@ -215,8 +214,13 @@ export default function TripsScreen() {
     }, []);
 
     useEffect(() => {
-        if (!user) { setLoading(false); return; }
-        load().finally(() => setLoading(false));
+        let cancelled = false;
+        const run = async () => {
+            if (user) await load();
+            if (!cancelled) setLoading(false);
+        };
+        run();
+        return () => { cancelled = true; };
     }, [user, load]);
 
     const onRefresh = useCallback(async () => {
@@ -308,7 +312,7 @@ export default function TripsScreen() {
         );
     }
 
-    function Section({ title, items }: { title: string; items: FlightBooking[] }) {
+    const renderSection = (title: string, items: FlightBooking[]) => {
         if (items.length === 0) return null;
         return (
             <>
@@ -316,7 +320,7 @@ export default function TripsScreen() {
                 {items.map(b => <BookingCard key={b.id} booking={b} C={C} />)}
             </>
         );
-    }
+    };
 
     return (
         <SafeAreaView style={[s.flex, { backgroundColor: C.bg }]}>
@@ -331,9 +335,9 @@ export default function TripsScreen() {
                     <Text style={[s.sub, { color: C.muted }]}>{bookings.length} booking{bookings.length !== 1 ? 's' : ''}</Text>
                 </View>
 
-                <Section title="UPCOMING" items={upcoming} />
-                <Section title="PAST TRIPS" items={past} />
-                <Section title="CANCELLED" items={cancelled} />
+                {renderSection('UPCOMING', upcoming)}
+                {renderSection('PAST TRIPS', past)}
+                {renderSection('CANCELLED', cancelled)}
             </ScrollView>
         </SafeAreaView>
     );

@@ -12,7 +12,7 @@ import {
   Mail,
   User,
 } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -130,7 +130,7 @@ const GRID_SIZE = 40;
 const EXTRA     = GRID_SIZE * 3;
 
 function DriftGrid({ color }: { color: string }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.loop(
@@ -141,7 +141,7 @@ function DriftGrid({ color }: { color: string }) {
         useNativeDriver: true,
       })
     ).start();
-  }, []);
+  }, [anim]);
 
   return (
     <Animated.View
@@ -202,8 +202,8 @@ function Sparkle({
   duration: number; delay: number;
   color: string; glowColor: string;
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale   = useRef(new Animated.Value(0.5)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [scale]   = useState(() => new Animated.Value(0.5));
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -221,7 +221,7 @@ function Sparkle({
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [delay, duration, opacity, scale]);
 
   const glowId = `rglow${size}${delay}`;
 
@@ -308,15 +308,15 @@ export default function RegisterScreen() {
   const [generalError, setGeneralError]   = useState('');
   const [successMessage, setSuccess]      = useState('');
 
-  const slideAnim = useRef(new Animated.Value(20)).current;
-  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(20));
+  const [fadeAnim]  = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.timing(fadeAnim,  { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   const passwordChecks = [
     { label: 'At least 8 characters',       met: password.length >= 8 },

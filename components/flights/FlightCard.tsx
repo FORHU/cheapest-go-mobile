@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, useColorScheme, Image, Alert, Animated, LayoutAnimation, Platform, UIManager, Easing } from 'react-native';
-import { Plane, ChevronDown, ChevronUp, Shield, Luggage, Users, TrendingDown, Zap, Bell } from 'lucide-react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, Pressable, StyleSheet, useColorScheme, Image, Alert, Animated, Platform, UIManager, Easing } from 'react-native';
+import { Plane, ChevronDown, Shield, Luggage, Users, TrendingDown, Zap, Bell } from 'lucide-react-native';
 import { FlightOffer, FlightSegmentDetail, formatTime, formatDuration, stopsLabel, providerLabel } from '../../lib/flight-types';
 
 // Enable LayoutAnimation on Android
@@ -107,8 +107,8 @@ export default function FlightCard({ offer, onSelect, currencySymbol, isCheapest
     const isDark = colorScheme === 'dark';
     const [expanded, setExpanded] = useState(false);
     const [contentHeight, setContentHeight] = useState(0);
-    const slideAnim = useRef(new Animated.Value(0)).current;
-    const animatedHeight = useRef(new Animated.Value(0)).current;
+    const [slideAnim] = useState(() => new Animated.Value(0));
+    const [animatedHeight] = useState(() => new Animated.Value(0));
 
     const primary = offer.segments[0];
     const last = offer.segments[offer.segments.length - 1];
@@ -142,7 +142,7 @@ export default function FlightCard({ offer, onSelect, currencySymbol, isCheapest
                 useNativeDriver: true,
             }),
         ]).start();
-    }, [expanded, contentHeight]);
+    }, [expanded, contentHeight, animatedHeight, slideAnim]);
 
     const handleToggleExpand = () => {
         setExpanded(v => !v);

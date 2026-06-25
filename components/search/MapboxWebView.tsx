@@ -54,7 +54,7 @@ export default function MapboxWebView({
         const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
         const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
         cameraRef.current?.fitBounds(ne, sw, [80, 80, 80, 80], 1000);
-    }, [hotels]);
+    }, [hotels, selectedHotelId]);
 
     // Fly to hotel when selected via card swipe
     useEffect(() => {
@@ -88,6 +88,7 @@ export default function MapboxWebView({
                 compassEnabled={false}
                 logoEnabled={false}
                 attributionEnabled={false}
+                scaleBarEnabled={false}
                 pitchEnabled={false}
                 rotateEnabled={false}
                 onDidFinishLoadingMap={() => setIsLoading(false)}

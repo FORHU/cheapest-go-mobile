@@ -71,7 +71,7 @@ const cleanDescription = (text: string) => {
         .trim();
 };
 
-const AMENITY_COLORS: Array<{ test: (n: string) => boolean; light: { bg: string; text: string }; dark: { bg: string; text: string } }> = [
+const AMENITY_COLORS: { test: (n: string) => boolean; light: { bg: string; text: string }; dark: { bg: string; text: string } }[] = [
     { test: n => n.includes('wifi') || n.includes('wi-fi') || n.includes('internet'), light: { bg: '#dbeafe', text: '#1d4ed8' }, dark: { bg: '#1e3a5f', text: '#93c5fd' } },
     { test: n => n.includes('breakfast') || (n.includes('coffee') && !n.includes('maker')) || n.includes('half board') || n.includes('full board'), light: { bg: '#fef3c7', text: '#b45309' }, dark: { bg: '#431407', text: '#fcd34d' } },
     { test: n => n.includes('pool') || n.includes('swim') || n.includes('beach'), light: { bg: '#cffafe', text: '#0e7490' }, dark: { bg: '#164e63', text: '#67e8f9' } },
@@ -157,11 +157,6 @@ const normalizeRoomOptions = (hotel: any) => {
     const rawRooms = hotel.roomTypes || hotel.details?.roomTypes || hotel.details?.rooms || hotel.rooms || [];
     const rooms = Array.isArray(rawRooms) ? rawRooms : [rawRooms];
 
-    if (rooms.length > 0) {
-        console.log('[normalizeRoomOptions] raw room[0] keys:', Object.keys(rooms[0]));
-        console.log('[normalizeRoomOptions] raw room[0]:', JSON.stringify(rooms[0], null, 2));
-    }
-
     return rooms
         .map((room: any, index: number) => {
             const rawRates = room.rates || room.rate || [];
@@ -194,7 +189,7 @@ const getPolicyDescription = (value: any) => {
     return value.description || value.text || null;
 };
 
-const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
+const ReviewItem = React.memo(function ReviewItem({ review, isLast, styles }: any) {
     const [expanded, setExpanded] = useState(false);
     const content = stripHtml(review.pros || review.headline || "Excellent stay, very friendly staff and great location.");
     const isLong = content.length > 100;
@@ -227,7 +222,7 @@ const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
     );
 });
 
-const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, fromCurrency, styles, onSelect, isSelected }: any) => {
+const RoomCard = React.memo(function RoomCard({ room, hotelThumbnail, detailRooms, currency, fromCurrency, styles, onSelect, isSelected }: any) {
     const mappedRoomId = room.rates?.[0]?.mappedRoomId;
     const matchedRoom = mappedRoomId && detailRooms
         ? detailRooms.find((dr: any) => String(dr.id) === String(mappedRoomId))
@@ -266,7 +261,7 @@ const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, from
     const price = rateCurrency !== currency.code.toUpperCase()
         ? Math.round(convertCurrency(rawPrice, rateCurrency, currency.code))
         : rawPrice;
-    const roomName = room.rates?.[0]?.name || room.name || room.description || matchedRoom?.roomName || 'Room';
+    const roomName = room.rates?.[0]?.name || room.roomName || room.name || room.description || matchedRoom?.roomName || 'Room';
     const maxOccupancy = room.rates?.[0]?.maxOccupancy || room.maxOccupancy || matchedRoom?.maxOccupancy || 2;
     const boardName = room.rates?.[0]?.boardName;
     const refundableTag = room.rates?.[0]?.cancellationPolicies?.refundableTag || room.cancellationPolicies?.refundableTag;
@@ -329,7 +324,7 @@ const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, from
     );
 });
 
-const FaqSection = React.memo(({ faqs, styles, isDark }: { faqs: { q: string; a: string }[]; styles: any; isDark: boolean }) => {
+const FaqSection = React.memo(function FaqSection({ faqs, styles, isDark }: { faqs: { q: string; a: string }[]; styles: any; isDark: boolean }) {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
     if (!faqs.length) return null;
     return (
@@ -356,7 +351,7 @@ const FaqSection = React.memo(({ faqs, styles, isDark }: { faqs: { q: string; a:
     );
 });
 
-const GalleryImage = React.memo(({ uri, width }: { uri: string, width: number }) => {
+const GalleryImage = React.memo(function GalleryImage({ uri, width }: { uri: string, width: number }) {
     return (
         <View style={{ width, height: 350, backgroundColor: '#0f172a' }}>
             <ExpoImage
@@ -391,6 +386,7 @@ export default function HotelDetailsScreen() {
     const [selectedRoom, setSelectedRoom] = useState<any>(null);
     const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
     const [isPolicyExpanded, setIsPolicyExpanded] = useState(false);
+    const [roomPage, setRoomPage] = useState(1);
 
     const handleShare = useCallback(() => {
         if (!hotel) return;
@@ -511,7 +507,7 @@ export default function HotelDetailsScreen() {
                 adults: params.adults as string || '2',
             },
         });
-    }, [hotel, params, router, selectedRoom]);
+    }, [hotel, params, router, selectedRoom, currency.code]);
 
     const [isFavorite, setIsFavorite] = useState(false);
 
@@ -523,17 +519,18 @@ export default function HotelDetailsScreen() {
 
     const availableRooms = useMemo(() => normalizeRoomOptions(hotel), [hotel]);
 
+    const ROOMS_PER_PAGE = 10;
+    const totalRoomPages = Math.max(1, Math.ceil(availableRooms.length / ROOMS_PER_PAGE));
+    // Clamp current page if the room list shrinks (e.g. new search results).
+    const currentRoomPage = Math.min(roomPage, totalRoomPages);
+    const paginatedRooms = useMemo(
+        () => availableRooms.slice((currentRoomPage - 1) * ROOMS_PER_PAGE, currentRoomPage * ROOMS_PER_PAGE),
+        [availableRooms, currentRoomPage],
+    );
+
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            console.log('[HotelDetails] Fetching:', {
-                id: params.id,
-                checkIn: params.checkIn,
-                checkOut: params.checkOut,
-                adults: params.adults,
-                rooms: params.rooms,
-                currency: params.currency,
-            });
             try {
                 const [details, reviewData] = await Promise.all([
                     getHotelDetails(params.id as string, {
@@ -545,23 +542,9 @@ export default function HotelDetailsScreen() {
                     }),
                     getHotelReviews(params.id as string, 100)
                 ]);
-                console.log('[HotelDetails] Response keys:', details ? Object.keys(details) : 'null');
-                console.log('[HotelDetails] thumbnailUrl:', details?.thumbnailUrl);
-                console.log('[HotelDetails] detailRooms:', details?.detailRooms ? `${details.detailRooms.length} rooms` : 'undefined');
-                console.log('[HotelDetails] roomTypes count:', details?.roomTypes?.length ?? 'undefined');
-                if (details?.roomTypes?.length > 0) {
-                    const r = details.roomTypes[0];
-                    console.log('[HotelDetails] roomTypes[0] keys:', Object.keys(r));
-                    console.log('[HotelDetails] roomTypes[0] image fields:', {
-                        roomPhotos: r.roomPhotos,
-                        images: r.images,
-                        photos: r.photos,
-                        mappedRoomId: r.rates?.[0]?.mappedRoomId,
-                    });
-                }
-                console.log('[HotelDetails] reviews:', reviewData?.length ?? 0);
                 setHotel(details);
                 setReviews(reviewData);
+                setRoomPage(1);
             } catch (err) {
                 console.error('[HotelDetails] Error:', err);
             } finally {
@@ -572,7 +555,7 @@ export default function HotelDetailsScreen() {
         if (params.id) {
             fetchData();
         }
-    }, [params.id]);
+    }, [params.id, params.adults, params.checkIn, params.checkOut, params.currency, params.rooms]);
 
     if (loading) {
         return (
@@ -793,19 +776,46 @@ export default function HotelDetailsScreen() {
                                 <Text style={styles.noRoomsText}>No available rooms were found for these dates.</Text>
                                 <Text style={styles.noRoomsHint}>Try adjusting your check-in/out dates or guest count.</Text>
                             </View>
-                        ) : availableRooms.map((room: any, i: number) => (
-                            <RoomCard
-                                key={room.selectorId || i}
-                                room={room}
-                                hotelThumbnail={hotelImages[i % Math.max(hotelImages.length, 1)] || hotelThumbnail}
-                                detailRooms={hotel.detailRooms}
-                                currency={currency}
-                                fromCurrency={params.currency as string || 'USD'}
-                                styles={styles}
-                                isSelected={selectedRoom?.selectorId === room.selectorId}
-                                onSelect={() => handleRoomSelect(room)}
-                            />
-                        ))}
+                        ) : paginatedRooms.map((room: any, i: number) => {
+                            const absoluteIndex = (currentRoomPage - 1) * ROOMS_PER_PAGE + i;
+                            return (
+                                <RoomCard
+                                    key={room.selectorId || absoluteIndex}
+                                    room={room}
+                                    hotelThumbnail={hotelImages[absoluteIndex % Math.max(hotelImages.length, 1)] || hotelThumbnail}
+                                    detailRooms={hotel.detailRooms}
+                                    currency={currency}
+                                    fromCurrency={params.currency as string || 'USD'}
+                                    styles={styles}
+                                    isSelected={selectedRoom?.selectorId === room.selectorId}
+                                    onSelect={() => handleRoomSelect(room)}
+                                />
+                            );
+                        })}
+
+                        {totalRoomPages > 1 && (
+                            <View style={styles.roomPagination}>
+                                <Pressable
+                                    style={[styles.roomPageBtn, currentRoomPage === 1 && styles.roomPageBtnDisabled]}
+                                    disabled={currentRoomPage === 1}
+                                    onPress={() => setRoomPage(p => Math.max(1, p - 1))}
+                                >
+                                    <ChevronLeft size={18} color={currentRoomPage === 1 ? (isDark ? '#475569' : '#cbd5e1') : '#3b82f6'} />
+                                </Pressable>
+
+                                <Text style={styles.roomPageInfo}>
+                                    Page {currentRoomPage} of {totalRoomPages}
+                                </Text>
+
+                                <Pressable
+                                    style={[styles.roomPageBtn, currentRoomPage === totalRoomPages && styles.roomPageBtnDisabled]}
+                                    disabled={currentRoomPage === totalRoomPages}
+                                    onPress={() => setRoomPage(p => Math.min(totalRoomPages, p + 1))}
+                                >
+                                    <ChevronRight size={18} color={currentRoomPage === totalRoomPages ? (isDark ? '#475569' : '#cbd5e1') : '#3b82f6'} />
+                                </Pressable>
+                            </View>
+                        )}
                     </View>
 
                     {/* Property policies */}
@@ -1088,7 +1098,7 @@ export default function HotelDetailsScreen() {
                                     <Text style={styles.bookingPriceSuffix}> / night</Text>
                                 </Text>
                                 <Text style={styles.bookingDates} numberOfLines={1}>
-                                    {selectedRoom.rates?.[0]?.name || selectedRoom.name || 'Room'} • {params.checkIn} → {params.checkOut}
+                                    {selectedRoom.rates?.[0]?.name || selectedRoom.roomName || selectedRoom.name || 'Room'} • {params.checkIn} → {params.checkOut}
                                 </Text>
                             </>
                         );
@@ -1113,7 +1123,7 @@ export default function HotelDetailsScreen() {
     );
 }
 
-const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.create({
+const getStyles = (isDark: boolean, _bottomInset: number = 0) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: isDark ? '#020617' : '#f8fafc',
@@ -1441,6 +1451,34 @@ const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.creat
         fontSize: 12,
         color: isDark ? '#475569' : '#94a3b8',
         marginTop: 4,
+        textAlign: 'center',
+    },
+    roomPagination: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 16,
+        marginTop: 4,
+        marginBottom: 4,
+    },
+    roomPageBtn: {
+        width: 40,
+        height: 40,
+        borderRadius: 12,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: isDark ? '#1e293b' : '#e2e8f0',
+        backgroundColor: isDark ? '#0f172a' : '#ffffff',
+    },
+    roomPageBtnDisabled: {
+        opacity: 0.5,
+    },
+    roomPageInfo: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: isDark ? '#cbd5e1' : '#475569',
+        minWidth: 110,
         textAlign: 'center',
     },
     roomCard: {
