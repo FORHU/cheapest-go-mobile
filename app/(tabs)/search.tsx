@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, Car, ChevronLeft, Heart, List, Map as MapIcon, MapPin, MousePointer2, Move, Search, SlidersHorizontal, Star, UtensilsCrossed, Wifi, Wind, X } from 'lucide-react-native';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Dimensions, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
@@ -7,10 +7,10 @@ import HotelSearchModal from '../../components/search/HotelSearchModal';
 import MapboxWebView from '../../components/search/MapboxWebView';
 import StarRating from '../../components/ui/StarRating';
 import { useSettings } from '../../context/SettingsContext';
-import { searchHotels } from '../../lib/travel-api';
 import { MAPBOX_TOKEN } from '../../lib/config';
 import { convertCurrency } from '../../lib/currency';
 import { getFavorites, toggleFavorite } from '../../lib/favorites';
+import { searchHotels } from '../../lib/travel-api';
 
 const { width, height } = Dimensions.get('window');
 
@@ -19,7 +19,7 @@ const getDisplayPrice = (hotel: any) => {
     if (typeof hotel.price === 'number' && hotel.price > 0) {
         return Math.round(hotel.price);
     }
-    
+
     // 2. minPrice (commonly returned by search summaries)
     if (typeof hotel.minPrice === 'number' && hotel.minPrice > 0) {
         return Math.round(hotel.minPrice);
@@ -34,7 +34,7 @@ const getDisplayPrice = (hotel: any) => {
         if (typeof amt === 'number') return Math.round(amt);
         if (typeof amt === 'string' && !isNaN(parseFloat(amt))) return Math.round(parseFloat(amt));
     }
-    
+
     // 4. Nested in roomTypes (LiteAPI standard)
     // retailRate.total can be an array [{amount, currency}] or an object {amount}
     if (hotel.roomTypes && hotel.roomTypes.length > 0) {
@@ -52,15 +52,15 @@ const getDisplayPrice = (hotel: any) => {
             if (typeof total === 'number' && total > 0) return Math.round(total);
 
             // Fallback: other price paths
-            const price = rates[0]?.price?.amount || 
-                          rates[0]?.total_amount ||
-                          rates[0]?.price;
-            
+            const price = rates[0]?.price?.amount ||
+                rates[0]?.total_amount ||
+                rates[0]?.price;
+
             if (typeof price === 'number' && price > 0) return Math.round(price);
             if (typeof price === 'string' && !isNaN(parseFloat(price)) && parseFloat(price) > 0) return Math.round(parseFloat(price));
         }
     }
-    
+
     return '???';
 };
 
@@ -109,11 +109,11 @@ type HotelCardProps = {
     isFavorite: boolean;
     onSelect: (hotel: any) => void;
     onNavigate: (hotel: any) => void;
-    // onToggleFav: (id: string, hotel?: any) => void;
+    onToggleFav: (id: string, hotel?: any) => void;
     styles: any;
 };
 
-const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorite, onSelect, onNavigate, styles }: HotelCardProps) => {
+const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorite, onSelect, onNavigate, onToggleFav, styles }: HotelCardProps) => {
     const score = hotel.reviewRating || hotel.rating;
     const ratingLabel = score >= 9 ? 'Excellent' : score >= 8 ? 'Very Good' : score >= 7 ? 'Good' : 'Fair';
     const fallback = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
@@ -122,24 +122,30 @@ const HotelMapCard = memo(({ hotel, index, isSelected, currencySymbol, isFavorit
             style={[styles.hotelCard, isSelected && styles.hotelCardSelected]}
             onPress={() => onSelect(hotel)}
         >
-            <View style={{ position: 'relative' }}>
-                <ImageWithSkeleton
-                    uri={hotel.thumbnailUrl || fallback}
-                    style={styles.hotelCardImage}
-                />
-                <View style={styles.rankBadge}>
-                    <Text style={styles.rankBadgeText}>{index + 1}</Text>
-                </View>
-                {hotel.refundable && (
-                    <View style={styles.freeCancelBadge}>
-                        <Text style={styles.freeCancelText}>Free cancel</Text>
+            <View style={{ overflow: 'hidden', borderRadius: 16 }}>
+                <View style={{ position: 'relative' }}>
+                    <ImageWithSkeleton
+                        uri={hotel.thumbnailUrl || fallback}
+                        style={styles.hotelCardImage}
+                    />
+                    <View style={styles.rankBadge}>
+                        <Text style={styles.rankBadgeText}>{index + 1}</Text>
                     </View>
-                )}
+                    {hotel.refundable && (
+                        <View style={styles.freeCancelBadge}>
+                            <Text style={styles.freeCancelText}>Free cancel</Text>
+                        </View>
+                    )}
+                </View>
             </View>
 
             <Pressable
                 style={styles.heartBtn}
-                // onPress={() => onToggleFav(hotel.hotelId, hotel)}
+                onPress={(e) => {
+                    e.stopPropagation();
+                    onToggleFav(hotel.hotelId, hotel);
+                }}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
             >
                 <Heart
                     size={14}
@@ -282,7 +288,7 @@ export default function SearchScreen() {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { currency } = useSettings();
-    
+
     const [loading, setLoading] = useState(true);
     const [rawHotels, setRawHotels] = useState<any[]>([]); // Original data from API
     const [hotels, setHotels] = useState<any[]>([]); // Filtered & sorted data
@@ -317,12 +323,17 @@ export default function SearchScreen() {
 
     useEffect(() => {
         getFavorites().then(setFavorites);
-        
+
         // Hide map hints after 4 seconds
         const timer = setTimeout(() => setShowMapHints(false), 4000);
         return () => clearTimeout(timer);
     }, []);
 
+    useFocusEffect(
+        useCallback(() => {
+            getFavorites().then(setFavorites);
+        }, [])
+    );
     useEffect(() => {
         const destination = params.destination as string | undefined;
         if (destination && destination !== localDestination) {
@@ -343,7 +354,7 @@ export default function SearchScreen() {
         const fetchResults = async () => {
             if (isFetching.current) return;
             isFetching.current = true;
-            
+
             setLoading(true);
             setError(null);
             try {
@@ -359,17 +370,17 @@ export default function SearchScreen() {
                 });
 
                 const results = await searchHotels({
-                    destination:     params.destination as string,
-                    countryCode:     params.countryCode as string,
-                    placeId:         params.placeId as string,
+                    destination: params.destination as string,
+                    countryCode: params.countryCode as string,
+                    placeId: params.placeId as string,
                     destinationCode: params.destinationCode as string,
-                    checkIn:         params.checkIn as string,
-                    checkOut:        params.checkOut as string,
-                    adults:          parseInt(params.adults as string || '2'),
-                    children:        parseInt(params.children as string || '0'),
-                    childrenAges:    params.childrenAges as string,
-                    rooms:           parseInt(params.rooms as string || '1'),
-                    currency:        currency.code,
+                    checkIn: params.checkIn as string,
+                    checkOut: params.checkOut as string,
+                    adults: parseInt(params.adults as string || '2'),
+                    children: parseInt(params.children as string || '0'),
+                    childrenAges: params.childrenAges as string,
+                    rooms: parseInt(params.rooms as string || '1'),
+                    currency: currency.code,
                 });
 
                 const hotelData = results?.data || [];
@@ -383,7 +394,7 @@ export default function SearchScreen() {
                         const name = h.name || h.hotelName || h.propertyName;
                         const price = getDisplayPrice(h);
                         const priceCurrency = getPriceCurrency(h);
-                        
+
                         // Only return standardized object if we have a name and a valid location
                         if (!name || lat === 0 || lng === 0) return null;
 
@@ -487,8 +498,8 @@ export default function SearchScreen() {
 
         // 4. Facilities (LiteAPI returns them in facilities array)
         if (filters.facilities.length > 0) {
-            result = result.filter(h => 
-                filters.facilities.every((fid: number) => 
+            result = result.filter(h =>
+                filters.facilities.every((fid: number) =>
                     (h.facilities || []).some((f: any) => f.id === fid || f === fid)
                 )
             );
@@ -545,10 +556,10 @@ export default function SearchScreen() {
         setFilters(newFilters);
     }, []);
 
-    const activeFilterCount = (filters.starRating.length > 0 ? 1 : 0) + 
-                             (filters.facilities.length > 0 ? 1 : 0) + 
-                             (filters.minRating > 0 ? 1 : 0) + 
-                             (filters.hotelName ? 1 : 0);
+    const activeFilterCount = (filters.starRating.length > 0 ? 1 : 0) +
+        (filters.facilities.length > 0 ? 1 : 0) +
+        (filters.minRating > 0 ? 1 : 0) +
+        (filters.hotelName ? 1 : 0);
 
     const SortChips = () => {
         const sortOptions = [
@@ -701,7 +712,7 @@ export default function SearchScreen() {
                                     center={mapCenter}
                                     currencySymbol={currency.symbol}
                                 />
-                                
+
                                 {showMapHints && (
                                     <View style={styles.mapHints}>
                                         <View style={styles.hintItem}>
@@ -762,7 +773,7 @@ export default function SearchScreen() {
                                                     isFavorite={favorites.includes(hotel.hotelId)}
                                                     onSelect={handleHotelSelect}
                                                     onNavigate={navigateToHotel}
-                                                    // onToggleFav={toggleFav}
+                                                    onToggleFav={toggleFav}
                                                     styles={styles}
                                                 />
                                             )}
@@ -821,14 +832,14 @@ export default function SearchScreen() {
                 )}
             </View>
 
-            <FilterModal 
-                visible={isFilterVisible} 
-                onClose={() => setIsFilterVisible(false)} 
+            <FilterModal
+                visible={isFilterVisible}
+                onClose={() => setIsFilterVisible(false)}
                 filters={filters}
                 onApply={handleApplyFilters}
             />
 
-            <HotelSearchModal 
+            <HotelSearchModal
                 visible={isSearchModalVisible}
                 onClose={() => setIsSearchModalVisible(false)}
                 initialParams={params}
@@ -1124,7 +1135,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         height: 110,
         backgroundColor: isDark ? '#0f172a' : '#ffffff',
         borderRadius: 16,
-        overflow: 'hidden',
+        overflow: 'visible',
         flexDirection: 'row',
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 8 },

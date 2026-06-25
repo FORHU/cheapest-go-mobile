@@ -36,19 +36,19 @@ import {
     Trees,
     Tv,
     Utensils, Waves,
-    Wifi, Wind,
-    XCircle
+    Wifi, Wind
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, Share, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isFavorite as checkIsFavorite, toggleFavorite as persistToggleFavorite } from '../../../lib/favorites';
 
 import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
 import StarRating from '../../../components/ui/StarRating';
 import { useSettings } from '../../../context/SettingsContext';
-import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 import { convertCurrency } from '../../../lib/currency';
+import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -389,7 +389,6 @@ export default function HotelDetailsScreen() {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
     const [selectedRoom, setSelectedRoom] = useState<any>(null);
-    const [isFavorite, setIsFavorite] = useState(false);
     const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
     const [isPolicyExpanded, setIsPolicyExpanded] = useState(false);
 
@@ -403,9 +402,11 @@ export default function HotelDetailsScreen() {
         });
     }, [hotel]);
 
-    const toggleFavorite = useCallback(() => {
-        setIsFavorite(prev => !prev);
-    }, []);
+    const toggleFavorite = useCallback(async () => {
+        if (!hotel?.hotelId) return;
+        const added = await persistToggleFavorite(hotel.hotelId, hotel);
+        setIsFavorite(added);
+    }, [hotel]);
 
     // Merge hotelFacilities (full list from API) with facilities
     const allFacilities = useMemo(() => {
@@ -453,7 +454,7 @@ export default function HotelDetailsScreen() {
     }, [hotel]);
 
     const handleRoomSelect = useCallback((room: any) => {
-        setSelectedRoom(prev =>
+        setSelectedRoom((prev: any) =>
             prev?.selectorId === room.selectorId ? null : room
         );
     }, []);
@@ -471,7 +472,7 @@ export default function HotelDetailsScreen() {
             selectedRoom.offerId ||
             rate?.offerId ||
             (rate?._tgx?.optionId ? `TGX:${rate._tgx.optionId}` : null) ||
-            (rate?._tgx?.token    ? `TGX:${rate._tgx.token}`    : null);
+            (rate?._tgx?.token ? `TGX:${rate._tgx.token}` : null);
 
         if (!offerId) {
             Alert.alert('Room unavailable', 'This room cannot be booked right now. Please select a different room.');
@@ -511,6 +512,14 @@ export default function HotelDetailsScreen() {
             },
         });
     }, [hotel, params, router, selectedRoom]);
+
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    useEffect(() => {
+        if (hotel?.hotelId) {
+            checkIsFavorite(hotel.hotelId).then(setIsFavorite);
+        }
+    }, [hotel?.hotelId]);
 
     const availableRooms = useMemo(() => normalizeRoomOptions(hotel), [hotel]);
 
@@ -646,7 +655,7 @@ export default function HotelDetailsScreen() {
 
                     {/* Left & Right Sliding Arrows */}
                     {hotelImages.length > 1 && activeImageIndex > 0 && (
-                        <Pressable 
+                        <Pressable
                             style={[styles.sliderArrow, styles.sliderArrowLeft]}
                             onPress={() => {
                                 const prevIdx = activeImageIndex - 1;
@@ -658,7 +667,7 @@ export default function HotelDetailsScreen() {
                         </Pressable>
                     )}
                     {hotelImages.length > 1 && activeImageIndex < hotelImages.length - 1 && (
-                        <Pressable 
+                        <Pressable
                             style={[styles.sliderArrow, styles.sliderArrowRight]}
                             onPress={() => {
                                 const nextIdx = activeImageIndex + 1;
@@ -716,10 +725,10 @@ export default function HotelDetailsScreen() {
                     {/* Quick Info pills */}
                     {(() => {
                         const checks = [
-                            { icon: Wifi,   label: 'Free Wi-Fi', match: (n: string) => n.includes('wifi') || n.includes('wi-fi') || n.includes('wi_fi') || n.includes('internet') },
-                            { icon: Coffee, label: 'Breakfast',  match: (n: string) => n.includes('breakfast') || n.includes('coffee') },
-                            { icon: Wind,   label: 'AC',         match: (n: string) => n.includes('air cond') || n.includes('air_cond') || n.includes('conditioning') || n.includes('aircon') || n.includes('climate') || n === 'ac' },
-                            { icon: Tv,     label: 'TV',         match: (n: string) => n.includes('tv') || n.includes('television') || n.includes('satellite') || n.includes('cable') },
+                            { icon: Wifi, label: 'Free Wi-Fi', match: (n: string) => n.includes('wifi') || n.includes('wi-fi') || n.includes('wi_fi') || n.includes('internet') },
+                            { icon: Coffee, label: 'Breakfast', match: (n: string) => n.includes('breakfast') || n.includes('coffee') },
+                            { icon: Wind, label: 'AC', match: (n: string) => n.includes('air cond') || n.includes('air_cond') || n.includes('conditioning') || n.includes('aircon') || n.includes('climate') || n === 'ac' },
+                            { icon: Tv, label: 'TV', match: (n: string) => n.includes('tv') || n.includes('television') || n.includes('satellite') || n.includes('cable') },
                         ];
                         return (
                             <ScrollView
