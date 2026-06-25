@@ -66,7 +66,7 @@ jobs:
       - name: Sync secrets to EAS preview environment
         run: |
           set -e
-          printenv | grep -E "^(MAPBOX_DOWNLOADS_TOKEN|RNMAPBOX_MAPS_DOWNLOAD_TOKEN|EXPO_PUBLIC_)" | sort > .env.local
+          printenv | grep -E "^(MAPBOX_DOWNLOADS_TOKEN|RNMAPBOX_MAPS_DOWNLOAD_TOKEN|EXPO_PUBLIC_)" | grep -v "=$" | sort > .env.local
           echo "Syncing $(wc -l < .env.local) variables to EAS preview..."
           eas env:push --environment preview --force
           echo "Done syncing secrets."
