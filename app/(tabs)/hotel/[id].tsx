@@ -398,6 +398,14 @@ export default function HotelDetailsScreen() {
         });
     }, [hotel]);
 
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    useEffect(() => {
+        if (hotel?.hotelId) {
+            checkIsFavorite(hotel.hotelId).then(setIsFavorite);
+        }
+    }, [hotel?.hotelId]);
+
     const toggleFavorite = useCallback(async () => {
         if (!hotel?.hotelId) return;
         const added = await persistToggleFavorite(hotel.hotelId, hotel);
@@ -508,14 +516,6 @@ export default function HotelDetailsScreen() {
             },
         });
     }, [hotel, params, router, selectedRoom, currency.code]);
-
-    const [isFavorite, setIsFavorite] = useState(false);
-
-    useEffect(() => {
-        if (hotel?.hotelId) {
-            checkIsFavorite(hotel.hotelId).then(setIsFavorite);
-        }
-    }, [hotel?.hotelId]);
 
     const availableRooms = useMemo(() => normalizeRoomOptions(hotel), [hotel]);
 

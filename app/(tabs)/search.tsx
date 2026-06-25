@@ -293,7 +293,9 @@ export default function SearchScreen() {
     const [loading, setLoading] = useState(true);
     const [rawHotels, setRawHotels] = useState<any[]>([]); // Original data from API
     // `hotels` is derived from rawHotels/filters/sortBy/currency via useMemo below.
-    const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
+    const [viewMode, setViewMode] = useState<'map' | 'list'>(() =>
+        (params.viewMode as string) === 'list' ? 'list' : 'map'
+    );
     const [selectedHotel, setSelectedHotel] = useState<any>(null);
     const [error, setError] = useState<string | null>(null);
     const isFetching = useRef(false);
@@ -337,18 +339,10 @@ export default function SearchScreen() {
     useEffect(() => {
         const destination = params.destination as string | undefined;
         if (destination && destination !== localDestination) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setLocalDestination(destination);
         }
     }, [params.destination]);
-
-    useEffect(() => {
-        const viewModeParam = params.viewMode as string | undefined;
-        if (viewModeParam === 'map') {
-            setViewMode('map');
-        } else if (viewModeParam === 'list') {
-            setViewMode('list');
-        }
-    }, [params.viewMode]);
 
     useEffect(() => {
         const fetchResults = async () => {

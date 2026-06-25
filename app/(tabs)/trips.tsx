@@ -214,6 +214,7 @@ export default function TripsScreen() {
     }, []);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (!user) { setLoading(false); return; }
         load().finally(() => setLoading(false));
     }, [user, load]);
