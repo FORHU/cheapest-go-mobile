@@ -342,6 +342,36 @@ export default function SearchScreen() {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setLocalDestination(destination);
         }
+    }, [params.destination, localDestination]);
+
+    const viewModeParam = params.viewMode as string | undefined;
+    const [prevViewModeParam, setPrevViewModeParam] = useState(viewModeParam);
+    if (viewModeParam !== prevViewModeParam) {
+        setPrevViewModeParam(viewModeParam);
+        if (viewModeParam === 'map') setViewMode('map');
+        else if (viewModeParam === 'list') setViewMode('list');
+    }
+
+    // Center the map on the search destination as soon as the screen loads (and whenever
+    // the destination changes) — otherwise the map opens on the hardcoded default center.
+    useEffect(() => {
+        const destination = (params.destination as string || '').trim();
+        if (!destination) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destination)}.json?access_token=${MAPBOX_TOKEN}&types=place,district,region,country&limit=1`;
+                const resp = await fetch(url);
+                const data = await resp.json();
+                if (!cancelled && data.features?.length > 0) {
+                    const [lng, lat] = data.features[0].center;
+                    setMapCenter([lng, lat]);
+                }
+            } catch {
+                // Geocoding failed — MapboxWebView falls back to fitting the hotel results.
+            }
+        })();
+        return () => { cancelled = true; };
     }, [params.destination]);
 
     useEffect(() => {
@@ -420,7 +450,34 @@ export default function SearchScreen() {
                     })
                     .filter((h: any) => h !== null && h.displayPrice !== '???');
 
-                console.log('[Search] After filter: kept =', standardizedData.length, '| dropped =', hotelData.length - standardizedData.length);
+                // TEMP diagnostic: explains how many of the API's hotels survive the
+                // coordinate/price filters (i.e. why only N markers show on the map).
+                if (__DEV__) {
+                    let noCoordOrName = 0;
+                    let noPrice = 0;
+                    hotelData.forEach((h: any) => {
+                        const lat = h.latitude || h.details?.latitude || h.details?.location?.latitude || h.lat || h.location?.lat || 0;
+                        const lng = h.longitude || h.details?.longitude || h.details?.location?.longitude || h.lng || h.location?.lng || 0;
+                        const name = h.name || h.hotelName || h.propertyName;
+                        if (!name || Number(lat) === 0 || Number(lng) === 0) { noCoordOrName++; return; }
+                        if (getDisplayPrice(h) === '???') noPrice++;
+                    });
+                    console.log(
+                        `[Search] API returned ${hotelData.length}, kept ${standardizedData.length}. ` +
+                        `Dropped: ${noCoordOrName} (no coords/name), ${noPrice} (no price).`
+                    );
+                    if (hotelData[0]) {
+                        console.log('[Search] sample hotel coord fields:', {
+                            latitude: hotelData[0].latitude,
+                            longitude: hotelData[0].longitude,
+                            lat: hotelData[0].lat,
+                            lng: hotelData[0].lng,
+                            coordinates: hotelData[0].coordinates,
+                            detailsLat: hotelData[0].details?.latitude,
+                        });
+                    }
+                }
+
                 setRawHotels(standardizedData);
             } catch (error: any) {
                 console.error('[Search] Error:', error);
@@ -516,6 +573,13 @@ export default function SearchScreen() {
             return { ...h, displayConvertedPrice: convertedAmount.toLocaleString() };
         });
     }, [rawHotels, filters, sortBy, currency]);
+
+    // Stable across card swipes so the memoized map markers don't all re-render on
+    // every selection. `hotels` only changes on filter/sort/currency changes, not swipes.
+    const handleHotelNavigate = useCallback((id: string) => {
+        const h = hotels.find(x => x.hotelId === id);
+        if (h) navigateToHotel(h);
+    }, [hotels, navigateToHotel]);
 
     // When the derived list changes, re-select a valid hotel.
     // Done during render — React's recommended alternative to a setState-in-effect.
@@ -614,21 +678,11 @@ export default function SearchScreen() {
                         value={localDestination}
                         onChangeText={setLocalDestination}
                         returnKeyType="search"
-                        onSubmitEditing={async () => {
+                        onSubmitEditing={() => {
                             const destination = localDestination.trim();
                             if (!destination) return;
+                            // Updating the param re-triggers the geocode-and-center effect above.
                             router.setParams({ destination, placeId: '', countryCode: '' });
-                            try {
-                                const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(destination)}.json?access_token=${MAPBOX_TOKEN}&types=place,district,region,country&limit=1`;
-                                const resp = await fetch(url);
-                                const data = await resp.json();
-                                if (data.features?.length > 0) {
-                                    const [lng, lat] = data.features[0].center;
-                                    setMapCenter([lng, lat]);
-                                }
-                            } catch {
-                                // Geocoding failed — fitBounds from hotel results will center the map
-                            }
                         }}
                     />
                 </View>
@@ -690,10 +744,7 @@ export default function SearchScreen() {
                                     selectedHotelId={selectedHotel?.hotelId}
                                     flyToOnSelectId={flyToHotelId}
                                     onHotelSelect={handleHotelSelect}
-                                    onHotelNavigate={(id) => {
-                                        const h = hotels.find(x => x.hotelId === id);
-                                        if (h) navigateToHotel(h);
-                                    }}
+                                    onHotelNavigate={handleHotelNavigate}
                                     onDeselect={() => setSelectedHotel(null)}
                                     isDark={isDark}
                                     center={mapCenter}
@@ -714,7 +765,7 @@ export default function SearchScreen() {
                                 )}
 
                                 {hotels.length > 0 && (
-                                    <View style={styles.floatingCards} renderToHardwareTextureAndroid={true}>
+                                    <View style={styles.floatingCards}>
                                         <FlatList
                                             ref={cardsFlatListRef}
                                             horizontal
@@ -727,6 +778,9 @@ export default function SearchScreen() {
                                             initialNumToRender={5}
                                             maxToRenderPerBatch={5}
                                             windowSize={11}
+                                            // Android clips partially off-screen cells by default, which
+                                            // blanks out the side cards in this horizontal carousel.
+                                            removeClippedSubviews={false}
                                             getItemLayout={(_, index) => ({
                                                 length: CARD_SNAP,
                                                 offset: CARD_SNAP * index,
@@ -959,31 +1013,31 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
     sortChipsContent: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingLeft: 16,
-        paddingRight: 24,
-        paddingTop: 10,
-        paddingBottom: 12,
+        paddingLeft: 12,
+        paddingRight: 18,
+        paddingTop: 6,
+        paddingBottom: 6,
     },
     sortChip: {
         flexDirection: 'row',
         alignItems: 'center',
         minWidth: 0,
-        minHeight: 36,
-        marginRight: 8,
-        paddingHorizontal: 16,
-        paddingVertical: 10,
-        borderRadius: 20,
+        minHeight: 28,
+        marginRight: 6,
+        paddingHorizontal: 11,
+        paddingVertical: 5,
+        borderRadius: 15,
         backgroundColor: isDark ? '#1e293b' : '#FFFFFF',
         borderWidth: 1,
         borderColor: isDark ? '#334155' : '#E2E8F0',
     },
     sortChipIcon: {
-        marginRight: 8,
+        marginRight: 5,
         alignItems: 'center',
         justifyContent: 'center',
     },
     sortChipIconRight: {
-        marginLeft: 6,
+        marginLeft: 5,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -992,8 +1046,8 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         borderColor: '#2563eb',
     },
     sortChipText: {
-        fontSize: 13,
-        lineHeight: 18,
+        fontSize: 12,
+        lineHeight: 16,
         includeFontPadding: false,
         textAlignVertical: 'center',
         fontWeight: '600',
@@ -1002,8 +1056,8 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         minWidth: 0,
     },
     sortChipTextActive: {
-        fontSize: 13,
-        lineHeight: 18,
+        fontSize: 12,
+        lineHeight: 16,
         includeFontPadding: false,
         textAlignVertical: 'center',
         fontWeight: '600',

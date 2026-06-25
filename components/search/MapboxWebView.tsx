@@ -1,7 +1,6 @@
-// @ts-ignore – @rnmapbox/maps has no bundled TypeScript declarations
-import Mapbox, { Camera, MapView, MarkerView } from '@rnmapbox/maps';
+import Mapbox, { Camera, CircleLayer, MapView, MarkerView, ShapeSource } from '@rnmapbox/maps';
 import { Layers } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAPBOX_TOKEN } from '../../lib/config';
 
@@ -29,7 +28,116 @@ interface MapboxWebViewProps {
 }
 
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
-const DEFAULT_CENTER: [number, number] = [120.596, 16.402];
+// Neutral world-view fallback, used only when neither an explicit destination
+// center nor any hotel coordinates are available yet (so a stale fallback never
+// pins the map to a specific city like Baguio).
+const DEFAULT_CENTER: [number, number] = [0, 20];
+
+// Max price pills (MarkerViews) rendered at once. Kept well under rnmapbox's ~100
+// view-annotation ceiling so pills appear instantly and never drop out during zoom.
+const MAX_PILLS = 60;
+
+// A non-selected hotel pill. Rendered only for hotels currently on screen (capped),
+// so the live MarkerView count stays well under the ~100 where they start dropping
+// out during zoom — these appear instantly. Pill + connector line; the location dot
+// is the GL CircleLayer below it.
+const PillMarker = memo(function PillMarker({
+    hotel,
+    number,
+    currencySymbol,
+    onSelect,
+}: {
+    hotel: any;
+    number: number;
+    currencySymbol: string;
+    onSelect: (hotel: any) => void;
+}) {
+    const price = hotel.displayConvertedPrice || hotel.displayPrice || '???';
+    return (
+        <MarkerView
+            coordinate={[hotel.longitude, hotel.latitude]}
+            anchor={{ x: 0.5, y: 1 }}
+            allowOverlap
+        >
+            <Pressable onPress={() => onSelect(hotel)} style={styles.markerWrapper}>
+                <View style={styles.pill}>
+                    <View style={styles.pillNum}>
+                        <Text style={styles.pillNumText}>{number}</Text>
+                    </View>
+                    <Text style={styles.pillPrice}>{currencySymbol}{price}</Text>
+                </View>
+                <View style={styles.pinContainer}>
+                    <View style={styles.pinLine} />
+                </View>
+            </Pressable>
+        </MarkerView>
+    );
+});
+
+// The focused hotel keeps a real MarkerView (just one — far under MarkerView's ~100
+// limit) so it can show the rich popup card and the highlighted blue pill.
+const SelectedMarker = memo(function SelectedMarker({
+    hotel,
+    number,
+    currencySymbol,
+    onSelect,
+    onNavigate,
+}: {
+    hotel: any;
+    number: number;
+    currencySymbol: string;
+    onSelect: (hotel: any) => void;
+    onNavigate?: (hotelId: string) => void;
+}) {
+    const price = hotel.displayConvertedPrice || hotel.displayPrice || '???';
+    const imgs = Array.isArray(hotel.imageUrls) && hotel.imageUrls.length > 0
+        ? hotel.imageUrls.slice(0, 4)
+        : [hotel.thumbnailUrl || FALLBACK_IMG];
+    while (imgs.length < 4) imgs.push(imgs[0]);
+
+    return (
+        <MarkerView
+            coordinate={[hotel.longitude, hotel.latitude]}
+            anchor={{ x: 0.5, y: 1 }}
+            allowOverlap
+        >
+            <Pressable onPress={() => onSelect(hotel)} style={styles.markerWrapper}>
+                <Pressable
+                    style={styles.popupCard}
+                    onPress={(e) => {
+                        e.stopPropagation();
+                        onNavigate?.(hotel.hotelId);
+                    }}
+                >
+                    <View style={styles.imgGrid}>
+                        {imgs.map((url: string, i: number) => (
+                            <Image
+                                key={i}
+                                source={{ uri: url }}
+                                style={styles.gridImg}
+                                resizeMode="cover"
+                            />
+                        ))}
+                    </View>
+                </Pressable>
+                <View style={[styles.pill, styles.pillSelected]}>
+                    <View style={[styles.pillNum, styles.pillNumSelected]}>
+                        <Text style={[styles.pillNumText, styles.pillNumTextSelected]}>
+                            {number}
+                        </Text>
+                    </View>
+                    <Text style={[styles.pillPrice, styles.pillPriceSelected]}>
+                        {currencySymbol}{price}
+                    </Text>
+                </View>
+                <View style={styles.pinContainer}>
+                    <View style={[styles.pinLine, styles.pinLineSelected]} />
+                    <View style={[styles.pinDot, styles.pinDotSelected]} />
+                </View>
+            </Pressable>
+        </MarkerView>
+    );
+});
 
 export default function MapboxWebView({
     hotels,
@@ -46,39 +154,101 @@ export default function MapboxWebView({
     const [styleKey, setStyleKey] = useState<StyleKey>('dark');
     const [showLayers, setShowLayers] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    // Latest settled map viewport — drives which hotels get a price pill.
+    const [visibleBounds, setVisibleBounds] = useState<{ ne: [number, number]; sw: [number, number] } | null>(null);
 
-    // Fit bounds to all hotels when they load (only when nothing is selected yet)
+    // Center of the loaded hotels — used so the map opens directly on the searched
+    // city instead of the hardcoded default while the destination geocode resolves.
+    const hotelsCenter = useMemo<[number, number] | null>(() => {
+        const lngs = hotels.map(h => h.longitude).filter((n: number) => Number.isFinite(n) && n !== 0);
+        const lats = hotels.map(h => h.latitude).filter((n: number) => Number.isFinite(n) && n !== 0);
+        if (!lngs.length || !lats.length) return null;
+        return [
+            (Math.min(...lngs) + Math.max(...lngs)) / 2,
+            (Math.min(...lats) + Math.max(...lats)) / 2,
+        ];
+    }, [hotels]);
+
+    // Resolved fresh each render so the Camera follows the searched destination as
+    // soon as the geocode (or hotel centroid) resolves, instead of being frozen to
+    // whatever fallback existed at mount: explicit destination → hotel centroid → default.
+    const resolvedCenter = center ?? hotelsCenter ?? DEFAULT_CENTER;
+    const hasRealCenter = Boolean(center ?? hotelsCenter);
+
+    // Keep the map centered on the search destination — on load and whenever the
+    // destination or result set changes — unless a hotel is currently focused.
+    // Falls back to framing all hotels only when no destination point is provided.
     useEffect(() => {
-        if (!hotels.length || selectedHotelId) return;
-        const lngs = hotels.map(h => h.longitude);
-        const lats = hotels.map(h => h.latitude);
-        const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
-        const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
-        cameraRef.current?.fitBounds(ne, sw, [80, 80, 80, 80], 1000);
-    }, [hotels, selectedHotelId]);
+        if (selectedHotelId) return;
+        if (center) {
+            cameraRef.current?.flyTo(center, 2000);
+        } else if (hotels.length) {
+            const lngs = hotels.map(h => h.longitude);
+            const lats = hotels.map(h => h.latitude);
+            const ne: [number, number] = [Math.max(...lngs), Math.max(...lats)];
+            const sw: [number, number] = [Math.min(...lngs), Math.min(...lats)];
+            cameraRef.current?.fitBounds(ne, sw, [80, 80, 80, 80], 250);
+        }
+    }, [center, hotels, selectedHotelId]);
 
-    // Fly to hotel when selected via card swipe
+    // Pan to a hotel when focused via card swipe. Uses a flat easeTo pan (no flyTo
+    // zoom-out/zoom-in swoop) at a short duration so it feels snappy, not slow.
     useEffect(() => {
         if (!flyToOnSelectId) return;
         const hotel = hotels.find(h => h.hotelId === flyToOnSelectId);
         if (hotel) {
-            cameraRef.current?.flyTo([hotel.longitude, hotel.latitude], 8000);
+            cameraRef.current?.setCamera({
+                centerCoordinate: [hotel.longitude, hotel.latitude],
+                animationMode: 'easeTo',
+                animationDuration: 500,
+            });
         }
     }, [flyToOnSelectId, hotels]);
 
-    // Fly to new search destination
-    useEffect(() => {
-        if (!center) return;
-        cameraRef.current?.flyTo(center, 8000);
-    }, [center]);
+    // Rank (1-based, by the parent's sort order) + display price for every hotel.
+    const ranked = useMemo(() =>
+        hotels.map((hotel, i) => ({
+            hotel,
+            number: i + 1,
+            price: hotel.displayConvertedPrice || hotel.displayPrice || '???',
+        })),
+        [hotels],
+    );
 
-    // Render selected hotel last so it appears on top
-    const sortedHotels = selectedHotelId
-        ? [
-            ...hotels.filter(h => h.hotelId !== selectedHotelId),
-            ...hotels.filter(h => h.hotelId === selectedHotelId),
-          ]
-        : hotels;
+    // Location dots for every hotel — but only when nothing is focused. Once a card is
+    // focused, every other marker disappears so just the selected hotel stands out (and
+    // the map stops re-rendering dozens of markers, keeping the focus pan smooth).
+    const featureCollection = useMemo(() => ({
+        type: 'FeatureCollection' as const,
+        features: selectedHotelId
+            ? []
+            : ranked.map(r => ({
+                type: 'Feature' as const,
+                id: r.hotel.hotelId,
+                geometry: { type: 'Point' as const, coordinates: [r.hotel.longitude, r.hotel.latitude] },
+                properties: { hotelId: r.hotel.hotelId },
+            })),
+    }), [ranked, selectedHotelId]);
+
+    // Price pills for on-screen hotels (capped) — hidden entirely while a card is focused.
+    // Before the first settle (visibleBounds null) show the first N so pills are instant.
+    const visiblePills = useMemo(() => {
+        if (selectedHotelId) return [];
+        if (!visibleBounds) return ranked.slice(0, MAX_PILLS);
+        const { ne, sw } = visibleBounds;
+        return ranked
+            .filter(r => {
+                const lng = r.hotel.longitude;
+                const lat = r.hotel.latitude;
+                return lng >= sw[0] && lng <= ne[0] && lat >= sw[1] && lat <= ne[1];
+            })
+            .slice(0, MAX_PILLS);
+    }, [ranked, selectedHotelId, visibleBounds]);
+
+    const selected = useMemo(
+        () => ranked.find(r => r.hotel.hotelId === selectedHotelId) ?? null,
+        [ranked, selectedHotelId],
+    );
 
     return (
         <View style={styles.container}>
@@ -93,70 +263,66 @@ export default function MapboxWebView({
                 pitchEnabled={false}
                 rotateEnabled={false}
                 onDidFinishLoadingMap={() => setIsLoading(false)}
+                onMapIdle={(state) => {
+                    const b = state?.properties?.bounds;
+                    if (b?.ne && b?.sw) {
+                        setVisibleBounds({ ne: b.ne as [number, number], sw: b.sw as [number, number] });
+                    }
+                }}
             >
                 <Camera
                     ref={cameraRef}
                     defaultSettings={{
-                        centerCoordinate: center ?? DEFAULT_CENTER,
-                        zoomLevel: 12,
+                        centerCoordinate: resolvedCenter,
+                        zoomLevel: hasRealCenter ? 12 : 2,
                     }}
                 />
 
-                {sortedHotels.map((hotel) => {
-                    const isSelected = hotel.hotelId === selectedHotelId;
-                    const originalIndex = hotels.indexOf(hotel);
-                    const price = hotel.displayConvertedPrice || hotel.displayPrice || '???';
-                    const imgs = Array.isArray(hotel.imageUrls) && hotel.imageUrls.length > 0
-                        ? hotel.imageUrls.slice(0, 4)
-                        : [hotel.thumbnailUrl || FALLBACK_IMG];
-                    while (imgs.length < 4) imgs.push(imgs[0]);
+                {/* Every hotel's exact location as a GL dot — instant, and never vanishes on
+                    zoom. Tapping a dot selects that hotel (useful for ones past the pill cap). */}
+                <ShapeSource
+                    id="hotelMarkers"
+                    shape={featureCollection}
+                    onPress={(e) => {
+                        const feature = e.features?.[0] as any;
+                        const id = feature?.properties?.hotelId ?? feature?.id;
+                        const hotel = hotels.find(h => h.hotelId === id);
+                        if (hotel) onHotelSelect(hotel);
+                    }}
+                >
+                    <CircleLayer
+                        id="hotelDots"
+                        style={{
+                            circleRadius: 2.5,
+                            circleColor: '#3b82f6',
+                            circleStrokeWidth: 1,
+                            circleStrokeColor: '#ffffff',
+                        }}
+                    />
+                </ShapeSource>
 
-                    return (
-                        <MarkerView
-                            key={hotel.hotelId}
-                            id={hotel.hotelId}
-                            coordinate={[hotel.longitude, hotel.latitude]}
-                            anchor={{ x: 0.5, y: 1 }}
-                        >
-                            <Pressable onPress={() => onHotelSelect(hotel)} style={styles.markerWrapper}>
-                                {isSelected && (
-                                    <Pressable
-                                        style={styles.popupCard}
-                                        onPress={(e) => {
-                                            e.stopPropagation();
-                                            onHotelNavigate?.(hotel.hotelId);
-                                        }}
-                                    >
-                                        <View style={styles.imgGrid}>
-                                            {imgs.map((url: string, i: number) => (
-                                                <Image
-                                                    key={i}
-                                                    source={{ uri: url }}
-                                                    style={styles.gridImg}
-                                                    resizeMode="cover"
-                                                />
-                                            ))}
-                                        </View>
-                                    </Pressable>
-                                )}
-                                <View style={[styles.pill, isSelected && styles.pillSelected]}>
-                                    <View style={[styles.pillNum, isSelected && styles.pillNumSelected]}>
-                                        <Text style={[styles.pillNumText, isSelected && styles.pillNumTextSelected]}>
-                                            {originalIndex + 1}
-                                        </Text>
-                                    </View>
-                                    <Text style={[styles.pillPrice, isSelected && styles.pillPriceSelected]}>
-                                        {currencySymbol}{price}
-                                    </Text>
-                                </View>
-                                <View style={styles.pinContainer}>
-                                    <View style={[styles.pinLine, isSelected && styles.pinLineSelected]} />
-                                    <View style={[styles.pinDot, isSelected && styles.pinDotSelected]} />
-                                </View>
-                            </Pressable>
-                        </MarkerView>
-                    );
-                })}
+                {/* Price pills for on-screen hotels only (capped) — real views, so they
+                    appear instantly and stay pixel-exact. Off-screen hotels show just a dot. */}
+                {visiblePills.map(r => (
+                    <PillMarker
+                        key={r.hotel.hotelId}
+                        hotel={r.hotel}
+                        number={r.number}
+                        currencySymbol={currencySymbol}
+                        onSelect={onHotelSelect}
+                    />
+                ))}
+
+                {/* Focused hotel: a single MarkerView with the rich popup + blue pill. */}
+                {selected && (
+                    <SelectedMarker
+                        hotel={selected.hotel}
+                        number={selected.number}
+                        currencySymbol={currencySymbol}
+                        onSelect={onHotelSelect}
+                        onNavigate={onHotelNavigate}
+                    />
+                )}
             </MapView>
 
             {/* Layer toggle */}
@@ -312,11 +478,11 @@ const styles = StyleSheet.create({
         height: 12,
     },
     pinDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
         backgroundColor: '#3b82f6',
-        borderWidth: 1.5,
+        borderWidth: 1,
         borderColor: 'white',
     },
     pinDotSelected: {
