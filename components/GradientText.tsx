@@ -1,9 +1,9 @@
 import React from 'react';
-import { Text, View } from 'react-native';
+import { Text } from 'react-native';
 import MaskedView from '@react-native-masked-view/masked-view';
 import { LinearGradient } from 'expo-linear-gradient';
 
-export const GradientText = ({ children, colors, className, style }: any) => {
+export const GradientText = ({ children, colors, style }: any) => {
     return (
         <MaskedView
             maskElement={<Text style={style}>{children}</Text>}

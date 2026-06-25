@@ -41,11 +41,15 @@ export default function FilterModal({ visible, onClose, filters, onApply }: Filt
     const [localFilters, setLocalFilters] = useState(filters);
     const [isResetting, setIsResetting] = useState(false);
  
-    React.useEffect(() => {
+    // Re-seed local editing state from props each time the modal opens — done during
+    // render (React's recommended alternative to a setState-in-effect).
+    const [wasVisible, setWasVisible] = useState(visible);
+    if (visible !== wasVisible) {
+        setWasVisible(visible);
         if (visible) {
             setLocalFilters(filters);
         }
-    }, [visible, filters]);
+    }
 
     const toggleStar = (star: number) => {
         const current = [...(localFilters.starRating || [])];

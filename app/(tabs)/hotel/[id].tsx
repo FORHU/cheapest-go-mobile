@@ -36,8 +36,7 @@ import {
     Trees,
     Tv,
     Utensils, Waves,
-    Wifi, Wind,
-    XCircle
+    Wifi, Wind
 } from 'lucide-react-native';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, Share, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
@@ -71,7 +70,7 @@ const cleanDescription = (text: string) => {
         .trim();
 };
 
-const AMENITY_COLORS: Array<{ test: (n: string) => boolean; light: { bg: string; text: string }; dark: { bg: string; text: string } }> = [
+const AMENITY_COLORS: { test: (n: string) => boolean; light: { bg: string; text: string }; dark: { bg: string; text: string } }[] = [
     { test: n => n.includes('wifi') || n.includes('wi-fi') || n.includes('internet'), light: { bg: '#dbeafe', text: '#1d4ed8' }, dark: { bg: '#1e3a5f', text: '#93c5fd' } },
     { test: n => n.includes('breakfast') || (n.includes('coffee') && !n.includes('maker')) || n.includes('half board') || n.includes('full board'), light: { bg: '#fef3c7', text: '#b45309' }, dark: { bg: '#431407', text: '#fcd34d' } },
     { test: n => n.includes('pool') || n.includes('swim') || n.includes('beach'), light: { bg: '#cffafe', text: '#0e7490' }, dark: { bg: '#164e63', text: '#67e8f9' } },
@@ -157,11 +156,6 @@ const normalizeRoomOptions = (hotel: any) => {
     const rawRooms = hotel.roomTypes || hotel.details?.roomTypes || hotel.details?.rooms || hotel.rooms || [];
     const rooms = Array.isArray(rawRooms) ? rawRooms : [rawRooms];
 
-    if (rooms.length > 0) {
-        console.log('[normalizeRoomOptions] raw room[0] keys:', Object.keys(rooms[0]));
-        console.log('[normalizeRoomOptions] raw room[0]:', JSON.stringify(rooms[0], null, 2));
-    }
-
     return rooms
         .map((room: any, index: number) => {
             const rawRates = room.rates || room.rate || [];
@@ -194,7 +188,7 @@ const getPolicyDescription = (value: any) => {
     return value.description || value.text || null;
 };
 
-const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
+const ReviewItem = React.memo(function ReviewItem({ review, isLast, styles }: any) {
     const [expanded, setExpanded] = useState(false);
     const content = stripHtml(review.pros || review.headline || "Excellent stay, very friendly staff and great location.");
     const isLong = content.length > 100;
@@ -227,7 +221,7 @@ const ReviewItem = React.memo(({ review, isLast, styles }: any) => {
     );
 });
 
-const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, fromCurrency, styles, onSelect, isSelected }: any) => {
+const RoomCard = React.memo(function RoomCard({ room, hotelThumbnail, detailRooms, currency, fromCurrency, styles, onSelect, isSelected }: any) {
     const mappedRoomId = room.rates?.[0]?.mappedRoomId;
     const matchedRoom = mappedRoomId && detailRooms
         ? detailRooms.find((dr: any) => String(dr.id) === String(mappedRoomId))
@@ -329,7 +323,7 @@ const RoomCard = React.memo(({ room, hotelThumbnail, detailRooms, currency, from
     );
 });
 
-const FaqSection = React.memo(({ faqs, styles, isDark }: { faqs: { q: string; a: string }[]; styles: any; isDark: boolean }) => {
+const FaqSection = React.memo(function FaqSection({ faqs, styles, isDark }: { faqs: { q: string; a: string }[]; styles: any; isDark: boolean }) {
     const [openIndex, setOpenIndex] = useState<number | null>(null);
     if (!faqs.length) return null;
     return (
@@ -356,7 +350,7 @@ const FaqSection = React.memo(({ faqs, styles, isDark }: { faqs: { q: string; a:
     );
 });
 
-const GalleryImage = React.memo(({ uri, width }: { uri: string, width: number }) => {
+const GalleryImage = React.memo(function GalleryImage({ uri, width }: { uri: string, width: number }) {
     return (
         <View style={{ width, height: 350, backgroundColor: '#0f172a' }}>
             <ExpoImage
@@ -511,7 +505,7 @@ export default function HotelDetailsScreen() {
                 adults: params.adults as string || '2',
             },
         });
-    }, [hotel, params, router, selectedRoom]);
+    }, [hotel, params, router, selectedRoom, currency.code]);
 
     const availableRooms = useMemo(() => normalizeRoomOptions(hotel), [hotel]);
 
@@ -527,14 +521,6 @@ export default function HotelDetailsScreen() {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
-            console.log('[HotelDetails] Fetching:', {
-                id: params.id,
-                checkIn: params.checkIn,
-                checkOut: params.checkOut,
-                adults: params.adults,
-                rooms: params.rooms,
-                currency: params.currency,
-            });
             try {
                 const [details, reviewData] = await Promise.all([
                     getHotelDetails(params.id as string, {
@@ -546,21 +532,6 @@ export default function HotelDetailsScreen() {
                     }),
                     getHotelReviews(params.id as string, 100)
                 ]);
-                console.log('[HotelDetails] Response keys:', details ? Object.keys(details) : 'null');
-                console.log('[HotelDetails] thumbnailUrl:', details?.thumbnailUrl);
-                console.log('[HotelDetails] detailRooms:', details?.detailRooms ? `${details.detailRooms.length} rooms` : 'undefined');
-                console.log('[HotelDetails] roomTypes count:', details?.roomTypes?.length ?? 'undefined');
-                if (details?.roomTypes?.length > 0) {
-                    const r = details.roomTypes[0];
-                    console.log('[HotelDetails] roomTypes[0] keys:', Object.keys(r));
-                    console.log('[HotelDetails] roomTypes[0] image fields:', {
-                        roomPhotos: r.roomPhotos,
-                        images: r.images,
-                        photos: r.photos,
-                        mappedRoomId: r.rates?.[0]?.mappedRoomId,
-                    });
-                }
-                console.log('[HotelDetails] reviews:', reviewData?.length ?? 0);
                 setHotel(details);
                 setReviews(reviewData);
                 setRoomPage(1);
@@ -574,7 +545,7 @@ export default function HotelDetailsScreen() {
         if (params.id) {
             fetchData();
         }
-    }, [params.id]);
+    }, [params.id, params.adults, params.checkIn, params.checkOut, params.currency, params.rooms]);
 
     if (loading) {
         return (
@@ -1142,7 +1113,7 @@ export default function HotelDetailsScreen() {
     );
 }
 
-const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.create({
+const getStyles = (isDark: boolean, _bottomInset: number = 0) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: isDark ? '#020617' : '#f8fafc',

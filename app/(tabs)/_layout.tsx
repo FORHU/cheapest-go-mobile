@@ -1,10 +1,8 @@
 import React from 'react';
 import { Home, Compass, Heart, User, Ticket } from 'lucide-react-native';
-import { Link, Tabs } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { Tabs } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import Colors from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
 import { useClientOnlyValue } from '@/hooks/useClientOnlyValue';
 

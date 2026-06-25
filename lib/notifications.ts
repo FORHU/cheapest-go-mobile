@@ -12,6 +12,9 @@ type NotificationsModule = typeof import('expo-notifications');
 
 let Notifications: NotificationsModule | null = null;
 try {
+    // Optional native module — require()'d in a try/catch so the app degrades
+    // gracefully where expo-notifications isn't available.
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     Notifications = require('expo-notifications') as NotificationsModule;
     Notifications.setNotificationHandler({
         handleNotification: async () => ({
@@ -48,7 +51,6 @@ export async function registerForPushNotifications(userId?: string): Promise<str
         }
 
         if (finalStatus !== 'granted') {
-            console.log('[notifications] Permission denied');
             return null;
         }
 
@@ -76,8 +78,7 @@ export async function registerForPushNotifications(userId?: string): Promise<str
         }
 
         return token;
-    } catch (err) {
-        console.log('[notifications] Push unavailable:', (err as Error).message);
+    } catch {
         return null;
     }
 }

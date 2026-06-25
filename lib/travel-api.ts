@@ -183,7 +183,7 @@ export async function searchHotels(params: HotelSearchParams) {
                 placeId = exactMatch.id;
                 countryCode = exactMatch.countryCode || getCountryCodeFromAddress(exactMatch.subtitle || exactMatch.title || '');
             }
-        } catch (err) {
+        } catch {
             // Silently fail, we'll try with just the name
         }
     }
@@ -322,12 +322,12 @@ export interface PrebookResponse {
     price?: number;
     currency?: string;
     cancellationPolicies?: {
-        cancelPolicyInfos?: Array<{
+        cancelPolicyInfos?: {
             cancelTime: string;
             amount: number;
             currency: string;
             type: string;
-        }>;
+        }[];
         hotelRemarks?: string[];
         refundableTag?: string;
     };
@@ -393,7 +393,7 @@ export interface FlightSearchParams {
     infants?: number;
     cabinClass?: string;
     tripType: 'one-way' | 'round-trip' | 'multi-city';
-    multiCitySegments?: Array<{ origin: string; destination: string; departureDate: string }>;
+    multiCitySegments?: { origin: string; destination: string; departureDate: string }[];
 }
 
 export async function searchFlights(params: FlightSearchParams) {
@@ -462,7 +462,7 @@ export async function autocompleteAirports(keyword: string): Promise<Airport[]> 
         if (results.length > 0) return results;
         // Fallback to local list if web API is unavailable
         return searchAirports(keyword);
-    } catch (err) {
+    } catch {
         // Always fall back to local list — flights must work offline too
         try { return searchAirports(keyword); } catch { return []; }
     }

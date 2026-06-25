@@ -10,19 +10,17 @@ const YourRecentSearches = () => {
     const isDark = colorScheme === 'dark';
     const router = useRouter();
 
-    const loadHistory = async () => {
-        try {
-            const history = await getRecentSearches();
-            if (history && Array.isArray(history)) {
-                setRecentSearches(history);
-            }
-        } catch (error) {
-            console.error('Failed to load recent searches:', error);
-        }
-    };
-
     useEffect(() => {
-        loadHistory();
+        (async () => {
+            try {
+                const history = await getRecentSearches();
+                if (history && Array.isArray(history)) {
+                    setRecentSearches(history);
+                }
+            } catch (error) {
+                console.error('Failed to load recent searches:', error);
+            }
+        })();
     }, []);
 
     if (recentSearches.length === 0) return null;

@@ -102,13 +102,13 @@ function RootLayoutNav() {
     const handle = async (url: string) => {
       try {
         await handleAuthDeepLink(url);
-      } catch (_) { }
+      } catch { }
     };
 
     Linking.getInitialURL().then(url => { if (url) handle(url); });
     const sub = Linking.addEventListener('url', ({ url }) => handle(url));
     return () => sub.remove();
-  }, []);
+  }, [handleAuthDeepLink]);
 
   // ── Auth redirect ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -132,7 +132,7 @@ function RootLayoutNav() {
     } else if (user && inAuthGroup) {
       router.replace('/(tabs)');
     }
-  }, [user, isLoading, segments, isPasswordRecovery, hasSeenOnboarding]);
+  }, [user, isLoading, segments, isPasswordRecovery, hasSeenOnboarding, router]);
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>

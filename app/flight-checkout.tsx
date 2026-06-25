@@ -32,7 +32,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAuth } from '../context/AuthContext';
-import { useSettings } from '../context/SettingsContext';
 import {
     webFetchBags, webFetchSeatMap, webMobileBook, webMobileConfirm, webRefreshOffer,
     type MobileBookResult, type NormalizedBagOption, type NormalizedSegmentSeatMap,
@@ -44,6 +43,9 @@ let StripeProvider: React.ComponentType<any> | null = null;
 let useStripeHook: (() => { initPaymentSheet: any; presentPaymentSheet: any }) | null = null;
 
 try {
+    // Optional native module — must be require()'d in a try/catch so the app still
+    // runs in environments where Stripe isn't installed (e.g. Expo Go).
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     const stripe = require('@stripe/stripe-react-native');
     StripeProvider = stripe.StripeProvider;
     useStripeHook = stripe.useStripe;
@@ -146,25 +148,38 @@ export default function FlightCheckoutScreen() {
                 merchantIdentifier="com.cheapestgo.mobile"
                 urlScheme="mobileapp"
             >
-                <FlightCheckoutContent stripeAvailable />
+                <StripeFlightCheckout />
             </SP>
         );
     }
-    return <FlightCheckoutContent stripeAvailable={false} />;
+    return <FlightCheckoutContent stripeAvailable={false} initPaymentSheet={null} presentPaymentSheet={null} />;
 }
 
-function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }) {
+// Only mounted when Stripe is available, so the Stripe hook can be called
+// unconditionally here (satisfying the rules-of-hooks). useStripeHook is set in the
+// same try-block as StripeProvider, so it is non-null whenever this renders.
+function StripeFlightCheckout() {
+    const { initPaymentSheet, presentPaymentSheet } = useStripeHook!();
+    return (
+        <FlightCheckoutContent
+            stripeAvailable
+            initPaymentSheet={initPaymentSheet}
+            presentPaymentSheet={presentPaymentSheet}
+        />
+    );
+}
+
+function FlightCheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentSheet }: {
+    stripeAvailable: boolean;
+    initPaymentSheet: any;
+    presentPaymentSheet: any;
+}) {
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
-    const { currency } = useSettings();
     const { user } = useAuth();
     const styles = getStyles(isDark);
-
-    const stripeHook = stripeAvailable && useStripeHook ? useStripeHook() : null;
-    const initPaymentSheet = stripeHook?.initPaymentSheet;
-    const presentPaymentSheet = stripeHook?.presentPaymentSheet;
 
     // Parse Selected Offer
     const baseOffer: FlightOffer | null = useMemo(() => {
@@ -239,7 +254,11 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     // retrying after a timeout reuses the same key — Duffel then returns the order
     // it may have created just before the timeout instead of double-booking. A fresh
     // key per attempt (the old behaviour) would create duplicate paid orders on retry.
-    const idempotencyKeyRef = useRef(`mob-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    // Seed the idempotency key once via a lazy state initializer so the impure
+    // Date.now()/Math.random() call doesn't run on every render (React Compiler purity
+    // rule). The value is held in a ref so it can be rotated synchronously on retry.
+    const [initialIdempotencyKey] = useState(() => `mob-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+    const idempotencyKeyRef = useRef(initialIdempotencyKey);
 
     // Custom Date Picker Modal State
     const [pickerVisible, setPickerVisible] = useState(false);
@@ -264,7 +283,7 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
 
     // Bag Selection State (live from API)
     const [bagOptions, setBagOptions] = useState<NormalizedBagOption[]>([]);
-    const [bagLoading, setBagLoading] = useState(false);
+    const [, setBagLoading] = useState(false);
     const [selectedBags, setSelectedBags] = useState<Record<string, number>>({}); // serviceId → quantity
 
     // Date Calculation Helpers
@@ -279,7 +298,10 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
     // Progress animation during booking
     useEffect(() => {
         if (step !== 'confirming') return;
-        setBookingStepIdx(0);
+        // Reset to the first step outside the effect body (React Compiler
+        // set-state-in-effect rule) before the interval advances it.
+        const reset = async () => setBookingStepIdx(0);
+        reset();
         const timer = setInterval(() => {
             setBookingStepIdx(i => Math.min(i + 1, BOOKING_STEPS.length - 1));
         }, 3500);
@@ -304,23 +326,27 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
             destination: s.arrival?.airport ?? s.destination ?? '',
         }));
 
-        // Bags
-        setBagLoading(true);
-        webFetchBags(rawOffer.id, duffelPassengerIds)
-            .then(res => { if (res.success) setBagOptions(res.bagOptions); })
-            .catch(() => { })
-            .finally(() => setBagLoading(false));
+        // Bags — loading flag set inside the async fn so it isn't a synchronous
+        // setState in the effect body (React Compiler set-state-in-effect rule).
+        (async () => {
+            setBagLoading(true);
+            try {
+                const res = await webFetchBags(rawOffer.id, duffelPassengerIds);
+                if (res.success) setBagOptions(res.bagOptions);
+            } catch { /* bags optional */ }
+            finally { setBagLoading(false); }
+        })();
 
         // Seat map
-        setSeatMapLoading(true);
-        webFetchSeatMap(rawOffer.id, offerSegments)
-            .then(res => {
+        (async () => {
+            setSeatMapLoading(true);
+            try {
+                const res = await webFetchSeatMap(rawOffer.id, offerSegments);
                 if (res.unavailable) { setSeatMapUnavailable(true); return; }
                 if (res.success) setSeatMaps(res.seatMaps);
-            })
-            .catch(async (err) => {
+            } catch (err: any) {
                 // Offer expired → try refresh
-                if (err.status === 404 && rawOffer) {
+                if (err?.status === 404 && rawOffer) {
                     try {
                         const refreshed = await webRefreshOffer(rawOffer);
                         if (refreshed.success && refreshed.newOffer) {
@@ -332,8 +358,10 @@ function FlightCheckoutContent({ stripeAvailable }: { stripeAvailable: boolean }
                         }
                     } catch {/* seat map optional */ }
                 }
-            })
-            .finally(() => setSeatMapLoading(false));
+            } finally {
+                setSeatMapLoading(false);
+            }
+        })();
     }, [offer]);
 
     const openDatePicker = (target: 'birthDate' | 'passportExpiry', currentValue: string) => {

@@ -100,7 +100,7 @@ async function post<T = any>(
 // ─── Flight Search ────────────────────────────────────────────────────────────
 
 export interface WebSearchParams {
-    segments: Array<{ origin: string; destination: string; departureDate: string }>;
+    segments: { origin: string; destination: string; departureDate: string }[];
     passengers: { adults: number; children: number; infants: number };
     cabinClass: string;
     tripType: string;
@@ -171,7 +171,7 @@ export interface NormalizedSegmentSeatMap {
 
 export async function webFetchSeatMap(
     offerId: string,
-    segments: Array<{ origin: string; destination: string }>
+    segments: { origin: string; destination: string }[]
 ): Promise<{ success: boolean; seatMaps: NormalizedSegmentSeatMap[]; unavailable?: boolean }> {
     return post('/api/flights/seat-map', { offerId, segments });
 }
@@ -265,13 +265,13 @@ export async function webAutocompleteDestinations(query: string): Promise<WebDes
 export interface MobileBookParams {
     provider: string;
     flight: FlightOffer;
-    passengers: Array<{
+    passengers: {
         type: string;
         firstName: string;
         lastName: string;
         gender: string;
         birthDate: string;
-    }>;
+    }[];
     contact: { email: string; phone: string; countryCode: string; addressLine: string; city: string; postalCode: string; country: string };
     idempotencyKey: string;
     seatServiceIds?: string[];
@@ -337,7 +337,7 @@ export interface ConfirmHotelBookingParams {
     prebookId: string;
     paymentIntentId: string;
     holder: { firstName: string; lastName: string; email: string };
-    guests: Array<{ occupancyNumber: number; firstName: string; lastName: string; email: string; remarks?: string }>;
+    guests: { occupancyNumber: number; firstName: string; lastName: string; email: string; remarks?: string }[];
     payment: { method: string; transactionId?: string };
     propertyName?: string;
     propertyImage?: string;

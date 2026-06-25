@@ -9,7 +9,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react-native';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
@@ -117,7 +117,7 @@ const GRID_SIZE = 40;
 const EXTRA = GRID_SIZE * 3;
 
 function DriftGrid({ color }: { color: string }) {
-  const anim = useRef(new Animated.Value(0)).current;
+  const [anim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.loop(
@@ -128,7 +128,7 @@ function DriftGrid({ color }: { color: string }) {
         useNativeDriver: true,
       })
     ).start();
-  }, []);
+  }, [anim]);
 
   return (
     <Animated.View
@@ -189,8 +189,8 @@ function Sparkle({
   duration: number; delay: number;
   color: string; glowColor: string;
 }) {
-  const opacity = useRef(new Animated.Value(0)).current;
-  const scale = useRef(new Animated.Value(0.5)).current;
+  const [opacity] = useState(() => new Animated.Value(0));
+  const [scale] = useState(() => new Animated.Value(0.5));
 
   useEffect(() => {
     const loop = Animated.loop(
@@ -208,7 +208,7 @@ function Sparkle({
     );
     loop.start();
     return () => loop.stop();
-  }, []);
+  }, [delay, duration, opacity, scale]);
 
   const glowId = `glow${size}${delay}`;
 
@@ -290,15 +290,15 @@ export default function LoginScreen() {
   const [emailErr, setEmailErr] = useState('');
   const [passwordErr, setPasswordErr] = useState('');
 
-  const slideAnim = useRef(new Animated.Value(20)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(20));
+  const [fadeAnim] = useState(() => new Animated.Value(0));
 
   useEffect(() => {
     Animated.parallel([
       Animated.timing(slideAnim, { toValue: 0, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
-  }, []);
+  }, [fadeAnim, slideAnim]);
 
   const clearErrors = () => {
     setEmailErr(''); setPasswordErr('');

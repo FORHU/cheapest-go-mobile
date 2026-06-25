@@ -8,7 +8,7 @@ export default function TabOneScreen() {
     <SafeAreaView className="flex-1">
       <FlightFilters 
         airlines={mockAirlines} 
-        onFilterChange={(filters) => console.log('Filters updated:', filters)} 
+        onFilterChange={() => {}}
       />
     </SafeAreaView>
   );

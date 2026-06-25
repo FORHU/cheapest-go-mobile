@@ -17,7 +17,7 @@ const getSavedHotelsData = async (): Promise<Record<string, any>> => {
     try {
         const jsonValue = await AsyncStorage.getItem(SAVED_HOTELS_KEY);
         return jsonValue != null ? JSON.parse(jsonValue) : {};
-    } catch (e) {
+    } catch {
         return {};
     }
 };
@@ -26,7 +26,7 @@ export const getSavedHotels = async (): Promise<any[]> => {
     try {
         const data = await getSavedHotelsData();
         return Object.values(data);
-    } catch (e) {
+    } catch {
         return [];
     }
 };

@@ -30,7 +30,6 @@ const AISearchBar: React.FC<AISearchBarProps> = ({ activeTab }) => {
     const handlePress = () => {
         if (activeTab === 'Stays') setHotelModalVisible(true);
         else if (activeTab === 'Flights') setFlightModalVisible(true);
-        else console.log('AI Search tapped');
     };
 
     const getLeftIcon = () => {
