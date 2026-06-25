@@ -342,7 +342,7 @@ export default function SearchScreen() {
             // eslint-disable-next-line react-hooks/set-state-in-effect
             setLocalDestination(destination);
         }
-    }
+    }, [params.destination, localDestination]);
 
     const viewModeParam = params.viewMode as string | undefined;
     const [prevViewModeParam, setPrevViewModeParam] = useState(viewModeParam);
