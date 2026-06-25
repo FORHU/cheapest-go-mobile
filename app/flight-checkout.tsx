@@ -182,10 +182,6 @@ function FlightCheckoutContent({ stripeAvailable, initPaymentSheet, presentPayme
     const { user } = useAuth();
     const styles = getStyles(isDark);
 
-    const stripeHook = stripeAvailable && useStripeHook ? useStripeHook() : null;
-    const initPaymentSheet = stripeHook?.initPaymentSheet;
-    const presentPaymentSheet = stripeHook?.presentPaymentSheet;
-
     // Parse Selected Offer
     const baseOffer: FlightOffer | null = useMemo(() => {
         if (!params.offerData) return null;

@@ -116,17 +116,14 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
             setPrebooking(true);
             setPrebookError(null);
             try {
-                rLog('Checkout', 'checkout', 'Prebooking room', { offerId, hotelName, checkIn, checkOut, adults });
                 const result = await prebookRoom({
                     offerId,
                     currency: roomCurrency,
                     adults,
                     roomName: params.roomName as string || undefined,
                 });
-                rLog('Checkout', 'checkout', 'Prebook success', { prebookId: result.prebookId, price: result.price });
                 setPrebookData(result);
             } catch (err: any) {
-                rError('Checkout', 'checkout', 'Prebook failed', { offerId, hotelName, error: err.message });
                 setPrebookError(err.message || 'Failed to verify room availability');
             } finally {
                 setPrebooking(false);
