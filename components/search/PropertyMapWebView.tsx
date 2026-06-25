@@ -1189,7 +1189,7 @@ export default function PropertyMapWebView({
             >
                 <View style={styles.modalContent}>
                     {/* Fullscreen Map WebView Background */}
-                    <View style={StyleSheet.absoluteFillObject}>
+                    <View style={StyleSheet.absoluteFill}>
                         <WebView
                             ref={webViewRef}
                             originWhitelist={['*']}
@@ -1321,7 +1321,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flex: 1,
     },
     mapLoading: {
-        ...StyleSheet.absoluteFillObject,
+        position: 'absolute', left: 0, right: 0, top: 0, bottom: 0,
         alignItems: 'center',
         justifyContent: 'center',
         backgroundColor: isDark ? 'rgba(2, 6, 23, 0.7)' : 'rgba(255, 255, 255, 0.7)',

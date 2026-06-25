@@ -214,13 +214,9 @@ export default function TripsScreen() {
     }, []);
 
     useEffect(() => {
-        let cancelled = false;
-        const run = async () => {
-            if (user) await load();
-            if (!cancelled) setLoading(false);
-        };
-        run();
-        return () => { cancelled = true; };
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        if (!user) { setLoading(false); return; }
+        load().finally(() => setLoading(false));
     }, [user, load]);
 
     const onRefresh = useCallback(async () => {

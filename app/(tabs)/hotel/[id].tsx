@@ -41,13 +41,14 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, Share, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { isFavorite as checkIsFavorite, toggleFavorite as persistToggleFavorite } from '../../../lib/favorites';
 
 import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
 import StarRating from '../../../components/ui/StarRating';
 import { useSettings } from '../../../context/SettingsContext';
-import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 import { convertCurrency } from '../../../lib/currency';
+import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 
 // Enable LayoutAnimation on Android
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -383,7 +384,6 @@ export default function HotelDetailsScreen() {
     const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
     const [visibleReviewsCount, setVisibleReviewsCount] = useState(3);
     const [selectedRoom, setSelectedRoom] = useState<any>(null);
-    const [isFavorite, setIsFavorite] = useState(false);
     const [isFacilitiesExpanded, setIsFacilitiesExpanded] = useState(false);
     const [isPolicyExpanded, setIsPolicyExpanded] = useState(false);
     const [roomPage, setRoomPage] = useState(1);
@@ -398,9 +398,19 @@ export default function HotelDetailsScreen() {
         });
     }, [hotel]);
 
-    const toggleFavorite = useCallback(() => {
-        setIsFavorite(prev => !prev);
-    }, []);
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    useEffect(() => {
+        if (hotel?.hotelId) {
+            checkIsFavorite(hotel.hotelId).then(setIsFavorite);
+        }
+    }, [hotel?.hotelId]);
+
+    const toggleFavorite = useCallback(async () => {
+        if (!hotel?.hotelId) return;
+        const added = await persistToggleFavorite(hotel.hotelId, hotel);
+        setIsFavorite(added);
+    }, [hotel]);
 
     // Merge hotelFacilities (full list from API) with facilities
     const allFacilities = useMemo(() => {
@@ -448,7 +458,7 @@ export default function HotelDetailsScreen() {
     }, [hotel]);
 
     const handleRoomSelect = useCallback((room: any) => {
-        setSelectedRoom(prev =>
+        setSelectedRoom((prev: any) =>
             prev?.selectorId === room.selectorId ? null : room
         );
     }, []);
@@ -466,7 +476,7 @@ export default function HotelDetailsScreen() {
             selectedRoom.offerId ||
             rate?.offerId ||
             (rate?._tgx?.optionId ? `TGX:${rate._tgx.optionId}` : null) ||
-            (rate?._tgx?.token    ? `TGX:${rate._tgx.token}`    : null);
+            (rate?._tgx?.token ? `TGX:${rate._tgx.token}` : null);
 
         if (!offerId) {
             Alert.alert('Room unavailable', 'This room cannot be booked right now. Please select a different room.');
@@ -521,6 +531,14 @@ export default function HotelDetailsScreen() {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            console.log('[HotelDetails] Fetching:', {
+                id: params.id,
+                checkIn: params.checkIn,
+                checkOut: params.checkOut,
+                adults: params.adults,
+                rooms: params.rooms,
+                currency: params.currency,
+            });
             try {
                 const [details, reviewData] = await Promise.all([
                     getHotelDetails(params.id as string, {
@@ -532,6 +550,21 @@ export default function HotelDetailsScreen() {
                     }),
                     getHotelReviews(params.id as string, 100)
                 ]);
+                console.log('[HotelDetails] Response keys:', details ? Object.keys(details) : 'null');
+                console.log('[HotelDetails] thumbnailUrl:', details?.thumbnailUrl);
+                console.log('[HotelDetails] detailRooms:', details?.detailRooms ? `${details.detailRooms.length} rooms` : 'undefined');
+                console.log('[HotelDetails] roomTypes count:', details?.roomTypes?.length ?? 'undefined');
+                if (details?.roomTypes?.length > 0) {
+                    const r = details.roomTypes[0];
+                    console.log('[HotelDetails] roomTypes[0] keys:', Object.keys(r));
+                    console.log('[HotelDetails] roomTypes[0] image fields:', {
+                        roomPhotos: r.roomPhotos,
+                        images: r.images,
+                        photos: r.photos,
+                        mappedRoomId: r.rates?.[0]?.mappedRoomId,
+                    });
+                }
+                console.log('[HotelDetails] reviews:', reviewData?.length ?? 0);
                 setHotel(details);
                 setReviews(reviewData);
                 setRoomPage(1);
@@ -628,7 +661,7 @@ export default function HotelDetailsScreen() {
 
                     {/* Left & Right Sliding Arrows */}
                     {hotelImages.length > 1 && activeImageIndex > 0 && (
-                        <Pressable 
+                        <Pressable
                             style={[styles.sliderArrow, styles.sliderArrowLeft]}
                             onPress={() => {
                                 const prevIdx = activeImageIndex - 1;
@@ -640,7 +673,7 @@ export default function HotelDetailsScreen() {
                         </Pressable>
                     )}
                     {hotelImages.length > 1 && activeImageIndex < hotelImages.length - 1 && (
-                        <Pressable 
+                        <Pressable
                             style={[styles.sliderArrow, styles.sliderArrowRight]}
                             onPress={() => {
                                 const nextIdx = activeImageIndex + 1;
@@ -698,10 +731,10 @@ export default function HotelDetailsScreen() {
                     {/* Quick Info pills */}
                     {(() => {
                         const checks = [
-                            { icon: Wifi,   label: 'Free Wi-Fi', match: (n: string) => n.includes('wifi') || n.includes('wi-fi') || n.includes('wi_fi') || n.includes('internet') },
-                            { icon: Coffee, label: 'Breakfast',  match: (n: string) => n.includes('breakfast') || n.includes('coffee') },
-                            { icon: Wind,   label: 'AC',         match: (n: string) => n.includes('air cond') || n.includes('air_cond') || n.includes('conditioning') || n.includes('aircon') || n.includes('climate') || n === 'ac' },
-                            { icon: Tv,     label: 'TV',         match: (n: string) => n.includes('tv') || n.includes('television') || n.includes('satellite') || n.includes('cable') },
+                            { icon: Wifi, label: 'Free Wi-Fi', match: (n: string) => n.includes('wifi') || n.includes('wi-fi') || n.includes('wi_fi') || n.includes('internet') },
+                            { icon: Coffee, label: 'Breakfast', match: (n: string) => n.includes('breakfast') || n.includes('coffee') },
+                            { icon: Wind, label: 'AC', match: (n: string) => n.includes('air cond') || n.includes('air_cond') || n.includes('conditioning') || n.includes('aircon') || n.includes('climate') || n === 'ac' },
+                            { icon: Tv, label: 'TV', match: (n: string) => n.includes('tv') || n.includes('television') || n.includes('satellite') || n.includes('cable') },
                         ];
                         return (
                             <ScrollView

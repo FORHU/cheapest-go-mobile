@@ -2,7 +2,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import * as Linking from 'expo-linking';
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
+import { DarkTheme, DefaultTheme, ThemeProvider, Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import 'react-native-reanimated';
@@ -12,13 +12,13 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { ForceUpdateModal } from '../components/ui/ForceUpdateModal';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { SettingsProvider } from '../context/SettingsContext';
-import "../global.css";
 import { registerForPushNotifications } from '../lib/notifications';
 import {
-  fetchVersionConfig,
-  isUpdateRequired,
-  type VersionConfig,
+    fetchVersionConfig,
+    isUpdateRequired,
+    type VersionConfig,
 } from '../lib/version-check';
+import "../global.css";
 
 export {
   ErrorBoundary
@@ -114,8 +114,8 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading || hasSeenOnboarding === null) return;
 
-    const inAuthGroup = segments[0] === '(auth)';
-    const inOnboarding = segments[0] === 'onboarding';
+    const inAuthGroup = (segments[0] as string) === '(auth)';
+    const inOnboarding = (segments[0] as string) === 'onboarding';
 
     if (isPasswordRecovery) {
       router.replace('/(auth)/update-password');
@@ -123,7 +123,7 @@ function RootLayoutNav() {
     }
 
     if (!hasSeenOnboarding && !user && !inOnboarding && !inAuthGroup) {
-      router.replace('/onboarding');
+      router.replace('/onboarding' as any);
       return;
     }
 

@@ -18,14 +18,6 @@ config.resolver = {
     sourceExts: [...config.resolver.sourceExts, 'svg'],
 };
 
-config.resolver = {
-    ...config.resolver,
-    extraNodeModules: {
-        ...config.resolver?.extraNodeModules,
-        buffer: require.resolve('buffer/'),
-    },
-};
-
 const originalGetPolyfills = config.serializer?.getPolyfills?.bind(config.serializer);
 config.serializer = {
     ...config.serializer,
