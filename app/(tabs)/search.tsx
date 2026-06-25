@@ -374,6 +374,7 @@ export default function SearchScreen() {
 
                 const hotelData = results?.data || [];
 
+
                 // Transform data into a standardized format and filter out low-quality results
                 const standardizedData = hotelData
                     .map((h: any) => {
@@ -425,6 +426,7 @@ export default function SearchScreen() {
                     })
                     .filter((h: any) => h !== null && h.displayPrice !== '???');
 
+                console.log('[Search] After filter: kept =', standardizedData.length, '| dropped =', hotelData.length - standardizedData.length);
                 setRawHotels(standardizedData);
             } catch (error: any) {
                 console.error('[Search] Error:', error);

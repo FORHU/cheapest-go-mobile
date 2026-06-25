@@ -214,13 +214,8 @@ export default function TripsScreen() {
     }, []);
 
     useEffect(() => {
-        let cancelled = false;
-        const run = async () => {
-            if (user) await load();
-            if (!cancelled) setLoading(false);
-        };
-        run();
-        return () => { cancelled = true; };
+        if (!user) { setLoading(false); return; }
+        load().finally(() => setLoading(false));
     }, [user, load]);
 
     const onRefresh = useCallback(async () => {

@@ -12,13 +12,13 @@ import { useColorScheme } from '@/hooks/useColorScheme';
 import { ForceUpdateModal } from '../components/ui/ForceUpdateModal';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { SettingsProvider } from '../context/SettingsContext';
-import "../global.css";
 import { registerForPushNotifications } from '../lib/notifications';
 import {
-  fetchVersionConfig,
-  isUpdateRequired,
-  type VersionConfig,
+    fetchVersionConfig,
+    isUpdateRequired,
+    type VersionConfig,
 } from '../lib/version-check';
+import "../global.css";
 
 export {
   ErrorBoundary

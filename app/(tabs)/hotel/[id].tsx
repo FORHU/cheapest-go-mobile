@@ -531,6 +531,14 @@ export default function HotelDetailsScreen() {
     useEffect(() => {
         const fetchData = async () => {
             setLoading(true);
+            console.log('[HotelDetails] Fetching:', {
+                id: params.id,
+                checkIn: params.checkIn,
+                checkOut: params.checkOut,
+                adults: params.adults,
+                rooms: params.rooms,
+                currency: params.currency,
+            });
             try {
                 const [details, reviewData] = await Promise.all([
                     getHotelDetails(params.id as string, {
@@ -542,6 +550,21 @@ export default function HotelDetailsScreen() {
                     }),
                     getHotelReviews(params.id as string, 100)
                 ]);
+                console.log('[HotelDetails] Response keys:', details ? Object.keys(details) : 'null');
+                console.log('[HotelDetails] thumbnailUrl:', details?.thumbnailUrl);
+                console.log('[HotelDetails] detailRooms:', details?.detailRooms ? `${details.detailRooms.length} rooms` : 'undefined');
+                console.log('[HotelDetails] roomTypes count:', details?.roomTypes?.length ?? 'undefined');
+                if (details?.roomTypes?.length > 0) {
+                    const r = details.roomTypes[0];
+                    console.log('[HotelDetails] roomTypes[0] keys:', Object.keys(r));
+                    console.log('[HotelDetails] roomTypes[0] image fields:', {
+                        roomPhotos: r.roomPhotos,
+                        images: r.images,
+                        photos: r.photos,
+                        mappedRoomId: r.rates?.[0]?.mappedRoomId,
+                    });
+                }
+                console.log('[HotelDetails] reviews:', reviewData?.length ?? 0);
                 setHotel(details);
                 setReviews(reviewData);
                 setRoomPage(1);

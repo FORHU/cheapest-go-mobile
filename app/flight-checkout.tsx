@@ -121,6 +121,7 @@ const GENDER_OPTIONS = [
 // threshold here would spuriously flag "Price Changed" on nearly every refresh.
 const PRICE_CHANGE_TOLERANCE = 5.0;
 
+
 const getFlagEmoji = (countryCode: string) => {
     const codePoints = countryCode
         .toUpperCase()
@@ -180,6 +181,10 @@ function FlightCheckoutContent({ stripeAvailable, initPaymentSheet, presentPayme
     const isDark = colorScheme === 'dark';
     const { user } = useAuth();
     const styles = getStyles(isDark);
+
+    const stripeHook = stripeAvailable && useStripeHook ? useStripeHook() : null;
+    const initPaymentSheet = stripeHook?.initPaymentSheet;
+    const presentPaymentSheet = stripeHook?.presentPaymentSheet;
 
     // Parse Selected Offer
     const baseOffer: FlightOffer | null = useMemo(() => {
@@ -435,6 +440,9 @@ function FlightCheckoutContent({ stripeAvailable, initPaymentSheet, presentPayme
         }
         if (!phone.trim()) {
             errs.phone = 'Phone number is required';
+        }
+        if (!countryCode) {
+            errs.phone = 'Please select a country code';
         }
 
         // Validate passenger 1
