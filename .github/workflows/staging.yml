@@ -68,7 +68,7 @@ jobs:
           set -e
           printenv | grep -E "^(MAPBOX_DOWNLOADS_TOKEN|RNMAPBOX_MAPS_DOWNLOAD_TOKEN|EXPO_PUBLIC_)" | sort > .env
           echo "Syncing $(wc -l < .env) variables to EAS preview..."
-          eas env:push --environment preview --force --non-interactive
+          eas env:push --environment preview --force
           echo "Done syncing secrets."
           rm -f .env
 
