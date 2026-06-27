@@ -1,16 +1,16 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import * as Linking from 'expo-linking';
-import type { User } from '@/types/auth';
-import { getStoredUser, storeUser, clearStoredUser } from '@/utils/auth/session';
 import {
-    loginSchema,
-    registerSchema,
     emailSchema,
+    loginSchema,
     profileSchema,
+    registerSchema,
     updatePasswordSchema,
-    type RegisterInput,
     type ProfileInput,
+    type RegisterInput,
 } from '@/lib/schemas/auth';
+import type { User } from '@/types/auth';
+import { clearStoredUser, getStoredUser, storeUser } from '@/utils/auth/session';
+import * as Linking from 'expo-linking';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
 // Session is cookie-based (Lucia). The native HTTP client sends the session
 // cookie automatically on every request to the same domain — no bearer token needed.
@@ -106,6 +106,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             try {
                 const { user: u } = await authFetch<{ user: any }>('/login', 'POST', { email, password });
                 const mapped = mapUser(u);
+
+                // Fetch preferences to populate firstName/lastName immediately
+                const BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
+                const prefRes = await fetch(`${BASE}/api/preferences`, {
+                    method: 'GET',
+                    credentials: 'include',
+                });
+                if (prefRes.ok) {
+                    const { preferences } = await prefRes.json();
+                    mapped.firstName = preferences?.firstName ?? mapped.firstName;
+                    mapped.lastName = preferences?.lastName ?? mapped.lastName;
+                }
+
                 await storeUser(mapped);
                 setUser(mapped);
             } catch (err: any) {
@@ -142,7 +155,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const logout = () =>
         withLoading(async () => {
-            await authFetch('/logout', 'POST').catch(() => {});
+            await authFetch('/logout', 'POST').catch(() => { });
             await clearStoredUser();
             setUser(null);
             setIsPasswordRecovery(false);
@@ -158,20 +171,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const updateProfile = (data: ProfileInput) => {
         profileSchema.parse(data);
         return withLoading(async () => {
-            const { user: u } = await authFetch<{ user: any }>('/profile', 'PATCH', {
-                firstName: data.firstName,
-                lastName: data.lastName,
+            const BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
+            const res = await fetch(`${BASE}/api/preferences`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({
+                    firstName: data.firstName,
+                    lastName: data.lastName,
+                }),
             });
-            const mapped = mapUser(u);
-            await storeUser(mapped);
-            setUser(mapped);
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.error ?? `HTTP ${res.status}`);
+            }
+            // Update local state optimistically — same pattern as web authStore
+            const updated = {
+                ...user!,
+                firstName: data.firstName ?? user!.firstName,
+                lastName: data.lastName ?? user!.lastName,
+            };
+            setUser(updated);
+            await storeUser(updated);
         });
     };
 
     const updatePassword = (currentPassword: string, newPassword: string) => {
         updatePasswordSchema.parse({ currentPassword, newPassword });
         return withLoading(async () => {
-            await authFetch('/update-password', 'PATCH', { currentPassword, newPassword });
+            if (!user?.email) throw new Error('No user logged in');
+
+            // verify current password — same as web
+            await authFetch('/login', 'POST', {
+                email: user.email,
+                password: currentPassword,
+            });
+
+            await authFetch('/reset-password', 'PUT', {
+                token: '__current__',
+                password: newPassword,
+            });
         });
     };
 

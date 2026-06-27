@@ -491,7 +491,9 @@ export default function SearchScreen() {
                         filters.facilities.every((fid: number) =>
                             (h.facilities || []).some((f: any) => f.id === fid || f === fid)
                         )
-                    );
+                    )
+                )
+            );
         }
 
         // 5. Price Range

@@ -1,23 +1,38 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ActivityIndicator,
-  Alert,
-  ScrollView,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import CurrencyPickerModal from '@/components/ui/CurrencyPickerModal';
+import EditProfileModal from '@/components/ui/EditProfileModal';
+import LanguagePickerModal from '@/components/ui/LanguagePickerModal';
+import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+// import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import {
-  LogOut, User, Mail, ChevronRight, Lock,
-  Camera, Pencil, Bell, Globe,
-  HelpCircle, Star, FileText,
+  Bell,
+  Camera,
+  ChevronRight,
+  FileText,
+  Globe,
+  HelpCircle,
+  Lock,
+  LogOut,
+  Mail,
+  Pencil,
+  Star,
+  User,
 } from 'lucide-react-native';
-import { useAuth } from '@/context/AuthContext';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { useSettings } from '@/context/SettingsContext';
-import CurrencyPickerModal from '@/components/ui/CurrencyPickerModal';
+import React, { useEffect, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  Image,
+  Linking,
+  ScrollView,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const dark = {
   bg: '#0B1018',
@@ -147,14 +162,88 @@ export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const router = useRouter();
   const C = useTheme();
+
   const [signingOut, setSigningOut] = useState(false);
-  const { currency, setCurrency } = useSettings();
+  const [editModalVisible, setEditModalVisible] = useState(false);
   const [currencyPickerVisible, setCurrencyPickerVisible] = useState(false);
+  const [languagePickerVisible, setLanguagePickerVisible] = useState(false);
+  const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+
+  const { currency, setCurrency, language, setLanguage } = useSettings();
 
   const CURRENCY_NAMES: Record<string, string> = {
     KRW: 'Korean Won',
     USD: 'US Dollar',
     PHP: 'Philippine Peso',
+  };
+
+  // Load locally saved avatar on mount
+  useEffect(() => {
+    AsyncStorage.getItem('profile_avatar').then((uri) => {
+      if (uri) setLocalAvatar(uri);
+    });
+  }, []);
+
+  // ─── Handlers ──────────────────────────────────────────────────────────────
+
+  /*const handleCameraPress = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert(
+        'Permission required',
+        'Please allow access to your photo library in Settings to change your profile photo.',
+      );
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      const uri = result.assets[0].uri;
+      setLocalAvatar(uri);
+      await AsyncStorage.setItem('profile_avatar', uri);
+    }
+  };*/
+
+  const handleCameraPress = () => {
+    Alert.alert(
+      'Coming soon',
+      'Profile photo upload will be available in the next build.',
+    );
+  };
+
+  const handleEmailPress = () => {
+    Alert.alert(
+      'Change Email',
+      'To update your email address, please contact our support team.',
+      [{ text: 'OK' }],
+    );
+  };
+
+  const handleHelpCenter = () => {
+    // TODO: replace with the real help URL once published
+    Linking.openURL('https://cheapestgo.com/help').catch(() => {
+      Alert.alert('Could not open help center', 'Please try again later.');
+    });
+  };
+
+  const handleRateApp = () => {
+    // TODO: replace with real App Store / Play Store URLs on launch
+    Alert.alert(
+      'Rate CheapestGo ⭐',
+      'Thanks for your support! App store rating will be available once the app is published.',
+      [{ text: 'OK' }],
+    );
+  };
+
+  const handleTerms = () => {
+    // TODO: replace with the real terms URL once published
+    Linking.openURL('https://cheapestgo.com/terms').catch(() => {
+      Alert.alert('Could not open page', 'Please try again later.');
+    });
   };
 
   const handleLogout = () => {
@@ -170,6 +259,8 @@ export default function ProfileScreen() {
       },
     ]);
   };
+
+  // ─── Signed-out state ───────────────────────────────────────────────────────
 
   if (!user) {
     return (
@@ -202,8 +293,10 @@ export default function ProfileScreen() {
   const initials = `${user.firstName?.[0] ?? ''}${user.lastName?.[0] ?? ''}`.toUpperCase();
   const fullName = `${user.firstName} ${user.lastName}`.trim();
 
+  // ─── Main render ────────────────────────────────────────────────────────────
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
 
         {/* Header card */}
@@ -217,20 +310,24 @@ export default function ProfileScreen() {
           padding: 20,
         }}>
           {/* Edit button */}
-          <TouchableOpacity style={{
-            position: 'absolute',
-            top: 16,
-            right: 16,
-            flexDirection: 'row',
-            alignItems: 'center',
-            gap: 6,
-            backgroundColor: C.bg,
-            borderWidth: 1,
-            borderColor: C.border,
-            borderRadius: 10,
-            paddingHorizontal: 12,
-            paddingVertical: 7,
-          }}>
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 16,
+              right: 16,
+              flexDirection: 'row',
+              alignItems: 'center',
+              gap: 6,
+              backgroundColor: C.bg,
+              borderWidth: 1,
+              borderColor: C.border,
+              borderRadius: 10,
+              paddingHorizontal: 12,
+              paddingVertical: 7,
+            }}
+            onPress={() => setEditModalVisible(true)}
+            activeOpacity={0.7}
+          >
             <Pencil size={13} color={C.text} />
             <Text style={{ fontSize: 13, fontWeight: '600', color: C.text }}>Edit</Text>
           </TouchableOpacity>
@@ -238,40 +335,51 @@ export default function ProfileScreen() {
           {/* Avatar */}
           <View style={{ alignItems: 'center', paddingTop: 8, marginBottom: 20 }}>
             <View style={{ position: 'relative', marginBottom: 12 }}>
-              <View style={{
-                width: 72,
-                height: 72,
-                borderRadius: 36,
-                backgroundColor: '#3B82F6',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}>
-                <Text style={{ fontSize: 26, fontWeight: '700', color: '#fff' }}>{initials}</Text>
-              </View>
-              <TouchableOpacity style={{
-                position: 'absolute',
-                bottom: 0,
-                right: 0,
-                width: 24,
-                height: 24,
-                borderRadius: 12,
-                backgroundColor: '#3B82F6',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderWidth: 2,
-                borderColor: C.card,
-              }}>
+              {localAvatar ? (
+                <Image
+                  source={{ uri: localAvatar }}
+                  style={{ width: 72, height: 72, borderRadius: 36 }}
+                />
+              ) : (
+                <View style={{
+                  width: 72,
+                  height: 72,
+                  borderRadius: 36,
+                  backgroundColor: '#3B82F6',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}>
+                  <Text style={{ fontSize: 26, fontWeight: '700', color: '#fff' }}>{initials}</Text>
+                </View>
+              )}
+              <TouchableOpacity
+                style={{
+                  position: 'absolute',
+                  bottom: 0,
+                  right: 0,
+                  width: 24,
+                  height: 24,
+                  borderRadius: 12,
+                  backgroundColor: '#3B82F6',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  borderWidth: 2,
+                  borderColor: C.card,
+                }}
+                onPress={handleCameraPress}
+                activeOpacity={0.8}
+              >
                 <Camera size={11} color="#fff" />
               </TouchableOpacity>
             </View>
-            <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 4 }}>{fullName}</Text>
+            <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 4 }}>{fullName || user.email}</Text>
             <Text style={{ fontSize: 13, color: C.muted }}>{user.email}</Text>
           </View>
 
           {/* Divider */}
           <View style={{ height: 1, backgroundColor: C.divider, marginBottom: 16 }} />
 
-          {/* Stats */}
+          {/* Stats — hardcoded for now (Task 3 will replace these) */}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <StatItem label="BOOKINGS" value="4" />
             <View style={{ width: 1, height: 32, backgroundColor: C.divider }} />
@@ -284,9 +392,26 @@ export default function ProfileScreen() {
         {/* Account */}
         <SectionLabel label="ACCOUNT" />
         <View style={{ marginHorizontal: 16, backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-          <SettingRow icon={<User size={18} color={C.icon} />} title="Full name" subtitle={fullName} isLast={false} />
-          <SettingRow icon={<Mail size={18} color={C.icon} />} title="Email" subtitle={user.email} isLast={false} />
-          <SettingRow icon={<Lock size={18} color={C.icon} />} title="Change password" isLast={true} />
+          <SettingRow
+            icon={<User size={18} color={C.icon} />}
+            title="Full name"
+            subtitle={fullName || 'Not set'}
+            onPress={() => setEditModalVisible(true)}
+            isLast={false}
+          />
+          <SettingRow
+            icon={<Mail size={18} color={C.icon} />}
+            title="Email"
+            subtitle={user.email}
+            onPress={handleEmailPress}
+            isLast={false}
+          />
+          <SettingRow
+            icon={<Lock size={18} color={C.icon} />}
+            title="Change password"
+            onPress={() => router.navigate('/(auth)/update-password')}
+            isLast={true}
+          />
         </View>
 
         {/* Preferences */}
@@ -309,7 +434,8 @@ export default function ProfileScreen() {
           <SettingRow
             icon={<Globe size={18} color={C.icon} />}
             title="Language"
-            subtitle="English"
+            subtitle={language.english}
+            onPress={() => setLanguagePickerVisible(true)}
             isLast={true}
           />
         </View>
@@ -317,9 +443,24 @@ export default function ProfileScreen() {
         {/* Support */}
         <SectionLabel label="SUPPORT" />
         <View style={{ marginHorizontal: 16, backgroundColor: C.card, borderRadius: 16, borderWidth: 1, borderColor: C.border, overflow: 'hidden' }}>
-          <SettingRow icon={<HelpCircle size={18} color={C.icon} />} title="Help center" isLast={false} />
-          <SettingRow icon={<Star size={18} color={C.icon} />} title="Rate the app" isLast={false} />
-          <SettingRow icon={<FileText size={18} color={C.icon} />} title="Terms & Privacy" isLast={true} />
+          <SettingRow
+            icon={<HelpCircle size={18} color={C.icon} />}
+            title="Help center"
+            onPress={handleHelpCenter}
+            isLast={false}
+          />
+          <SettingRow
+            icon={<Star size={18} color={C.icon} />}
+            title="Rate the app"
+            onPress={handleRateApp}
+            isLast={false}
+          />
+          <SettingRow
+            icon={<FileText size={18} color={C.icon} />}
+            title="Terms & Privacy"
+            onPress={handleTerms}
+            isLast={true}
+          />
         </View>
 
         {/* Sign out */}
@@ -352,11 +493,22 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
+      {/* Modals */}
+      <EditProfileModal
+        visible={editModalVisible}
+        onClose={() => setEditModalVisible(false)}
+      />
       <CurrencyPickerModal
         visible={currencyPickerVisible}
         currentCode={currency.code}
         onSelect={setCurrency}
         onClose={() => setCurrencyPickerVisible(false)}
+      />
+      <LanguagePickerModal
+        visible={languagePickerVisible}
+        currentCode={language.code}
+        onSelect={setLanguage}
+        onClose={() => setLanguagePickerVisible(false)}
       />
     </SafeAreaView>
   );
