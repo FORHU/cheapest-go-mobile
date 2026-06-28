@@ -41,13 +41,13 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, Share, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isFavorite as checkIsFavorite, toggleFavorite as persistToggleFavorite } from '../../../lib/favorites';
-
 import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
 import StarRating from '../../../components/ui/StarRating';
+import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { convertCurrency } from '../../../lib/currency';
+import { isFavorite as checkIsFavorite, toggleFavorite as persistToggleFavorite } from '../../../lib/favorites';
 import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 
 // Enable LayoutAnimation on Android
@@ -368,6 +368,7 @@ const GalleryImage = React.memo(function GalleryImage({ uri, width }: { uri: str
 });
 
 export default function HotelDetailsScreen() {
+    const { user } = useAuth();
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -400,7 +401,7 @@ export default function HotelDetailsScreen() {
 
     const toggleFavorite = useCallback(async () => {
         if (!hotel?.hotelId) return;
-        const added = await persistToggleFavorite(hotel.hotelId, hotel);
+        const added = await persistToggleFavorite(hotel.hotelId, user?.id ?? '', hotel);
         setIsFavorite(added);
     }, [hotel]);
 
@@ -513,9 +514,9 @@ export default function HotelDetailsScreen() {
 
     useEffect(() => {
         if (hotel?.hotelId) {
-            checkIsFavorite(hotel.hotelId).then(setIsFavorite);
+            checkIsFavorite(hotel.hotelId, user?.id ?? '').then(setIsFavorite);
         }
-    }, [hotel?.hotelId]);
+    }, [hotel?.hotelId, user?.id]);
 
     const availableRooms = useMemo(() => normalizeRoomOptions(hotel), [hotel]);
 
