@@ -74,10 +74,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 const cached = await getStoredUser();
                 if (cached) setUser(cached);
 
-                // Validate the session cookie is still active.
                 const { user: fresh } = await authFetch<{ user: any }>('/me', 'GET');
                 if (fresh) {
                     const mapped = mapUser(fresh);
+                    const BASE = process.env.EXPO_PUBLIC_WEB_API_URL ?? 'https://cheapestgo.com';
+                    const prefRes = await fetch(`${BASE}/api/preferences`, {
+                        method: 'GET',
+                        credentials: 'include',
+                    });
+                    if (prefRes.ok) {
+                        const { preferences } = await prefRes.json();
+                        mapped.firstName = preferences?.firstName ?? mapped.firstName;
+                        mapped.lastName = preferences?.lastName ?? mapped.lastName;
+                    }
                     setUser(mapped);
                     await storeUser(mapped);
                 } else {

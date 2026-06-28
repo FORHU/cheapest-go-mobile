@@ -1,12 +1,13 @@
 import CurrencyPickerModal from '@/components/ui/CurrencyPickerModal';
-import EditProfileModal from '@/components/ui/EditProfileModal';
-import LanguagePickerModal from '@/components/ui/LanguagePickerModal';
+import LegalLinksModal from '@/components/ui/LegalLinksModal';
 import { useAuth } from '@/context/AuthContext';
 import { useSettings } from '@/context/SettingsContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { getSavedHotels } from '@/lib/favorites';
+import { fetchMyFlightBookings } from '@/lib/trips';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // import * as ImagePicker from 'expo-image-picker';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   Bell,
   Camera,
@@ -21,16 +22,15 @@ import {
   Star,
   User,
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
   Image,
-  Linking,
   ScrollView,
   Text,
   TouchableOpacity,
-  View,
+  View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -159,15 +159,17 @@ function SettingRow({
 }
 
 export default function ProfileScreen() {
+  const [legalModalVisible, setLegalModalVisible] = useState(false);
   const { user, logout } = useAuth();
   const router = useRouter();
   const C = useTheme();
 
   const [signingOut, setSigningOut] = useState(false);
-  const [editModalVisible, setEditModalVisible] = useState(false);
   const [currencyPickerVisible, setCurrencyPickerVisible] = useState(false);
-  const [languagePickerVisible, setLanguagePickerVisible] = useState(false);
   const [localAvatar, setLocalAvatar] = useState<string | null>(null);
+  const [bookingsCount, setBookingsCount] = useState<number>(0);
+  const [savedCount, setSavedCount] = useState<number>(0);
+  const [statsLoading, setStatsLoading] = useState(false);
 
   const { currency, setCurrency, language, setLanguage } = useSettings();
 
@@ -183,6 +185,23 @@ export default function ProfileScreen() {
       if (uri) setLocalAvatar(uri);
     });
   }, []);
+
+  // ─── Load Stats (bookings & saved hotels) ──────────────────────────────
+  useFocusEffect(
+    useCallback(() => {
+      if (!user) return;
+      setStatsLoading(true);
+      Promise.all([
+        fetchMyFlightBookings(),
+        getSavedHotels(user.id),
+      ])
+        .then(([bookings, saved]) => {
+          setBookingsCount(bookings.length);
+          setSavedCount(saved.length);
+        })
+        .finally(() => setStatsLoading(false));
+    }, [user])
+  );
 
   // ─── Handlers ──────────────────────────────────────────────────────────────
 
@@ -224,10 +243,7 @@ export default function ProfileScreen() {
   };
 
   const handleHelpCenter = () => {
-    // TODO: replace with the real help URL once published
-    Linking.openURL('https://cheapestgo.com/help').catch(() => {
-      Alert.alert('Could not open help center', 'Please try again later.');
-    });
+    router.push('/help-center');
   };
 
   const handleRateApp = () => {
@@ -237,13 +253,6 @@ export default function ProfileScreen() {
       'Thanks for your support! App store rating will be available once the app is published.',
       [{ text: 'OK' }],
     );
-  };
-
-  const handleTerms = () => {
-    // TODO: replace with the real terms URL once published
-    Linking.openURL('https://cheapestgo.com/terms').catch(() => {
-      Alert.alert('Could not open page', 'Please try again later.');
-    });
   };
 
   const handleLogout = () => {
@@ -325,7 +334,7 @@ export default function ProfileScreen() {
               paddingHorizontal: 12,
               paddingVertical: 7,
             }}
-            onPress={() => setEditModalVisible(true)}
+            onPress={() => router.push('/edit-profile')}
             activeOpacity={0.7}
           >
             <Pencil size={13} color={C.text} />
@@ -379,13 +388,20 @@ export default function ProfileScreen() {
           {/* Divider */}
           <View style={{ height: 1, backgroundColor: C.divider, marginBottom: 16 }} />
 
-          {/* Stats — hardcoded for now (Task 3 will replace these) */}
+          {/* Stats — Task 3: real data from trips + favorites; reviews pending TL */}
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <StatItem label="BOOKINGS" value="4" />
-            <View style={{ width: 1, height: 32, backgroundColor: C.divider }} />
-            <StatItem label="SAVED" value="12" />
-            <View style={{ width: 1, height: 32, backgroundColor: C.divider }} />
-            <StatItem label="REVIEWS" value="3" />
+            {statsLoading ? (
+              <ActivityIndicator size="small" color={C.blue} style={{ flex: 1 }} />
+            ) : (
+              <>
+                <StatItem label="BOOKINGS" value={String(bookingsCount)} />
+                <View style={{ width: 1, height: 32, backgroundColor: C.divider }} />
+                <StatItem label="SAVED" value={String(savedCount)} />
+                <View style={{ width: 1, height: 32, backgroundColor: C.divider }} />
+                {/* Reviews — needs user review submission feature -> web */}
+                <StatItem label="REVIEWS" value="0" />
+              </>
+            )}
           </View>
         </View>
 
@@ -396,7 +412,7 @@ export default function ProfileScreen() {
             icon={<User size={18} color={C.icon} />}
             title="Full name"
             subtitle={fullName || 'Not set'}
-            onPress={() => setEditModalVisible(true)}
+            onPress={() => router.push('/edit-profile')}
             isLast={false}
           />
           <SettingRow
@@ -435,7 +451,7 @@ export default function ProfileScreen() {
             icon={<Globe size={18} color={C.icon} />}
             title="Language"
             subtitle={language.english}
-            onPress={() => setLanguagePickerVisible(true)}
+            onPress={() => router.push('/language')}
             isLast={true}
           />
         </View>
@@ -458,7 +474,7 @@ export default function ProfileScreen() {
           <SettingRow
             icon={<FileText size={18} color={C.icon} />}
             title="Terms & Privacy"
-            onPress={handleTerms}
+            onPress={() => setLegalModalVisible(true)}
             isLast={true}
           />
         </View>
@@ -494,21 +510,16 @@ export default function ProfileScreen() {
       </ScrollView>
 
       {/* Modals */}
-      <EditProfileModal
-        visible={editModalVisible}
-        onClose={() => setEditModalVisible(false)}
-      />
       <CurrencyPickerModal
         visible={currencyPickerVisible}
         currentCode={currency.code}
         onSelect={setCurrency}
         onClose={() => setCurrencyPickerVisible(false)}
       />
-      <LanguagePickerModal
-        visible={languagePickerVisible}
-        currentCode={language.code}
-        onSelect={setLanguage}
-        onClose={() => setLanguagePickerVisible(false)}
+
+      <LegalLinksModal
+        visible={legalModalVisible}
+        onClose={() => setLegalModalVisible(false)}
       />
     </SafeAreaView>
   );
