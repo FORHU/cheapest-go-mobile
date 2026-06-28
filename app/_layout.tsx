@@ -141,6 +141,8 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="language" options={{ headerShown: false }} />
         <Stack.Screen name="flights" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="checkout" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="flight-checkout" options={{ headerShown: false, presentation: 'card' }} />

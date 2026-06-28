@@ -32,6 +32,7 @@ module.exports = {
     },
     plugins: [
       'expo-router',
+      'expo-localization',
       [
         'expo-notifications',
         {
@@ -66,6 +67,6 @@ module.exports = {
       },
     },
     owner: 'no-001-team-1',
-    
+
   },
 };
