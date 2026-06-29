@@ -114,8 +114,9 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading || hasSeenOnboarding === null) return;
 
-    const inAuthGroup = (segments[0] as string) === '(auth)';
-    const inOnboarding = (segments[0] as string) === 'onboarding';
+    const inAuthGroup = segments[0] === '(auth)';
+    const inOnboarding = segments[0] === 'onboarding';
+    const inUpdatePassword = segments[1] === 'update-password';
 
     if (isPasswordRecovery) {
       router.replace('/(auth)/update-password');
@@ -129,7 +130,7 @@ function RootLayoutNav() {
 
     if (!user && !inAuthGroup && !inOnboarding) {
       router.replace('/(auth)/login');
-    } else if (user && inAuthGroup) {
+    } else if (user && inAuthGroup && !inUpdatePassword) {
       router.replace('/(tabs)');
     }
   }, [user, isLoading, segments, isPasswordRecovery, hasSeenOnboarding, router]);
@@ -140,6 +141,8 @@ function RootLayoutNav() {
         <Stack.Screen name="onboarding" options={{ headerShown: false }} />
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="edit-profile" options={{ headerShown: false }} />
+        <Stack.Screen name="language" options={{ headerShown: false }} />
         <Stack.Screen name="flights" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="checkout" options={{ headerShown: false, presentation: 'card' }} />
         <Stack.Screen name="flight-checkout" options={{ headerShown: false, presentation: 'card' }} />

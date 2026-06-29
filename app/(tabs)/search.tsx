@@ -5,6 +5,7 @@ import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, T
 import FilterModal from '../../components/search/FilterModal';
 import HotelSearchModal from '../../components/search/HotelSearchModal';
 import MapboxWebView from '../../components/search/MapboxWebView';
+import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { MAPBOX_TOKEN } from '../../lib/config';
 import { convertCurrency } from '../../lib/currency';
@@ -284,6 +285,7 @@ const HotelListCard = memo(function HotelListCard({ hotel, isDark, currencySymbo
 });
 
 export default function SearchScreen() {
+    const { user } = useAuth();
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -324,17 +326,17 @@ export default function SearchScreen() {
     const styles = useMemo(() => getStyles(isDark), [isDark]);
 
     useEffect(() => {
-        getFavorites().then(setFavorites);
+        getFavorites(user?.id ?? '').then(setFavorites);
 
         // Hide map hints after 4 seconds
         const timer = setTimeout(() => setShowMapHints(false), 4000);
         return () => clearTimeout(timer);
-    }, []);
+    }, [user]);
 
     useFocusEffect(
         useCallback(() => {
-            getFavorites().then(setFavorites);
-        }, [])
+            getFavorites(user?.id ?? '').then(setFavorites);
+        }, [user])
     );
     useEffect(() => {
         const destination = params.destination as string | undefined;
@@ -503,9 +505,9 @@ export default function SearchScreen() {
     }, [params.destination, params.destinationCode, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
 
     const toggleFav = useCallback(async (id: string, hotelData?: any) => {
-        const added = await toggleFavorite(id, hotelData);
+        const added = await toggleFavorite(id, user?.id ?? '', hotelData);
         setFavorites(prev => added ? [...prev, id] : prev.filter(fid => fid !== id));
-    }, []);
+    }, [user]);
 
     const navigateToHotel = useCallback((hotel: any) => {
         router.push({

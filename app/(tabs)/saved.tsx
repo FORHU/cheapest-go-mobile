@@ -1,13 +1,13 @@
-import { useRouter } from 'expo-router';
+import { useAuth } from '@/context/AuthContext';
+import { useSettings } from '@/context/SettingsContext';
+import { useColorScheme } from '@/hooks/useColorScheme';
+import { convertCurrency } from '@/lib/currency';
+import { getSavedHotels, toggleFavorite } from '@/lib/favorites';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Heart, MapPin, Star } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useColorScheme } from '@/hooks/useColorScheme';
-import { getSavedHotels, toggleFavorite } from '@/lib/favorites';
-import { useFocusEffect } from 'expo-router';
-import { useSettings } from '@/context/SettingsContext';
-import { convertCurrency } from '@/lib/currency';
 
 const dark = {
   bg: '#0B1018',
@@ -32,6 +32,7 @@ const light = {
 const FALLBACK_IMG = 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=300&q=80';
 
 export default function SavedScreen() {
+  const { user } = useAuth();
   const colorScheme = useColorScheme();
   const C = colorScheme === 'dark' ? dark : light;
   const router = useRouter();
@@ -40,12 +41,12 @@ export default function SavedScreen() {
 
   useFocusEffect(
     useCallback(() => {
-      getSavedHotels().then(setHotels);
+      getSavedHotels(user?.id ?? '').then(setHotels);
     }, [])
   );
 
   const handleUnsave = async (hotelId: string) => {
-    await toggleFavorite(hotelId);
+    await toggleFavorite(hotelId, user?.id ?? '');
     setHotels(prev => prev.filter(h => h.hotelId !== hotelId));
   };
 

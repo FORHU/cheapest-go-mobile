@@ -1,7 +1,7 @@
 import LogoSvg from '@/assets/images/logo.svg';
 import { useAuth } from '@/context/AuthContext';
 import { useColorScheme } from '@/hooks/useColorScheme';
-import { Link, useRouter } from 'expo-router';
+import { Link, Redirect, useRouter } from 'expo-router';
 import {
   AlertCircle,
   ArrowLeft,
@@ -271,9 +271,8 @@ const ls = StyleSheet.create({
 type Mode = 'signin' | 'forgot_password' | 'reset_password';
 
 export default function LoginScreen() {
+  const { user, login, resetPassword, confirmPasswordReset } = useAuth();
   const router = useRouter();
-  const { login, resetPassword, confirmPasswordReset } = useAuth();
-
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
   const C = isDark ? DARK : LIGHT;
@@ -299,6 +298,8 @@ export default function LoginScreen() {
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, easing: Easing.out(Easing.cubic), useNativeDriver: true }),
     ]).start();
   }, [fadeAnim, slideAnim]);
+
+  if (user) return <Redirect href="/(tabs)" />;
 
   const clearErrors = () => {
     setEmailErr(''); setPasswordErr('');
