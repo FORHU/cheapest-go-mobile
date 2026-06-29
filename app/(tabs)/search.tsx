@@ -400,7 +400,7 @@ export default function SearchScreen() {
 
 
                 // Transform data into a standardized format and filter out low-quality results
-                const standardizedData = hotelData
+                const mappedData = hotelData
                     .map((h: any) => {
                         const lat = h.latitude || h.details?.latitude || h.details?.location?.latitude || h.lat || h.location?.lat || 0;
                         const lng = h.longitude || h.details?.longitude || h.details?.location?.longitude || h.lng || h.location?.lng || 0;
@@ -433,6 +433,9 @@ export default function SearchScreen() {
                         // Fallback chain if no interior photos were found
                         if (imageUrls.length === 0 && h.details?.hotel_images_photos?.[0]?.url) addUrl(h.details.hotel_images_photos[0].url);
                         if (imageUrls.length === 0) addUrl(thumbUrl);
+                        // Whether the supplier gave us any real photo. If false, the only image
+                        // below is the synthetic placeholder — those hotels are filtered out.
+                        const hasRealImage = imageUrls.length > 0;
                         if (imageUrls.length === 0) imageUrls.push(imgFallback);
                         while (imageUrls.length < 4) imageUrls.push(imageUrls[0]);
 
@@ -445,10 +448,15 @@ export default function SearchScreen() {
                             priceCurrency: priceCurrency,
                             thumbnailUrl: thumbUrl,
                             imageUrls: imageUrls.slice(0, 4),
+                            hasRealImage,
                             address: h.address || h.details?.address || h.location || h.city || 'Location unavailable'
                         };
-                    })
-                    .filter((h: any) => h !== null && h.displayPrice !== '???');
+                    });
+
+                // Keep hotels that have a name, valid coords, a price, and at least one
+                // real supplier photo (no placeholder-only listings).
+                const standardizedData = mappedData
+                    .filter((h: any) => h !== null && h.displayPrice !== '???' && h.hasRealImage);
 
                 // TEMP diagnostic: explains how many of the API's hotels survive the
                 // coordinate/price filters (i.e. why only N markers show on the map).
@@ -462,9 +470,10 @@ export default function SearchScreen() {
                         if (!name || Number(lat) === 0 || Number(lng) === 0) { noCoordOrName++; return; }
                         if (getDisplayPrice(h) === '???') noPrice++;
                     });
+                    const noImage = mappedData.filter((h: any) => h !== null && h.displayPrice !== '???' && !h.hasRealImage).length;
                     console.log(
                         `[Search] API returned ${hotelData.length}, kept ${standardizedData.length}. ` +
-                        `Dropped: ${noCoordOrName} (no coords/name), ${noPrice} (no price).`
+                        `Dropped: ${noCoordOrName} (no coords/name), ${noPrice} (no price), ${noImage} (no real image).`
                     );
                     if (hotelData[0]) {
                         console.log('[Search] sample hotel coord fields:', {

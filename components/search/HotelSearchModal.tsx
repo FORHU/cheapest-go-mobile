@@ -67,6 +67,11 @@ interface HotelSearchModalProps {
     initialParams?: any;
 }
 
+// Bookings are single-room until per-room lead-guest entry is built (see checkout).
+// Capping the search here keeps the whole flow consistent so we never quote one room
+// count and book another.
+const MAX_ROOMS = 1;
+
 const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, initialParams }) => {
     const colorScheme = useColorScheme();
     const isDark      = colorScheme === 'dark';
@@ -106,7 +111,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
             if (initialParams.adults) setAdults(parseInt(initialParams.adults));
             if (initialParams.children) setChildren(parseInt(initialParams.children));
             if (initialParams.childrenAges) setChildrenAges(initialParams.childrenAges.split(',').map(Number));
-            if (initialParams.rooms) setRooms(parseInt(initialParams.rooms));
+            if (initialParams.rooms) setRooms(Math.min(MAX_ROOMS, parseInt(initialParams.rooms)));
         }
     }
 
@@ -241,7 +246,7 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
         setCheckIn(new Date(recent.checkIn + 'T00:00:00'));
         setCheckOut(new Date(recent.checkOut + 'T00:00:00'));
         setAdults(recent.adults);
-        setRooms(recent.rooms);
+        setRooms(Math.min(MAX_ROOMS, recent.rooms));
         setActiveField(null);
         setErrors({});
     };
@@ -726,7 +731,8 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
                             <View style={styles.counterRow}>
                                 <View style={styles.counterLabelCol}>
                                     <Text style={styles.counterLabel}>Rooms</Text>
-                                    <Text style={styles.counterSubLabel}>Number of rooms</Text>
+                                    {/* Single-room only until per-room lead-guest entry is built. */}
+                                    <Text style={styles.counterSubLabel}>1 room per booking</Text>
                                 </View>
                                 <View style={styles.counterControls}>
                                     <Pressable
@@ -738,8 +744,9 @@ const HotelSearchModal: React.FC<HotelSearchModalProps> = ({ visible, onClose, i
                                     </Pressable>
                                     <Text style={styles.counterValue}>{rooms}</Text>
                                     <Pressable
-                                        onPress={() => setRooms(Math.min(5, rooms + 1))}
-                                        style={styles.counterBtn}
+                                        onPress={() => setRooms(Math.min(MAX_ROOMS, rooms + 1))}
+                                        style={[styles.counterBtn, rooms >= MAX_ROOMS && styles.counterBtnDisabled]}
+                                        disabled={rooms >= MAX_ROOMS}
                                     >
                                         <Text style={styles.counterBtnText}>+</Text>
                                     </Pressable>

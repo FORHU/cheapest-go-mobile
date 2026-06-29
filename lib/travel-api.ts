@@ -222,14 +222,15 @@ export async function searchHotels(params: HotelSearchParams) {
 }
 
 export async function getHotelDetails(hotelId: string, options: any = {}) {
-    const { checkIn, checkOut, adults, children, rooms, currency } = options;
+    const { checkIn, checkOut, adults, children, childrenAges, rooms, currency } = options;
     const result = await webInvoke('/api/fn/travelgatex-search', {
         hotelCode: hotelId,
         checkin: checkIn,
         checkout: checkOut,
-        adults: adults || 2,
-        children: children || 0,
-        rooms: rooms || 1,
+        adults: Number(adults) || 2,
+        children: Number(children) || 0,
+        childrenAges: childrenAges || undefined,
+        rooms: Number(rooms) || 1,
         currency: currency || 'USD'
     });
 
@@ -248,63 +249,59 @@ export async function getHotelDetails(hotelId: string, options: any = {}) {
     return null;
 }
 
-export async function getHotelReviews(hotelId: string, limit: number = 20) {
-    // Generate realistic mock reviews based on the hotelId
-    const firstNames = [
-        'John', 'Maria', 'Sarah', 'Alex', 'David', 'Emma', 'Sofia', 'Michael', 'Chloe', 'James',
-        'Daniel', 'Olivia', 'Matthew', 'Isabella', 'Ethan', 'Mia', 'Lucas', 'Charlotte', 'Joseph', 'Amelia',
-        'William', 'Harper', 'Ryan', 'Evelyn', 'Andrew', 'Abigail', 'Jack', 'Emily', 'Benjamin', 'Elizabeth',
-        'Nicholas', 'Sofia', 'Tyler', 'Avery', 'Brandon', 'Ella', 'Zachary', 'Madison', 'David', 'Scarlett'
-    ];
-    const lastNames = [
-        'Smith', 'Santos', 'Tan', 'Johnson', 'Rodriguez', 'Lee', 'Kim', 'Brown', 'Davis', 'Wilson',
-        'Martinez', 'Anderson', 'Taylor', 'Thomas', 'Hernandez', 'Moore', 'Martin', 'Jackson', 'Thompson', 'White',
-        'Lopez', 'Lee', 'Gonzalez', 'Harris', 'Clark', 'Lewis', 'Robinson', 'Walker', 'Perez', 'Hall',
-        'Young', 'Allen', 'Sanchez', 'Wright', 'King', 'Scott', 'Green', 'Baker', 'Adams', 'Nelson'
-    ];
-    const headlines = [
-        "Incredible stay! The view was absolutely spectacular and the staff went above and beyond.",
-        "Beautiful property and perfect location. Will definitely book again next time!",
-        "Very clean and modern room, highly recommended for families and couples.",
-        "Excellent hospitality, extremely comfy bed, and a superb breakfast selection.",
-        "A truly premium experience. Every detail was perfect, from check-in to check-out.",
-        "Fantastic value for money. Outstanding service and extremely friendly staff.",
-        "Wonderful experience! The amenities were top-notch and the room was exceptionally clean.",
-        "Great location close to everything. Very comfortable rooms and delicious food.",
-        "Highly recommended stay. We loved the peaceful atmosphere and beautiful design.",
-        "An absolute gem! The staff treated us like royalty. We had an amazing time.",
-        "Spotless rooms, very convenient location, and a great selection at breakfast.",
-        "Perfect business trip stay. Fast Wi-Fi, comfortable workspace, and quiet rooms.",
-        "Lovely boutique feel. The service was personalized and extremely warm.",
-        "Exceeded all expectations. Exceptional quality and super friendly customer service.",
-        "Very comfortable and modern amenities. Will recommend to all my friends!"
-    ];
-    
-    const reviews = [];
-    const count = limit;
-    for (let i = 0; i < count; i++) {
-        // Generate stable seed based on hotelId and index
-        let hash = 0;
-        const seedStr = `${hotelId}-${i}`;
-        for (let j = 0; j < seedStr.length; j++) {
-            hash = seedStr.charCodeAt(j) + ((hash << 5) - hash);
-        }
-        const idx = Math.abs(hash);
-        
-        const name = `${firstNames[idx % firstNames.length]} ${lastNames[(idx >> 1) % lastNames.length]}`;
-        const headline = headlines[idx % headlines.length];
-        const date = new Date(Date.now() - (idx % 30) * 24 * 60 * 60 * 1000).toISOString();
-        const score = 8.5 + (idx % 15) / 10; // score between 8.5 and 10.0
-        
-        reviews.push({
-            name,
-            date,
-            averageScore: Math.round(score),
-            headline,
-            pros: headline,
+const MOBILE_API_KEY = process.env.EXPO_PUBLIC_MOBILE_API_KEY ?? '';
+
+/**
+ * Fetches verified per-guest reviews for a hotel.
+ *
+ * These are real reviews sourced from ETG/Ratehawk: the web backend runs a cron
+ * job that caches the supplier's review dump in its DB, and `/api/mobile/hotel-reviews`
+ * serves that cache keyed by `hotelCode`. The response objects already match the shape
+ * the reviews UI expects (name, date, averageScore, pros/headline, avatar/userImage),
+ * so no mapping is needed here.
+ *
+ * Reviews are a soft dependency: the hotel page fetches them alongside hotel details in
+ * a `Promise.all`, so any failure (network, auth, empty cache) must resolve to `[]` rather
+ * than reject — a reviews outage should never take down the hotel page, and we never fall
+ * back to fabricated entries (see CONTEXT.md: "verified review").
+ */
+export async function getHotelReviews(hotelId: string, limit: number = 20): Promise<any[]> {
+    if (!hotelId) return [];
+
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), INVOKE_TIMEOUT_MS);
+    try {
+        const res = await fetch(`${WEB_API_BASE}/api/mobile/hotel-reviews`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                // CSRF bypass for same-site custom-header requests; see booking-api.ts.
+                'X-Requested-By': 'cheapestgo-client',
+                'X-Mobile-Api-Key': MOBILE_API_KEY,
+            },
+            credentials: 'include',
+            body: JSON.stringify({ hotelCode: hotelId, limit }),
+            signal: controller.signal,
         });
+        clearTimeout(timer);
+        if (!res.ok) return [];
+
+        const text = await res.text();
+        if (!text.trim()) return [];
+        let json: any;
+        try { json = JSON.parse(text); } catch { return []; }
+
+        // Accept { data: [...] }, { reviews: [...] }, or a bare array.
+        const reviews: any[] = Array.isArray(json)
+            ? json
+            : (json.data ?? json.reviews ?? []);
+        if (!Array.isArray(reviews)) return [];
+        return reviews.slice(0, limit);
+    } catch {
+        clearTimeout(timer);
+        // Aborts, timeouts, and network errors all degrade to "no reviews".
+        return [];
     }
-    return reviews;
 }
 
 // ─── Booking APIs ───
@@ -358,15 +355,6 @@ export async function prebookRoom(params: PrebookParams): Promise<PrebookRespons
         roomSubstituted: d.roomSubstituted,
         substitutedRoomName: d.substitutedRoomName,
     };
-}
-
-export async function validatePromoCode(code: string, price: number): Promise<any> {
-    const result = await webInvoke<{ success: boolean; data?: any; error?: string }>(
-        '/api/voucher/validate',
-        { code, bookingPrice: price },
-    );
-    if (!result.success) throw new Error(result.error || 'Failed to validate promo code');
-    return result.data;
 }
 
 export async function getHotelFacilities(): Promise<any[]> {

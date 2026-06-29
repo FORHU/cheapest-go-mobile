@@ -5,8 +5,9 @@ import {
     useColorScheme,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Plane, AlertTriangle, ChevronDown, ChevronUp } from 'lucide-react-native';
-import { fetchMyFlightBookings, type FlightBooking } from '@/lib/trips';
+import { Plane, AlertTriangle, ChevronDown, ChevronUp, Hotel } from 'lucide-react-native';
+import { fetchMyTrips, type FlightBooking, type HotelBooking } from '@/lib/trips';
+import { displayHotelName } from '@/lib/hotel-format';
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'expo-router';
 
@@ -190,6 +191,109 @@ function BookingCard({ booking, C }: { booking: FlightBooking; C: typeof T.dark 
     );
 }
 
+// ─── Hotel status helpers ─────────────────────────────────────────────────────
+
+const HOTEL_STATUS_LABEL: Record<string, string> = {
+    pending: 'Pending', confirmed: 'Confirmed', completed: 'Completed',
+    cancelled: 'Cancelled', cancelled_refunded: 'Refunded', cancelled_refund_failed: 'Refund Failed',
+};
+
+function hotelStatusStyle(status: string): { bg: string; text: string } {
+    if (status === 'confirmed')              return { bg: 'rgba(34,197,94,0.15)',   text: '#16a34a' };
+    if (status === 'completed')              return { bg: 'rgba(37,99,235,0.15)',   text: '#2563eb' };
+    if (status === 'pending')                return { bg: 'rgba(234,179,8,0.15)',   text: '#ca8a04' };
+    if (status === 'cancelled_refunded')     return { bg: 'rgba(20,184,166,0.15)',  text: '#0d9488' };
+    if (status === 'cancelled_refund_failed')return { bg: 'rgba(239,68,68,0.15)',   text: '#dc2626' };
+    if (status === 'cancelled')              return { bg: 'rgba(100,116,139,0.15)', text: '#64748b' };
+    return { bg: 'rgba(100,116,139,0.15)', text: '#64748b' };
+}
+
+// ─── Single hotel booking card ────────────────────────────────────────────────
+
+function HotelBookingCard({ booking, C }: { booking: HotelBooking; C: typeof T.dark }) {
+    const [expanded, setExpanded] = useState(false);
+    const ss = hotelStatusStyle(booking.status);
+    // Never render a raw hotel code as the name — fall back to the room name or "Hotel".
+    const name = displayHotelName(booking.property_name, booking.room_name || 'Hotel');
+    const guests = (booking.guests_adults || 0) + (booking.guests_children || 0);
+    const nights = booking.check_in && booking.check_out
+        ? Math.max(1, Math.round((new Date(booking.check_out).getTime() - new Date(booking.check_in).getTime()) / 86400000))
+        : 0;
+
+    return (
+        <View style={[s.card, { backgroundColor: C.card, borderColor: C.border }]}>
+            <TouchableOpacity activeOpacity={0.75} onPress={() => setExpanded(v => !v)}>
+                <View style={s.row}>
+                    <View style={[s.airlineBox, { backgroundColor: C.blueBg }]}>
+                        <Hotel size={22} color={C.blue} />
+                    </View>
+
+                    <View style={{ flex: 1, marginHorizontal: 12 }}>
+                        <Text style={[s.route, { color: C.text }]} numberOfLines={1}>{name}</Text>
+                        <Text style={[s.sub, { color: C.muted }]}>
+                            {booking.check_in ? fmt(booking.check_in, { month: 'short', day: 'numeric' }) : '—'}
+                            {' → '}
+                            {booking.check_out ? fmt(booking.check_out, { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                            {nights ? `  ·  ${nights} night${nights > 1 ? 's' : ''}` : ''}
+                        </Text>
+                        <Text style={[s.sub, { color: C.muted, marginTop: 2 }]} numberOfLines={1}>
+                            {booking.room_name || 'Room'}{guests ? `  ·  ${guests} guest${guests > 1 ? 's' : ''}` : ''}
+                        </Text>
+                    </View>
+
+                    <View style={{ alignItems: 'flex-end', gap: 6 }}>
+                        <View style={[s.badge, { backgroundColor: ss.bg }]}>
+                            <Text style={[s.badgeText, { color: ss.text }]}>
+                                {HOTEL_STATUS_LABEL[booking.status] ?? booking.status}
+                            </Text>
+                        </View>
+                        {expanded
+                            ? <ChevronUp size={16} color={C.dim} />
+                            : <ChevronDown size={16} color={C.dim} />}
+                    </View>
+                </View>
+            </TouchableOpacity>
+
+            {expanded && (
+                <View style={[s.detail, { borderTopColor: C.border }]}>
+                    <View style={s.detailRow}>
+                        <Text style={[s.detailLabel, { color: C.muted }]}>Booking ID</Text>
+                        <Text style={[s.mono, { color: C.blue }]}>{booking.booking_id || booking.id}</Text>
+                    </View>
+                    <View style={s.detailRow}>
+                        <Text style={[s.detailLabel, { color: C.muted }]}>Room</Text>
+                        <Text style={[s.detailValue, { color: C.text }]}>{booking.room_name || 'Room'}</Text>
+                    </View>
+                    <View style={s.detailRow}>
+                        <Text style={[s.detailLabel, { color: C.muted }]}>Guest</Text>
+                        <Text style={[s.detailValue, { color: C.text }]}>
+                            {booking.holder_first_name} {booking.holder_last_name}
+                        </Text>
+                    </View>
+                    <View style={s.detailRow}>
+                        <Text style={[s.detailLabel, { color: C.muted }]}>Total</Text>
+                        <Text style={[s.detailValue, { color: C.text }]}>
+                            {booking.currency} {Number(booking.total_price ?? 0).toLocaleString()}
+                        </Text>
+                    </View>
+                    {!!booking.special_requests && (
+                        <View style={s.detailBlock}>
+                            <Text style={[s.detailLabel, { color: C.muted, marginBottom: 4 }]}>Special requests</Text>
+                            <Text style={[s.sub, { color: C.muted }]}>{booking.special_requests}</Text>
+                        </View>
+                    )}
+                </View>
+            )}
+        </View>
+    );
+}
+
+// ─── Trip item (flight | hotel) ───────────────────────────────────────────────
+
+type TripItem =
+    | { kind: 'flight'; data: FlightBooking }
+    | { kind: 'hotel'; data: HotelBooking };
+
 // ─── Screen ───────────────────────────────────────────────────────────────────
 
 export default function TripsScreen() {
@@ -198,7 +302,8 @@ export default function TripsScreen() {
     const { user } = useAuth();
     const router = useRouter();
 
-    const [bookings, setBookings] = useState<FlightBooking[]>([]);
+    const [flights, setFlights] = useState<FlightBooking[]>([]);
+    const [hotels, setHotels]   = useState<HotelBooking[]>([]);
     const [loading, setLoading]   = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [error, setError]       = useState<string | null>(null);
@@ -206,8 +311,9 @@ export default function TripsScreen() {
     const load = useCallback(async () => {
         setError(null);
         try {
-            const data = await fetchMyFlightBookings();
-            setBookings(data);
+            const trips = await fetchMyTrips();
+            setFlights(trips.flights);
+            setHotels(trips.hotels);
         } catch (e: any) {
             setError(e.message ?? 'Failed to load bookings');
         }
@@ -225,17 +331,33 @@ export default function TripsScreen() {
         setRefreshing(false);
     }, [load]);
 
-    const upcoming = bookings.filter(b =>
+    const now = new Date();
+
+    const flightUpcoming = flights.filter(b =>
         ['ticketed', 'awaiting_ticket', 'booked', 'pnr_created'].includes(b.status)
-        && b.flight_segments?.some(s => new Date(s.departure) > new Date())
+        && b.flight_segments?.some(seg => new Date(seg.departure) > now)
     );
-    const past = bookings.filter(b =>
-        !upcoming.includes(b)
-        && !['cancelled', 'cancelled_provider_missing', 'refunded'].includes(b.status)
-    );
-    const cancelled = bookings.filter(b =>
+    const flightCancelled = flights.filter(b =>
         ['cancelled', 'cancelled_provider_missing', 'refunded'].includes(b.status)
     );
+    const flightPast = flights.filter(b => !flightUpcoming.includes(b) && !flightCancelled.includes(b));
+
+    const isHotelCancelled = (h: HotelBooking) => h.status.startsWith('cancelled');
+    const hotelUpcoming = hotels.filter(h =>
+        !isHotelCancelled(h) && ['pending', 'confirmed'].includes(h.status) && new Date(h.check_out) >= now
+    );
+    const hotelCancelled = hotels.filter(isHotelCancelled);
+    const hotelPast = hotels.filter(h => !hotelUpcoming.includes(h) && !hotelCancelled.includes(h));
+
+    const toItems = (f: FlightBooking[], h: HotelBooking[]): TripItem[] => [
+        ...f.map(data => ({ kind: 'flight' as const, data })),
+        ...h.map(data => ({ kind: 'hotel' as const, data })),
+    ];
+
+    const upcoming = toItems(flightUpcoming, hotelUpcoming);
+    const past = toItems(flightPast, hotelPast);
+    const cancelled = toItems(flightCancelled, hotelCancelled);
+    const totalCount = flights.length + hotels.length;
 
     // ── Not signed in ──
     if (!user) {
@@ -247,7 +369,7 @@ export default function TripsScreen() {
                     </View>
                     <Text style={[s.emptyTitle, { color: C.text }]}>Sign in to see your trips</Text>
                     <Text style={[s.emptyBody, { color: C.muted }]}>
-                        Your flight bookings will appear here after you sign in.
+                        Your flight and hotel bookings will appear here after you sign in.
                     </Text>
                     <TouchableOpacity
                         style={[s.btn, { backgroundColor: C.blue }]}
@@ -289,7 +411,7 @@ export default function TripsScreen() {
     }
 
     // ── No bookings ──
-    if (bookings.length === 0) {
+    if (totalCount === 0) {
         return (
             <SafeAreaView style={[s.flex, { backgroundColor: C.bg }]}>
                 <ScrollView
@@ -301,19 +423,22 @@ export default function TripsScreen() {
                     </View>
                     <Text style={[s.emptyTitle, { color: C.text }]}>No trips yet</Text>
                     <Text style={[s.emptyBody, { color: C.muted }]}>
-                        Book your first flight and it'll appear here with your seat assignment and e-ticket.
+                        Book your first flight or hotel and it'll appear here with all your booking details.
                     </Text>
                 </ScrollView>
             </SafeAreaView>
         );
     }
 
-    const renderSection = (title: string, items: FlightBooking[]) => {
+    const renderSection = (title: string, items: TripItem[]) => {
         if (items.length === 0) return null;
         return (
             <>
                 <Text style={[s.sectionLabel, { color: C.muted }]}>{title}</Text>
-                {items.map(b => <BookingCard key={b.id} booking={b} C={C} />)}
+                {items.map(item => item.kind === 'flight'
+                    ? <BookingCard key={`f-${item.data.id}`} booking={item.data} C={C} />
+                    : <HotelBookingCard key={`h-${item.data.id}`} booking={item.data} C={C} />
+                )}
             </>
         );
     };
@@ -328,7 +453,7 @@ export default function TripsScreen() {
                 {/* Header */}
                 <View style={s.header}>
                     <Text style={[s.title, { color: C.text }]}>My Trips</Text>
-                    <Text style={[s.sub, { color: C.muted }]}>{bookings.length} booking{bookings.length !== 1 ? 's' : ''}</Text>
+                    <Text style={[s.sub, { color: C.muted }]}>{totalCount} booking{totalCount !== 1 ? 's' : ''}</Text>
                 </View>
 
                 {renderSection('UPCOMING', upcoming)}

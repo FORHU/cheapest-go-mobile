@@ -1,7 +1,7 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AlertTriangle, ArrowLeft, CheckCircle, Mail, Tag } from 'lucide-react-native';
-import React, { useCallback, useEffect, useState } from 'react';
+import { AlertTriangle, ArrowLeft, Check, CheckCircle, Mail } from 'lucide-react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
     ActivityIndicator, Alert, Image, KeyboardAvoidingView,
     Platform, Pressable, ScrollView, StyleSheet, Text, TextInput,
@@ -9,8 +9,10 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext';
-import { prebookRoom, PrebookResponse, validatePromoCode } from '../lib/travel-api';
+import { useAuth } from '../context/AuthContext';
+import { prebookRoom, PrebookResponse } from '../lib/travel-api';
 import { confirmHotelBooking, createHotelPayment } from '../lib/booking-api';
+import { looksLikeHotelCode } from '../lib/hotel-format';
 
 // Stripe is a native module — only available in EAS dev/production builds, not Expo Go.
 // We lazy-require it so the rest of the app never crashes if the native binary is absent.
@@ -58,6 +60,23 @@ function StripeCheckout() {
     );
 }
 
+// A small acknowledgment checkbox reused for room-substitution consent and terms.
+function AckCheckbox({ checked, onToggle, styles, children }: {
+    checked: boolean;
+    onToggle: () => void;
+    styles: ReturnType<typeof getStyles>;
+    children: React.ReactNode;
+}) {
+    return (
+        <Pressable style={styles.checkRow} onPress={onToggle} hitSlop={6}>
+            <View style={[styles.checkBox, checked && styles.checkBoxChecked]}>
+                {checked && <Check size={14} color="#ffffff" strokeWidth={3} />}
+            </View>
+            <Text style={styles.checkLabel}>{children}</Text>
+        </Pressable>
+    );
+}
+
 function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentSheet }: {
     stripeAvailable: boolean;
     initPaymentSheet: any;
@@ -68,6 +87,7 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const { currency } = useSettings();
+    const { user } = useAuth();
     const insets = useSafeAreaInsets();
     const styles = getStyles(isDark, insets.bottom);
 
@@ -77,10 +97,15 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
     const roomPrice = parseInt(params.roomPrice as string) || 0;
     const roomCurrency = (params.roomCurrency as string) || currency.code;
     const hotelName = params.hotelName as string || 'Hotel';
+    const hotelCode = params.hotelCode as string || '';
+    // Never persist a raw hotel code where a display name belongs. If all we have is a
+    // code, send no name (the booking carries `hotelCode` so the read side can resolve it).
+    const safePropertyName = looksLikeHotelCode(hotelName) ? undefined : hotelName;
     const hotelImage = params.hotelImage as string || '';
     const checkIn = params.checkIn as string || '';
     const checkOut = params.checkOut as string || '';
     const adults = parseInt(params.adults as string) || 2;
+    const children = parseInt(params.children as string) || 0;
 
     // Derived display values
     const displaySymbol = currency.symbol;
@@ -95,19 +120,27 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
     const [prebookError, setPrebookError] = useState<string | null>(null);
     const [processing, setProcessing] = useState(false);
     const [bookingId, setBookingId] = useState<string | null>(null);
+    // Once Stripe captures the payment we stash the PaymentIntent id here. If confirm
+    // then fails, the next Pay Now tap retries *confirm only* with this id instead of
+    // creating a second PaymentIntent — preventing a double charge.
+    const capturedPaymentRef = useRef<string | null>(null);
 
-    // Form state
-    const [firstName, setFirstName] = useState('');
-    const [lastName, setLastName] = useState('');
-    const [email, setEmail] = useState('');
+    // Form state — prefilled from the signed-in profile (the app is auth-gated, so
+    // `user` is virtually always present by the time checkout mounts).
+    const [firstName, setFirstName] = useState(user?.firstName ?? '');
+    const [lastName, setLastName] = useState(user?.lastName ?? '');
+    const [email, setEmail] = useState(user?.email ?? '');
     const [specialRequests, setSpecialRequests] = useState('');
     const [formErrors, setFormErrors] = useState<Record<string, string>>({});
 
-    // Promo code state
-    const [promoCode, setPromoCode] = useState('');
-    const [appliedPromo, setAppliedPromo] = useState<any | null>(null);
-    const [promoLoading, setPromoLoading] = useState(false);
-    const [promoError, setPromoError] = useState<string | null>(null);
+    // Backfill guest details once the profile resolves (session validation can land
+    // after mount). Only fills blanks, so it never clobbers what the guest has typed.
+    useEffect(() => {
+        if (!user) return;
+        setFirstName(prev => prev || user.firstName || '');
+        setLastName(prev => prev || user.lastName || '');
+        setEmail(prev => prev || user.email || '');
+    }, [user]);
 
     // Prebook on mount — locks the rate and gets a quote token
     useEffect(() => {
@@ -120,6 +153,7 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                     offerId,
                     currency: roomCurrency,
                     adults,
+                    children,
                     roomName: params.roomName as string || undefined,
                 });
                 setPrebookData(result);
@@ -130,34 +164,28 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
             }
         };
         doPrebook();
-    }, [offerId, adults, params.roomName, roomCurrency]);
+    }, [offerId, adults, children, params.roomName, roomCurrency]);
 
-    // Pricing
+    // Room substitution — the prebook (authoritative) can lock a different room than
+    // the guest selected. We must show this, book the real room name, and require the
+    // guest to acknowledge the swap before paying.
+    const roomSubstituted = !!prebookData?.roomSubstituted;
+    const effectiveRoomName =
+        (roomSubstituted && prebookData?.substitutedRoomName) || roomName;
+    const [substitutionAck, setSubstitutionAck] = useState(false);
+
+    // Terms / cancellation-policy acceptance — required before we charge.
+    const [termsAccepted, setTermsAccepted] = useState(false);
+    const isRefundable = prebookData?.cancellationPolicies?.refundableTag === 'RFN';
+    const isNonRefundable =
+        !!prebookData?.cancellationPolicies && !isRefundable;
+
+    // Pricing — the prebook total is authoritative and tax-inclusive. We don't have a
+    // real tax/fee breakdown from the supplier yet, so we show the honest total with a
+    // "taxes & fees included" note rather than inventing a split. (TODO: render the real
+    // breakdown once the prebook response exposes taxes & fees.)
     const confirmedPrice = prebookData?.price ?? roomPrice;
-    const taxes = Math.round(confirmedPrice * 0.107);
-    const subtotal = confirmedPrice - taxes;
-    const discount = appliedPromo?.discountAmount || 0;
-    const total = Math.max(0, confirmedPrice - discount);
-
-    const handleApplyPromo = async () => {
-        if (!promoCode.trim()) return;
-        setPromoLoading(true);
-        setPromoError(null);
-        try {
-            const result = await validatePromoCode(promoCode, total);
-            if (result?.valid) {
-                setAppliedPromo(result);
-                Alert.alert('Success', `Promo "${result.promo?.code || promoCode.toUpperCase()}" applied!`);
-            } else {
-                setPromoError(result?.message || 'Invalid or expired promo code');
-                setAppliedPromo(null);
-            }
-        } catch (err: any) {
-            setPromoError(err.message || 'Failed to apply promo code');
-        } finally {
-            setPromoLoading(false);
-        }
-    };
+    const total = Math.max(0, confirmedPrice);
 
     const validateForm = useCallback(() => {
         const errors: Record<string, string> = {};
@@ -175,6 +203,14 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
             Alert.alert('Not Ready', 'Still verifying room availability. Please wait a moment.');
             return;
         }
+        if (roomSubstituted && !substitutionAck) {
+            Alert.alert('Room changed', 'Please review and accept the updated room before continuing.');
+            return;
+        }
+        if (!termsAccepted) {
+            Alert.alert('Accept terms', 'Please accept the cancellation policy and booking terms to continue.');
+            return;
+        }
 
         if (!stripeAvailable || !initPaymentSheet || !presentPaymentSheet) {
             Alert.alert(
@@ -186,82 +222,123 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
 
         setProcessing(true);
         try {
-            // Step 1: Create Stripe PaymentIntent via web backend
-            const chargeAmount = appliedPromo?.finalPrice ?? total;
-            const paymentResult = await createHotelPayment({
-                prebookId: prebookData.prebookId,
-                amount: chargeAmount,
-                currency: roomCurrency,
-                holderEmail: email,
-                propertyName: hotelName,
-                roomName,
-                checkIn,
-                checkOut,
-            });
+            // If a previous attempt already captured payment but failed to confirm,
+            // reuse that PaymentIntent and skip straight to confirm — never re-charge.
+            let paymentIntentId = capturedPaymentRef.current;
 
-            if (!paymentResult.success || !paymentResult.data?.clientSecret) {
-                throw new Error((paymentResult as any).error || 'Failed to create payment session');
-            }
+            if (!paymentIntentId) {
+                // Step 1: Create Stripe PaymentIntent via web backend
+                const chargeAmount = total;
+                const paymentResult = await createHotelPayment({
+                    prebookId: prebookData.prebookId,
+                    amount: chargeAmount,
+                    currency: roomCurrency,
+                    holderEmail: email,
+                    propertyName: safePropertyName,
+                    roomName: effectiveRoomName,
+                    checkIn,
+                    checkOut,
+                });
 
-            const { clientSecret, paymentIntentId } = paymentResult.data;
-
-            // Step 2: Initialise Stripe payment sheet
-            const { error: initError } = await initPaymentSheet({
-                paymentIntentClientSecret: clientSecret,
-                merchantDisplayName: 'CheapestGo',
-                applePay: { merchantCountryCode: 'US' },
-                googlePay: { merchantCountryCode: 'US', testEnv: __DEV__ },
-                style: isDark ? 'alwaysDark' : 'alwaysLight',
-                returnURL: 'mobileapp://checkout-return',
-                defaultBillingDetails: { email, name: `${firstName} ${lastName}` },
-            });
-            if (initError) throw new Error(initError.message);
-
-            // Step 3: Present sheet — user enters card / uses Apple Pay / Google Pay
-            setStep('paying');
-            const { error: paymentError } = await presentPaymentSheet();
-            if (paymentError) {
-                setStep('form');
-                if (paymentError.code !== 'Canceled') {
-                    Alert.alert('Payment Failed', paymentError.message);
+                if (!paymentResult.success || !paymentResult.data?.clientSecret) {
+                    throw new Error((paymentResult as any).error || 'Failed to create payment session');
                 }
-                return;
+
+                const { clientSecret, paymentIntentId: pid } = paymentResult.data;
+
+                // Step 2: Initialise Stripe payment sheet
+                const { error: initError } = await initPaymentSheet({
+                    paymentIntentClientSecret: clientSecret,
+                    merchantDisplayName: 'CheapestGo',
+                    applePay: { merchantCountryCode: 'US' },
+                    googlePay: { merchantCountryCode: 'US', testEnv: __DEV__ },
+                    style: isDark ? 'alwaysDark' : 'alwaysLight',
+                    returnURL: 'mobileapp://checkout-return',
+                    defaultBillingDetails: { email, name: `${firstName} ${lastName}` },
+                });
+                if (initError) throw new Error(initError.message);
+
+                // Step 3: Present sheet — user enters card / uses Apple Pay / Google Pay
+                setStep('paying');
+                const { error: paymentError } = await presentPaymentSheet();
+                if (paymentError) {
+                    setStep('form');
+                    if (paymentError.code !== 'Canceled') {
+                        Alert.alert('Payment Failed', paymentError.message);
+                    }
+                    return;
+                }
+
+                // Payment captured. Remember it so any confirm failure retries confirm
+                // only — it must never trigger a second createHotelPayment.
+                paymentIntentId = pid;
+                capturedPaymentRef.current = pid;
             }
 
-            // Step 4: Confirm booking with provider + save to DB
-            const confirmResult = await confirmHotelBooking({
+            // Step 4: Confirm booking with provider + save to DB, with retry.
+            // The backend is idempotent on paymentIntentId, so a dropped/timed-out
+            // confirm response is safe to retry: it returns the same booking instead
+            // of creating a second one.
+            setStep('paying');
+            const confirmPayload = {
                 prebookId: prebookData.prebookId,
                 paymentIntentId,
                 holder: { firstName, lastName, email },
                 guests: [{ occupancyNumber: 1, firstName, lastName, email, remarks: specialRequests || undefined }],
                 payment: { method: 'ACC_CREDIT_CARD' },
-                propertyName: hotelName,
-                roomName,
+                propertyName: safePropertyName,
+                hotelCode: hotelCode || undefined,
+                roomName: effectiveRoomName,
                 checkIn,
                 checkOut,
                 adults,
+                children,
                 currency: roomCurrency,
                 specialRequests: specialRequests || undefined,
-                voucherCode: appliedPromo?.promo?.code,
-                discountAmount: appliedPromo?.discountAmount,
-            } as any);
+                acceptedTermsAt: new Date().toISOString(),
+            };
+
+            let confirmResult: Awaited<ReturnType<typeof confirmHotelBooking>> | null = null;
+            let lastConfirmErr: any;
+            for (let attempt = 1; attempt <= 3; attempt++) {
+                try {
+                    confirmResult = await confirmHotelBooking(confirmPayload as any);
+                    break;
+                } catch (err: any) {
+                    lastConfirmErr = err;
+                    if (attempt < 3) await new Promise(r => setTimeout(r, 1500 * attempt));
+                }
+            }
+            if (!confirmResult) throw lastConfirmErr ?? new Error('Booking confirmation failed');
 
             if (!confirmResult.success) {
                 throw new Error((confirmResult as any).error || 'Booking confirmation failed');
             }
 
+            // Booking secured — clear the captured-payment guard.
+            capturedPaymentRef.current = null;
             setBookingId(confirmResult.data?.bookingId || paymentIntentId);
             setStep('success');
         } catch (err: any) {
             setStep('form');
-            Alert.alert('Booking Failed', err.message || 'Something went wrong. Please try again.');
+            if (capturedPaymentRef.current) {
+                // Card was charged but confirmation didn't complete. The next Pay Now
+                // tap retries confirm with the same PaymentIntent — no second charge.
+                Alert.alert(
+                    'Almost done',
+                    "Your payment went through, but we couldn't finalize the booking. Tap Pay Now once more to complete it — you will not be charged again.",
+                );
+            } else {
+                Alert.alert('Booking Failed', err.message || 'Something went wrong. Please try again.');
+            }
         } finally {
             setProcessing(false);
         }
     }, [
         validateForm, prebookData, firstName, lastName, email,
-        specialRequests, appliedPromo, total, roomCurrency,
-        hotelName, roomName, checkIn, checkOut, adults, isDark,
+        specialRequests, total, roomCurrency,
+        safePropertyName, hotelCode, effectiveRoomName, roomSubstituted, substitutionAck,
+        termsAccepted, checkIn, checkOut, adults, children, isDark,
         stripeAvailable, initPaymentSheet, presentPaymentSheet,
     ]);
 
@@ -280,7 +357,7 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                             { label: 'Booking ID', value: bookingId },
                             { label: 'Check-in',   value: checkIn },
                             { label: 'Check-out',  value: checkOut },
-                            { label: 'Room',       value: roomName },
+                            { label: 'Room',       value: effectiveRoomName },
                             { label: 'Total',      value: `${displaySymbol}${total.toLocaleString()}`, blue: true },
                         ].map(({ label, value, blue }, i, arr) => (
                             <View key={label} style={[styles.successRow, i === arr.length - 1 && { borderBottomWidth: 0 }]}>
@@ -316,6 +393,10 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
     }
 
     // ── Main form screen ───────────────────────────────────────────────────
+    const payDisabled =
+        !prebookData || prebooking || processing ||
+        (roomSubstituted && !substitutionAck) || !termsAccepted;
+
     return (
         <SafeAreaView style={styles.container}>
             <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
@@ -336,7 +417,7 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                         {hotelImage ? <Image source={{ uri: hotelImage }} style={styles.summaryImage} /> : null}
                         <View style={styles.summaryInfo}>
                             <Text style={styles.summaryHotel} numberOfLines={2}>{hotelName}</Text>
-                            <Text style={styles.summaryRoom} numberOfLines={1}>{roomName}</Text>
+                            <Text style={styles.summaryRoom} numberOfLines={1}>{effectiveRoomName}</Text>
                             <Text style={styles.summaryDates}>{checkIn} → {checkOut} · {nights} night{nights > 1 ? 's' : ''}</Text>
                             <Text style={styles.summaryGuests}>{adults} guest{adults > 1 ? 's' : ''}</Text>
                         </View>
@@ -366,46 +447,23 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                         </View>
                     )}
 
-                    {/* Promo code */}
-                    <View style={styles.promoCard}>
-                        <View style={styles.promoHeader}>
-                            <Tag size={16} color={isDark ? '#60a5fa' : '#2563eb'} />
-                            <Text style={styles.promoTitle}>Have a promo code?</Text>
+                    {/* Room substitution notice — supplier locked a different room than selected */}
+                    {roomSubstituted && (
+                        <View style={styles.substituteBanner}>
+                            <View style={styles.substituteHeader}>
+                                <AlertTriangle size={18} color="#d97706" />
+                                <Text style={styles.substituteTitle}>The room changed</Text>
+                            </View>
+                            <Text style={styles.substituteText}>
+                                The supplier confirmed a different room than the one you selected. You'll be booking:
+                            </Text>
+                            <Text style={styles.substituteRoom}>{effectiveRoomName}</Text>
+                            {roomName ? <Text style={styles.substituteWas}>Originally selected: {roomName}</Text> : null}
+                            <AckCheckbox checked={substitutionAck} onToggle={() => setSubstitutionAck(v => !v)} styles={styles}>
+                                I understand and accept this room change.
+                            </AckCheckbox>
                         </View>
-                        {appliedPromo ? (
-                            <View style={styles.appliedPromoRow}>
-                                <View style={{ flex: 1 }}>
-                                    <Text style={styles.appliedPromoCode}>Code: {appliedPromo.promo?.code}</Text>
-                                    <Text style={styles.appliedPromoDesc}>{appliedPromo.promo?.description || 'Discount Applied'}</Text>
-                                </View>
-                                <Pressable style={styles.removePromoBtn} onPress={() => { setAppliedPromo(null); setPromoCode(''); setPromoError(null); }}>
-                                    <Text style={styles.removePromoText}>Remove</Text>
-                                </Pressable>
-                            </View>
-                        ) : (
-                            <View style={styles.promoInputRow}>
-                                <TextInput
-                                    style={[styles.promoInput, promoError && styles.promoInputError]}
-                                    placeholder="ENTER PROMO CODE"
-                                    placeholderTextColor={isDark ? '#475569' : '#94a3b8'}
-                                    value={promoCode}
-                                    onChangeText={setPromoCode}
-                                    autoCapitalize="characters"
-                                    editable={!promoLoading}
-                                />
-                                <Pressable
-                                    style={[styles.promoApplyBtn, (!promoCode.trim() || promoLoading) && styles.promoApplyBtnDisabled]}
-                                    onPress={handleApplyPromo}
-                                    disabled={!promoCode.trim() || promoLoading}
-                                >
-                                    {promoLoading
-                                        ? <ActivityIndicator size="small" color="#64748b" />
-                                        : <Text style={styles.promoApplyBtnText}>Apply</Text>}
-                                </Pressable>
-                            </View>
-                        )}
-                        {promoError && <Text style={styles.promoErrorText}>{promoError}</Text>}
-                    </View>
+                    )}
 
                     {/* Guest Details */}
                     <View style={styles.formSection}>
@@ -441,22 +499,13 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                         <Text style={styles.formSectionTitle}>Price Summary</Text>
                         <View style={styles.priceRow}>
                             <Text style={styles.priceLabel}>1 room × {nights} night{nights > 1 ? 's' : ''}</Text>
-                            <Text style={styles.priceValue}>{displaySymbol}{subtotal.toLocaleString()}</Text>
+                            <Text style={styles.priceValue}>{displaySymbol}{confirmedPrice.toLocaleString()}</Text>
                         </View>
-                        <View style={styles.priceRow}>
-                            <Text style={styles.priceLabel}>Taxes & fees</Text>
-                            <Text style={styles.priceValue}>{displaySymbol}{taxes.toLocaleString()}</Text>
-                        </View>
-                        {appliedPromo && (
-                            <View style={styles.priceRow}>
-                                <Text style={[styles.priceLabel, { color: '#059669', fontWeight: '600' }]}>Discount ({appliedPromo.promo?.code})</Text>
-                                <Text style={[styles.priceValue, { color: '#059669', fontWeight: '700' }]}>-{displaySymbol}{discount.toLocaleString()}</Text>
-                            </View>
-                        )}
                         <View style={[styles.priceRow, styles.totalRow]}>
                             <Text style={styles.totalLabel}>Total</Text>
                             <Text style={styles.totalValue}>{displaySymbol}{total.toLocaleString()}</Text>
                         </View>
+                        <Text style={styles.taxesIncludedNote}>Taxes &amp; fees included</Text>
                     </View>
 
                     {/* Cancellation policy from prebook */}
@@ -470,6 +519,23 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                             </View>
                         </View>
                     )}
+
+                    {/* Terms & cancellation-policy acceptance — gates Pay Now */}
+                    <View style={styles.formSection}>
+                        {isNonRefundable && (
+                            <View style={styles.nonRefundableNotice}>
+                                <AlertTriangle size={16} color="#d97706" />
+                                <Text style={styles.nonRefundableText}>
+                                    This rate is non-refundable. You will be charged the full amount and cannot cancel for a refund.
+                                </Text>
+                            </View>
+                        )}
+                        <AckCheckbox checked={termsAccepted} onToggle={() => setTermsAccepted(v => !v)} styles={styles}>
+                            {isNonRefundable
+                                ? 'I understand this booking is non-refundable and accept the cancellation policy and booking terms.'
+                                : 'I accept the cancellation policy and booking terms.'}
+                        </AckCheckbox>
+                    </View>
                 </ScrollView>
 
                 {/* Bottom Pay Bar */}
@@ -479,9 +545,9 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                         <Text style={styles.bottomNights}>{nights} night{nights > 1 ? 's' : ''} total</Text>
                     </View>
                     <Pressable
-                        style={[styles.confirmBtn, (!prebookData || prebooking || processing) && styles.confirmBtnDisabled]}
+                        style={[styles.confirmBtn, payDisabled && styles.confirmBtnDisabled]}
                         onPress={handlePayNow}
-                        disabled={!prebookData || prebooking || processing}
+                        disabled={payDisabled}
                     >
                         {processing
                             ? <ActivityIndicator size="small" color="white" />
@@ -510,21 +576,18 @@ const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.creat
     prebookText:         { fontSize: 13, color: isDark ? '#93c5fd' : '#2563eb', fontWeight: '600' },
     errorBanner:         { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12, padding: 12, backgroundColor: isDark ? '#2a0a0a' : '#fef2f2', borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#7f1d1d' : '#fecaca' },
     errorBannerText:     { flex: 1, fontSize: 13, color: isDark ? '#fca5a5' : '#dc2626', fontWeight: '500' },
-    promoCard:           { marginTop: 16, backgroundColor: isDark ? '#0f172a' : '#ffffff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: isDark ? '#1e293b' : '#e2e8f0' },
-    promoHeader:         { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 },
-    promoTitle:          { fontSize: 15, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' },
-    promoInputRow:       { flexDirection: 'row', gap: 8 },
-    promoInput:          { flex: 1, borderWidth: 1, borderColor: isDark ? '#334155' : '#e2e8f0', borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 14, fontWeight: '600', color: isDark ? '#ffffff' : '#0f172a', backgroundColor: isDark ? '#1e293b' : '#f8fafc' },
-    promoInputError:     { borderColor: '#ef4444' },
-    promoApplyBtn:       { backgroundColor: isDark ? '#1e293b' : '#e2e8f0', paddingHorizontal: 20, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
-    promoApplyBtnDisabled: { opacity: 0.6 },
-    promoApplyBtnText:   { color: isDark ? '#94a3b8' : '#475569', fontWeight: '700', fontSize: 14 },
-    promoErrorText:      { fontSize: 12, color: '#ef4444', marginTop: 6, fontWeight: '500' },
-    appliedPromoRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: isDark ? '#064e3b22' : '#d1fae544', padding: 12, borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#065f4655' : '#10b98133' },
-    appliedPromoCode:    { fontSize: 14, fontWeight: '700', color: isDark ? '#34d399' : '#059669' },
-    appliedPromoDesc:    { fontSize: 12, color: isDark ? '#a7f3d0' : '#047857', marginTop: 2 },
-    removePromoBtn:      { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, backgroundColor: isDark ? '#7f1d1d22' : '#fee2e2' },
-    removePromoText:     { fontSize: 12, fontWeight: '700', color: isDark ? '#fca5a5' : '#dc2626' },
+    substituteBanner:    { marginTop: 12, padding: 14, backgroundColor: isDark ? '#2a1a05' : '#fffbeb', borderRadius: 12, borderWidth: 1, borderColor: isDark ? '#78350f' : '#fde68a' },
+    substituteHeader:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 },
+    substituteTitle:     { fontSize: 14, fontWeight: '700', color: isDark ? '#fbbf24' : '#b45309' },
+    substituteText:      { fontSize: 13, color: isDark ? '#fcd34d' : '#92400e', lineHeight: 18 },
+    substituteRoom:      { fontSize: 14, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a', marginTop: 6 },
+    substituteWas:       { fontSize: 12, color: isDark ? '#a8a29e' : '#78716c', marginTop: 2, textDecorationLine: 'line-through' },
+    checkRow:            { flexDirection: 'row', alignItems: 'center', gap: 10, marginTop: 12 },
+    checkBox:            { width: 22, height: 22, borderRadius: 6, borderWidth: 2, borderColor: isDark ? '#475569' : '#94a3b8', alignItems: 'center', justifyContent: 'center', backgroundColor: 'transparent' },
+    checkBoxChecked:     { backgroundColor: '#2563eb', borderColor: '#2563eb' },
+    checkLabel:          { flex: 1, fontSize: 13, color: isDark ? '#e2e8f0' : '#334155', fontWeight: '500', lineHeight: 18 },
+    nonRefundableNotice: { flexDirection: 'row', alignItems: 'flex-start', gap: 8, marginBottom: 12, padding: 10, backgroundColor: isDark ? '#2a1a05' : '#fffbeb', borderRadius: 10, borderWidth: 1, borderColor: isDark ? '#78350f' : '#fde68a' },
+    nonRefundableText:   { flex: 1, fontSize: 12, color: isDark ? '#fcd34d' : '#92400e', lineHeight: 17, fontWeight: '500' },
     formSection:         { marginTop: 20, backgroundColor: isDark ? '#0f172a' : '#ffffff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: isDark ? '#1e293b' : '#e2e8f0' },
     formSectionTitle:    { fontSize: 15, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a', marginBottom: 12 },
     inputRow:            { flexDirection: 'row' },
@@ -540,6 +603,7 @@ const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.creat
     totalRow:            { borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#e2e8f0', marginTop: 4, paddingTop: 12 },
     totalLabel:          { fontSize: 16, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' },
     totalValue:          { fontSize: 18, fontWeight: '800', color: '#2563eb' },
+    taxesIncludedNote:   { fontSize: 11, color: isDark ? '#64748b' : '#94a3b8', marginTop: 6, textAlign: 'right' },
     policyBadge:         { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
     policyRefundable:    { backgroundColor: isDark ? '#064e3b33' : '#d1fae5' },
     policyNonRefundable: { backgroundColor: isDark ? '#78350f33' : '#fef3c7' },

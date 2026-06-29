@@ -24,5 +24,12 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   (TravelgateX) typically require only the lead guest per room, not every occupant.
 
 - **Aggregate score vs Review** — the numeric `reviewRating` / `reviewsCount` on a hotel is
-  an **aggregate score**. Individual **reviews** are the per-guest text entries. The app has
-  the former (real, from search payload) but not yet the latter (currently fabricated).
+  an **aggregate score**. Individual **reviews** are the per-guest text entries. Mobile has
+  the former (real, already in the hotel-details payload) but not the latter (currently
+  fabricated on-device, pending wire-up to the real source).
+
+- **Verified review** — a real per-guest review sourced from ETG (the supplier's nightly review
+  dump), written by an actual booker. This is the canonical meaning of "verified" in the reviews
+  UI; do not apply the word to fabricated or placeholder entries. The real reviews live
+  server-side (web repo) and reach mobile through a dedicated reviews endpoint, keyed by the same
+  hotel code (`hotelId`) used for hotel details.
