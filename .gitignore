@@ -45,5 +45,5 @@ test_pipeline.js
 google-service-account.json
 
 # generated native folders
-/ios
-/android
+# /ios
+# /android
