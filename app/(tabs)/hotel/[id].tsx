@@ -423,9 +423,9 @@ export default function HotelDetailsScreen() {
 
     useEffect(() => {
         if (hotel?.hotelId) {
-            checkIsFavorite(hotel.hotelId).then(setIsFavorite);
+            checkIsFavorite(hotel.hotelId, user?.id ?? '').then(setIsFavorite);
         }
-    }, [hotel?.hotelId]);
+    }, [hotel?.hotelId, user?.id]);
 
     const toggleFavorite = useCallback(async () => {
         if (!hotel?.hotelId) return;
@@ -540,14 +540,6 @@ export default function HotelDetailsScreen() {
             },
         });
     }, [hotel, params, router, selectedRoom, currency.code]);
-
-    const [isFavorite, setIsFavorite] = useState(false);
-
-    useEffect(() => {
-        if (hotel?.hotelId) {
-            checkIsFavorite(hotel.hotelId, user?.id ?? '').then(setIsFavorite);
-        }
-    }, [hotel?.hotelId, user?.id]);
 
     const availableRooms = useMemo(() => normalizeRoomOptions(hotel), [hotel]);
 

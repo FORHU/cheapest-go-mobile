@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext';
 import { useAuth } from '../context/AuthContext';
+import { convertCurrency } from '../lib/currency';
 import { prebookRoom, PrebookResponse } from '../lib/travel-api';
 import { confirmHotelBooking, createHotelPayment } from '../lib/booking-api';
 import { looksLikeHotelCode } from '../lib/hotel-format';
@@ -58,6 +59,14 @@ function StripeCheckout() {
             presentPaymentSheet={presentPaymentSheet}
         />
     );
+}
+
+// Turn a supplier charge code (e.g. "RESORT_FEE") into a human label ("Resort Fee").
+function formatChargeType(chargeType: string): string {
+    return chargeType
+        .replace(/_/g, ' ')
+        .toLowerCase()
+        .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 // A small acknowledgment checkbox reused for room-substitution consent and terms.
@@ -180,12 +189,30 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
     const isNonRefundable =
         !!prebookData?.cancellationPolicies && !isRefundable;
 
-    // Pricing — the prebook total is authoritative and tax-inclusive. We don't have a
-    // real tax/fee breakdown from the supplier yet, so we show the honest total with a
-    // "taxes & fees included" note rather than inventing a split. (TODO: render the real
-    // breakdown once the prebook response exposes taxes & fees.)
-    const confirmedPrice = prebookData?.price ?? roomPrice;
-    const total = Math.max(0, confirmedPrice);
+    // Pricing — the prebook response is authoritative. It exposes the room net price
+    // (subtotal), taxes & fees (gross − net), the tax-inclusive total, and any itemised
+    // surcharges, all denominated in prebookData.currency. We convert to the user's
+    // display currency when they differ (mirrors the web checkout flow). Before prebook
+    // resolves we fall back to the selected room price as a flat, tax-inclusive total.
+    const sourceCurrency = (prebookData?.currency || roomCurrency || currency.code).toUpperCase();
+    const conv = useCallback(
+        (n: number) => (sourceCurrency !== currency.code.toUpperCase()
+            ? convertCurrency(n, sourceCurrency, currency.code)
+            : n),
+        [sourceCurrency, currency.code],
+    );
+
+    const rawTotal = prebookData?.price ?? roomPrice;
+    const rawSubtotal = prebookData?.subtotal ?? rawTotal;
+    const rawTaxes = prebookData?.taxes ?? Math.max(0, rawTotal - rawSubtotal);
+
+    const roomSubtotal = Math.round(conv(rawSubtotal));
+    const taxes = Math.round(conv(rawTaxes));
+    const total = Math.max(0, Math.round(conv(rawTotal)));
+    const surcharges = (prebookData?.surcharges ?? []).map(s => ({
+        chargeType: s.chargeType,
+        amount: Math.round(conv(s.price?.gross ?? 0)),
+    }));
 
     const validateForm = useCallback(() => {
         const errors: Record<string, string> = {};
@@ -494,18 +521,30 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
                         <Text style={styles.hintText}>Special requests are not guaranteed but we'll do our best.</Text>
                     </View>
 
-                    {/* Price Breakdown */}
+                    {/* Price Breakdown — values from the prebook quote */}
                     <View style={styles.formSection}>
                         <Text style={styles.formSectionTitle}>Price Summary</Text>
                         <View style={styles.priceRow}>
                             <Text style={styles.priceLabel}>1 room × {nights} night{nights > 1 ? 's' : ''}</Text>
-                            <Text style={styles.priceValue}>{displaySymbol}{confirmedPrice.toLocaleString()}</Text>
+                            <Text style={styles.priceValue}>{displaySymbol}{roomSubtotal.toLocaleString()}</Text>
                         </View>
+                        {surcharges.length > 0 ? (
+                            surcharges.map((s, i) => (
+                                <View key={`${s.chargeType}-${i}`} style={styles.priceRow}>
+                                    <Text style={styles.priceLabel}>{formatChargeType(s.chargeType)}</Text>
+                                    <Text style={styles.priceValue}>{displaySymbol}{s.amount.toLocaleString()}</Text>
+                                </View>
+                            ))
+                        ) : (
+                            <View style={styles.priceRow}>
+                                <Text style={styles.priceLabel}>Taxes and fees</Text>
+                                <Text style={styles.priceValue}>{displaySymbol}{taxes.toLocaleString()}</Text>
+                            </View>
+                        )}
                         <View style={[styles.priceRow, styles.totalRow]}>
                             <Text style={styles.totalLabel}>Total</Text>
                             <Text style={styles.totalValue}>{displaySymbol}{total.toLocaleString()}</Text>
                         </View>
-                        <Text style={styles.taxesIncludedNote}>Taxes &amp; fees included</Text>
                     </View>
 
                     {/* Cancellation policy from prebook */}
@@ -603,7 +642,6 @@ const getStyles = (isDark: boolean, bottomInset: number = 0) => StyleSheet.creat
     totalRow:            { borderTopWidth: 1, borderTopColor: isDark ? '#334155' : '#e2e8f0', marginTop: 4, paddingTop: 12 },
     totalLabel:          { fontSize: 16, fontWeight: '700', color: isDark ? '#ffffff' : '#0f172a' },
     totalValue:          { fontSize: 18, fontWeight: '800', color: '#2563eb' },
-    taxesIncludedNote:   { fontSize: 11, color: isDark ? '#64748b' : '#94a3b8', marginTop: 6, textAlign: 'right' },
     policyBadge:         { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20 },
     policyRefundable:    { backgroundColor: isDark ? '#064e3b33' : '#d1fae5' },
     policyNonRefundable: { backgroundColor: isDark ? '#78350f33' : '#fef3c7' },

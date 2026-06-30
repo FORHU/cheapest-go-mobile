@@ -314,9 +314,22 @@ export interface PrebookParams {
     roomName?: string;
 }
 
+export interface Surcharge {
+    chargeType: string;
+    mandatory: boolean;
+    price: { net: number; gross: number; currency: string };
+}
+
 export interface PrebookResponse {
     prebookId: string;
+    /** Tax-inclusive grand total (gross), in `currency`. */
     price?: number;
+    /** Room net price before taxes & fees, in `currency`. */
+    subtotal?: number;
+    /** Taxes & fees (gross − net), in `currency`. */
+    taxes?: number;
+    /** Mandatory/optional surcharges the supplier itemised, in `currency`. */
+    surcharges?: Surcharge[];
     currency?: string;
     cancellationPolicies?: {
         cancelPolicyInfos?: {
@@ -347,9 +360,16 @@ export async function prebookRoom(params: PrebookParams): Promise<PrebookRespons
         throw new Error(result.error || 'Prebook failed — room may no longer be available.');
     }
     const d = result.data;
+    // The prebook route returns price as { subtotal, taxes, total }; older shapes may
+    // send a bare number. Normalise both into the flat fields the checkout renders.
+    const priceObj = d.price && typeof d.price === 'object' ? d.price : null;
+    const total = priceObj?.total ?? (typeof d.price === 'number' ? d.price : undefined);
     return {
         prebookId: d.prebookId,
-        price: d.price?.total ?? (typeof d.price === 'number' ? d.price : undefined),
+        price: total,
+        subtotal: priceObj?.subtotal,
+        taxes: priceObj?.taxes,
+        surcharges: Array.isArray(d.surcharges) ? d.surcharges : [],
         currency: d.currency,
         cancellationPolicies: d.cancellationPolicies,
         roomSubstituted: d.roomSubstituted,

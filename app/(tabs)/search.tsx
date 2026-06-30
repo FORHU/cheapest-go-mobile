@@ -491,8 +491,19 @@ export default function SearchScreen() {
 
                 setRawHotels(standardizedData);
             } catch (error: any) {
-                console.error('[Search] Error:', error);
-                setError(error.message || 'Failed to fetch hotels');
+                // A cancelled/aborted request (e.g. Fast Refresh reload or the screen
+                // unmounting mid-search) isn't a real failure — don't flash an error screen.
+                const msg = String(error?.message || '');
+                const wasCancelled =
+                    error?.name === 'AbortError' ||
+                    error?.name === 'CanceledError' ||
+                    /cancel|aborted/i.test(msg);
+                if (wasCancelled) {
+                    if (__DEV__) console.log('[Search] request cancelled — ignoring.');
+                } else {
+                    console.error('[Search] Error:', error);
+                    setError(error.message || 'Failed to fetch hotels');
+                }
             } finally {
                 setLoading(false);
                 isFetching.current = false;
