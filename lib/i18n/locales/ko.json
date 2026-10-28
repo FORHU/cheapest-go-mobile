@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "로그인하지 않았습니다",
+        "notSignedInSub": "로그인하여 예약과 설정을 관리하세요.",
+        "signIn": "로그인",
+        "createAccount": "계정 만들기",
+        "edit": "편집",
+        "sections": {
+            "account": "계정",
+            "preferences": "환경설정",
+            "support": "지원"
+        },
+        "stats": {
+            "bookings": "예약",
+            "saved": "저장됨",
+            "reviews": "리뷰"
+        },
+        "rows": {
+            "fullName": "이름",
+            "notSet": "설정되지 않음",
+            "email": "이메일",
+            "changePassword": "비밀번호 변경",
+            "currency": "통화",
+            "priceAlerts": "가격 알림",
+            "priceAlertsSub": "활성 알림 3개",
+            "language": "언어",
+            "helpCenter": "고객센터",
+            "rateApp": "앱 평가하기",
+            "terms": "이용약관 및 개인정보처리방침"
+        },
+        "signOut": "로그아웃",
+        "alerts": {
+            "cameraTitle": "곧 출시",
+            "cameraMsg": "프로필 사진 업로드는 다음 빌드에서 제공될 예정입니다.",
+            "emailTitle": "이메일 변경",
+            "emailMsg": "이메일 주소를 변경하려면 지원팀에 문의해 주세요.",
+            "emailOk": "확인",
+            "rateTitle": "CheapestGo 평가하기 ⭐",
+            "rateMsg": "응원해 주셔서 감사합니다! 앱스토어 평가는 앱이 출시된 후에 가능합니다.",
+            "rateOk": "확인",
+            "signOutTitle": "로그아웃",
+            "signOutMsg": "정말 로그아웃하시겠습니까?",
+            "signOutCancel": "취소",
+            "signOutConfirm": "로그아웃",
+            "urlError": "페이지를 열 수 없습니다",
+            "urlErrorMsg": "나중에 다시 시도해 주세요.",
+            "helpError": "고객센터를 열 수 없습니다"
+        }
+    }
+}

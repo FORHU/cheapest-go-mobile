@@ -32,6 +32,7 @@ module.exports = {
     },
     plugins: [
       'expo-router',
+      'expo-localization',
       [
         'expo-notifications',
         {
@@ -51,7 +52,7 @@ module.exports = {
         '@rnmapbox/maps',
         {
           RNMapboxMapsImpl: 'mapbox',
-          RNMapboxMapsDownloadToken: process.env.MAPBOX_DOWNLOADS_TOKEN,
+          RNMAPBOX_MAPS_DOWNLOAD_TOKEN: process.env.MAPBOX_DOWNLOADS_TOKEN,
         },
       ],
       'expo-font',
@@ -67,6 +68,6 @@ module.exports = {
       },
     },
     owner: 'no-001-team-1',
-    
+
   },
 };

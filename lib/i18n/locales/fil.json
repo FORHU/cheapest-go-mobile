@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "Hindi ka naka-sign in",
+        "notSignedInSub": "Mag-sign in para pamahalaan ang iyong mga booking at preferences.",
+        "signIn": "Mag-sign in",
+        "createAccount": "Gumawa ng account",
+        "edit": "I-edit",
+        "sections": {
+            "account": "ACCOUNT",
+            "preferences": "MGA PREFERENCE",
+            "support": "SUPORTA"
+        },
+        "stats": {
+            "bookings": "MGA BOOKING",
+            "saved": "NAKA-SAVE",
+            "reviews": "MGA REVIEW"
+        },
+        "rows": {
+            "fullName": "Buong pangalan",
+            "notSet": "Hindi pa naitakda",
+            "email": "Email",
+            "changePassword": "Palitan ang password",
+            "currency": "Pera",
+            "priceAlerts": "Mga alerto sa presyo",
+            "priceAlertsSub": "3 aktibong alerto",
+            "language": "Wika",
+            "helpCenter": "Help center",
+            "rateApp": "I-rate ang app",
+            "terms": "Mga Tuntunin at Privacy"
+        },
+        "signOut": "Mag-sign out",
+        "alerts": {
+            "cameraTitle": "Malapit na",
+            "cameraMsg": "Magiging available ang pag-upload ng larawan sa profile sa susunod na build.",
+            "emailTitle": "Palitan ang Email",
+            "emailMsg": "Para i-update ang iyong email address, makipag-ugnayan sa aming support team.",
+            "emailOk": "OK",
+            "rateTitle": "I-rate ang CheapestGo ⭐",
+            "rateMsg": "Salamat sa iyong suporta! Magiging available ang pag-rate sa app store kapag na-publish na ang app.",
+            "rateOk": "OK",
+            "signOutTitle": "Mag-sign out",
+            "signOutMsg": "Sigurado ka bang gusto mong mag-sign out?",
+            "signOutCancel": "Kanselahin",
+            "signOutConfirm": "Mag-sign out",
+            "urlError": "Hindi mabuksan ang pahina",
+            "urlErrorMsg": "Pakisubukang muli mamaya.",
+            "helpError": "Hindi mabuksan ang help center"
+        }
+    }
+}

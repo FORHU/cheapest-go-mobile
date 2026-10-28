@@ -1,12 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet, useColorScheme, Image, Alert, Animated, Platform, UIManager, Easing } from 'react-native';
-import { Plane, ChevronDown, Shield, Luggage, Users, TrendingDown, Zap, Bell } from 'lucide-react-native';
-import { FlightOffer, FlightSegmentDetail, formatTime, formatDuration, stopsLabel, providerLabel } from '../../lib/flight-types';
-
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
+import { Bell, ChevronDown, Luggage, Plane, Shield, TrendingDown, Users, Zap } from 'lucide-react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Animated, Easing, Image, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { FlightOffer, FlightSegmentDetail, formatDuration, formatTime, providerLabel, stopsLabel } from '../../lib/flight-types';
 
 interface FlightCardProps {
     offer: FlightOffer;

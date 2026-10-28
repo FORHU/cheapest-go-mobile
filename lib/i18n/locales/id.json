@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "Anda belum masuk",
+        "notSignedInSub": "Masuk untuk mengelola pemesanan dan preferensi Anda.",
+        "signIn": "Masuk",
+        "createAccount": "Buat akun",
+        "edit": "Ubah",
+        "sections": {
+            "account": "AKUN",
+            "preferences": "PREFERENSI",
+            "support": "BANTUAN"
+        },
+        "stats": {
+            "bookings": "PEMESANAN",
+            "saved": "TERSIMPAN",
+            "reviews": "ULASAN"
+        },
+        "rows": {
+            "fullName": "Nama lengkap",
+            "notSet": "Belum diatur",
+            "email": "Email",
+            "changePassword": "Ubah kata sandi",
+            "currency": "Mata uang",
+            "priceAlerts": "Peringatan harga",
+            "priceAlertsSub": "3 peringatan aktif",
+            "language": "Bahasa",
+            "helpCenter": "Pusat bantuan",
+            "rateApp": "Beri nilai aplikasi",
+            "terms": "Ketentuan & Privasi"
+        },
+        "signOut": "Keluar",
+        "alerts": {
+            "cameraTitle": "Segera hadir",
+            "cameraMsg": "Unggah foto profil akan tersedia di versi berikutnya.",
+            "emailTitle": "Ubah Email",
+            "emailMsg": "Untuk memperbarui alamat email Anda, silakan hubungi tim dukungan kami.",
+            "emailOk": "OK",
+            "rateTitle": "Beri nilai CheapestGo ⭐",
+            "rateMsg": "Terima kasih atas dukungan Anda! Penilaian di toko aplikasi akan tersedia setelah aplikasi dirilis.",
+            "rateOk": "OK",
+            "signOutTitle": "Keluar",
+            "signOutMsg": "Apakah Anda yakin ingin keluar?",
+            "signOutCancel": "Batal",
+            "signOutConfirm": "Keluar",
+            "urlError": "Tidak dapat membuka halaman",
+            "urlErrorMsg": "Silakan coba lagi nanti.",
+            "helpError": "Tidak dapat membuka pusat bantuan"
+        }
+    }
+}

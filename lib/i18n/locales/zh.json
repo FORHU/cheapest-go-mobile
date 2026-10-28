@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "您尚未登录",
+        "notSignedInSub": "登录以管理您的预订和偏好设置。",
+        "signIn": "登录",
+        "createAccount": "创建账户",
+        "edit": "编辑",
+        "sections": {
+            "account": "账户",
+            "preferences": "偏好设置",
+            "support": "支持"
+        },
+        "stats": {
+            "bookings": "预订",
+            "saved": "已收藏",
+            "reviews": "评价"
+        },
+        "rows": {
+            "fullName": "姓名",
+            "notSet": "未设置",
+            "email": "电子邮箱",
+            "changePassword": "修改密码",
+            "currency": "货币",
+            "priceAlerts": "价格提醒",
+            "priceAlertsSub": "3 个启用的提醒",
+            "language": "语言",
+            "helpCenter": "帮助中心",
+            "rateApp": "为应用评分",
+            "terms": "条款与隐私"
+        },
+        "signOut": "退出登录",
+        "alerts": {
+            "cameraTitle": "即将推出",
+            "cameraMsg": "头像上传功能将在下一个版本中推出。",
+            "emailTitle": "修改邮箱",
+            "emailMsg": "如需更新您的电子邮箱地址，请联系我们的支持团队。",
+            "emailOk": "好的",
+            "rateTitle": "为 CheapestGo 评分 ⭐",
+            "rateMsg": "感谢您的支持！应用发布后即可在应用商店评分。",
+            "rateOk": "好的",
+            "signOutTitle": "退出登录",
+            "signOutMsg": "确定要退出登录吗？",
+            "signOutCancel": "取消",
+            "signOutConfirm": "退出登录",
+            "urlError": "无法打开页面",
+            "urlErrorMsg": "请稍后再试。",
+            "helpError": "无法打开帮助中心"
+        }
+    }
+}

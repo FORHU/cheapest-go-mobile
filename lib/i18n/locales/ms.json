@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "Anda belum log masuk",
+        "notSignedInSub": "Log masuk untuk menguruskan tempahan dan keutamaan anda.",
+        "signIn": "Log masuk",
+        "createAccount": "Cipta akaun",
+        "edit": "Sunting",
+        "sections": {
+            "account": "AKAUN",
+            "preferences": "KEUTAMAAN",
+            "support": "SOKONGAN"
+        },
+        "stats": {
+            "bookings": "TEMPAHAN",
+            "saved": "DISIMPAN",
+            "reviews": "ULASAN"
+        },
+        "rows": {
+            "fullName": "Nama penuh",
+            "notSet": "Belum ditetapkan",
+            "email": "E-mel",
+            "changePassword": "Tukar kata laluan",
+            "currency": "Mata wang",
+            "priceAlerts": "Amaran harga",
+            "priceAlertsSub": "3 amaran aktif",
+            "language": "Bahasa",
+            "helpCenter": "Pusat bantuan",
+            "rateApp": "Nilai aplikasi",
+            "terms": "Terma & Privasi"
+        },
+        "signOut": "Log keluar",
+        "alerts": {
+            "cameraTitle": "Akan datang",
+            "cameraMsg": "Muat naik foto profil akan tersedia dalam versi seterusnya.",
+            "emailTitle": "Tukar E-mel",
+            "emailMsg": "Untuk mengemas kini alamat e-mel anda, sila hubungi pasukan sokongan kami.",
+            "emailOk": "OK",
+            "rateTitle": "Nilai CheapestGo ⭐",
+            "rateMsg": "Terima kasih atas sokongan anda! Penilaian kedai aplikasi akan tersedia selepas aplikasi diterbitkan.",
+            "rateOk": "OK",
+            "signOutTitle": "Log keluar",
+            "signOutMsg": "Adakah anda pasti mahu log keluar?",
+            "signOutCancel": "Batal",
+            "signOutConfirm": "Log keluar",
+            "urlError": "Tidak dapat membuka halaman",
+            "urlErrorMsg": "Sila cuba lagi nanti.",
+            "helpError": "Tidak dapat membuka pusat bantuan"
+        }
+    }
+}

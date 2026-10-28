@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "You're not signed in",
+        "notSignedInSub": "Sign in to manage your bookings and preferences.",
+        "signIn": "Sign in",
+        "createAccount": "Create account",
+        "edit": "Edit",
+        "sections": {
+            "account": "ACCOUNT",
+            "preferences": "PREFERENCES",
+            "support": "SUPPORT"
+        },
+        "stats": {
+            "bookings": "BOOKINGS",
+            "saved": "SAVED",
+            "reviews": "REVIEWS"
+        },
+        "rows": {
+            "fullName": "Full name",
+            "notSet": "Not set",
+            "email": "Email",
+            "changePassword": "Change password",
+            "currency": "Currency",
+            "priceAlerts": "Price alerts",
+            "priceAlertsSub": "3 active alerts",
+            "language": "Language",
+            "helpCenter": "Help center",
+            "rateApp": "Rate the app",
+            "terms": "Terms & Privacy"
+        },
+        "signOut": "Sign out",
+        "alerts": {
+            "cameraTitle": "Coming soon",
+            "cameraMsg": "Profile photo upload will be available in the next build.",
+            "emailTitle": "Change Email",
+            "emailMsg": "To update your email address, please contact our support team.",
+            "emailOk": "OK",
+            "rateTitle": "Rate CheapestGo ⭐",
+            "rateMsg": "Thanks for your support! App store rating will be available once the app is published.",
+            "rateOk": "OK",
+            "signOutTitle": "Sign out",
+            "signOutMsg": "Are you sure you want to sign out?",
+            "signOutCancel": "Cancel",
+            "signOutConfirm": "Sign out",
+            "urlError": "Could not open page",
+            "urlErrorMsg": "Please try again later.",
+            "helpError": "Could not open help center"
+        }
+    }
+}

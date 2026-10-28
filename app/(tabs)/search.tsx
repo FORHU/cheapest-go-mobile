@@ -1,10 +1,11 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, Car, ChevronLeft, Heart, List, Map as MapIcon, MapPin, MousePointer2, Move, Search, SlidersHorizontal, Star, UtensilsCrossed, Wifi, Wind, X } from 'lucide-react-native';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 import FilterModal from '../../components/search/FilterModal';
 import HotelSearchModal from '../../components/search/HotelSearchModal';
 import MapboxWebView from '../../components/search/MapboxWebView';
+import { useAuth } from '../../context/AuthContext';
 import { useSettings } from '../../context/SettingsContext';
 import { MAPBOX_TOKEN } from '../../lib/config';
 import { convertCurrency } from '../../lib/currency';
@@ -97,6 +98,9 @@ const ImageWithSkeleton = ({ uri, style }: { uri: string, style: any }) => {
 
 const CARD_WIDTH = 270;
 const CARD_GAP = 12;
+// Sliding pagination indicator geometry.
+const DOT_SLOT = 12; // 6px dot + 6px gap
+const PILL_OFFSET = -7; // centres the 20px pill over the 6px dot it points to
 
 type HotelCardProps = {
     hotel: any;
@@ -284,6 +288,7 @@ const HotelListCard = memo(function HotelListCard({ hotel, isDark, currencySymbo
 });
 
 export default function SearchScreen() {
+    const { user } = useAuth();
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -324,17 +329,17 @@ export default function SearchScreen() {
     const styles = useMemo(() => getStyles(isDark), [isDark]);
 
     useEffect(() => {
-        getFavorites().then(setFavorites);
+        getFavorites(user?.id ?? '').then(setFavorites);
 
         // Hide map hints after 4 seconds
         const timer = setTimeout(() => setShowMapHints(false), 4000);
         return () => clearTimeout(timer);
-    }, []);
+    }, [user]);
 
     useFocusEffect(
         useCallback(() => {
-            getFavorites().then(setFavorites);
-        }, [])
+            getFavorites(user?.id ?? '').then(setFavorites);
+        }, [user])
     );
     useEffect(() => {
         const destination = params.destination as string | undefined;
@@ -400,7 +405,7 @@ export default function SearchScreen() {
 
 
                 // Transform data into a standardized format and filter out low-quality results
-                const standardizedData = hotelData
+                const mappedData = hotelData
                     .map((h: any) => {
                         const lat = h.latitude || h.details?.latitude || h.details?.location?.latitude || h.lat || h.location?.lat || 0;
                         const lng = h.longitude || h.details?.longitude || h.details?.location?.longitude || h.lng || h.location?.lng || 0;
@@ -433,6 +438,9 @@ export default function SearchScreen() {
                         // Fallback chain if no interior photos were found
                         if (imageUrls.length === 0 && h.details?.hotel_images_photos?.[0]?.url) addUrl(h.details.hotel_images_photos[0].url);
                         if (imageUrls.length === 0) addUrl(thumbUrl);
+                        // Whether the supplier gave us any real photo. If false, the only image
+                        // below is the synthetic placeholder — those hotels are filtered out.
+                        const hasRealImage = imageUrls.length > 0;
                         if (imageUrls.length === 0) imageUrls.push(imgFallback);
                         while (imageUrls.length < 4) imageUrls.push(imageUrls[0]);
 
@@ -445,10 +453,15 @@ export default function SearchScreen() {
                             priceCurrency: priceCurrency,
                             thumbnailUrl: thumbUrl,
                             imageUrls: imageUrls.slice(0, 4),
+                            hasRealImage,
                             address: h.address || h.details?.address || h.location || h.city || 'Location unavailable'
                         };
-                    })
-                    .filter((h: any) => h !== null && h.displayPrice !== '???');
+                    });
+
+                // Keep hotels that have a name, valid coords, a price, and at least one
+                // real supplier photo (no placeholder-only listings).
+                const standardizedData = mappedData
+                    .filter((h: any) => h !== null && h.displayPrice !== '???' && h.hasRealImage);
 
                 // TEMP diagnostic: explains how many of the API's hotels survive the
                 // coordinate/price filters (i.e. why only N markers show on the map).
@@ -462,9 +475,10 @@ export default function SearchScreen() {
                         if (!name || Number(lat) === 0 || Number(lng) === 0) { noCoordOrName++; return; }
                         if (getDisplayPrice(h) === '???') noPrice++;
                     });
+                    const noImage = mappedData.filter((h: any) => h !== null && h.displayPrice !== '???' && !h.hasRealImage).length;
                     console.log(
                         `[Search] API returned ${hotelData.length}, kept ${standardizedData.length}. ` +
-                        `Dropped: ${noCoordOrName} (no coords/name), ${noPrice} (no price).`
+                        `Dropped: ${noCoordOrName} (no coords/name), ${noPrice} (no price), ${noImage} (no real image).`
                     );
                     if (hotelData[0]) {
                         console.log('[Search] sample hotel coord fields:', {
@@ -480,8 +494,19 @@ export default function SearchScreen() {
 
                 setRawHotels(standardizedData);
             } catch (error: any) {
-                console.error('[Search] Error:', error);
-                setError(error.message || 'Failed to fetch hotels');
+                // A cancelled/aborted request (e.g. Fast Refresh reload or the screen
+                // unmounting mid-search) isn't a real failure — don't flash an error screen.
+                const msg = String(error?.message || '');
+                const wasCancelled =
+                    error?.name === 'AbortError' ||
+                    error?.name === 'CanceledError' ||
+                    /cancel|aborted/i.test(msg);
+                if (wasCancelled) {
+                    if (__DEV__) console.log('[Search] request cancelled — ignoring.');
+                } else {
+                    console.error('[Search] Error:', error);
+                    setError(error.message || 'Failed to fetch hotels');
+                }
             } finally {
                 setLoading(false);
                 isFetching.current = false;
@@ -494,9 +519,9 @@ export default function SearchScreen() {
     }, [params.destination, params.destinationCode, params.placeId, params.countryCode, params.checkIn, params.checkOut, params.adults, params.children, params.childrenAges, params.rooms, currency.code]);
 
     const toggleFav = useCallback(async (id: string, hotelData?: any) => {
-        const added = await toggleFavorite(id, hotelData);
+        const added = await toggleFavorite(id, user?.id ?? '', hotelData);
         setFavorites(prev => added ? [...prev, id] : prev.filter(fid => fid !== id));
-    }, []);
+    }, [user]);
 
     const navigateToHotel = useCallback((hotel: any) => {
         router.push({
@@ -590,6 +615,20 @@ export default function SearchScreen() {
             setSelectedHotel(hotels[0]);
         }
     }
+
+    // Sliding pagination indicator: a single blue pill that animates across the dots
+    // to the active card, instead of the active dot snapping between positions.
+    const paginationCount = Math.min(hotels.length, 10);
+    const activeCardIndex = Math.max(0, hotels.findIndex(h => h.hotelId === selectedHotel?.hotelId));
+    const [dotSlideAnim] = useState(() => new Animated.Value(PILL_OFFSET));
+    useEffect(() => {
+        Animated.spring(dotSlideAnim, {
+            toValue: Math.min(activeCardIndex, Math.max(paginationCount - 1, 0)) * DOT_SLOT + PILL_OFFSET,
+            useNativeDriver: true,
+            friction: 9,
+            tension: 120,
+        }).start();
+    }, [activeCardIndex, paginationCount, dotSlideAnim]);
 
     useEffect(() => {
         if (selectedHotel && viewMode === 'map' && cardsFlatListRef.current) {
@@ -820,17 +859,26 @@ export default function SearchScreen() {
                                             )}
                                         />
 
-                                        {/* Pagination Indicator */}
+                                        {/* Pagination Indicator — base dots with a single
+                                            pill that slides to the active card. */}
                                         <View style={styles.paginationDots}>
-                                            {hotels.slice(0, Math.min(hotels.length, 10)).map((_, i) => (
-                                                <View
-                                                    key={i}
+                                            <View style={styles.paginationTrack}>
+                                                {Array.from({ length: paginationCount }).map((_, i) => (
+                                                    <View key={i} style={styles.dot} />
+                                                ))}
+                                                <Animated.View
                                                     style={[
                                                         styles.dot,
-                                                        Math.round(hotels.findIndex(h => h.hotelId === selectedHotel?.hotelId)) === i && styles.activeDot
+                                                        styles.activeDot,
+                                                        {
+                                                            position: 'absolute',
+                                                            left: 0,
+                                                            top: 0,
+                                                            transform: [{ translateX: dotSlideAnim }],
+                                                        },
                                                     ]}
                                                 />
-                                            ))}
+                                            </View>
                                         </View>
                                     </View>
                                 )}
@@ -1336,6 +1384,14 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         alignItems: 'center',
         gap: 6,
         marginTop: 12,
+    },
+    // Content-sized inner row so the absolutely-positioned sliding pill can be
+    // offset from the first dot's left edge (not the full-width outer container).
+    paginationTrack: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        position: 'relative',
     },
     dot: {
         width: 6,

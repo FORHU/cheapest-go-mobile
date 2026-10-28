@@ -41,19 +41,15 @@ import {
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Image, LayoutAnimation, Platform, Pressable, ScrollView, Share, StyleSheet, Text, UIManager, useColorScheme, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { isFavorite as checkIsFavorite, toggleFavorite as persistToggleFavorite } from '../../../lib/favorites';
-
 import PropertyMapWebView from '../../../components/search/PropertyMapWebView';
 import OptimizedImage from '../../../components/ui/OptimizedImage';
 import StarRating from '../../../components/ui/StarRating';
+import { useAuth } from '../../../context/AuthContext';
 import { useSettings } from '../../../context/SettingsContext';
 import { convertCurrency } from '../../../lib/currency';
+import { isFavorite as checkIsFavorite, toggleFavorite as persistToggleFavorite } from '../../../lib/favorites';
 import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const { width } = Dimensions.get('window');
 
@@ -151,13 +147,38 @@ const getAmenityIcon = (name: string, size: number = 16, color: string = '#10b98
 
 
 
+// Resolves a room's real photo URL, or null if the room has none of its own (in which
+// case the UI would otherwise fall back to the hotel's building thumbnail). Mirrors the
+// source order used when rendering the room card so the two never disagree.
+const getRoomImageUrl = (room: any, detailRooms?: any[]): string | null => {
+    const mappedRoomId = room?.rates?.[0]?.mappedRoomId;
+    const matchedRoom = mappedRoomId && Array.isArray(detailRooms)
+        ? detailRooms.find((dr: any) => String(dr.id) === String(mappedRoomId))
+        : null;
+
+    const pick = (candidate: any): string | null => {
+        if (!candidate) return null;
+        const url = typeof candidate === 'string'
+            ? candidate
+            : (candidate.url || candidate.urlHd || candidate.hd_url || candidate.hdUrl || candidate.thumbnail);
+        return typeof url === 'string' && url.trim() ? url : null;
+    };
+
+    return (
+        (matchedRoom?.photos?.length > 0 ? pick(matchedRoom.photos[0]) : null)
+        || pick(room?.roomPhotos?.[0])
+        || pick(room?.images?.[0])
+        || pick(room?.photos?.[0])
+    );
+};
+
 const normalizeRoomOptions = (hotel: any) => {
     if (!hotel) return [];
 
     const rawRooms = hotel.roomTypes || hotel.details?.roomTypes || hotel.details?.rooms || hotel.rooms || [];
     const rooms = Array.isArray(rawRooms) ? rawRooms : [rawRooms];
 
-    return rooms
+    const bookable = rooms
         .map((room: any, index: number) => {
             const rawRates = room.rates || room.rate || [];
             const rates = Array.isArray(rawRates) ? rawRates : rawRates ? [rawRates] : [];
@@ -169,6 +190,11 @@ const normalizeRoomOptions = (hotel: any) => {
             };
         })
         .filter((room: any) => room.rates.length > 0);
+
+    // Hide rooms that don't provide their own room image. Safety net: if every room
+    // lacks a photo, keep them all rather than make a bookable hotel look empty.
+    const withImages = bookable.filter((room: any) => !!getRoomImageUrl(room, hotel.detailRooms));
+    return withImages.length > 0 ? withImages : bookable;
 };
 
 const getPolicyTime = (value: any) => {
@@ -228,19 +254,9 @@ const RoomCard = React.memo(function RoomCard({ room, hotelThumbnail, detailRoom
         ? detailRooms.find((dr: any) => String(dr.id) === String(mappedRoomId))
         : null;
 
-    let roomImage = hotelThumbnail;
-    if (matchedRoom?.photos?.length > 0) {
-        const photo = matchedRoom.photos[0];
-        roomImage = typeof photo === 'string' ? photo : (photo.url || photo.urlHd || photo.hd_url || photo.hdUrl || photo.thumbnail);
-    } else if (room.roomPhotos?.[0]) {
-        roomImage = room.roomPhotos[0];
-    } else if (room.images?.[0]) {
-        const img = room.images[0];
-        roomImage = typeof img === 'string' ? img : (img.url || img.urlHd || img);
-    } else if (room.photos?.[0]) {
-        const p = room.photos[0];
-        roomImage = typeof p === 'string' ? p : (p.url || p);
-    }
+    // Real room photo when available; falls back to the hotel thumbnail only for rooms
+    // that slip through the no-image filter (i.e. the all-rooms-photoless safety net).
+    const roomImage = getRoomImageUrl(room, detailRooms) || hotelThumbnail;
 
     const rawPrice = Math.round(
         room.rates?.[0]?.retailRate?.total?.[0]?.amount ||
@@ -368,6 +384,7 @@ const GalleryImage = React.memo(function GalleryImage({ uri, width }: { uri: str
 });
 
 export default function HotelDetailsScreen() {
+    const { user } = useAuth();
     const params = useLocalSearchParams();
     const router = useRouter();
     const colorScheme = useColorScheme();
@@ -402,13 +419,13 @@ export default function HotelDetailsScreen() {
 
     useEffect(() => {
         if (hotel?.hotelId) {
-            checkIsFavorite(hotel.hotelId).then(setIsFavorite);
+            checkIsFavorite(hotel.hotelId, user?.id ?? '').then(setIsFavorite);
         }
-    }, [hotel?.hotelId]);
+    }, [hotel?.hotelId, user?.id]);
 
     const toggleFavorite = useCallback(async () => {
         if (!hotel?.hotelId) return;
-        const added = await persistToggleFavorite(hotel.hotelId, hotel);
+        const added = await persistToggleFavorite(hotel.hotelId, user?.id ?? '', hotel);
         setIsFavorite(added);
     }, [hotel]);
 
@@ -505,6 +522,7 @@ export default function HotelDetailsScreen() {
             pathname: '/checkout',
             params: {
                 offerId,
+                hotelCode: params.id as string || '',
                 roomName: rate.name || room.name || room.description || room.roomName || 'Room',
                 roomPrice: String(displayAmt),
                 roomCurrency: currency.code,
@@ -513,6 +531,8 @@ export default function HotelDetailsScreen() {
                 checkIn: params.checkIn as string || '',
                 checkOut: params.checkOut as string || '',
                 adults: params.adults as string || '2',
+                children: params.children as string || '0',
+                childrenAges: params.childrenAges as string || '',
             },
         });
     }, [hotel, params, router, selectedRoom, currency.code]);
@@ -545,6 +565,8 @@ export default function HotelDetailsScreen() {
                         checkIn: params.checkIn,
                         checkOut: params.checkOut,
                         adults: params.adults,
+                        children: params.children,
+                        childrenAges: params.childrenAges,
                         rooms: params.rooms,
                         currency: params.currency
                     }),
@@ -578,7 +600,7 @@ export default function HotelDetailsScreen() {
         if (params.id) {
             fetchData();
         }
-    }, [params.id, params.adults, params.checkIn, params.checkOut, params.currency, params.rooms]);
+    }, [params.id, params.adults, params.children, params.childrenAges, params.checkIn, params.checkOut, params.currency, params.rooms]);
 
     if (loading) {
         return (

@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "您尚未登入",
+        "notSignedInSub": "登入以管理您的預訂和偏好設定。",
+        "signIn": "登入",
+        "createAccount": "建立帳戶",
+        "edit": "編輯",
+        "sections": {
+            "account": "帳戶",
+            "preferences": "偏好設定",
+            "support": "支援"
+        },
+        "stats": {
+            "bookings": "預訂",
+            "saved": "已收藏",
+            "reviews": "評價"
+        },
+        "rows": {
+            "fullName": "姓名",
+            "notSet": "未設定",
+            "email": "電子郵件",
+            "changePassword": "變更密碼",
+            "currency": "貨幣",
+            "priceAlerts": "價格提醒",
+            "priceAlertsSub": "3 個啟用中的提醒",
+            "language": "語言",
+            "helpCenter": "說明中心",
+            "rateApp": "為應用程式評分",
+            "terms": "條款與隱私權"
+        },
+        "signOut": "登出",
+        "alerts": {
+            "cameraTitle": "即將推出",
+            "cameraMsg": "大頭貼上傳功能將於下一個版本推出。",
+            "emailTitle": "變更電子郵件",
+            "emailMsg": "如需更新您的電子郵件地址，請聯絡我們的支援團隊。",
+            "emailOk": "好的",
+            "rateTitle": "為 CheapestGo 評分 ⭐",
+            "rateMsg": "感謝您的支持！應用程式上架後即可在應用程式商店評分。",
+            "rateOk": "好的",
+            "signOutTitle": "登出",
+            "signOutMsg": "確定要登出嗎？",
+            "signOutCancel": "取消",
+            "signOutConfirm": "登出",
+            "urlError": "無法開啟頁面",
+            "urlErrorMsg": "請稍後再試。",
+            "helpError": "無法開啟說明中心"
+        }
+    }
+}
