@@ -1,0 +1,50 @@
+{
+    "profile": {
+        "notSignedIn": "サインインしていません",
+        "notSignedInSub": "サインインして、予約や設定を管理しましょう。",
+        "signIn": "サインイン",
+        "createAccount": "アカウント作成",
+        "edit": "編集",
+        "sections": {
+            "account": "アカウント",
+            "preferences": "設定",
+            "support": "サポート"
+        },
+        "stats": {
+            "bookings": "予約",
+            "saved": "保存済み",
+            "reviews": "レビュー"
+        },
+        "rows": {
+            "fullName": "氏名",
+            "notSet": "未設定",
+            "email": "メール",
+            "changePassword": "パスワードを変更",
+            "currency": "通貨",
+            "priceAlerts": "価格アラート",
+            "priceAlertsSub": "3件の有効なアラート",
+            "language": "言語",
+            "helpCenter": "ヘルプセンター",
+            "rateApp": "アプリを評価",
+            "terms": "利用規約とプライバシー"
+        },
+        "signOut": "サインアウト",
+        "alerts": {
+            "cameraTitle": "近日公開",
+            "cameraMsg": "プロフィール写真のアップロードは次のビルドで利用可能になります。",
+            "emailTitle": "メールを変更",
+            "emailMsg": "メールアドレスを変更するには、サポートチームにお問い合わせください。",
+            "emailOk": "OK",
+            "rateTitle": "CheapestGoを評価 ⭐",
+            "rateMsg": "ご支援ありがとうございます！アプリストアでの評価は、アプリの公開後に利用できるようになります。",
+            "rateOk": "OK",
+            "signOutTitle": "サインアウト",
+            "signOutMsg": "サインアウトしてもよろしいですか？",
+            "signOutCancel": "キャンセル",
+            "signOutConfirm": "サインアウト",
+            "urlError": "ページを開けませんでした",
+            "urlErrorMsg": "後でもう一度お試しください。",
+            "helpError": "ヘルプセンターを開けませんでした"
+        }
+    }
+}

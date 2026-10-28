@@ -116,7 +116,7 @@ function RootLayoutNav() {
 
     const inAuthGroup = segments[0] === '(auth)';
     const inOnboarding = segments[0] === 'onboarding';
-    const inUpdatePassword = segments[1] === 'update-password';
+    const inUpdatePassword = (segments as string[])[1] === 'update-password';
 
     if (isPasswordRecovery) {
       router.replace('/(auth)/update-password');
