@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { Stack, useRouter } from 'expo-router';
 import { ChevronLeft, User } from 'lucide-react-native';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
@@ -56,12 +56,16 @@ export default function EditProfileModal() {
     const [lastName, setLastName] = useState('');
     const [saving, setSaving] = useState(false);
 
-    useEffect(() => {
+    // Re-sync the fields when the profile changes. Done during render — React's
+    // recommended alternative to a setState-in-effect.
+    const [prevUser, setPrevUser] = useState(user);
+    if (user !== prevUser) {
+        setPrevUser(user);
         if (user) {
             setFirstName(user.firstName ?? '');
             setLastName(user.lastName ?? '');
         }
-    }, [user]);
+    }
 
     const hasChanges =
         firstName.trim() !== (user?.firstName ?? '') ||

@@ -98,6 +98,9 @@ const ImageWithSkeleton = ({ uri, style }: { uri: string, style: any }) => {
 
 const CARD_WIDTH = 270;
 const CARD_GAP = 12;
+// Sliding pagination indicator geometry.
+const DOT_SLOT = 12; // 6px dot + 6px gap
+const PILL_OFFSET = -7; // centres the 20px pill over the 6px dot it points to
 
 type HotelCardProps = {
     hotel: any;
@@ -615,11 +618,9 @@ export default function SearchScreen() {
 
     // Sliding pagination indicator: a single blue pill that animates across the dots
     // to the active card, instead of the active dot snapping between positions.
-    const DOT_SLOT = 12; // 6px dot + 6px gap
-    const PILL_OFFSET = -7; // centres the 20px pill over the 6px dot it points to
     const paginationCount = Math.min(hotels.length, 10);
     const activeCardIndex = Math.max(0, hotels.findIndex(h => h.hotelId === selectedHotel?.hotelId));
-    const dotSlideAnim = useRef(new Animated.Value(PILL_OFFSET)).current;
+    const [dotSlideAnim] = useState(() => new Animated.Value(PILL_OFFSET));
     useEffect(() => {
         Animated.spring(dotSlideAnim, {
             toValue: Math.min(activeCardIndex, Math.max(paginationCount - 1, 0)) * DOT_SLOT + PILL_OFFSET,

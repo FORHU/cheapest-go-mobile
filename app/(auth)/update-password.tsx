@@ -68,6 +68,18 @@ const light = {
   sectionLabel: '#64748B',
 };
 
+// ── Shared header (matches help-center pattern) ──────────────────────────────
+function Header({ C, onBack }: { C: typeof light; onBack: () => void }) {
+  return (
+    <View style={[styles.header, { borderBottomColor: C.border }]}>
+      <Pressable onPress={onBack} style={styles.backRow} hitSlop={8}>
+        <ChevronLeft size={24} color={C.text} />
+        <Text style={[styles.backText, { color: C.text }]}>Back</Text>
+      </Pressable>
+    </View>
+  );
+}
+
 export default function UpdatePasswordScreen() {
   const router = useRouter();
   const { updatePassword, resetPassword, isLoading, user } = useAuth();
@@ -151,22 +163,12 @@ export default function UpdatePasswordScreen() {
     );
   };
 
-  // ── Shared header (matches help-center pattern) ────────────────────────────
-  const Header = () => (
-    <View style={[styles.header, { borderBottomColor: C.border }]}>
-      <Pressable onPress={() => router.back()} style={styles.backRow} hitSlop={8}>
-        <ChevronLeft size={24} color={C.text} />
-        <Text style={[styles.backText, { color: C.text }]}>Back</Text>
-      </Pressable>
-    </View>
-  );
-
   // ── Success state ──────────────────────────────────────────────────────────
   if (done) {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Header />
+        <Header C={C} onBack={() => router.back()} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: C.successBg, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
             <CheckCircle size={40} color={C.successIcon} />
@@ -191,7 +193,7 @@ export default function UpdatePasswordScreen() {
     return (
       <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Header />
+        <Header C={C} onBack={() => router.back()} />
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', paddingHorizontal: 32 }}>
           <View style={{ width: 80, height: 80, borderRadius: 40, backgroundColor: C.infoBg, alignItems: 'center', justifyContent: 'center', marginBottom: 24 }}>
             <Lock size={36} color={C.infoIcon} />
@@ -219,7 +221,7 @@ export default function UpdatePasswordScreen() {
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: C.bg }}>
       <Stack.Screen options={{ headerShown: false }} />
-      <Header />
+      <Header C={C} onBack={() => router.back()} />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={styles.scroll}

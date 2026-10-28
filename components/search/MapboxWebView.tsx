@@ -247,12 +247,13 @@ export default function MapboxWebView({
     }, [onHotelSelect]);
 
     // Drop cards for hotels no longer in the result set (e.g. after a new search).
-    useEffect(() => {
-        setOpenIds(prev => {
-            const next = prev.filter(id => hotels.some(h => h.hotelId === id));
-            return next.length === prev.length ? prev : next;
-        });
-    }, [hotels]);
+    // Done during render — React's recommended alternative to a setState-in-effect.
+    const [prevHotels, setPrevHotels] = useState(hotels);
+    if (hotels !== prevHotels) {
+        setPrevHotels(hotels);
+        const next = openIds.filter(id => hotels.some(h => h.hotelId === id));
+        if (next.length !== openIds.length) setOpenIds(next);
+    }
 
     // Close a single card. If it was the parent's focused hotel, clear that selection too.
     const closeCard = useCallback((id: string) => {

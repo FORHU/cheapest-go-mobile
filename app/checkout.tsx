@@ -144,12 +144,16 @@ function CheckoutContent({ stripeAvailable, initPaymentSheet, presentPaymentShee
 
     // Backfill guest details once the profile resolves (session validation can land
     // after mount). Only fills blanks, so it never clobbers what the guest has typed.
-    useEffect(() => {
-        if (!user) return;
-        setFirstName(prev => prev || user.firstName || '');
-        setLastName(prev => prev || user.lastName || '');
-        setEmail(prev => prev || user.email || '');
-    }, [user]);
+    // Done during render — React's recommended alternative to a setState-in-effect.
+    const [prevUser, setPrevUser] = useState(user);
+    if (user !== prevUser) {
+        setPrevUser(user);
+        if (user) {
+            setFirstName(prev => prev || user.firstName || '');
+            setLastName(prev => prev || user.lastName || '');
+            setEmail(prev => prev || user.email || '');
+        }
+    }
 
     // Prebook on mount — locks the rate and gets a quote token
     useEffect(() => {
