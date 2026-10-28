@@ -54,6 +54,41 @@ function fmt(iso: string, opts: Intl.DateTimeFormatOptions) {
     return new Intl.DateTimeFormat('en-US', opts).format(new Date(iso));
 }
 
+// Airline code can arrive corrupted as the literal "[object Object]" from older
+// bookings (an airline object was coerced to text at insert time). Fall back to
+// the IATA prefix of the flight number (e.g. "ZZ1710" → "ZZ").
+function airlineCode(seg: { airline?: string; flight_number?: string }): string {
+    const a = (seg.airline ?? '').trim();
+    if (a && a !== '[object Object]') return a;
+    const m = (seg.flight_number ?? '').match(/^[A-Za-z0-9]{2,3}/);
+    return m ? m[0].toUpperCase() : '';
+}
+
+// For a round-trip the last segment flies back to the origin, so
+// last.destination === origin. The real destination is the turnaround airport:
+// the segment with the longest layover before the next departure.
+function resolveDestination(
+    segs: { destination: string; departure: string; arrival: string }[],
+    tripType: string | null,
+    origin: string | undefined,
+): string {
+    const last = segs[segs.length - 1];
+    let dest = last?.destination ?? '';
+    const looksRoundTrip =
+        tripType === 'round-trip' ||
+        (!tripType && segs.length > 1 && !!origin && origin === last?.destination);
+    if (looksRoundTrip && segs.length > 1) {
+        let maxLayover = -1;
+        let turnaround = segs[0];
+        for (let i = 0; i < segs.length - 1; i++) {
+            const layover = new Date(segs[i + 1].departure).getTime() - new Date(segs[i].arrival).getTime();
+            if (layover > maxLayover) { maxLayover = layover; turnaround = segs[i]; }
+        }
+        dest = turnaround?.destination || dest;
+    }
+    return dest;
+}
+
 // ─── Single booking card ──────────────────────────────────────────────────────
 
 function BookingCard({ booking, C }: { booking: FlightBooking; C: typeof T.dark }) {
@@ -72,6 +107,8 @@ function BookingCard({ booking, C }: { booking: FlightBooking; C: typeof T.dark 
 
     if (!first || !last) return null;
 
+    const mainDestination = resolveDestination(segs, booking.trip_type, first.origin);
+
     return (
         <View style={[s.card, { backgroundColor: C.card, borderColor: C.border }]}>
             {/* ── Header row ── */}
@@ -80,13 +117,13 @@ function BookingCard({ booking, C }: { booking: FlightBooking; C: typeof T.dark 
                     {/* Airline logo placeholder + status */}
                     <View style={[s.airlineBox, { backgroundColor: C.blueBg }]}>
                         <Plane size={22} color={C.blue} />
-                        <Text style={[s.airlineCode, { color: C.blue }]}>{first.airline}</Text>
+                        <Text style={[s.airlineCode, { color: C.blue }]}>{airlineCode(first)}</Text>
                     </View>
 
                     {/* Route + date */}
                     <View style={{ flex: 1, marginHorizontal: 12 }}>
                         <Text style={[s.route, { color: C.text }]}>
-                            {first.origin} → {last.destination}
+                            {first.origin} → {mainDestination}
                         </Text>
                         <Text style={[s.sub, { color: C.muted }]}>
                             {fmt(first.departure, { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -129,7 +166,7 @@ function BookingCard({ booking, C }: { booking: FlightBooking; C: typeof T.dark 
                     {segs.map((seg, i) => (
                         <View key={seg.id ?? i} style={s.detailRow}>
                             <Text style={[s.detailLabel, { color: C.muted }]}>
-                                {seg.airline}{seg.flight_number}
+                                {seg.flight_number || airlineCode(seg)}
                             </Text>
                             <Text style={[s.detailValue, { color: C.text }]}>
                                 {seg.origin} → {seg.destination}

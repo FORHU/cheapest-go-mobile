@@ -1,7 +1,7 @@
 import Mapbox, { Camera, CircleLayer, MapView, MarkerView, ShapeSource } from '@rnmapbox/maps';
-import { Layers } from 'lucide-react-native';
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Layers, X } from 'lucide-react-native';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Dimensions, Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { MAPBOX_TOKEN } from '../../lib/config';
 
 Mapbox.setAccessToken(MAPBOX_TOKEN);
@@ -36,6 +36,18 @@ const DEFAULT_CENTER: [number, number] = [0, 20];
 // Max price pills (MarkerViews) rendered at once. Kept well under rnmapbox's ~100
 // view-annotation ceiling so pills appear instantly and never drop out during zoom.
 const MAX_PILLS = 60;
+
+// Approximate on-screen footprint of the focused hotel's popup card, which is
+// bottom-anchored at its pin: it fans out to each side and stretches upward (north).
+// rnmapbox gives no reliable paint order between MarkerViews, so instead of fighting
+// z-index we clear the space — while a card is open we drop any *other* pill whose
+// coordinate falls inside this box, so none can render over the card. Their location
+// dots (the GL CircleLayer) stay, so surrounding hotels remain visible.
+const CARD_HALF_W_PX = 115; // half card width + a little slack for the pill
+const CARD_UP_PX = 200;     // card height above the pin (images + pill + margins)
+const CARD_DOWN_PX = 18;    // small pad below the pin for neighbours' own pills
+
+const WINDOW = Dimensions.get('window');
 
 // A non-selected hotel pill. Rendered only for hotels currently on screen (capped),
 // so the live MarkerView count stays well under the ~100 where they start dropping
@@ -82,12 +94,14 @@ const SelectedMarker = memo(function SelectedMarker({
     currencySymbol,
     onSelect,
     onNavigate,
+    onClose,
 }: {
     hotel: any;
     number: number;
     currencySymbol: string;
     onSelect: (hotel: any) => void;
     onNavigate?: (hotelId: string) => void;
+    onClose?: () => void;
 }) {
     const price = hotel.displayConvertedPrice || hotel.displayPrice || '???';
     const imgs = Array.isArray(hotel.imageUrls) && hotel.imageUrls.length > 0
@@ -101,7 +115,7 @@ const SelectedMarker = memo(function SelectedMarker({
             anchor={{ x: 0.5, y: 1 }}
             allowOverlap
         >
-            <Pressable onPress={() => onSelect(hotel)} style={styles.markerWrapper}>
+            <Pressable onPress={() => onSelect(hotel)} style={[styles.markerWrapper, styles.markerWrapperSelected]}>
                 <Pressable
                     style={styles.popupCard}
                     onPress={(e) => {
@@ -119,6 +133,17 @@ const SelectedMarker = memo(function SelectedMarker({
                             />
                         ))}
                     </View>
+                    {/* Close button — the card now stays open until the user taps this. */}
+                    <Pressable
+                        style={styles.closeBtn}
+                        hitSlop={10}
+                        onPress={(e) => {
+                            e.stopPropagation();
+                            onClose?.();
+                        }}
+                    >
+                        <X size={15} color="#fff" strokeWidth={2.5} />
+                    </Pressable>
                 </Pressable>
                 <View style={[styles.pill, styles.pillSelected]}>
                     <View style={[styles.pillNum, styles.pillNumSelected]}>
@@ -156,6 +181,9 @@ export default function MapboxWebView({
     const [isLoading, setIsLoading] = useState(true);
     // Latest settled map viewport — drives which hotels get a price pill.
     const [visibleBounds, setVisibleBounds] = useState<{ ne: [number, number]; sw: [number, number] } | null>(null);
+    // Actual on-screen size of the map view — used with visibleBounds to convert the
+    // popup card's pixel footprint into a geographic box for pill suppression.
+    const [mapSize, setMapSize] = useState<{ w: number; h: number }>({ w: WINDOW.width, h: WINDOW.height });
 
     // Center of the loaded hotels — used so the map opens directly on the searched
     // city instead of the hardcoded default while the destination geocode resolves.
@@ -205,6 +233,33 @@ export default function MapboxWebView({
         }
     }, [flyToOnSelectId, hotels]);
 
+    // Hotels whose preview card is currently open on the map. Independent of the parent's
+    // single "focused" hotel: opening another card adds to this set rather than replacing,
+    // so multiple cards can stay open until the user closes each with its X button.
+    const [openIds, setOpenIds] = useState<string[]>([]);
+
+    // Tapping a hotel marker (price pill or location dot) opens its card AND focuses it in
+    // the parent (fly-to + carousel sync). Carousel swipes call onHotelSelect directly and
+    // never reach here, so browsing the carousel moves the camera without piling up cards.
+    const handleMarkerSelect = useCallback((hotel: any) => {
+        setOpenIds(prev => (prev.includes(hotel.hotelId) ? prev : [...prev, hotel.hotelId]));
+        onHotelSelect(hotel);
+    }, [onHotelSelect]);
+
+    // Drop cards for hotels no longer in the result set (e.g. after a new search).
+    useEffect(() => {
+        setOpenIds(prev => {
+            const next = prev.filter(id => hotels.some(h => h.hotelId === id));
+            return next.length === prev.length ? prev : next;
+        });
+    }, [hotels]);
+
+    // Close a single card. If it was the parent's focused hotel, clear that selection too.
+    const closeCard = useCallback((id: string) => {
+        setOpenIds(prev => prev.filter(x => x !== id));
+        if (id === selectedHotelId) onDeselect?.();
+    }, [selectedHotelId, onDeselect]);
+
     // Rank (1-based, by the parent's sort order) + display price for every hotel.
     const ranked = useMemo(() =>
         hotels.map((hotel, i) => ({
@@ -215,47 +270,75 @@ export default function MapboxWebView({
         [hotels],
     );
 
-    // Location dots for every hotel — but only when nothing is focused. Once a card is
-    // focused, every other marker disappears so just the selected hotel stands out (and
-    // the map stops re-rendering dozens of markers, keeping the focus pan smooth).
+    // Hotels with an open preview card, resolved to their ranked entry (stale ids pruned).
+    const openHotels = useMemo(
+        () => openIds
+            .map(id => ranked.find(r => r.hotel.hotelId === id))
+            .filter((r): r is { hotel: any; number: number; price: string } => Boolean(r)),
+        [openIds, ranked],
+    );
+
+    // Location dots for every hotel — kept visible even while cards are open so the
+    // surrounding hotels stay on the map. Hotels with an open card are excluded because
+    // their SelectedMarker already draws its own highlighted pin dot at that coordinate.
     const featureCollection = useMemo(() => ({
         type: 'FeatureCollection' as const,
-        features: selectedHotelId
-            ? []
-            : ranked.map(r => ({
+        features: ranked
+            .filter(r => !openIds.includes(r.hotel.hotelId))
+            .map(r => ({
                 type: 'Feature' as const,
                 id: r.hotel.hotelId,
                 geometry: { type: 'Point' as const, coordinates: [r.hotel.longitude, r.hotel.latitude] },
                 properties: { hotelId: r.hotel.hotelId },
             })),
-    }), [ranked, selectedHotelId]);
+    }), [ranked, openIds]);
 
-    // Price pills for on-screen hotels (capped) — hidden entirely while a card is focused.
+    // Price pills for on-screen hotels (capped). Hotels with an open card are excluded
+    // because their SelectedMarker renders its own highlighted pill. Additionally, we drop
+    // any *other* pill whose coordinate falls under an open card's on-screen footprint —
+    // since rnmapbox can't guarantee a card paints above neighbouring MarkerViews, we clear
+    // the space so none can cover it.
     // Before the first settle (visibleBounds null) show the first N so pills are instant.
     const visiblePills = useMemo(() => {
-        if (selectedHotelId) return [];
-        if (!visibleBounds) return ranked.slice(0, MAX_PILLS);
+        const others = ranked.filter(r => !openIds.includes(r.hotel.hotelId));
+        if (!visibleBounds) return others.slice(0, MAX_PILLS);
         const { ne, sw } = visibleBounds;
-        return ranked
+
+        // One geographic box per open card, derived from the card's pixel footprint.
+        const degPerPxLng = (ne[0] - sw[0]) / mapSize.w;
+        const degPerPxLat = (ne[1] - sw[1]) / mapSize.h; // lat grows upward (north)
+        const cardBoxes = openHotels.map(r => {
+            const sLng = r.hotel.longitude;
+            const sLat = r.hotel.latitude;
+            return {
+                west: sLng - CARD_HALF_W_PX * degPerPxLng,
+                east: sLng + CARD_HALF_W_PX * degPerPxLng,
+                south: sLat - CARD_DOWN_PX * degPerPxLat,
+                north: sLat + CARD_UP_PX * degPerPxLat,
+            };
+        });
+
+        return others
             .filter(r => {
                 const lng = r.hotel.longitude;
                 const lat = r.hotel.latitude;
-                return lng >= sw[0] && lng <= ne[0] && lat >= sw[1] && lat <= ne[1];
+                if (lng < sw[0] || lng > ne[0] || lat < sw[1] || lat > ne[1]) return false;
+                const underACard = cardBoxes.some(b =>
+                    lng >= b.west && lng <= b.east && lat >= b.south && lat <= b.north);
+                return !underACard;
             })
             .slice(0, MAX_PILLS);
-    }, [ranked, selectedHotelId, visibleBounds]);
-
-    const selected = useMemo(
-        () => ranked.find(r => r.hotel.hotelId === selectedHotelId) ?? null,
-        [ranked, selectedHotelId],
-    );
+    }, [ranked, openIds, visibleBounds, openHotels, mapSize]);
 
     return (
         <View style={styles.container}>
             <MapView
                 style={styles.map}
+                onLayout={(e) => {
+                    const { width, height } = e.nativeEvent.layout;
+                    if (width && height) setMapSize({ w: width, h: height });
+                }}
                 styleURL={MAP_STYLES[styleKey]}
-                onPress={() => onDeselect?.()}
                 compassEnabled={false}
                 logoEnabled={false}
                 attributionEnabled={false}
@@ -287,7 +370,7 @@ export default function MapboxWebView({
                         const feature = e.features?.[0] as any;
                         const id = feature?.properties?.hotelId ?? feature?.id;
                         const hotel = hotels.find(h => h.hotelId === id);
-                        if (hotel) onHotelSelect(hotel);
+                        if (hotel) handleMarkerSelect(hotel);
                     }}
                 >
                     <CircleLayer
@@ -309,20 +392,23 @@ export default function MapboxWebView({
                         hotel={r.hotel}
                         number={r.number}
                         currencySymbol={currencySymbol}
-                        onSelect={onHotelSelect}
+                        onSelect={handleMarkerSelect}
                     />
                 ))}
 
-                {/* Focused hotel: a single MarkerView with the rich popup + blue pill. */}
-                {selected && (
+                {/* Open cards: one MarkerView each with the rich popup + blue pill. They stay
+                    open until the user closes each with its X — opening another just adds one. */}
+                {openHotels.map(r => (
                     <SelectedMarker
-                        hotel={selected.hotel}
-                        number={selected.number}
+                        key={r.hotel.hotelId}
+                        hotel={r.hotel}
+                        number={r.number}
                         currencySymbol={currencySymbol}
-                        onSelect={onHotelSelect}
+                        onSelect={handleMarkerSelect}
                         onNavigate={onHotelNavigate}
+                        onClose={() => closeCard(r.hotel.hotelId)}
                     />
-                )}
+                ))}
             </MapView>
 
             {/* Layer toggle */}
@@ -390,6 +476,11 @@ const styles = StyleSheet.create({
     markerWrapper: {
         alignItems: 'center',
     },
+   
+    markerWrapperSelected: {
+        zIndex: 1999,
+        elevation: 24,
+    },
     popupCard: {
         width: 210,
         borderRadius: 14,
@@ -399,7 +490,20 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 12 },
         shadowOpacity: 0.28,
         shadowRadius: 28,
-        elevation: 12,
+        elevation: 24,
+        zIndex: 1999,
+    },
+    closeBtn: {
+        position: 'absolute',
+        top: 6,
+        right: 6,
+        width: 26,
+        height: 26,
+        borderRadius: 13,
+        backgroundColor: 'rgba(15,23,42,0.65)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        zIndex: 2,
     },
     imgGrid: {
         flexDirection: 'row',

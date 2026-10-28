@@ -50,10 +50,6 @@ import { convertCurrency } from '../../../lib/currency';
 import { isFavorite as checkIsFavorite, toggleFavorite as persistToggleFavorite } from '../../../lib/favorites';
 import { getHotelDetails, getHotelReviews } from '../../../lib/travel-api';
 
-// Enable LayoutAnimation on Android
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-    UIManager.setLayoutAnimationEnabledExperimental(true);
-}
 
 const { width } = Dimensions.get('window');
 

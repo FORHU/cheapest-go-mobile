@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, Pressable, StyleSheet, useColorScheme } from 'react-native';
 import { ArrowRight, Building2, Calendar, Users, Moon, Plane, Sparkles } from 'lucide-react-native';
 import HotelSearchModal from '../search/HotelSearchModal';
@@ -8,13 +8,24 @@ type TabName = 'Stays' | 'Flights' | 'AI Search';
 
 interface AISearchBarProps {
     activeTab: TabName;
+    /** Destination pre-filled from elsewhere on the landing page (e.g. a trending card). */
+    destination?: string | null;
 }
 
-const AISearchBar: React.FC<AISearchBarProps> = ({ activeTab }) => {
+const AISearchBar: React.FC<AISearchBarProps> = ({ activeTab, destination = null }) => {
     const [hotelModalVisible, setHotelModalVisible] = useState(false);
     const [flightModalVisible, setFlightModalVisible] = useState(false);
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
+
+    const filledDestination = activeTab === 'Stays' ? destination : null;
+
+    // Memoized: HotelSearchModal re-seeds its form whenever this object's identity
+    // changes, so a fresh literal each render would reset the form on every keystroke.
+    const hotelInitialParams = useMemo(
+        () => (destination ? { destination } : undefined),
+        [destination]
+    );
 
     const today = new Date();
     const checkIn = new Date(today);
@@ -39,10 +50,14 @@ const AISearchBar: React.FC<AISearchBarProps> = ({ activeTab }) => {
     };
 
     const getTitle = () => {
+        if (filledDestination) return filledDestination;
         if (activeTab === 'Flights') return 'Where are you flying?';
         if (activeTab === 'AI Search') return 'How can I help you?';
         return 'Where to next?';
     };
+
+    const getSubtitle = () =>
+        filledDestination ? 'Tap to pick your dates' : 'City, hotel, or landmark';
 
     const styles = getStyles(isDark);
 
@@ -54,9 +69,9 @@ const AISearchBar: React.FC<AISearchBarProps> = ({ activeTab }) => {
                     <View style={styles.topRow}>
                         <View style={styles.leftSection}>
                             {getLeftIcon()}
-                            <View>
-                                <Text style={styles.title}>{getTitle()}</Text>
-                                <Text style={styles.subtitle}>City, hotel, or landmark</Text>
+                            <View style={styles.titleColumn}>
+                                <Text style={styles.title} numberOfLines={1}>{getTitle()}</Text>
+                                <Text style={styles.subtitle}>{getSubtitle()}</Text>
                             </View>
                         </View>
                         <View style={styles.searchButton}>
@@ -90,6 +105,7 @@ const AISearchBar: React.FC<AISearchBarProps> = ({ activeTab }) => {
             <HotelSearchModal
                 visible={hotelModalVisible}
                 onClose={() => setHotelModalVisible(false)}
+                initialParams={hotelInitialParams}
             />
             <FlightSearchModal
                 visible={flightModalVisible}
@@ -129,6 +145,9 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 10,
+        flex: 1,
+    },
+    titleColumn: {
         flex: 1,
     },
     title: {

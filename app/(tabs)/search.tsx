@@ -1,7 +1,7 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { ArrowDownUp, Car, ChevronLeft, Heart, List, Map as MapIcon, MapPin, MousePointer2, Move, Search, SlidersHorizontal, Star, UtensilsCrossed, Wifi, Wind, X } from 'lucide-react-native';
 import React, { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
+import { ActivityIndicator, Animated, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, useColorScheme, View } from 'react-native';
 import FilterModal from '../../components/search/FilterModal';
 import HotelSearchModal from '../../components/search/HotelSearchModal';
 import MapboxWebView from '../../components/search/MapboxWebView';
@@ -613,6 +613,22 @@ export default function SearchScreen() {
         }
     }
 
+    // Sliding pagination indicator: a single blue pill that animates across the dots
+    // to the active card, instead of the active dot snapping between positions.
+    const DOT_SLOT = 12; // 6px dot + 6px gap
+    const PILL_OFFSET = -7; // centres the 20px pill over the 6px dot it points to
+    const paginationCount = Math.min(hotels.length, 10);
+    const activeCardIndex = Math.max(0, hotels.findIndex(h => h.hotelId === selectedHotel?.hotelId));
+    const dotSlideAnim = useRef(new Animated.Value(PILL_OFFSET)).current;
+    useEffect(() => {
+        Animated.spring(dotSlideAnim, {
+            toValue: Math.min(activeCardIndex, Math.max(paginationCount - 1, 0)) * DOT_SLOT + PILL_OFFSET,
+            useNativeDriver: true,
+            friction: 9,
+            tension: 120,
+        }).start();
+    }, [activeCardIndex, paginationCount, dotSlideAnim]);
+
     useEffect(() => {
         if (selectedHotel && viewMode === 'map' && cardsFlatListRef.current) {
             const index = hotels.findIndex(h => h.hotelId === selectedHotel.hotelId);
@@ -842,17 +858,26 @@ export default function SearchScreen() {
                                             )}
                                         />
 
-                                        {/* Pagination Indicator */}
+                                        {/* Pagination Indicator — base dots with a single
+                                            pill that slides to the active card. */}
                                         <View style={styles.paginationDots}>
-                                            {hotels.slice(0, Math.min(hotels.length, 10)).map((_, i) => (
-                                                <View
-                                                    key={i}
+                                            <View style={styles.paginationTrack}>
+                                                {Array.from({ length: paginationCount }).map((_, i) => (
+                                                    <View key={i} style={styles.dot} />
+                                                ))}
+                                                <Animated.View
                                                     style={[
                                                         styles.dot,
-                                                        Math.round(hotels.findIndex(h => h.hotelId === selectedHotel?.hotelId)) === i && styles.activeDot
+                                                        styles.activeDot,
+                                                        {
+                                                            position: 'absolute',
+                                                            left: 0,
+                                                            top: 0,
+                                                            transform: [{ translateX: dotSlideAnim }],
+                                                        },
                                                     ]}
                                                 />
-                                            ))}
+                                            </View>
                                         </View>
                                     </View>
                                 )}
@@ -1358,6 +1383,14 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         alignItems: 'center',
         gap: 6,
         marginTop: 12,
+    },
+    // Content-sized inner row so the absolutely-positioned sliding pill can be
+    // offset from the first dot's left edge (not the full-width outer container).
+    paginationTrack: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        position: 'relative',
     },
     dot: {
         width: 6,

@@ -6,7 +6,11 @@ import { useSettings } from '../../../context/SettingsContext';
 import { convertCurrency } from '../../../lib/currency';
 import { fetchWeekendDeals, WeekendDeal } from '../../../lib/landing';
 
-export default function TrendingNearYou() {
+interface TrendingNearYouProps {
+    onSelect?: (deal: WeekendDeal) => void;
+}
+
+export default function TrendingNearYou({ onSelect }: TrendingNearYouProps) {
     const colorScheme = useColorScheme();
     const isDark = colorScheme === 'dark';
     const styles = getStyles(isDark);
@@ -48,7 +52,11 @@ export default function TrendingNearYou() {
                     : deals.map(deal => {
                         const converted = Math.round(convertCurrency(deal.salePrice, 'PHP', currency.code));
                         return (
-                            <Pressable key={deal.id} style={styles.card}>
+                            <Pressable
+                                key={deal.id}
+                                style={({ pressed }) => [styles.card, pressed && styles.cardPressed]}
+                                onPress={() => onSelect?.(deal)}
+                            >
                                 <View style={styles.imageWrap}>
                                     <Image
                                         source={{ uri: deal.imageUrl }}
@@ -106,6 +114,7 @@ const getStyles = (isDark: boolean) => StyleSheet.create({
         borderWidth: 1,
         borderColor: isDark ? '#1e293b' : '#e2e8f0',
     },
+    cardPressed: { opacity: 0.75 },
     skeleton: { height: 180, backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },
     imageWrap: { position: 'relative', height: 110 },
     image: { width: '100%', height: '100%', backgroundColor: isDark ? '#1e293b' : '#f1f5f9' },

@@ -9,9 +9,22 @@ import SearchPill from './SearchPill';
 
 type SearchMode = 'Stays' | 'Flights' | 'AI Search';
 
-const Hero = () => {
+interface HeroProps {
+    /** Destination pre-filled into the search bar, e.g. from a Trending near you card. */
+    destination?: string | null;
+}
+
+const Hero = ({ destination = null }: HeroProps) => {
     const [activeTab, setActiveTab] = React.useState<SearchMode>('Stays');
     const isDark = useColorScheme() === 'dark';
+
+    // A pre-filled destination is always a stay, so snap back to that tab.
+    // Derived during render — React's recommended alternative to a setState-in-effect.
+    const [prevDestination, setPrevDestination] = React.useState(destination);
+    if (destination !== prevDestination) {
+        setPrevDestination(destination);
+        if (destination) setActiveTab('Stays');
+    }
 
     return (
         <View className="w-full items-center pt-2 pb-8 relative">
@@ -39,7 +52,7 @@ const Hero = () => {
                     <SearchPill activeTab={activeTab} onTabChange={setActiveTab} />
                 </View>
 
-                <AISearchBar activeTab={activeTab} />
+                <AISearchBar activeTab={activeTab} destination={destination} />
                 <AISuggestionChips onSuggestionClick={() => {}} />
             </View>
         </View>
