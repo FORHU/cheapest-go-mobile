@@ -2,7 +2,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [staging]
+    branches: [staging, main]
   workflow_dispatch:
 
 jobs:
@@ -12,19 +12,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
         with:
-          node-version: 20
-          cache: npm
+          channel: 'stable'
+          cache: true
 
       - name: Install dependencies
-        run: npm ci
+        run: flutter pub get
 
-      - name: TypeScript
-        run: npx tsc --noEmit
+      - name: Validate FAOS Architecture
+        run: dart run tools/validate_architecture.dart
 
-      - name: Lint
-        run: npm run lint
+      - name: Static Analysis
+        run: flutter analyze
 
-      - name: Test
-        run: npm test -- --ci --passWithNoTests
+      - name: Run Tests
+        run: flutter test
