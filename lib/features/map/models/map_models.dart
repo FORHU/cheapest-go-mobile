@@ -785,3 +785,4 @@ final List<TrackedFlight> kActiveTrackedFlights = [
     statusText: 'Transcontinental Transit • FL400',
   ),
 ];
+

@@ -60,51 +60,61 @@ class _AirportHubSheetState extends State<AirportHubSheet> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF004AC6),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: const Color(0xFF3FE1FD).withValues(alpha: 0.6),
+              Expanded(
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF004AC6),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF3FE1FD).withValues(alpha: 0.6),
+                        ),
                       ),
-                    ),
-                    child: Text(
-                      widget.hub.code,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '${widget.hub.name}, ${widget.hub.country}',
+                      child: Text(
+                        widget.hub.code,
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: 0.5,
                         ),
                       ),
-                      Text(
-                        widget.hub.airportName,
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 11,
-                        ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '${widget.hub.name}, ${widget.hub.country}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            widget.hub.airportName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Color(0xFF94A3B8),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ],
+                    ),
+                  ],
+                ),
               ),
+              const SizedBox(width: 4),
               Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   IconButton(
                     icon: const Icon(Icons.chevron_left, color: Color(0xFF3FE1FD), size: 20),
@@ -321,12 +331,16 @@ class _AirportHubSheetState extends State<AirportHubSheet> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          hotel.name,
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            hotel.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -350,11 +364,14 @@ class _AirportHubSheetState extends State<AirportHubSheet> {
                     const SizedBox(height: 3),
                     Text(
                       '${hotel.distanceKm} km from terminal • ★ ${hotel.stars} • ${hotel.amenities.first}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => context.go('/hotels'),
                 child: Container(
@@ -412,12 +429,16 @@ class _AirportHubSheetState extends State<AirportHubSheet> {
                   children: [
                     Row(
                       children: [
-                        Text(
-                          '${widget.hub.code} ➔ ${flight.destinationCode} (${flight.destinationCity})',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.bold,
+                        Expanded(
+                          child: Text(
+                            '${widget.hub.code} ➔ ${flight.destinationCode} (${flight.destinationCity})',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         const SizedBox(width: 6),
@@ -434,11 +455,14 @@ class _AirportHubSheetState extends State<AirportHubSheet> {
                     const SizedBox(height: 3),
                     Text(
                       '${flight.airline} • Departs ${flight.departureTime} • ${flight.duration}',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5),
                     ),
                   ],
                 ),
               ),
+              const SizedBox(width: 8),
               GestureDetector(
                 onTap: () => context.push('/flights'),
                 child: Container(
@@ -499,6 +523,8 @@ class _AirportHubSheetState extends State<AirportHubSheet> {
                       children: [
                         Text(
                           course.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 12.5,
@@ -507,11 +533,14 @@ class _AirportHubSheetState extends State<AirportHubSheet> {
                         ),
                         Text(
                           '${course.holes} Holes • Par ${course.par} • ${course.distanceKm} km from ${widget.hub.code}',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: const TextStyle(color: Color(0xFF4EDEA3), fontSize: 10.5),
                         ),
                       ],
                     ),
                   ),
+                  const SizedBox(width: 8),
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(

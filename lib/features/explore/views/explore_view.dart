@@ -97,7 +97,7 @@ class _HomeViewState extends State<HomeView> {
                         children: [
                           Expanded(
                             child: AppPrimaryButton(
-                              label: 'Search Hotels',
+                              label: 'Hotels',
                               icon: Icons.hotel_outlined,
                               backgroundColor: Colors.white,
                               foregroundColor: const Color(0xFF0F172A),
@@ -107,9 +107,9 @@ class _HomeViewState extends State<HomeView> {
                           const SizedBox(width: 10),
                           Expanded(
                             child: AppSecondaryButton(
-                              label: 'Search Flights',
+                              label: 'Flights',
                               icon: Icons.flight_takeoff,
-                              textColor: Colors.white,
+                              textColor: const Color(0xFF0F172A),
                               onPressed: () => context.push('/flights'),
                             ),
                           ),
