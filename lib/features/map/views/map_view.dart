@@ -1,122 +1,15 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
+import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
+import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
+import 'package:cheapest_go_mobile/features/map/components/map_tier_toggle.dart';
+import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
 
-class MapDestinationHub {
-  const MapDestinationHub({
-    required this.name,
-    required this.country,
-    required this.code,
-    required this.lat,
-    required this.lon,
-    required this.hotelPrice,
-    required this.flightPrice,
-    required this.category,
-    required this.description,
-  });
-
-  final String name;
-  final String country;
-  final String code;
-  final double lat; // in radians
-  final double lon; // in radians
-  final double hotelPrice;
-  final double flightPrice;
-  final String category; // 'golf', 'resort', 'city', 'villa'
-  final String description;
-}
-
-final List<MapDestinationHub> kDestinationHubs = [
-  MapDestinationHub(
-    name: 'Bali',
-    country: 'Indonesia',
-    code: 'DPS',
-    lat: -8.4095 * math.pi / 180,
-    lon: 115.1889 * math.pi / 180,
-    hotelPrice: 214,
-    flightPrice: 520,
-    category: 'golf',
-    description: 'Championship fairways & oceanfront luxury villas.',
-  ),
-  MapDestinationHub(
-    name: 'Dubai',
-    country: 'UAE',
-    code: 'DXB',
-    lat: 25.2048 * math.pi / 180,
-    lon: 55.2708 * math.pi / 180,
-    hotelPrice: 380,
-    flightPrice: 640,
-    category: 'resort',
-    description: 'Emirates Golf Club & ultra-luxury marina suites.',
-  ),
-  MapDestinationHub(
-    name: 'Tokyo',
-    country: 'Japan',
-    code: 'HND',
-    lat: 35.6762 * math.pi / 180,
-    lon: 139.6503 * math.pi / 180,
-    hotelPrice: 195,
-    flightPrice: 480,
-    category: 'city',
-    description: 'Shinjuku & Ginza metropolis with Michelin dining.',
-  ),
-  MapDestinationHub(
-    name: 'Seoul',
-    country: 'South Korea',
-    code: 'ICN',
-    lat: 37.5665 * math.pi / 180,
-    lon: 126.9780 * math.pi / 180,
-    hotelPrice: 140,
-    flightPrice: 410,
-    category: 'city',
-    description: 'Gangnam, Myeongdong & fast high-speed transit.',
-  ),
-  MapDestinationHub(
-    name: 'London',
-    country: 'United Kingdom',
-    code: 'LHR',
-    lat: 51.5074 * math.pi / 180,
-    lon: -0.1278 * math.pi / 180,
-    hotelPrice: 240,
-    flightPrice: 350,
-    category: 'city',
-    description: 'Heathrow direct routes & heritage historic hotels.',
-  ),
-  MapDestinationHub(
-    name: 'New York',
-    country: 'United States',
-    code: 'JFK',
-    lat: 40.7128 * math.pi / 180,
-    lon: -74.0060 * math.pi / 180,
-    hotelPrice: 290,
-    flightPrice: 490,
-    category: 'city',
-    description: 'Manhattan skyline & rapid transatlantic routes.',
-  ),
-  MapDestinationHub(
-    name: 'Singapore',
-    country: 'Singapore',
-    code: 'SIN',
-    lat: 1.3521 * math.pi / 180,
-    lon: 103.8198 * math.pi / 180,
-    hotelPrice: 260,
-    flightPrice: 510,
-    category: 'resort',
-    description: 'Changi global hub & Marina Bay infinity pools.',
-  ),
-  MapDestinationHub(
-    name: 'Paris',
-    country: 'France',
-    code: 'CDG',
-    lat: 48.8566 * math.pi / 180,
-    lon: 2.3522 * math.pi / 180,
-    hotelPrice: 275,
-    flightPrice: 460,
-    category: 'villa',
-    description: 'Haute couture, Louvre art & boutique stays.',
-  ),
-];
-
+/// Interactive Map View
+///
+/// Implements 2D Map (`MapTier.lite`) and 3D Globe (`MapTier.standard`) modes
+/// inspired by `gate-closes-app-v2`, with interactive airport hubs (hotels, flights, golf getaways)
+/// and real-time in-flight live tracking mode with telemetry HUD.
 class MapView extends StatefulWidget {
   const MapView({super.key});
 
@@ -124,161 +17,327 @@ class MapView extends StatefulWidget {
   State<MapView> createState() => _MapViewState();
 }
 
-class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
-  double _rotationLon = 100 * math.pi / 180; // initial center on Asia-Pacific
-  double _pitch = 15 * math.pi / 180;
-  bool _isGlobe3D = true;
+class _MapViewState extends State<MapView> with TickerProviderStateMixin {
+  MapTier _currentTier = MapTier.standard;
+  double _rotationLon = 115 * math.pi / 180; // centered on SE Asia / Philippines
+  double _pitch = 12 * math.pi / 180;
+  Offset _panOffset2D = Offset.zero;
+
   String _selectedCategory = 'all';
   MapDestinationHub? _selectedHub;
-  late AnimationController _animController;
+  bool _isInFlightTrackingMode = false;
+  int _activeFlightIndex = 0;
+
+  late AnimationController _globeRotationController;
+  late AnimationController _flightProgressController;
+  late AnimationController _radarPulseController;
 
   @override
   void initState() {
     super.initState();
-    _selectedHub = kDestinationHubs.first; // Default select Bali
-    _animController = AnimationController(
+    _selectedHub = kGlobalDestinationHubs.first; // Default MNL
+
+    // 1. Globe auto-rotation
+    _globeRotationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 40),
+      duration: const Duration(seconds: 50),
     )..repeat();
 
-    _animController.addListener(() {
-      if (mounted && _isGlobe3D) {
+    _globeRotationController.addListener(() {
+      if (mounted && _currentTier == MapTier.standard && !_isInFlightTrackingMode) {
         setState(() {
-          _rotationLon += 0.002;
+          _rotationLon += 0.0018;
           if (_rotationLon > math.pi * 2) {
             _rotationLon -= math.pi * 2;
           }
         });
       }
     });
+
+    // 2. Flight interpolation controller (simulates plane travel along route)
+    _flightProgressController = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 24),
+    )..repeat();
+
+    // 3. Radar ripple beacon controller
+    _radarPulseController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1800),
+    )..repeat();
   }
 
   @override
   void dispose() {
-    _animController.dispose();
+    _globeRotationController.dispose();
+    _flightProgressController.dispose();
+    _radarPulseController.dispose();
     super.dispose();
+  }
+
+  TrackedFlight get _currentFlight => kActiveTrackedFlights[_activeFlightIndex];
+
+  void _onPanUpdate(DragUpdateDetails details) {
+    if (_currentTier == MapTier.standard) {
+      setState(() {
+        _rotationLon -= details.delta.dx * 0.008;
+        _pitch = (_pitch + details.delta.dy * 0.005)
+            .clamp(-math.pi / 3, math.pi / 3);
+      });
+    } else {
+      setState(() {
+        _panOffset2D += details.delta;
+      });
+    }
+  }
+
+  void _onTapCanvas(TapUpDetails details, Size size) {
+    if (_isInFlightTrackingMode) return;
+
+    final center = Offset(size.width / 2, size.height * 0.44);
+    final radius = math.min(size.width, size.height) * 0.40;
+    final tapPos = details.localPosition;
+
+    MapDestinationHub? closest;
+    double minDistance = 45.0; // hit target threshold in logical pixels
+
+    for (final hub in kGlobalDestinationHubs) {
+      Offset? pt;
+      if (_currentTier == MapTier.standard) {
+        pt = _project3D(hub.latRad, hub.lonRad, center, radius, _rotationLon, _pitch);
+      } else {
+        pt = _project2D(hub.latRad, hub.lonRad, size, _panOffset2D);
+      }
+
+      if (pt != null) {
+        final d = (pt - tapPos).distance;
+        if (d < minDistance) {
+          minDistance = d;
+          closest = hub;
+        }
+      }
+    }
+
+    if (closest != null) {
+      setState(() {
+        _selectedHub = closest;
+        if (_currentTier == MapTier.standard) {
+          _rotationLon = closest!.lonRad;
+        }
+      });
+    }
+  }
+
+  void _cycleNextHub() {
+    final curIdx = kGlobalDestinationHubs.indexWhere((h) => h.code == _selectedHub?.code);
+    final nextIdx = (curIdx + 1) % kGlobalDestinationHubs.length;
+    setState(() {
+      _selectedHub = kGlobalDestinationHubs[nextIdx];
+      if (_currentTier == MapTier.standard) {
+        _rotationLon = _selectedHub!.lonRad;
+      }
+    });
+  }
+
+  void _cyclePreviousHub() {
+    final curIdx = kGlobalDestinationHubs.indexWhere((h) => h.code == _selectedHub?.code);
+    final prevIdx = (curIdx - 1 + kGlobalDestinationHubs.length) % kGlobalDestinationHubs.length;
+    setState(() {
+      _selectedHub = kGlobalDestinationHubs[prevIdx];
+      if (_currentTier == MapTier.standard) {
+        _rotationLon = _selectedHub!.lonRad;
+      }
+    });
+  }
+
+  void _cycleNextFlight() {
+    setState(() {
+      _activeFlightIndex = (_activeFlightIndex + 1) % kActiveTrackedFlights.length;
+      if (_currentTier == MapTier.standard) {
+        _rotationLon = _currentFlight.originHub.lonRad;
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF070B14),
-      body: Stack(
-        children: [
-          // Globe / Map Interactive Canvas
-          GestureDetector(
-            onPanUpdate: (details) {
-              setState(() {
-                _rotationLon -= details.delta.dx * 0.008;
-                _pitch = (_pitch + details.delta.dy * 0.005)
-                    .clamp(-math.pi / 4, math.pi / 4);
-              });
-            },
-            child: SizedBox.expand(
-              child: CustomPaint(
-                painter: _GlobePainter(
-                  rotationLon: _rotationLon,
-                  pitch: _pitch,
-                  is3D: _isGlobe3D,
-                  hubs: kDestinationHubs,
-                  selectedHub: _selectedHub,
-                  selectedCategory: _selectedCategory,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final size = Size(constraints.maxWidth, constraints.maxHeight);
+
+        return Scaffold(
+          backgroundColor: const Color(0xFF070B14),
+          body: Stack(
+            children: [
+              // 1. Interactive 2D Map / 3D Globe Canvas
+              GestureDetector(
+                onPanUpdate: _onPanUpdate,
+                onTapUp: (details) => _onTapCanvas(details, size),
+                child: SizedBox.expand(
+                  child: AnimatedBuilder(
+                    animation: Listenable.merge([
+                      _globeRotationController,
+                      _flightProgressController,
+                      _radarPulseController,
+                    ]),
+                    builder: (context, _) {
+                      return CustomPaint(
+                        painter: _MapCanvasPainter(
+                          tier: _currentTier,
+                          rotationLon: _rotationLon,
+                          pitch: _pitch,
+                          panOffset2D: _panOffset2D,
+                          hubs: kGlobalDestinationHubs,
+                          selectedHub: _selectedHub,
+                          selectedCategory: _selectedCategory,
+                          isInFlightTrackingMode: _isInFlightTrackingMode,
+                          activeFlight: _currentFlight,
+                          flightProgress: _flightProgressController.value,
+                          pulseValue: _radarPulseController.value,
+                        ),
+                      );
+                    },
+                  ),
                 ),
               ),
-            ),
-          ),
 
-          // Top Overlay Controls
-          SafeArea(
-            child: Column(
-              children: [
-                // Top Bar
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(20),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.2),
+              // 2. Top Header Controls (Map Tier Toggle, Flight Tracker Toggle, Filter Chips)
+              SafeArea(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          // 2D / 3D Map Tier Toggle Switch
+                          MapTierToggle(
+                            currentTier: _currentTier,
+                            onTierChanged: (tier) {
+                              setState(() => _currentTier = tier);
+                            },
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.public,
-                              size: 16,
-                              color: Color(0xFF3FE1FD),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              _isGlobe3D ? '3D Globe Mode' : '2D Map Projection',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+
+                          // Mode Switch: Hub Explorer vs In-Flight Live Tracker
+                          GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _isInFlightTrackingMode = !_isInFlightTrackingMode;
+                                if (_isInFlightTrackingMode && _currentTier == MapTier.standard) {
+                                  _rotationLon = _currentFlight.originHub.lonRad;
+                                }
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: _isInFlightTrackingMode
+                                      ? [const Color(0xFF006242), const Color(0xFF004AC6)]
+                                      : [const Color(0xFF1E293B), const Color(0xFF0F172A)],
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: _isInFlightTrackingMode
+                                      ? const Color(0xFF3FE1FD)
+                                      : Colors.white.withValues(alpha: 0.2),
+                                ),
+                                boxShadow: _isInFlightTrackingMode
+                                    ? [
+                                        BoxShadow(
+                                          color: const Color(0xFF3FE1FD).withValues(alpha: 0.35),
+                                          blurRadius: 10,
+                                        ),
+                                      ]
+                                    : null,
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    _isInFlightTrackingMode ? Icons.flight_takeoff : Icons.explore,
+                                    size: 14,
+                                    color: _isInFlightTrackingMode
+                                        ? const Color(0xFF3FE1FD)
+                                        : Colors.white70,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    _isInFlightTrackingMode ? 'Live In-Flight' : 'Hubs & Stays',
+                                    style: TextStyle(
+                                      color: _isInFlightTrackingMode ? Colors.white : const Color(0xFFDAE2FD),
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Category Filter Pills (Only shown in Hub Explorer mode)
+                    if (!_isInFlightTrackingMode)
+                      SingleChildScrollView(
+                        scrollDirection: Axis.horizontal,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+                        child: Row(
+                          children: [
+                            _buildFilterChip('all', 'All Hubs', Icons.scatter_plot),
+                            _buildFilterChip('hotels', 'Airport Hotels', Icons.hotel),
+                            _buildFilterChip('flights', 'Direct Flights', Icons.flight),
+                            _buildFilterChip('golf', 'Golf Getaways', Icons.sports_golf),
                           ],
                         ),
                       ),
-                      GestureDetector(
-                        onTap: () => setState(() => _isGlobe3D = !_isGlobe3D),
-                        child: Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF004AC6),
-                            shape: BoxShape.circle,
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFF3FE1FD).withValues(alpha: 0.4),
-                                blurRadius: 10,
-                              ),
-                            ],
-                          ),
-                          child: Icon(
-                            _isGlobe3D ? Icons.map_outlined : Icons.language,
-                            size: 18,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
+                  ],
                 ),
+              ),
 
-                // Category Filter Pills
-                SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                  child: Row(
-                    children: [
-                      _buildFilterChip('all', 'All Hubs', Icons.scatter_plot),
-                      _buildFilterChip('golf', 'Golf & Fairways', Icons.sports_golf),
-                      _buildFilterChip('resort', 'Luxury Resorts', Icons.beach_access),
-                      _buildFilterChip('city', 'Urban Flights', Icons.flight),
-                      _buildFilterChip('villa', 'Private Villas', Icons.villa),
-                    ],
-                  ),
-                ),
-              ],
-            ),
+              // 3. Floating Bottom Cards (In-Flight Telemetry HUD vs Airport Hub Sheet)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 84, // Cradled above Globe bottom nav dome
+                child: _isInFlightTrackingMode
+                    ? FlightTelemetryHud(
+                        flight: _currentFlight,
+                        progress: _flightProgressController.value,
+                        onNextFlight: _cycleNextFlight,
+                        onViewDestinationHub: () {
+                          setState(() {
+                            _selectedHub = _currentFlight.destinationHub;
+                            _isInFlightTrackingMode = false;
+                            if (_currentTier == MapTier.standard) {
+                              _rotationLon = _selectedHub!.lonRad;
+                            }
+                          });
+                        },
+                        onExitTracking: () {
+                          setState(() => _isInFlightTrackingMode = false);
+                        },
+                      )
+                    : (_selectedHub != null
+                        ? AirportHubSheet(
+                            hub: _selectedHub!,
+                            initialTab: _selectedCategory == 'golf'
+                                ? 3
+                                : (_selectedCategory == 'hotels'
+                                    ? 1
+                                    : (_selectedCategory == 'flights' ? 2 : 0)),
+                            onNextHub: _cycleNextHub,
+                            onPreviousHub: _cyclePreviousHub,
+                            onClose: () => setState(() => _selectedHub = null),
+                          )
+                        : const SizedBox.shrink()),
+              ),
+            ],
           ),
-
-          // Bottom Slide-up Destination Hub Card
-          if (_selectedHub != null)
-            Positioned(
-              left: 16,
-              right: 16,
-              bottom: 96,
-              child: _buildDestinationSheet(context, _selectedHub!),
-            ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -288,26 +347,23 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
       onTap: () => setState(() => _selectedCategory = key),
       child: Container(
         margin: const EdgeInsets.only(right: 8),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 5),
         decoration: BoxDecoration(
-          color: active
-              ? const Color(0xFF004AC6)
-              : Colors.black.withValues(alpha: 0.4),
+          color: active ? const Color(0xFF004AC6) : const Color(0xFF0F172A).withValues(alpha: 0.75),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: active
-                ? const Color(0xFF3FE1FD)
-                : Colors.white.withValues(alpha: 0.15),
+            color: active ? const Color(0xFF3FE1FD) : Colors.white.withValues(alpha: 0.15),
           ),
         ),
         child: Row(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Icon(
               icon,
-              size: 14,
+              size: 13,
               color: active ? Colors.white : const Color(0xFF94A3B8),
             ),
-            const SizedBox(width: 5),
+            const SizedBox(width: 4),
             Text(
               label,
               style: TextStyle(
@@ -321,236 +377,80 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
       ),
     );
   }
-
-  Widget _buildDestinationSheet(BuildContext context, MapDestinationHub hub) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: const Color(0xFF131B2E).withValues(alpha: 0.95),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2563EB).withValues(alpha: 0.4)),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black54,
-            blurRadius: 20,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF004AC6),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      hub.code,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        hub.name,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        hub.country,
-                        style: const TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              GestureDetector(
-                onTap: () {
-                  final nextIdx =
-                      (kDestinationHubs.indexOf(hub) + 1) % kDestinationHubs.length;
-                  setState(() {
-                    _selectedHub = kDestinationHubs[nextIdx];
-                    _rotationLon = -_selectedHub!.lon;
-                  });
-                },
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Row(
-                    children: [
-                      Text(
-                        'Next Hub',
-                        style: TextStyle(color: Colors.white70, fontSize: 11),
-                      ),
-                      Icon(Icons.chevron_right, size: 14, color: Colors.white70),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            hub.description,
-            style: const TextStyle(color: Color(0xFFDAE2FD), fontSize: 12),
-          ),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => context.go('/hotels'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF006242),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'HOTEL RATE',
-                          style: TextStyle(
-                            color: Color(0xFFBDFFDB),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'From \$${hub.hotelPrice.toInt()}/night',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: GestureDetector(
-                  onTap: () => context.push('/flights'),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF004AC6),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text(
-                          'DIRECT FLIGHT',
-                          style: TextStyle(
-                            color: Color(0xFFDAE2FD),
-                            fontSize: 10,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          'From \$${hub.flightPrice.toInt()}',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 13,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
 }
 
-// --- 3D Globe & Flat Projection Painter ---
+// ============================================================================
+// Canvas Painter: 2D Equirectangular Map vs 3D Orthographic Spherical Globe
+// ============================================================================
 
-class _GlobePainter extends CustomPainter {
-  const _GlobePainter({
+class _MapCanvasPainter extends CustomPainter {
+  const _MapCanvasPainter({
+    required this.tier,
     required this.rotationLon,
     required this.pitch,
-    required this.is3D,
+    required this.panOffset2D,
     required this.hubs,
     required this.selectedHub,
     required this.selectedCategory,
+    required this.isInFlightTrackingMode,
+    required this.activeFlight,
+    required this.flightProgress,
+    required this.pulseValue,
   });
 
+  final MapTier tier;
   final double rotationLon;
   final double pitch;
-  final bool is3D;
+  final Offset panOffset2D;
   final List<MapDestinationHub> hubs;
   final MapDestinationHub? selectedHub;
   final String selectedCategory;
+  final bool isInFlightTrackingMode;
+  final TrackedFlight activeFlight;
+  final double flightProgress;
+  final double pulseValue;
 
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * 0.45);
-    final radius = math.min(size.width, size.height) * 0.38;
-
-    if (is3D) {
-      _paint3DGlobe(canvas, center, radius, size);
+    if (tier == MapTier.standard) {
+      _paint3DGlobe(canvas, size);
     } else {
       _paint2DMap(canvas, size);
     }
   }
 
-  void _paint3DGlobe(Canvas canvas, Offset center, double radius, Size size) {
-    // 1. Atmosphere Halo
+  // --- 3D Globe Projection ---
+
+  void _paint3DGlobe(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height * 0.44);
+    final radius = math.min(size.width, size.height) * 0.40;
+
+    // 1. Atmosphere Glow & Horizon Rim Halo
     final haloPaint = Paint()
       ..shader = RadialGradient(
         colors: [
-          const Color(0xFF0053DB).withValues(alpha: 0.0),
-          const Color(0xFF3FE1FD).withValues(alpha: 0.15),
-          const Color(0xFF3FE1FD).withValues(alpha: 0.35),
-          const Color(0xFF0053DB).withValues(alpha: 0.0),
+          const Color(0xFF004AC6).withValues(alpha: 0.0),
+          const Color(0xFF3FE1FD).withValues(alpha: 0.18),
+          const Color(0xFF3FE1FD).withValues(alpha: 0.38),
+          const Color(0xFF004AC6).withValues(alpha: 0.0),
         ],
         stops: const [0.85, 0.94, 0.98, 1.0],
       ).createShader(Rect.fromCircle(center: center, radius: radius * 1.15));
     canvas.drawCircle(center, radius * 1.15, haloPaint);
 
-    // 2. Globe Sphere (Deep Ocean Base)
+    // 2. Globe Sphere (Deep Slate Ocean with subtle radial light)
     final oceanPaint = Paint()
       ..shader = RadialGradient(
-        center: const Alignment(-0.3, -0.3),
+        center: const Alignment(-0.25, -0.3),
         colors: const [
           Color(0xFF0A225C),
-          Color(0xFF041133),
+          Color(0xFF051336),
           Color(0xFF020717),
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius));
     canvas.drawCircle(center, radius, oceanPaint);
 
-    // 3. Clip to sphere for surface details
+    // 3. Clip surface features inside sphere
     canvas.save();
     canvas.clipPath(Path()..addOval(Rect.fromCircle(center: center, radius: radius)));
 
@@ -560,14 +460,13 @@ class _GlobePainter extends CustomPainter {
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    // Latitudes (-60, -30, 0, 30, 60)
     for (final latDeg in [-60, -30, 0, 30, 60]) {
       final lat = latDeg * math.pi / 180;
       final path = Path();
       bool first = true;
       for (double lonDeg = -180; lonDeg <= 180; lonDeg += 10) {
         final lon = lonDeg * math.pi / 180;
-        final pt = _project3D(lat, lon, center, radius);
+        final pt = _project3D(lat, lon, center, radius, rotationLon, pitch);
         if (pt != null) {
           if (first) {
             path.moveTo(pt.dx, pt.dy);
@@ -582,14 +481,13 @@ class _GlobePainter extends CustomPainter {
       canvas.drawPath(path, gridPaint);
     }
 
-    // Longitudes
     for (double lonDeg = -180; lonDeg < 180; lonDeg += 30) {
       final lon = lonDeg * math.pi / 180;
       final path = Path();
       bool first = true;
       for (double latDeg = -80; latDeg <= 80; latDeg += 10) {
         final lat = latDeg * math.pi / 180;
-        final pt = _project3D(lat, lon, center, radius);
+        final pt = _project3D(lat, lon, center, radius, rotationLon, pitch);
         if (pt != null) {
           if (first) {
             path.moveTo(pt.dx, pt.dy);
@@ -604,98 +502,49 @@ class _GlobePainter extends CustomPainter {
       canvas.drawPath(path, gridPaint);
     }
 
-    // Flight Arcs between major hubs
-    _drawFlightArc(
-      canvas,
-      kDestinationHubs[5], // JFK
-      kDestinationHubs[4], // LHR
-      center,
-      radius,
-    );
-    _drawFlightArc(
-      canvas,
-      kDestinationHubs[3], // ICN
-      kDestinationHubs[0], // DPS
-      center,
-      radius,
-    );
-    _drawFlightArc(
-      canvas,
-      kDestinationHubs[1], // DXB
-      kDestinationHubs[6], // SIN
-      center,
-      radius,
-    );
+    // Flight Route Arcs
+    _drawFlightArc3D(canvas, hubs[0], hubs[3], center, radius); // MNL -> SIN
+    _drawFlightArc3D(canvas, hubs[1], hubs[2], center, radius); // CRK -> DPS
+    _drawFlightArc3D(canvas, hubs[3], hubs[4], center, radius); // SIN -> HND
+    _drawFlightArc3D(canvas, hubs[5], hubs[6], center, radius); // DXB -> LHR
+    _drawFlightArc3D(canvas, hubs[6], hubs[7], center, radius); // LHR -> JFK
+
+    // Active in-flight aircraft path highlight & animated plane
+    if (isInFlightTrackingMode) {
+      _drawInFlightAircraft3D(canvas, center, radius);
+    }
 
     canvas.restore();
 
-    // Outer rim highlight
+    // 4. Outer Rim Horizon Ring
     final rimPaint = Paint()
-      ..color = const Color(0xFF3FE1FD).withValues(alpha: 0.6)
+      ..color = const Color(0xFF3FE1FD).withValues(alpha: 0.55)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8;
+      ..strokeWidth = 1.6;
     canvas.drawCircle(center, radius, rimPaint);
 
-    // 4. Draw Destination Beacons
+    // 5. Hub Pins & Badges
     for (final hub in hubs) {
-      if (selectedCategory != 'all' && hub.category != selectedCategory) {
-        continue;
-      }
-      final pt = _project3D(hub.lat, hub.lon, center, radius);
-      if (pt != null) {
-        final isSelected = selectedHub?.code == hub.code;
-
-        // Glowing outer circle
-        final glowColor = isSelected
-            ? const Color(0xFF3FE1FD)
-            : (hub.category == 'golf'
-                ? const Color(0xFF4EDEA3)
-                : const Color(0xFF2563EB));
-
-        canvas.drawCircle(
-          pt,
-          isSelected ? 10 : 6,
-          Paint()..color = glowColor.withValues(alpha: 0.35),
-        );
-        canvas.drawCircle(
-          pt,
-          isSelected ? 6 : 3.5,
-          Paint()..color = glowColor,
-        );
-        canvas.drawCircle(
-          pt,
-          isSelected ? 2.5 : 1.5,
-          Paint()..color = Colors.white,
-        );
-
-        // Label Tag
-        final textSpan = TextSpan(
-          text: '${hub.name} • \$${hub.hotelPrice.toInt()}',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: isSelected ? 11 : 9.5,
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-            shadows: const [
-              Shadow(color: Colors.black, blurRadius: 4),
-            ],
-          ),
-        );
-        final tp = TextPainter(
-          text: textSpan,
-          textDirection: TextDirection.ltr,
-        )..layout();
-        tp.paint(canvas, Offset(pt.dx - tp.width / 2, pt.dy - tp.height - 8));
+      if (_filterMatch(hub)) {
+        final pt = _project3D(hub.latRad, hub.lonRad, center, radius, rotationLon, pitch);
+        if (pt != null) {
+          final isSelected = selectedHub?.code == hub.code;
+          _drawHubPin(canvas, pt, hub, isSelected);
+        }
       }
     }
   }
 
+  // --- 2D Equirectangular Map Projection ---
+
   void _paint2DMap(Canvas canvas, Size size) {
-    final bgPaint = Paint()..color = const Color(0xFF041133);
+    // 1. Dark Slate Oceanic Background
+    final bgPaint = Paint()..color = const Color(0xFF070F22);
     canvas.drawRect(Offset.zero & size, bgPaint);
 
-    // Grid lines for 2D equirectangular
+    // 2. Graticules
     final grid = Paint()
-      ..color = const Color(0xFF2563EB).withValues(alpha: 0.18)
+      ..color = const Color(0xFF2563EB).withValues(alpha: 0.16)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
 
@@ -706,66 +555,81 @@ class _GlobePainter extends CustomPainter {
       canvas.drawLine(Offset(0, y), Offset(size.width, y), grid);
     }
 
-    // 2D Hub pins
+    // 3. Flight Corridors in 2D
+    _drawFlightRoute2D(canvas, hubs[0], hubs[3], size); // MNL -> SIN
+    _drawFlightRoute2D(canvas, hubs[1], hubs[2], size); // CRK -> DPS
+    _drawFlightRoute2D(canvas, hubs[3], hubs[4], size); // SIN -> HND
+    _drawFlightRoute2D(canvas, hubs[5], hubs[6], size); // DXB -> LHR
+    _drawFlightRoute2D(canvas, hubs[6], hubs[7], size); // LHR -> JFK
+
+    // 4. Active In-flight Aircraft in 2D
+    if (isInFlightTrackingMode) {
+      _drawInFlightAircraft2D(canvas, size);
+    }
+
+    // 5. 2D Hub Pins
     for (final hub in hubs) {
-      if (selectedCategory != 'all' && hub.category != selectedCategory) {
-        continue;
+      if (_filterMatch(hub)) {
+        final pt = _project2D(hub.latRad, hub.lonRad, size, panOffset2D);
+        final isSelected = selectedHub?.code == hub.code;
+        _drawHubPin(canvas, pt, hub, isSelected);
       }
-      final normX = (hub.lon + math.pi) / (2 * math.pi);
-      final normY = (math.pi / 2 - hub.lat) / math.pi;
-
-      final pt = Offset(normX * size.width, normY * (size.height * 0.7) + 60);
-      final isSelected = selectedHub?.code == hub.code;
-
-      canvas.drawCircle(
-        pt,
-        isSelected ? 8 : 5,
-        Paint()
-          ..color = isSelected ? const Color(0xFF3FE1FD) : const Color(0xFF2563EB),
-      );
-
-      final tp = TextPainter(
-        text: TextSpan(
-          text: '${hub.name} (${hub.code})',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        textDirection: TextDirection.ltr,
-      )..layout();
-      tp.paint(canvas, Offset(pt.dx + 8, pt.dy - 6));
     }
   }
 
-  Offset? _project3D(
-    double lat,
-    double lon,
-    Offset center,
-    double radius,
-  ) {
-    final dLon = lon - rotationLon;
-
-    // 3D coordinates on unit sphere
-    final x0 = math.cos(lat) * math.sin(dLon);
-    final y0 = -math.sin(lat);
-    final z0 = math.cos(lat) * math.cos(dLon);
-
-    // Apply pitch rotation around X axis
-    final y1 = y0 * math.cos(pitch) - z0 * math.sin(pitch);
-    final z1 = y0 * math.sin(pitch) + z0 * math.cos(pitch);
-
-    // Back hemisphere culling
-    if (z1 <= 0.05) return null;
-
-    return Offset(
-      center.dx + x0 * radius,
-      center.dy + y1 * radius,
-    );
+  bool _filterMatch(MapDestinationHub hub) {
+    if (selectedCategory == 'all') return true;
+    if (selectedCategory == 'golf') return hub.golfCourses.isNotEmpty;
+    if (selectedCategory == 'hotels') return hub.airportHotels.isNotEmpty;
+    if (selectedCategory == 'flights') return hub.directFlights.isNotEmpty;
+    return true;
   }
 
-  void _drawFlightArc(
+  void _drawHubPin(Canvas canvas, Offset pt, MapDestinationHub hub, bool isSelected) {
+    final glowColor = isSelected
+        ? const Color(0xFF3FE1FD)
+        : (hub.category == 'golf' ? const Color(0xFF4EDEA3) : const Color(0xFF2563EB));
+
+    // Outer glow
+    canvas.drawCircle(
+      pt,
+      isSelected ? 10 : 6,
+      Paint()..color = glowColor.withValues(alpha: 0.35),
+    );
+    // Core dot
+    canvas.drawCircle(
+      pt,
+      isSelected ? 5.5 : 3.5,
+      Paint()..color = glowColor,
+    );
+    // Center white dot
+    canvas.drawCircle(
+      pt,
+      isSelected ? 2.5 : 1.5,
+      Paint()..color = Colors.white,
+    );
+
+    // Label Badge
+    final label = '${hub.code} • \$${hub.hotelPrice.toInt()}';
+    final tp = TextPainter(
+      text: TextSpan(
+        text: label,
+        style: TextStyle(
+          color: Colors.white,
+          fontSize: isSelected ? 11 : 9.5,
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
+          shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
+        ),
+      ),
+      textDirection: TextDirection.ltr,
+    )..layout();
+
+    tp.paint(canvas, Offset(pt.dx - tp.width / 2, pt.dy - tp.height - 7));
+  }
+
+  // --- Flight Arc & Aircraft Drawing ---
+
+  void _drawFlightArc3D(
     Canvas canvas,
     MapDestinationHub from,
     MapDestinationHub to,
@@ -776,9 +640,9 @@ class _GlobePainter extends CustomPainter {
     bool started = false;
 
     for (double t = 0; t <= 1.0; t += 0.05) {
-      final lat = from.lat + (to.lat - from.lat) * t;
-      final lon = from.lon + (to.lon - from.lon) * t;
-      final pt = _project3D(lat, lon, center, radius);
+      final lat = from.latRad + (to.latRad - from.latRad) * t;
+      final lon = from.lonRad + (to.lonRad - from.lonRad) * t;
+      final pt = _project3D(lat, lon, center, radius, rotationLon, pitch);
 
       if (pt != null) {
         if (!started) {
@@ -792,13 +656,182 @@ class _GlobePainter extends CustomPainter {
 
     if (started) {
       final arcPaint = Paint()
-        ..color = const Color(0xFF3FE1FD).withValues(alpha: 0.5)
+        ..color = const Color(0xFF2563EB).withValues(alpha: 0.45)
         ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5;
+        ..strokeWidth = 1.2;
       canvas.drawPath(path, arcPaint);
     }
   }
 
+  void _drawFlightRoute2D(
+    Canvas canvas,
+    MapDestinationHub from,
+    MapDestinationHub to,
+    Size size,
+  ) {
+    final pt1 = _project2D(from.latRad, from.lonRad, size, panOffset2D);
+    final pt2 = _project2D(to.latRad, to.lonRad, size, panOffset2D);
+
+    final linePaint = Paint()
+      ..color = const Color(0xFF2563EB).withValues(alpha: 0.4)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.2;
+    canvas.drawLine(pt1, pt2, linePaint);
+  }
+
+  void _drawInFlightAircraft3D(Canvas canvas, Offset center, double radius) {
+    final from = activeFlight.originHub;
+    final to = activeFlight.destinationHub;
+
+    // 1. Draw glowing active flight path
+    final path = Path();
+    bool started = false;
+    for (double t = 0; t <= 1.0; t += 0.03) {
+      final lat = from.latRad + (to.latRad - from.latRad) * t;
+      final lon = from.lonRad + (to.lonRad - from.lonRad) * t;
+      final pt = _project3D(lat, lon, center, radius, rotationLon, pitch);
+      if (pt != null) {
+        if (!started) {
+          path.moveTo(pt.dx, pt.dy);
+          started = true;
+        } else {
+          path.lineTo(pt.dx, pt.dy);
+        }
+      }
+    }
+    if (started) {
+      canvas.drawPath(
+        path,
+        Paint()
+          ..color = const Color(0xFF3FE1FD).withValues(alpha: 0.75)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2.0,
+      );
+    }
+
+    // 2. Interpolate Plane Position
+    final curLat = from.latRad + (to.latRad - from.latRad) * flightProgress;
+    final curLon = from.lonRad + (to.lonRad - from.lonRad) * flightProgress;
+    final planePt = _project3D(curLat, curLon, center, radius, rotationLon, pitch);
+
+    if (planePt != null) {
+      _drawAircraftBeacon(canvas, planePt);
+    }
+  }
+
+  void _drawInFlightAircraft2D(Canvas canvas, Size size) {
+    final from = activeFlight.originHub;
+    final to = activeFlight.destinationHub;
+
+    final pt1 = _project2D(from.latRad, from.lonRad, size, panOffset2D);
+    final pt2 = _project2D(to.latRad, to.lonRad, size, panOffset2D);
+
+    // Glowing route
+    canvas.drawLine(
+      pt1,
+      pt2,
+      Paint()
+        ..color = const Color(0xFF3FE1FD).withValues(alpha: 0.75)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0,
+    );
+
+    // Current plane point
+    final planePt = Offset(
+      pt1.dx + (pt2.dx - pt1.dx) * flightProgress,
+      pt1.dy + (pt2.dy - pt1.dy) * flightProgress,
+    );
+
+    _drawAircraftBeacon(canvas, planePt);
+  }
+
+  void _drawAircraftBeacon(Canvas canvas, Offset planePt) {
+    // 1. Radar Ripple Wave ("The blue thing" / current live location beacon)
+    final rippleRadius = 10.0 + pulseValue * 18.0;
+    final rippleAlpha = (1.0 - pulseValue).clamp(0.0, 1.0) * 0.55;
+    canvas.drawCircle(
+      planePt,
+      rippleRadius,
+      Paint()
+        ..color = const Color(0xFF3FE1FD).withValues(alpha: rippleAlpha)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 1.8,
+    );
+
+    // 2. Inner Glowing Core
+    canvas.drawCircle(
+      planePt,
+      9,
+      Paint()..color = const Color(0xFF004AC6).withValues(alpha: 0.6),
+    );
+    canvas.drawCircle(
+      planePt,
+      5,
+      Paint()..color = const Color(0xFF3FE1FD),
+    );
+    canvas.drawCircle(
+      planePt,
+      2,
+      Paint()..color = Colors.white,
+    );
+
+    // 3. Flight Callout Tag
+    final textSpan = TextSpan(
+      text: '✈ ${activeFlight.flightNumber}',
+      style: const TextStyle(
+        color: Color(0xFF3FE1FD),
+        fontSize: 10,
+        fontWeight: FontWeight.w900,
+        shadows: [Shadow(color: Colors.black, blurRadius: 4)],
+      ),
+    );
+    final tp = TextPainter(text: textSpan, textDirection: TextDirection.ltr)..layout();
+    tp.paint(canvas, Offset(planePt.dx - tp.width / 2, planePt.dy - tp.height - 10));
+  }
+
   @override
-  bool shouldRepaint(covariant _GlobePainter old) => true;
+  bool shouldRepaint(covariant _MapCanvasPainter old) => true;
+}
+
+// ============================================================================
+// Projection Helpers (3D Orthographic Spherical vs 2D Equirectangular)
+// ============================================================================
+
+Offset? _project3D(
+  double lat,
+  double lon,
+  Offset center,
+  double radius,
+  double rotationLon,
+  double pitch,
+) {
+  final dLon = lon - rotationLon;
+
+  // 3D coordinates on unit sphere
+  final x0 = math.cos(lat) * math.sin(dLon);
+  final y0 = -math.sin(lat);
+  final z0 = math.cos(lat) * math.cos(dLon);
+
+  // Apply pitch tilt rotation around X-axis
+  final y1 = y0 * math.cos(pitch) - z0 * math.sin(pitch);
+  final z1 = y0 * math.sin(pitch) + z0 * math.cos(pitch);
+
+  // Back-face hemisphere culling
+  if (z1 <= 0.05) return null;
+
+  return Offset(
+    center.dx + x0 * radius,
+    center.dy + y1 * radius,
+  );
+}
+
+Offset _project2D(double lat, double lon, Size size, Offset panOffset) {
+  final normX = (lon + math.pi) / (2 * math.pi);
+  final normY = (math.pi / 2 - lat) / math.pi;
+
+  final baseHeight = size.height * 0.65;
+  final x = normX * size.width + panOffset.dx;
+  final y = normY * baseHeight + 70 + panOffset.dy;
+
+  return Offset(x, y);
 }
