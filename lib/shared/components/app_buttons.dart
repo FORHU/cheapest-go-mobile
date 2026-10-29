@@ -46,15 +46,19 @@ class AppPrimaryButton extends StatelessWidget {
           const SizedBox(width: 8),
         ] else if (icon != null) ...[
           Icon(icon, size: 18, color: fg),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ],
-        Text(
-          label,
-          style: TextStyle(
-            color: fg,
-            fontSize: 14,
-            fontWeight: FontWeight.w700,
-            letterSpacing: -0.2,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: fg,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
       ],
@@ -72,7 +76,7 @@ class AppPrimaryButton extends StatelessWidget {
           borderRadius: AppRadius.brPill,
           onTap: isLoading ? null : onPressed,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             child: content,
           ),
         ),
@@ -109,15 +113,19 @@ class AppSecondaryButton extends StatelessWidget {
       children: [
         if (icon != null) ...[
           Icon(icon, size: 18, color: textCol),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
         ],
-        Text(
-          label,
-          style: TextStyle(
-            color: textCol,
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            letterSpacing: -0.2,
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: textCol,
+              fontSize: 13.5,
+              fontWeight: FontWeight.w600,
+              letterSpacing: -0.2,
+            ),
           ),
         ),
       ],
@@ -133,7 +141,7 @@ class AppSecondaryButton extends StatelessWidget {
         borderRadius: AppRadius.brPill,
         onTap: onPressed,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 11),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
           child: content,
         ),
       ),

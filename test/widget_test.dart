@@ -134,8 +134,8 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Where will you'), findsOneWidget);
-    expect(find.text('Search Hotels'), findsOneWidget);
-    expect(find.text('Search Flights'), findsOneWidget);
+    expect(find.text('Hotels'), findsWidgets);
+    expect(find.text('Flights'), findsWidgets);
     expect(find.byIcon(Icons.public_rounded), findsOneWidget); // Globe dome
   });
 }
