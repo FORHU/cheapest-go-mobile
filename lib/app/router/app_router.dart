@@ -316,28 +316,167 @@ class MainScaffoldShell extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
 
-                      // User Profile Avatar
-                      GestureDetector(
-                        onTap: () => context.push('/profile'),
-                        child: Container(
-                          width: 34,
-                          height: 34,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: KineticHorizonColors.surfaceContainerHigh,
-                            border: Border.all(
-                              color: KineticHorizonColors.primaryFixedDim,
-                              width: 1.5,
+                      // User Profile Avatar Dropdown
+                      Theme(
+                        data: Theme.of(context).copyWith(
+                          popupMenuTheme: PopupMenuThemeData(
+                            color: const Color(0xFF0F172A),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16),
+                              side: BorderSide(
+                                color: Colors.white.withValues(alpha: 0.15),
+                                width: 1,
+                              ),
                             ),
                           ),
-                          child: ClipOval(
-                            child: Image.network(
-                              'https://lh3.googleusercontent.com/aida-public/AB6AXuAgJhQqomXb83w03ofFuO95SlW-4DDtMu6H_BAhUCn3DyjkF9LTJi5eSlnA8z-EM84WU1Gah_gE5DLsBy1s6jI0z4EXmJY-3jfMa0_dg2KBJQ9nGsoEHiSqT2jGqejUxsm-HIYiRTsKDhV_f2oRwKNAbW_qWDJoupWcgYAFESBp9jF_OfVwU2_S7FwHGokOCHLwmNK1CBWwQ_ClXuj4MMiDN_29MQMNebcDonYtVhk',
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => const Icon(
-                                Icons.person,
-                                size: 18,
-                                color: KineticHorizonColors.primary,
+                        ),
+                        child: PopupMenuButton<String>(
+                          tooltip: 'Profile & Map Settings',
+                          offset: const Offset(0, 42),
+                          padding: EdgeInsets.zero,
+                          elevation: 10,
+                          onSelected: (value) {
+                            if (value == 'profile') {
+                              context.push('/profile');
+                            } else if (value == 'logout') {
+                              authStore.logout();
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Logged out of session'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+                            }
+                          },
+                          itemBuilder: (context) {
+                            return <PopupMenuEntry<String>>[
+                              PopupMenuItem<String>(
+                                enabled: false,
+                                child: ListenableBuilder(
+                                  listenable: authStore,
+                                  builder: (context, _) {
+                                    final u = authStore.user;
+                                    final fullName = u != null ? '${u.firstName} ${u.lastName}'.trim() : '';
+                                    final userName = fullName.isNotEmpty ? fullName : 'CheapestGo Traveler';
+                                    final userEmail = u?.email ?? 'Member Account';
+                                    return Row(
+                                      children: [
+                                        CircleAvatar(
+                                          radius: 16,
+                                          backgroundColor: KineticHorizonColors.primary.withValues(alpha: 0.25),
+                                          child: const Icon(
+                                            Icons.person,
+                                            size: 18,
+                                            color: Color(0xFF3FE1FD),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Text(
+                                                userName,
+                                                style: const TextStyle(
+                                                  color: Colors.white,
+                                                  fontWeight: FontWeight.bold,
+                                                  fontSize: 13,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                              Text(
+                                                userEmail,
+                                                style: TextStyle(
+                                                  color: Colors.white.withValues(alpha: 0.6),
+                                                  fontSize: 11,
+                                                ),
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    );
+                                  },
+                                ),
+                              ),
+                              const PopupMenuDivider(height: 1),
+                              PopupMenuItem<String>(
+                                value: 'profile',
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.manage_accounts_outlined,
+                                      size: 18,
+                                      color: Colors.white70,
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'Profile & Account',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 16,
+                                      color: Colors.white38,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const PopupMenuDivider(height: 1),
+                              PopupMenuItem<String>(
+                                value: 'logout',
+                                child: const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.logout_rounded,
+                                      size: 18,
+                                      color: Color(0xFFEF4444),
+                                    ),
+                                    SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        'Log Out',
+                                        style: TextStyle(
+                                          color: Color(0xFFEF4444),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ];
+                          },
+                          child: Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: KineticHorizonColors.surfaceContainerHigh,
+                              border: Border.all(
+                                color: KineticHorizonColors.primaryFixedDim,
+                                width: 1.5,
+                              ),
+                            ),
+                            child: ClipOval(
+                              child: Image.network(
+                                'https://lh3.googleusercontent.com/aida-public/AB6AXuAgJhQqomXb83w03ofFuO95SlW-4DDtMu6H_BAhUCn3DyjkF9LTJi5eSlnA8z-EM84WU1Gah_gE5DLsBy1s6jI0z4EXmJY-3jfMa0_dg2KBJQ9nGsoEHiSqT2jGqejUxsm-HIYiRTsKDhV_f2oRwKNAbW_qWDJoupWcgYAFESBp9jF_OfVwU2_S7FwHGokOCHLwmNK1CBWwQ_ClXuj4MMiDN_29MQMNebcDonYtVhk',
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) => const Icon(
+                                  Icons.person,
+                                  size: 18,
+                                  color: KineticHorizonColors.primary,
+                                ),
                               ),
                             ),
                           ),
