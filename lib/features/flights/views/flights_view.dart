@@ -363,48 +363,48 @@ class _FlightsViewState extends State<FlightsView> {
                   child: Column(
                     children: [
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Row(
-                            children: [
-                              Container(
-                                width: 34,
-                                height: 34,
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withValues(alpha: 0.2),
-                                  shape: BoxShape.circle,
-                                ),
-                                child: const Icon(
-                                  Icons.insights,
-                                  size: 18,
-                                  color: Color(0xFF6FFBBE),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'SMART FARE FORECAST',
-                                    style: TextStyle(
-                                      color: Color(0xFFDBE1FF),
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Cheapest time to book: Now',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 14,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                          Container(
+                            width: 34,
+                            height: 34,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withValues(alpha: 0.2),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.insights,
+                              size: 18,
+                              color: Color(0xFF6FFBBE),
+                            ),
                           ),
+                          const SizedBox(width: 8),
+                          const Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'SMART FARE FORECAST',
+                                  style: TextStyle(
+                                    color: Color(0xFFDBE1FF),
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 0.5,
+                                  ),
+                                ),
+                                Text(
+                                  'Cheapest time to book: Now',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 8),
                           Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 8,
@@ -433,26 +433,26 @@ class _FlightsViewState extends State<FlightsView> {
                           borderRadius: BorderRadius.circular(10),
                         ),
                         child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Row(
-                              children: [
-                                Icon(
-                                  Icons.trending_up,
-                                  size: 18,
-                                  color: Color(0xFFF59E0B),
-                                ),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Expected to increase by +\$45 in 2 days',
-                                  style: TextStyle(
-                                    color: Color(0xFFDBE1FF),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
+                            const Icon(
+                              Icons.trending_up,
+                              size: 18,
+                              color: Color(0xFFF59E0B),
                             ),
+                            const SizedBox(width: 6),
+                            const Expanded(
+                              child: Text(
+                                'Expected to increase by +\$45 in 2 days',
+                                style: TextStyle(
+                                  color: Color(0xFFDBE1FF),
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
                             GestureDetector(
                               onTap: () {
                                 setState(() {
@@ -1286,26 +1286,26 @@ class _FlightsViewState extends State<FlightsView> {
                 borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
               ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.verified,
-                        size: 14,
-                        color: Color(0xFFBDFFDB),
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        ribbonText,
-                        style: const TextStyle(
-                          color: Color(0xFFBDFFDB),
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
+                  const Icon(
+                    Icons.verified,
+                    size: 14,
+                    color: Color(0xFFBDFFDB),
                   ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      ribbonText,
+                      style: const TextStyle(
+                        color: Color(0xFFBDFFDB),
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  const SizedBox(width: 6),
                   Container(
                     padding: const EdgeInsets.symmetric(
                       horizontal: 6,
@@ -1334,46 +1334,48 @@ class _FlightsViewState extends State<FlightsView> {
               children: [
                 // Carrier row
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: const BoxDecoration(
-                            color: Color(0xFFEAEDFF),
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.flight,
-                            size: 16,
-                            color: Color(0xFF004AC6),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              airlineName,
-                              style: const TextStyle(
-                                fontSize: 13,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF131B2E),
-                              ),
-                            ),
-                            Text(
-                              flightCode,
-                              style: const TextStyle(
-                                fontSize: 11,
-                                color: Color(0xFF64748B),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFEAEDFF),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.flight,
+                        size: 16,
+                        color: Color(0xFF004AC6),
+                      ),
                     ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            airlineName,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFF131B2E),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          Text(
+                            flightCode,
+                            style: const TextStyle(
+                              fontSize: 11,
+                              color: Color(0xFF64748B),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 8,
@@ -1384,6 +1386,7 @@ class _FlightsViewState extends State<FlightsView> {
                         borderRadius: BorderRadius.circular(6),
                       ),
                       child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
                           const Icon(
                             Icons.luggage,

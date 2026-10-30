@@ -1,13 +1,6 @@
 import 'dart:math' as math;
 
-/// Map rendering tier inspired by `gate-closes-app-v2/lib/core/services/map_tier.dart`
-enum MapTier {
-  /// 2D Equirectangular projection with dark slate basemap, graticules & route lines.
-  lite,
-
-  /// 3D Spherical rotating globe with dynamic lighting, atmosphere halo & geodesic arcs.
-  standard,
-}
+export 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
 
 class AirportHotelItem {
   const AirportHotelItem({
@@ -102,6 +95,8 @@ class MapDestinationHub {
 
   double get latRad => latDeg * math.pi / 180.0;
   double get lonRad => lonDeg * math.pi / 180.0;
+  double get latitude => latDeg;
+  double get longitude => lonDeg;
 }
 
 class TrackedFlight {

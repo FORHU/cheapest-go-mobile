@@ -74,6 +74,42 @@ void main() {
       await tester.pumpAndSettle();
       expect(selectedTier, MapTier.standard);
     });
+
+    testWidgets('toggles between Light and Dark map theme modes', (tester) async {
+      MapThemeMode selectedTheme = MapThemeMode.dark;
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.dark,
+          home: Scaffold(
+            body: StatefulBuilder(
+              builder: (context, setState) {
+                return MapTierToggle(
+                  currentTier: MapTier.standard,
+                  onTierChanged: (_) {},
+                  mapThemeMode: selectedTheme,
+                  onThemeModeChanged: (m) => setState(() => selectedTheme = m),
+                );
+              },
+            ),
+          ),
+        ),
+      );
+
+      // Verify dark mode icon is rendered (tooltip 'Switch to Light Map')
+      expect(find.byTooltip('Switch to Light Map'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Switch to Light Map'));
+      await tester.pumpAndSettle();
+      expect(selectedTheme, MapThemeMode.light);
+
+      // Verify light mode icon is rendered (tooltip 'Switch to Dark Map')
+      expect(find.byTooltip('Switch to Dark Map'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Switch to Dark Map'));
+      await tester.pumpAndSettle();
+      expect(selectedTheme, MapThemeMode.dark);
+    });
   });
 
   group('Airport Hub Sheet Widget Tests', () {

@@ -21,6 +21,13 @@ class AuthStore extends ChangeNotifier {
   Role get currentRole => _user?.role ?? Role.guest;
   String? get errorMessage => _errorMessage;
 
+  /// Clears a stale error so it doesn't carry over between auth screens.
+  void clearError() {
+    if (_errorMessage == null) return;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   Future<void> restoreSession() async {
     _isLoading = true;
     notifyListeners();

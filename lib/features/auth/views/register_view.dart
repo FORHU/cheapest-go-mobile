@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cheapest_go_mobile/features/auth/components/auth_form_widgets.dart';
 import 'package:cheapest_go_mobile/features/auth/contracts/auth_contract.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 
@@ -11,10 +12,19 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView> {
+  static const int _minPasswordLength = 8;
+
+  final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => authStore.clearError());
+  }
 
   @override
   void dispose() {
@@ -25,13 +35,24 @@ class _RegisterViewState extends State<RegisterView> {
     super.dispose();
   }
 
+  String? _validatePassword(String? value) {
+    final v = value ?? '';
+    if (v.isEmpty) return 'Enter a password';
+    if (v.length < _minPasswordLength) {
+      return 'Use at least $_minPasswordLength characters';
+    }
+    return null;
+  }
+
   Future<void> _submit() async {
+    FocusScope.of(context).unfocus();
+    if (!(_formKey.currentState?.validate() ?? false)) return;
     final ok = await authStore.register(
       RegisterInput(
-        email: _emailController.text,
+        email: _emailController.text.trim(),
         password: _passwordController.text,
-        firstName: _firstNameController.text,
-        lastName: _lastNameController.text,
+        firstName: _firstNameController.text.trim(),
+        lastName: _lastNameController.text.trim(),
       ),
     );
     if (ok && mounted) {
@@ -46,86 +67,78 @@ class _RegisterViewState extends State<RegisterView> {
       body: ListenableBuilder(
         listenable: authStore,
         builder: (context, _) {
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                const Text(
-                  'Join CheapestGo',
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 20),
-                if (authStore.errorMessage != null) ...[
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.red.withValues(alpha: 0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Text(
-                      authStore.errorMessage!,
-                      style: const TextStyle(color: Colors.red),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _firstNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'First Name',
-                          border: OutlineInputBorder(),
-                        ),
+          final loading = authStore.isLoading;
+          return SafeArea(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: AutofillGroup(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const AuthHeader(title: 'Join CheapestGo'),
+                      const SizedBox(height: 20),
+                      if (authStore.errorMessage != null) ...[
+                        AuthErrorBanner(message: authStore.errorMessage!),
+                        const SizedBox(height: 16),
+                      ],
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: AuthTextField(
+                              controller: _firstNameController,
+                              label: 'First Name',
+                              textCapitalization: TextCapitalization.words,
+                              autofillHints: const [AutofillHints.givenName],
+                              validator: requiredField('first name'),
+                              enabled: !loading,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: AuthTextField(
+                              controller: _lastNameController,
+                              label: 'Last Name',
+                              textCapitalization: TextCapitalization.words,
+                              autofillHints: const [AutofillHints.familyName],
+                              validator: requiredField('last name'),
+                              enabled: !loading,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: TextField(
-                        controller: _lastNameController,
-                        decoration: const InputDecoration(
-                          labelText: 'Last Name',
-                          border: OutlineInputBorder(),
-                        ),
+                      const SizedBox(height: 16),
+                      AuthTextField(
+                        controller: _emailController,
+                        label: 'Email',
+                        icon: Icons.email_outlined,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        validator: validateEmail,
+                        enabled: !loading,
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
-                    border: OutlineInputBorder(),
+                      const SizedBox(height: 16),
+                      AuthPasswordField(
+                        controller: _passwordController,
+                        label: 'Password',
+                        helperText: 'Minimum $_minPasswordLength characters',
+                        autofillHints: const [AutofillHints.newPassword],
+                        validator: _validatePassword,
+                        onFieldSubmitted: (_) => _submit(),
+                        enabled: !loading,
+                      ),
+                      const SizedBox(height: 24),
+                      AuthSubmitButton(
+                        label: 'Create Account',
+                        isLoading: loading,
+                        onPressed: _submit,
+                      ),
+                    ],
                   ),
                 ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  decoration: const InputDecoration(
-                    labelText: 'Password (min 8 chars)',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: authStore.isLoading ? null : _submit,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: authStore.isLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('Create Account'),
-                ),
-              ],
+              ),
             ),
           );
         },
