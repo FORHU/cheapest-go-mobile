@@ -1,193 +1,221 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cheapest_go_mobile/features/hotels/api/hotels_client.dart';
-import 'package:cheapest_go_mobile/features/hotels/stores/hotels_store.dart';
-import 'package:cheapest_go_mobile/shared/utils/currency.dart';
+import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
+import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
+import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
+import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
+/// Taxes and fees on a stay, as a share of the room total (mock rate).
+const double kStayTaxRate = 0.12;
+
+int stayTaxes(int subtotal) => (subtotal * kStayTaxRate).round();
+
+/// Review and pay for a stay. Payment is mocked: nothing is charged.
 class HotelCheckoutView extends StatefulWidget {
-  const HotelCheckoutView({super.key});
+  const HotelCheckoutView({
+    required this.hotelId,
+    required this.roomId,
+    this.catalog = travelCatalog,
+    super.key,
+  });
+
+  final String hotelId;
+  final String roomId;
+  final TravelCatalog catalog;
 
   @override
   State<HotelCheckoutView> createState() => _HotelCheckoutViewState();
 }
 
 class _HotelCheckoutViewState extends State<HotelCheckoutView> {
-  final _firstNameController = TextEditingController();
-  final _lastNameController = TextEditingController();
-  final _emailController = TextEditingController();
-  bool _submitting = false;
-  String? _statusMessage;
+  final _formKey = GlobalKey<FormState>();
+  final _name = TextEditingController();
+  final _email = TextEditingController();
+  bool _paying = false;
 
   @override
   void dispose() {
-    _firstNameController.dispose();
-    _lastNameController.dispose();
-    _emailController.dispose();
+    _name.dispose();
+    _email.dispose();
     super.dispose();
   }
 
-  Future<void> _completeBooking() async {
-    final quote = hotelsStore.activePrebook;
-    final hotel = hotelsStore.selectedHotel;
-    if (quote == null) return;
-
-    setState(() {
-      _submitting = true;
-      _statusMessage = null;
-    });
-
-    try {
-      final payment = await hotelsClient.createHotelPayment(
-        prebookId: quote.prebookId,
-        amount: quote.authoritativePrice,
-        currency: quote.chargeCurrency,
-        holderEmail: _emailController.text.trim(),
-        propertyName: hotel?.name,
-        checkIn: hotelsStore.lastCheckIn,
-        checkOut: hotelsStore.lastCheckOut,
-      );
-
-      final bookingId = await hotelsClient.confirmHotelBooking(
-        prebookId: quote.prebookId,
-        paymentIntentId: payment['paymentIntentId'] ?? '',
-        firstName: _firstNameController.text.trim(),
-        lastName: _lastNameController.text.trim(),
-        email: _emailController.text.trim(),
-        propertyName: hotel?.name,
-        checkIn: hotelsStore.lastCheckIn,
-        checkOut: hotelsStore.lastCheckOut,
-        currency: quote.chargeCurrency,
-      );
-
-      if (mounted) {
-        setState(() {
-          _statusMessage = 'Booking confirmed! Reference: $bookingId';
-        });
-      }
-    } catch (err) {
-      if (mounted) {
-        setState(() {
-          _statusMessage = err.toString();
-        });
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _submitting = false);
-      }
-    }
+  Future<void> _pay(Hotel hotel, Room room, int total) async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() => _paying = true);
+    await Future<void>.delayed(const Duration(milliseconds: 600));
+    if (!mounted) return;
+    final s = tripSearchStore;
+    final booking = bookingsStore.addStay(
+      airportCode: hotel.airportCode,
+      hotelName: hotel.name,
+      roomName: room.name,
+      checkIn: s.checkIn,
+      checkOut: s.checkOut,
+      adults: s.adults,
+      total: total,
+    );
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Booked ${hotel.name} · ref ${booking.reference}')),
+    );
+    context.go('/trips');
   }
 
   @override
   Widget build(BuildContext context) {
-    final quote = hotelsStore.activePrebook;
-    final hotel = hotelsStore.selectedHotel;
+    final c = context.colors;
+    final hotel = widget.catalog.hotel(widget.hotelId);
+    final room = hotel?.rooms.where((r) => r.id == widget.roomId).firstOrNull;
+    if (hotel == null || room == null) {
+      return Scaffold(
+        appBar: AppBar(),
+        body: const EmptyState(icon: Icons.hotel_outlined, title: 'Nothing to check out', message: 'Pick a hotel and room first.'),
+      );
+    }
+    final s = tripSearchStore;
+    final subtotal = room.nightlyRate * s.nights;
+    final taxes = stayTaxes(subtotal);
+    final total = subtotal + taxes;
+    final course = widget.catalog.coursesNear(hotel.airportCode).firstOrNull;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Hotel Checkout')),
-      body: quote == null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
+      appBar: AppBar(title: const Text('Review and pay')),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: [
+            AppCard(
+              child: Row(
                 children: [
-                  const Text('No active Prebook quote locked.'),
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: () => context.pop(),
-                    child: const Text('Back to Hotel'),
-                  ),
-                ],
-              ),
-            )
-          : ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
+                  const PhotoPlaceholder(width: 64, height: 64, radius: 10),
+                  const SizedBox(width: 12),
+                  Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        Text(hotel.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                        const SizedBox(height: 3),
+                        Text('${room.name} · ${plural(s.adults, 'adult')}', style: TextStyle(fontSize: 12, color: c.textMuted)),
                         Text(
-                          hotel?.name ?? 'Selected Property',
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          '${formatDayDate(s.checkIn)} → ${formatDayDate(s.checkOut)} · ${plural(s.nights, 'night')}',
+                          style: TextStyle(fontSize: 12, color: c.textMuted),
                         ),
-                        const SizedBox(height: 6),
-                        Text(
-                          'Check-in: ${hotelsStore.lastCheckIn} → Check-out: ${hotelsStore.lastCheckOut}',
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Authoritative Prebook Total (${quote.chargeCurrency}): '
-                          '${CurrencyService.formatPrice(quote.authoritativePrice, quote.chargeCurrency)}',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        if (quote.refundableTag != null)
-                          Text('Policy: ${quote.refundableTag}'),
+                        if (room.cancellation != null)
+                          Text(room.cancellation!, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.success)),
                       ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Lead Guest Details',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _firstNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Lead Guest First Name',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _lastNameController,
-                  decoration: const InputDecoration(
-                    labelText: 'Lead Guest Last Name',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(
-                    labelText: 'Confirmation Email',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                if (_statusMessage != null) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    _statusMessage!,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
                 ],
-                const SizedBox(height: 24),
-                FilledButton(
-                  onPressed: _submitting ? null : _completeBooking,
-                  style: FilledButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                  ),
-                  child: _submitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : Text(
-                          'Pay ${CurrencyService.formatPrice(quote.authoritativePrice, quote.chargeCurrency)}',
-                        ),
-                ),
-              ],
+              ),
             ),
+            if (course != null) ...[
+              const SizedBox(height: 14),
+              AppCard(
+                color: c.secondary,
+                borderColor: c.secondaryBorder,
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(10)),
+                      child: Icon(Icons.golf_course_rounded, color: c.accent, size: 20),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text('Add a tee time near ${hotel.airportCode}',
+                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.onSecondary)),
+                          Text('${course.name} · from ${formatPeso(course.pricePerPlayer)}',
+                              style: TextStyle(fontSize: 12, color: c.onSecondary)),
+                        ],
+                      ),
+                    ),
+                    TextButton(onPressed: () => context.go('/golf'), child: const Text('Add')),
+                  ],
+                ),
+              ),
+            ],
+            const SizedBox(height: 18),
+            const UiLabel('Lead guest'),
+            const SizedBox(height: 8),
+            TextFormField(
+              controller: _name,
+              textInputAction: TextInputAction.next,
+              decoration: const InputDecoration(labelText: 'Full name'),
+              validator: (v) => (v ?? '').trim().length < 2 ? 'Enter the lead guest’s name' : null,
+            ),
+            const SizedBox(height: 10),
+            TextFormField(
+              controller: _email,
+              keyboardType: TextInputType.emailAddress,
+              decoration: const InputDecoration(labelText: 'Email for confirmation'),
+              validator: (v) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch((v ?? '').trim()) ? null : 'Enter a valid email',
+            ),
+            const SizedBox(height: 18),
+            AppCard(
+              child: Column(
+                children: [
+                  _Line('${formatPeso(room.nightlyRate)} × ${plural(s.nights, 'night')}', formatPeso(subtotal)),
+                  const SizedBox(height: 8),
+                  _Line('Taxes and fees', formatPeso(taxes)),
+                  const SizedBox(height: 8),
+                  const Divider(),
+                  const SizedBox(height: 8),
+                  _Line('Total', formatPeso(total), bold: true),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: BottomActionBar(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            FilledButton.icon(
+              onPressed: _paying ? null : () => _pay(hotel, room, total),
+              icon: _paying
+                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.lock_outline_rounded, size: 18),
+              label: Text('Pay ${formatPeso(total)}'),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Test mode: no card is charged in this build.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 11, color: c.textMuted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Line extends StatelessWidget {
+  const _Line(this.label, this.value, {this.bold = false});
+
+  final String label;
+  final String value;
+  final bool bold;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Row(
+      children: [
+        Expanded(
+          child: Text(label, style: TextStyle(fontSize: bold ? 15 : 13, fontWeight: bold ? FontWeight.w700 : FontWeight.w400, color: bold ? c.textPrimary : c.textSecondary)),
+        ),
+        Text(value, style: TextStyle(fontSize: bold ? 15 : 13, fontWeight: bold ? FontWeight.w700 : FontWeight.w500, color: bold ? c.accent : c.textPrimary)),
+      ],
     );
   }
 }

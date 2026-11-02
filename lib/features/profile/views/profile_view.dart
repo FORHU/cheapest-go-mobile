@@ -60,15 +60,9 @@ class ProfileView extends StatelessWidget {
               _buildSectionHeader('PREFERENCES', theme),
               const SizedBox(height: 8),
               _buildPreferencesCard(context, theme),
-              const SizedBox(height: 24),
-
-              // 3. Hardware & Acceleration Status Section
-              _buildSectionHeader('DEVICE HARDWARE & AVAILABILITY', theme),
-              const SizedBox(height: 8),
-              _buildDeviceStatusCard(context, theme),
               const SizedBox(height: 32),
 
-              // 4. App Version & Build Footer
+              // 3. App Version & Build Footer
               Center(
                 child: Column(
                   children: [
@@ -80,7 +74,7 @@ class ProfileView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Universal Flight & Stay Engine • Pure Material 3',
+                      'Stays and golf near your arrival airport',
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       ),
@@ -536,69 +530,7 @@ class ProfileView extends StatelessWidget {
     );
   }
 
-  Widget _buildDeviceStatusCard(BuildContext context, ThemeData theme) {
-    final colorScheme = theme.colorScheme;
-    final caps = uiSettingsStore.deviceCapabilities;
-    final ramMb = caps?.totalRamMb;
-    final ramText = ramMb != null ? '${(ramMb / 1024).toStringAsFixed(1)} GB' : 'Standard Memory';
-    final abiText = caps?.is64Bit == true ? '64-bit ABI' : '32-bit Legacy ABI';
-    final is3dSupported = uiSettingsStore.is3dSupported;
 
-    return Card(
-      elevation: 0,
-      color: colorScheme.surfaceContainer,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: BorderSide(
-          color: colorScheme.outlineVariant.withValues(alpha: 0.5),
-        ),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        leading: _buildLeadingIcon(
-          Icons.memory_rounded,
-          is3dSupported ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-          theme,
-        ),
-        title: const Text(
-          'Hardware Capability',
-          style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-        ),
-        subtitle: Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                is3dSupported
-                    ? '3D Globe Acceleration Supported'
-                    : (uiSettingsStore.no3dReasonDescription ?? '3D Globe acceleration unavailable'),
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w500,
-                  color: is3dSupported
-                      ? const Color(0xFF10B981)
-                      : const Color(0xFFF59E0B),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'Reported Hardware: $ramText • $abiText',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
-                  fontSize: 11,
-                ),
-              ),
-            ],
-          ),
-        ),
-        trailing: Icon(
-          is3dSupported ? Icons.check_circle : Icons.info_outline,
-          color: is3dSupported ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-        ),
-      ),
-    );
-  }
 
   Widget _buildLeadingIcon(IconData icon, Color color, ThemeData theme) {
     return Container(
