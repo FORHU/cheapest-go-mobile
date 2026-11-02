@@ -6,7 +6,10 @@ import 'package:cheapest_go_mobile/shared/lib/token.dart';
 import 'package:cheapest_go_mobile/shared/stores/saved_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
-const _kMapboxToken = String.fromEnvironment('MAPBOX_ACCESS_TOKEN');
+const _kMapboxToken = String.fromEnvironment(
+  'MAPBOX_PUBLIC_TOKEN',
+  defaultValue: String.fromEnvironment('MAPBOX_ACCESS_TOKEN'),
+);
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
