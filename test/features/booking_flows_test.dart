@@ -22,7 +22,7 @@ void main() {
     await tester.tap(find.text('Search near MNL'));
     await tester.pumpAndSettle();
     expect(find.text('MNL'), findsWidgets);
-    expect(find.text('Stays nearby · 4'), findsOneWidget);
+    expect(find.text('Stays nearby · 10'), findsOneWidget);
 
     await tester.tap(find.text('Terminal 3 Garden Hotel'));
     await tester.pumpAndSettle();
@@ -113,12 +113,13 @@ void main() {
 
   testWidgets('hotel results filter by free shuttle', (tester) async {
     await pumpApp(tester, location: '/hotels');
-    expect(find.text('Bay Airport Suites'), findsOneWidget);
+    // Nearest first: the pod hotel (no shuttle) leads the MNL list.
+    expect(find.text('Transit Pods NAIA'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Free shuttle'));
     await tester.tap(find.text('Free shuttle'));
     await tester.pumpAndSettle();
-    expect(find.text('Bay Airport Suites'), findsNothing);
+    expect(find.text('Transit Pods NAIA'), findsNothing);
     expect(find.text('Terminal 3 Garden Hotel'), findsOneWidget);
   });
 
@@ -133,7 +134,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Saved'));
     await tester.pumpAndSettle();
-    expect(find.text('Terminal 3 Garden Hotel'), findsOneWidget);
+    expect(find.text('Transit Pods NAIA'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

@@ -3,6 +3,7 @@ import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/shared/lib/token.dart';
+import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/saved_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
@@ -19,6 +20,7 @@ Future<void> main() async {
   await tokenStorage.init();
   await uiSettingsStore.init();
   await savedStaysStore.init();
+  bookingsStore.seedDemoHistory();
   // Fire-and-forget session validation on startup
   authStore.restoreSession();
   runApp(const CheapestGoApp());

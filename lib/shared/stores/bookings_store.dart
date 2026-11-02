@@ -122,6 +122,35 @@ class BookingsStore extends ChangeNotifier {
     ));
   }
 
+  /// Fills the store with a few earlier trips so Trips › Past has something
+  /// to show in the mock build. Dates are relative to today.
+  void seedDemoHistory() {
+    final today = dateOnly(_clock());
+    DateTime ago(int days) => today.subtract(Duration(days: days));
+    addFlight(
+      origin: 'MNL', destination: 'TAG', airline: 'Islas Express', flightNo: 'IX 412',
+      day: ago(58), departs: '07:40', arrives: '09:05', stops: 'Non-stop', passengers: 2, total: 9480,
+    );
+    addStay(
+      airportCode: 'TAG', hotelName: 'Alona Beach Resort', roomName: _demoRoom,
+      checkIn: ago(58), checkOut: ago(54), adults: 2, total: 30910,
+    );
+    addTeeTime(
+      airportCode: 'TAG', courseName: 'Panglao Ridge Golf', courseMeta: '18 holes · Par 72 · buggy included',
+      day: ago(56), teeTime: '07:45', players: 2, total: 10400,
+    );
+    addStay(
+      airportCode: 'CRK', hotelName: 'Freeport Runway Hotel', roomName: _demoRoom,
+      checkIn: ago(121), checkOut: ago(119), adults: 1, total: 9180,
+    );
+    addTeeTime(
+      airportCode: 'CRK', courseName: 'Mimosa Greens', courseMeta: '36 holes · Par 72 · buggy included',
+      day: ago(120), teeTime: '06:45', players: 1, total: 6500,
+    );
+  }
+
+  static const _demoRoom = 'Deluxe King';
+
   Booking _add(Booking booking) {
     _bookings.add(booking);
     notifyListeners();

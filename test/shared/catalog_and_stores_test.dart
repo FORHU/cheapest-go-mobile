@@ -47,6 +47,34 @@ void main() {
       expect(catalog.hotel('missing'), isNull);
     });
 
+    test('every arrival airport has plenty of stays and at least one course', () {
+      expect(catalog.airports().length, greaterThanOrEqualTo(10));
+      for (final a in catalog.airports()) {
+        expect(catalog.hotelsNear(a.code).length, greaterThanOrEqualTo(4), reason: a.code);
+        expect(catalog.coursesNear(a.code), isNotEmpty, reason: a.code);
+      }
+    });
+
+    test('ids are unique and every origin can fly to every arrival', () {
+      final hotelIds = [for (final a in catalog.airports()) ...catalog.hotelsNear(a.code).map((h) => h.id)];
+      expect(hotelIds.toSet().length, hotelIds.length);
+      final courseIds = [for (final a in catalog.airports()) ...catalog.coursesNear(a.code).map((c) => c.id)];
+      expect(courseIds.toSet().length, courseIds.length);
+      final origins = catalog.origins().map((o) => o.code).toList();
+      expect(origins.toSet().length, origins.length);
+      for (final from in origins) {
+        for (final to in catalog.airports()) {
+          if (from == to.code) continue;
+          expect(catalog.flights(from, to.code), hasLength(5), reason: '$from → ${to.code}');
+        }
+      }
+    });
+
+    test('domestic hops use local carriers, international ones do not', () {
+      expect(catalog.flights('MNL', 'CEB').map((f) => f.airline), contains('Islas Express'));
+      expect(catalog.flights('BKK', 'MNL').map((f) => f.airline), isNot(contains('Islas Express')));
+    });
+
     test('stays sort by distance and courses by drive time', () {
       final hotels = catalog.hotelsNear('MNL');
       final distances = hotels.map((h) => h.distanceKm).toList();
@@ -57,7 +85,7 @@ void main() {
 
     test('flights are stable, cheapest first, and resolvable by id', () {
       final offers = catalog.flights('SIN', 'MNL');
-      expect(offers, hasLength(4));
+      expect(offers, hasLength(5));
       expect(offers.map((f) => f.price).toList(), [...offers.map((f) => f.price)]..sort());
       expect(catalog.flights('SIN', 'MNL').first.flightNo, offers.first.flightNo);
       expect(catalog.flight(offers.last.id)?.departs, offers.last.departs);
@@ -137,6 +165,14 @@ void main() {
       expect(stay.when, 'Sat, Nov 14 → Tue, Nov 17 · 3 nights');
       expect(store.past.single.kind, BookingKind.teeTime);
       expect(store.past.single.reference, startsWith('CG-T'));
+    });
+
+    test('demo history fills Trips › Past only', () {
+      final store = BookingsStore(random: Random(2), clock: () => DateTime(2026, 11, 2));
+      store.seedDemoHistory();
+      expect(store.upcoming, isEmpty);
+      expect(store.past, hasLength(5));
+      expect(store.past.map((b) => b.kind).toSet(), {BookingKind.flight, BookingKind.stay, BookingKind.teeTime});
     });
 
     test('stay taxes are 12% of the room total', () {
