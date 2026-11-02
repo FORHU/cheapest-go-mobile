@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 
 /// Design tokens — colors for CheapestGo Mobile.
 ///
-/// Refactored to align with the minimalist, high-contrast, frosted-glass
-/// aesthetic evaluated from gate-closes-app-v2.
+/// Mirrors the v1 web theme (`cheapest-go-app/src/app/globals.css`): blue 600
+/// primary, blue 50 secondary, shadcn neutral greys, and the dark-mode values
+/// from its `.dark` block.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -12,6 +13,7 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.surface,
     required this.surfaceElevated,
     required this.surfacePressed,
+    required this.surfaceMuted,
     required this.glass,
     required this.glassStrong,
     required this.accent,
@@ -20,40 +22,53 @@ class AppColors extends ThemeExtension<AppColors> {
     required this.accentGlow20,
     required this.accentWarm,
     required this.accentDark,
+    required this.secondary,
+    required this.onSecondary,
+    required this.secondaryBorder,
     required this.textPrimary,
     required this.textSecondary,
     required this.textMuted,
     required this.textSubtle,
+    required this.label,
     required this.border,
     required this.borderStrong,
     required this.hairline,
+    required this.photo,
+    required this.onPhoto,
+    required this.golfSoft,
+    required this.onGolfSoft,
+    required this.successSoft,
+    required this.onSuccessSoft,
     required this.error,
     required this.success,
     required this.warning,
   });
 
-  /// App/scaffold background canvas.
+  /// App/scaffold background (v1 `surface-gray`).
   final Color background;
 
   /// Grouped background canvas.
   final Color backgroundCanvas;
 
-  /// Card/surface fill.
+  /// Card/surface fill (v1 `card`).
   final Color surface;
 
-  /// Elevated surface.
+  /// Elevated surface (sheets, bars).
   final Color surfaceElevated;
 
   /// Surface while pressed.
   final Color surfacePressed;
 
-  /// Frosted glass tint.
+  /// Segmented control track and tag fill (v1 `muted`).
+  final Color surfaceMuted;
+
+  /// Frosted glass tint, used only over the map.
   final Color glass;
 
   /// Dense frosted glass for floating navigation and headers.
   final Color glassStrong;
 
-  /// CheapestGo brand accent: electric royal cobalt.
+  /// Brand primary (v1 `primary`).
   final Color accent;
 
   /// Foreground on accent fills.
@@ -62,62 +77,133 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color accentGlow15;
   final Color accentGlow20;
 
-  /// Warm accent (amber gold) for verified deals and rating stars.
+  /// Warm accent for rating stars.
   final Color accentWarm;
 
-  /// Obsidian / midnight slate for hero surfaces.
+  /// Obsidian hero surface (v1 `obsidian`).
   final Color accentDark;
 
-  /// Primary high-contrast text (Slate 900).
+  /// Soft blue fill for secondary buttons and highlights (v1 `secondary`).
+  final Color secondary;
+
+  /// Text on [secondary] (v1 `secondary-foreground`).
+  final Color onSecondary;
+
+  /// Border for [secondary] surfaces.
+  final Color secondaryBorder;
+
+  /// Primary text (v1 `foreground`).
   final Color textPrimary;
 
-  /// Secondary text (Slate 600).
+  /// Secondary text.
   final Color textSecondary;
 
-  /// Muted helper text (Slate 400).
+  /// Muted helper text (v1 `muted-foreground`).
   final Color textMuted;
 
   /// Low-emphasis text / disabled state.
   final Color textSubtle;
 
-  /// Crisp hairline border.
+  /// Uppercase micro label (v1 `text-ui-label`).
+  final Color label;
+
+  /// Hairline border (v1 `border`).
   final Color border;
 
   /// Strong border for focused cards.
   final Color borderStrong;
 
-  /// Ultra-fine hairline for glass edges.
+  /// Ultra-fine divider.
   final Color hairline;
+
+  /// Photo placeholder fill and its text.
+  final Color photo;
+  final Color onPhoto;
+
+  /// Golf course placeholder fill and its text.
+  final Color golfSoft;
+  final Color onGolfSoft;
+
+  /// Confirmed / refundable pill fill and its text.
+  final Color successSoft;
+  final Color onSuccessSoft;
 
   final Color error;
   final Color success;
   final Color warning;
 
-  /// Default Light Theme: crisp, clean, breathable canvas with crisp obsidian text.
   static const light = AppColors(
-    background: Color(0xFFF8FAFC),
-    backgroundCanvas: Color(0xFFF1F5F9),
+    background: Color(0xFFF9FAFB),
+    backgroundCanvas: Color(0xFFF3F4F6),
     surface: Color(0xFFFFFFFF),
     surfaceElevated: Color(0xFFFFFFFF),
-    surfacePressed: Color(0xFFF1F5F9),
-    glass: Color(0xD9FFFFFF),
+    surfacePressed: Color(0xFFF5F5F5),
+    surfaceMuted: Color(0xFFF0F0F0),
+    glass: Color(0xB3FFFFFF),
     glassStrong: Color(0xF2FFFFFF),
-    accent: Color(0xFF0052FF),
+    accent: Color(0xFF2563EB),
     accentOn: Color(0xFFFFFFFF),
-    accentGlow15: Color(0x260052FF),
-    accentGlow20: Color(0x330052FF),
+    accentGlow15: Color(0x262563EB),
+    accentGlow20: Color(0x332563EB),
     accentWarm: Color(0xFFF59E0B),
-    accentDark: Color(0xFF0B132B),
-    textPrimary: Color(0xFF0F172A),
-    textSecondary: Color(0xFF475569),
-    textMuted: Color(0xFF94A3B8),
-    textSubtle: Color(0xFFCBD5E1),
-    border: Color(0xFFE2E8F0),
-    borderStrong: Color(0xFFCBD5E1),
-    hairline: Color(0x140F172A),
-    error: Color(0xFFEF4444),
-    success: Color(0xFF10B981),
-    warning: Color(0xFFF59E0B),
+    accentDark: Color(0xFF020617),
+    secondary: Color(0xFFEFF6FF),
+    onSecondary: Color(0xFF1E3A8A),
+    secondaryBorder: Color(0xFFBFDBFE),
+    textPrimary: Color(0xFF0A0A0A),
+    textSecondary: Color(0xFF404040),
+    textMuted: Color(0xFF737373),
+    textSubtle: Color(0xFFA3A3A3),
+    label: Color(0xFF64748B),
+    border: Color(0xFFE5E5E5),
+    borderStrong: Color(0xFFD4D4D4),
+    hairline: Color(0xFFF0F0F0),
+    photo: Color(0xFFDBEAFE),
+    onPhoto: Color(0xFF1E3A8A),
+    golfSoft: Color(0xFFDCFCE7),
+    onGolfSoft: Color(0xFF166534),
+    successSoft: Color(0xFFDCFCE7),
+    onSuccessSoft: Color(0xFF166534),
+    error: Color(0xFFDC2626),
+    success: Color(0xFF047857),
+    warning: Color(0xFFB45309),
+  );
+
+  static const dark = AppColors(
+    background: Color(0xFF0A0A0A),
+    backgroundCanvas: Color(0xFF0A0A0A),
+    surface: Color(0xFF171717),
+    surfaceElevated: Color(0xFF1F1F1F),
+    surfacePressed: Color(0xFF262626),
+    surfaceMuted: Color(0xFF262626),
+    glass: Color(0x0AFFFFFF),
+    glassStrong: Color(0xF2171717),
+    accent: Color(0xFF3B82F6),
+    accentOn: Color(0xFFFFFFFF),
+    accentGlow15: Color(0x263B82F6),
+    accentGlow20: Color(0x333B82F6),
+    accentWarm: Color(0xFFFBBF24),
+    accentDark: Color(0xFF020617),
+    secondary: Color(0xFF172554),
+    onSecondary: Color(0xFFBFDBFE),
+    secondaryBorder: Color(0xFF1E3A8A),
+    textPrimary: Color(0xFFFAFAFA),
+    textSecondary: Color(0xFFD4D4D4),
+    textMuted: Color(0xFFA1A1A1),
+    textSubtle: Color(0xFF737373),
+    label: Color(0xFF94A3B8),
+    border: Color(0x1AFFFFFF),
+    borderStrong: Color(0x26FFFFFF),
+    hairline: Color(0x14FFFFFF),
+    photo: Color(0xFF1E293B),
+    onPhoto: Color(0xFFBFDBFE),
+    golfSoft: Color(0xFF14532D),
+    onGolfSoft: Color(0xFFBBF7D0),
+    successSoft: Color(0xFF14532D),
+    onSuccessSoft: Color(0xFFBBF7D0),
+    error: Color(0xFFF87171),
+    success: Color(0xFF34D399),
+    warning: Color(0xFFFBBF24),
   );
 
   @override
@@ -127,6 +213,7 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? surface,
     Color? surfaceElevated,
     Color? surfacePressed,
+    Color? surfaceMuted,
     Color? glass,
     Color? glassStrong,
     Color? accent,
@@ -135,13 +222,23 @@ class AppColors extends ThemeExtension<AppColors> {
     Color? accentGlow20,
     Color? accentWarm,
     Color? accentDark,
+    Color? secondary,
+    Color? onSecondary,
+    Color? secondaryBorder,
     Color? textPrimary,
     Color? textSecondary,
     Color? textMuted,
     Color? textSubtle,
+    Color? label,
     Color? border,
     Color? borderStrong,
     Color? hairline,
+    Color? photo,
+    Color? onPhoto,
+    Color? golfSoft,
+    Color? onGolfSoft,
+    Color? successSoft,
+    Color? onSuccessSoft,
     Color? error,
     Color? success,
     Color? warning,
@@ -152,6 +249,7 @@ class AppColors extends ThemeExtension<AppColors> {
       surface: surface ?? this.surface,
       surfaceElevated: surfaceElevated ?? this.surfaceElevated,
       surfacePressed: surfacePressed ?? this.surfacePressed,
+      surfaceMuted: surfaceMuted ?? this.surfaceMuted,
       glass: glass ?? this.glass,
       glassStrong: glassStrong ?? this.glassStrong,
       accent: accent ?? this.accent,
@@ -160,13 +258,23 @@ class AppColors extends ThemeExtension<AppColors> {
       accentGlow20: accentGlow20 ?? this.accentGlow20,
       accentWarm: accentWarm ?? this.accentWarm,
       accentDark: accentDark ?? this.accentDark,
+      secondary: secondary ?? this.secondary,
+      onSecondary: onSecondary ?? this.onSecondary,
+      secondaryBorder: secondaryBorder ?? this.secondaryBorder,
       textPrimary: textPrimary ?? this.textPrimary,
       textSecondary: textSecondary ?? this.textSecondary,
       textMuted: textMuted ?? this.textMuted,
       textSubtle: textSubtle ?? this.textSubtle,
+      label: label ?? this.label,
       border: border ?? this.border,
       borderStrong: borderStrong ?? this.borderStrong,
       hairline: hairline ?? this.hairline,
+      photo: photo ?? this.photo,
+      onPhoto: onPhoto ?? this.onPhoto,
+      golfSoft: golfSoft ?? this.golfSoft,
+      onGolfSoft: onGolfSoft ?? this.onGolfSoft,
+      successSoft: successSoft ?? this.successSoft,
+      onSuccessSoft: onSuccessSoft ?? this.onSuccessSoft,
       error: error ?? this.error,
       success: success ?? this.success,
       warning: warning ?? this.warning,
@@ -176,30 +284,42 @@ class AppColors extends ThemeExtension<AppColors> {
   @override
   AppColors lerp(ThemeExtension<AppColors>? other, double t) {
     if (other is! AppColors) return this;
+    Color l(Color a, Color b) => Color.lerp(a, b, t)!;
     return AppColors(
-      background: Color.lerp(background, other.background, t)!,
-      backgroundCanvas: Color.lerp(backgroundCanvas, other.backgroundCanvas, t)!,
-      surface: Color.lerp(surface, other.surface, t)!,
-      surfaceElevated: Color.lerp(surfaceElevated, other.surfaceElevated, t)!,
-      surfacePressed: Color.lerp(surfacePressed, other.surfacePressed, t)!,
-      glass: Color.lerp(glass, other.glass, t)!,
-      glassStrong: Color.lerp(glassStrong, other.glassStrong, t)!,
-      accent: Color.lerp(accent, other.accent, t)!,
-      accentOn: Color.lerp(accentOn, other.accentOn, t)!,
-      accentGlow15: Color.lerp(accentGlow15, other.accentGlow15, t)!,
-      accentGlow20: Color.lerp(accentGlow20, other.accentGlow20, t)!,
-      accentWarm: Color.lerp(accentWarm, other.accentWarm, t)!,
-      accentDark: Color.lerp(accentDark, other.accentDark, t)!,
-      textPrimary: Color.lerp(textPrimary, other.textPrimary, t)!,
-      textSecondary: Color.lerp(textSecondary, other.textSecondary, t)!,
-      textMuted: Color.lerp(textMuted, other.textMuted, t)!,
-      textSubtle: Color.lerp(textSubtle, other.textSubtle, t)!,
-      border: Color.lerp(border, other.border, t)!,
-      borderStrong: Color.lerp(borderStrong, other.borderStrong, t)!,
-      hairline: Color.lerp(hairline, other.hairline, t)!,
-      error: Color.lerp(error, other.error, t)!,
-      success: Color.lerp(success, other.success, t)!,
-      warning: Color.lerp(warning, other.warning, t)!,
+      background: l(background, other.background),
+      backgroundCanvas: l(backgroundCanvas, other.backgroundCanvas),
+      surface: l(surface, other.surface),
+      surfaceElevated: l(surfaceElevated, other.surfaceElevated),
+      surfacePressed: l(surfacePressed, other.surfacePressed),
+      surfaceMuted: l(surfaceMuted, other.surfaceMuted),
+      glass: l(glass, other.glass),
+      glassStrong: l(glassStrong, other.glassStrong),
+      accent: l(accent, other.accent),
+      accentOn: l(accentOn, other.accentOn),
+      accentGlow15: l(accentGlow15, other.accentGlow15),
+      accentGlow20: l(accentGlow20, other.accentGlow20),
+      accentWarm: l(accentWarm, other.accentWarm),
+      accentDark: l(accentDark, other.accentDark),
+      secondary: l(secondary, other.secondary),
+      onSecondary: l(onSecondary, other.onSecondary),
+      secondaryBorder: l(secondaryBorder, other.secondaryBorder),
+      textPrimary: l(textPrimary, other.textPrimary),
+      textSecondary: l(textSecondary, other.textSecondary),
+      textMuted: l(textMuted, other.textMuted),
+      textSubtle: l(textSubtle, other.textSubtle),
+      label: l(label, other.label),
+      border: l(border, other.border),
+      borderStrong: l(borderStrong, other.borderStrong),
+      hairline: l(hairline, other.hairline),
+      photo: l(photo, other.photo),
+      onPhoto: l(onPhoto, other.onPhoto),
+      golfSoft: l(golfSoft, other.golfSoft),
+      onGolfSoft: l(onGolfSoft, other.onGolfSoft),
+      successSoft: l(successSoft, other.successSoft),
+      onSuccessSoft: l(onSuccessSoft, other.onSuccessSoft),
+      error: l(error, other.error),
+      success: l(success, other.success),
+      warning: l(warning, other.warning),
     );
   }
 }
@@ -208,4 +328,3 @@ extension AppColorsContextX on BuildContext {
   AppColors get colors =>
       Theme.of(this).extension<AppColors>() ?? AppColors.light;
 }
-

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
-import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 
 /// Shared UI & Display Settings Store (mirrors `SettingsContext.tsx` & `ui.store.ts`)
 class UiSettingsStore extends ChangeNotifier {
@@ -66,7 +65,6 @@ class UiSettingsStore extends ChangeNotifier {
       }
       notifyListeners();
     } catch (_) {}
-    await CurrencyService.refreshExchangeRates();
   }
 
   Future<void> setDisplayCurrency(String currency) async {
