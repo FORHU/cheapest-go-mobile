@@ -2,7 +2,7 @@ import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
-enum BookingKind { stay, teeTime }
+enum BookingKind { flight, stay, teeTime }
 
 class Booking {
   const Booking({
@@ -73,6 +73,30 @@ class BookingsStore extends ChangeNotifier {
       start: checkIn,
       when: '${formatDayDate(checkIn)} → ${formatDayDate(checkOut)} · ${plural(nights, 'night')}',
       detail: '$roomName · ${plural(adults, 'adult')}',
+      total: total,
+    ));
+  }
+
+  Booking addFlight({
+    required String origin,
+    required String destination,
+    required String airline,
+    required String flightNo,
+    required DateTime day,
+    required String departs,
+    required String arrives,
+    required String stops,
+    required int passengers,
+    required int total,
+  }) {
+    return _add(Booking(
+      reference: _newReference('CG-F'),
+      kind: BookingKind.flight,
+      airportCode: destination,
+      title: '$airline $flightNo',
+      start: day,
+      when: '${formatDayDate(day)} · ${formatClock(departs)} → ${formatClock(arrives)}',
+      detail: '$origin → $destination · $stops · ${plural(passengers, 'passenger')}',
       total: total,
     ));
   }

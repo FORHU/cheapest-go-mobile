@@ -41,6 +41,12 @@ String formatTeeTime(String hhmm) {
   return '$h12:${parts[1]} $suffix';
 }
 
+/// Like [formatTeeTime], keeping a next-day marker: `01:10+1` → `1:10 AM +1`.
+String formatClock(String hhmm) {
+  if (!hhmm.endsWith('+1')) return formatTeeTime(hhmm);
+  return '${formatTeeTime(hhmm.substring(0, hhmm.length - 2))} +1';
+}
+
 /// `1` → `1 night`, `3` → `3 nights`.
 String plural(int n, String one, [String? many]) => '$n ${n == 1 ? one : (many ?? '${one}s')}';
 

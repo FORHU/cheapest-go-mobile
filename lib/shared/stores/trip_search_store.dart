@@ -2,7 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 /// What the traveler is looking for on arrival.
-enum SearchMode { stays, golf, both }
+enum SearchMode { flights, stays, golf, both }
 
 /// The current search: arrival airport, dates, and party size. Home edits it;
 /// the airport hub, hotel, golf, and checkout screens read it.
@@ -14,6 +14,7 @@ class TripSearchStore extends ChangeNotifier {
   }
 
   String _airportCode = 'MNL';
+  String _originCode = 'SIN';
   late DateTime _checkIn;
   late DateTime _checkOut;
   int _adults = 2;
@@ -21,6 +22,9 @@ class TripSearchStore extends ChangeNotifier {
   final List<String> _recentAirports = [];
 
   String get airportCode => _airportCode;
+
+  /// Where the traveler flies from; [airportCode] is where they land.
+  String get originCode => _originCode;
   DateTime get checkIn => _checkIn;
   DateTime get checkOut => _checkOut;
   int get adults => _adults;
@@ -38,6 +42,12 @@ class TripSearchStore extends ChangeNotifier {
   void setAirport(String code) {
     if (_airportCode == code) return;
     _airportCode = code;
+    notifyListeners();
+  }
+
+  void setOrigin(String code) {
+    if (_originCode == code) return;
+    _originCode = code;
     notifyListeners();
   }
 

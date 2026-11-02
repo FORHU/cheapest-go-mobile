@@ -6,6 +6,8 @@ import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/auth/views/forgot_password_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/login_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/register_view.dart';
+import 'package:cheapest_go_mobile/features/flights/views/flight_checkout_view.dart';
+import 'package:cheapest_go_mobile/features/flights/views/flight_results_view.dart';
 import 'package:cheapest_go_mobile/features/golf/views/golf_view.dart';
 import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_checkout_view.dart';
@@ -46,9 +48,11 @@ GoRouter createAppRouter() => GoRouter(
             roomId: state.uri.queryParameters['room'] ?? '',
           ),
         ),
-        // The map's airport sheet still links to flights, which this build
-        // does not book; send those taps to the stays list instead.
-        GoRoute(path: '/flights', redirect: (_, _) => '/hotels'),
+        GoRoute(path: '/flights', builder: (_, _) => const FlightResultsView()),
+        GoRoute(
+          path: '/flight-checkout',
+          builder: (_, state) => FlightCheckoutView(offerId: state.uri.queryParameters['offer'] ?? ''),
+        ),
         GoRoute(path: '/saved', redirect: (_, _) => '/trips'),
         GoRoute(
           path: '/profile',

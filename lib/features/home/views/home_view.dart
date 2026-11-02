@@ -17,15 +17,29 @@ class HomeView extends StatelessWidget {
   void _search(BuildContext context) {
     tripSearchStore.remember();
     final code = tripSearchStore.airportCode;
-    if (tripSearchStore.mode == SearchMode.golf) {
-      context.go('/golf');
-    } else {
-      context.push('/airport/$code');
+    switch (tripSearchStore.mode) {
+      case SearchMode.flights:
+        context.push('/flights');
+      case SearchMode.golf:
+        context.go('/golf');
+      case SearchMode.stays || SearchMode.both:
+        context.push('/airport/$code');
     }
   }
 
   Future<void> _pickDates(BuildContext context) async {
     final today = dateOnly(DateTime.now());
+    if (tripSearchStore.mode == SearchMode.flights) {
+      final day = await showDatePicker(
+        context: context,
+        firstDate: today,
+        lastDate: today.add(const Duration(days: 365)),
+        initialDate: tripSearchStore.checkIn,
+      );
+      // Keep the stay length so hotels and golf still match the trip.
+      if (day != null) tripSearchStore.setDates(day, day.add(Duration(days: tripSearchStore.nights)));
+      return;
+    }
     final range = await showDateRangePicker(
       context: context,
       firstDate: today,
@@ -77,6 +91,8 @@ class HomeView extends StatelessWidget {
       builder: (context, _) {
         final s = tripSearchStore;
         final airport = catalog.airport(s.airportCode);
+        final origin = catalog.origin(s.originCode);
+        final flying = s.mode == SearchMode.flights;
         return SafeArea(
           bottom: false,
           child: ListView(
@@ -111,12 +127,24 @@ class HomeView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SegmentedTabs(
-                      labels: const ['Stays', 'Golf', 'Stay + Golf'],
+                      labels: const ['Flights', 'Stays', 'Golf', 'Stay + Golf'],
                       selected: s.mode.index,
                       onChanged: (i) => s.setMode(SearchMode.values[i]),
                     ),
+                    if (flying) ...[
+                      _SearchField(
+                        label: 'Flying from',
+                        value: origin == null ? s.originCode : '${origin.code} · ${origin.name}, ${origin.city}',
+                        icon: Icons.flight_takeoff_rounded,
+                        onTap: () async {
+                          final code = await showAirportPicker(context, selected: s.originCode, catalog: catalog, departures: true);
+                          if (code != null) s.setOrigin(code);
+                        },
+                      ),
+                      Divider(color: c.hairline),
+                    ],
                     _SearchField(
-                      label: 'Arrival airport',
+                      label: flying ? 'Flying into' : 'Arrival airport',
                       value: airport == null ? s.airportCode : '${airport.code} · ${airport.name}, ${airport.city}',
                       icon: Icons.flight_land_rounded,
                       onTap: () async {
@@ -129,18 +157,24 @@ class HomeView extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _SearchField(
-                            label: 'Dates',
-                            value: formatDateRange(s.checkIn, s.checkOut),
+                            label: flying ? 'Depart' : 'Dates',
+                            value: flying ? formatDayDate(s.checkIn) : formatDateRange(s.checkIn, s.checkOut),
                             onTap: () => _pickDates(context),
                           ),
                         ),
                         SizedBox(height: 48, child: VerticalDivider(color: c.hairline, width: 1)),
                         Expanded(
                           child: _SearchField(
-                            label: s.mode == SearchMode.golf ? 'Players' : 'Guests',
-                            value: s.mode == SearchMode.golf
-                                ? plural(s.players, 'player')
-                                : '${plural(s.adults, 'adult')} · 1 room',
+                            label: switch (s.mode) {
+                              SearchMode.flights => 'Passengers',
+                              SearchMode.golf => 'Players',
+                              _ => 'Guests',
+                            },
+                            value: switch (s.mode) {
+                              SearchMode.flights => plural(s.adults, 'adult'),
+                              SearchMode.golf => plural(s.players, 'player'),
+                              _ => '${plural(s.adults, 'adult')} · 1 room',
+                            },
                             onTap: () => _pickGuests(context),
                           ),
                         ),
@@ -151,7 +185,7 @@ class HomeView extends StatelessWidget {
                       child: FilledButton.icon(
                         onPressed: () => _search(context),
                         icon: const Icon(Icons.search_rounded, size: 18),
-                        label: Text('Search near ${s.airportCode}'),
+                        label: Text(flying ? 'Search flights to ${s.airportCode}' : 'Search near ${s.airportCode}'),
                       ),
                     ),
                   ],
@@ -217,10 +251,9 @@ class HomeView extends StatelessWidget {
             const SizedBox(height: 4),
             Text(a.city, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
             const SizedBox(height: 2),
-            Text(
-              '${plural(stays, 'stay')} · ${plural(courses, 'course')}',
-              style: TextStyle(fontSize: 12, color: c.textMuted),
-            ),
+            // One fact per line keeps every card the same height.
+            Text(plural(stays, 'stay'), maxLines: 1, style: TextStyle(fontSize: 12, color: c.textMuted)),
+            Text(plural(courses, 'course'), maxLines: 1, style: TextStyle(fontSize: 12, color: c.textMuted)),
           ],
         ),
       ),

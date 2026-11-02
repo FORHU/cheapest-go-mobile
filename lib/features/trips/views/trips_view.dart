@@ -83,7 +83,7 @@ class _TripsViewState extends State<TripsView> {
           _BookingCard(booking: b),
           const SizedBox(height: 10),
         ],
-        if (upcoming && entry.value.every((b) => b.kind == BookingKind.stay)) ...[
+        if (upcoming && entry.value.every((b) => b.kind != BookingKind.teeTime)) ...[
           OutlinedButton(onPressed: () => context.go('/golf'), child: const Text('Add a tee time to this trip')),
           const SizedBox(height: 10),
         ],
@@ -156,9 +156,23 @@ class _BookingCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(booking.kind == BookingKind.stay ? Icons.hotel_outlined : Icons.golf_course_rounded, size: 14, color: c.label),
+              Icon(
+                switch (booking.kind) {
+                  BookingKind.flight => Icons.flight_rounded,
+                  BookingKind.stay => Icons.hotel_outlined,
+                  BookingKind.teeTime => Icons.golf_course_rounded,
+                },
+                size: 14,
+                color: c.label,
+              ),
               const SizedBox(width: 6),
-              Expanded(child: UiLabel(booking.kind == BookingKind.stay ? 'Hotel stay' : 'Tee time')),
+              Expanded(
+                child: UiLabel(switch (booking.kind) {
+                  BookingKind.flight => 'Flight',
+                  BookingKind.stay => 'Hotel stay',
+                  BookingKind.teeTime => 'Tee time',
+                }),
+              ),
               const StatusPill('Confirmed'),
             ],
           ),

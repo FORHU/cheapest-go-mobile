@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 
-/// Bottom sheet listing the arrival airports; returns the picked code.
+/// Bottom sheet listing airports; returns the picked code. Lists the arrival
+/// airports unless [departures] is set, then the airports you can fly from.
 Future<String?> showAirportPicker(
   BuildContext context, {
   required String selected,
   TravelCatalog catalog = travelCatalog,
+  bool departures = false,
 }) {
+  final airports = departures ? catalog.origins() : catalog.airports();
   return showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
@@ -20,9 +23,9 @@ Future<String?> showAirportPicker(
           children: [
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
-              child: Text('Arrival airport', style: Theme.of(context).textTheme.titleLarge),
+              child: Text(departures ? 'Flying from' : 'Arrival airport', style: Theme.of(context).textTheme.titleLarge),
             ),
-            for (final a in catalog.airports())
+            for (final a in airports)
               ListTile(
                 onTap: () => Navigator.pop(context, a.code),
                 leading: SizedBox(

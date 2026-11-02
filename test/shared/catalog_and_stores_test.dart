@@ -55,6 +55,28 @@ void main() {
       expect(drives, [...drives]..sort());
     });
 
+    test('flights are stable, cheapest first, and resolvable by id', () {
+      final offers = catalog.flights('SIN', 'MNL');
+      expect(offers, hasLength(4));
+      expect(offers.map((f) => f.price).toList(), [...offers.map((f) => f.price)]..sort());
+      expect(catalog.flights('SIN', 'MNL').first.flightNo, offers.first.flightNo);
+      expect(catalog.flight(offers.last.id)?.departs, offers.last.departs);
+      expect(catalog.flights('MNL', 'MNL'), isEmpty);
+      final connecting = offers.firstWhere((f) => !f.nonStop);
+      expect(connecting.stopover, 'HKG');
+      expect(catalog.flights('HKG', 'MNL').firstWhere((f) => !f.nonStop).stopover, 'TPE');
+    });
+
+    test('arrival clock rolls past midnight', () {
+      const late = FlightOffer(
+        id: 'X-Y-0', airline: 'A', flightNo: 'A 1', origin: 'X', destination: 'Y',
+        departs: '22:30', durationMinutes: 200, stopover: null, baggage: '', price: 1,
+      );
+      expect(late.arrives, '01:50+1');
+      expect(formatClock(late.arrives), '1:50 AM +1');
+      expect(late.durationLabel, '3h 20m');
+    });
+
     test('a hotel is priced from its cheapest room', () {
       final h = catalog.hotel('mnl-t3-garden')!;
       expect(h.fromRate, 4400);

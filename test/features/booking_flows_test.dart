@@ -71,6 +71,36 @@ void main() {
     expect(booking.when, endsWith('6:40 AM'));
   });
 
+  testWidgets('flights: search SIN → MNL, pick the cheapest, pay', (tester) async {
+    final before = bookingsStore.all.length;
+    await pumpApp(tester);
+
+    await tester.tap(find.text('Flights'));
+    await tester.pumpAndSettle();
+    expect(find.text('FLYING FROM'), findsOneWidget);
+    await tester.tap(find.text('Search flights to MNL'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SIN → MNL'), findsOneWidget);
+    await tester.tap(find.text('Non-stop').first);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('1 stop'), findsNothing);
+
+    await tester.tap(find.text('Cheapest').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextFormField, 'Full name (as on passport)'), 'Juan Dela Cruz');
+    await tester.enterText(find.widgetWithText(TextFormField, 'Email for e-ticket'), 'juan@example.com');
+    await tester.tap(find.textContaining('Pay ₱'));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pumpAndSettle();
+
+    expect(bookingsStore.all.length, before + 1);
+    final booking = bookingsStore.all.last;
+    expect(booking.kind, BookingKind.flight);
+    expect(booking.detail, startsWith('SIN → MNL · Non-stop'));
+    expect(find.text(booking.reference), findsOneWidget);
+  });
+
   testWidgets('hotel results filter by free shuttle', (tester) async {
     await pumpApp(tester, location: '/hotels');
     expect(find.text('Bay Airport Suites'), findsOneWidget);

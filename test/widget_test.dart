@@ -88,7 +88,7 @@ void main() {
     for (final label in ['Home', 'Hotels', 'Golf', 'Trips']) {
       expect(find.text(label), findsWidgets);
     }
-    expect(find.text('Flights'), findsNothing);
+    expect(find.text('Flights'), findsOneWidget); // search mode on Home, not a nav tab
     expect(find.byIcon(Icons.public_rounded), findsOneWidget); // Globe dome
   });
 }
