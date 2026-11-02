@@ -137,7 +137,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                         ],
                       ),
                     ),
-                    TextButton(onPressed: () => context.go('/golf'), child: const Text('Add')),
+                    TextButton(onPressed: () => context.push('/golf'), child: const Text('Add')),
                   ],
                 ),
               ),

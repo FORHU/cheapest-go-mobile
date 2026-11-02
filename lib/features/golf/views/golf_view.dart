@@ -66,6 +66,12 @@ class _GolfViewState extends State<GolfView> {
             children: [
               Row(
                 children: [
+                  CircleIconButton(
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: 'Back',
+                    onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Text.rich(
                       TextSpan(children: [

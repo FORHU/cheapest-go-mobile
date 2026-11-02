@@ -71,17 +71,15 @@ void main() {
     expect(booking.when, endsWith('6:40 AM'));
   });
 
-  testWidgets('flights: search SIN → MNL, pick the cheapest, pay', (tester) async {
+  testWidgets('flights tab: SIN → MNL, pick the cheapest non-stop, pay', (tester) async {
     final before = bookingsStore.all.length;
     await pumpApp(tester);
 
     await tester.tap(find.text('Flights'));
     await tester.pumpAndSettle();
-    expect(find.text('FLYING FROM'), findsOneWidget);
-    await tester.tap(find.text('Search flights to MNL'));
-    await tester.pumpAndSettle();
+    expect(find.text('FROM'), findsOneWidget);
+    expect(find.text('SIN'), findsWidgets);
 
-    expect(find.text('SIN → MNL'), findsOneWidget);
     await tester.tap(find.text('Non-stop').first);
     await tester.pumpAndSettle();
     expect(find.textContaining('1 stop'), findsNothing);
@@ -117,6 +115,8 @@ void main() {
     await tester.tap(find.byTooltip('Save hotel').first);
     await tester.pumpAndSettle();
 
+    await tester.tap(find.byTooltip('Back'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Trips'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Saved'));

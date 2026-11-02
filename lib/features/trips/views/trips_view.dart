@@ -84,7 +84,7 @@ class _TripsViewState extends State<TripsView> {
           const SizedBox(height: 10),
         ],
         if (upcoming && entry.value.every((b) => b.kind != BookingKind.teeTime)) ...[
-          OutlinedButton(onPressed: () => context.go('/golf'), child: const Text('Add a tee time to this trip')),
+          OutlinedButton(onPressed: () => context.push('/golf'), child: const Text('Add a tee time to this trip')),
           const SizedBox(height: 10),
         ],
         const SizedBox(height: 8),
@@ -102,7 +102,7 @@ class _TripsViewState extends State<TripsView> {
           icon: Icons.favorite_border_rounded,
           title: 'No saved stays',
           message: 'Tap the heart on a hotel to keep it here.',
-          action: FilledButton(onPressed: () => context.go('/hotels'), child: const Text('Browse hotels')),
+          action: FilledButton(onPressed: () => context.push('/hotels'), child: const Text('Browse hotels')),
         ),
       ];
     }

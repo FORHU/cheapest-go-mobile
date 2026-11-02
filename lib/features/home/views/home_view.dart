@@ -8,38 +8,27 @@ import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_radius.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
-/// Home: pick the arrival airport, dates and guests, then search nearby.
+/// Stay & Play (Home): pick the arrival airport, dates and guests, then find
+/// stays and tee times nearby. Flights have their own tab.
 class HomeView extends StatelessWidget {
   const HomeView({this.catalog = travelCatalog, super.key});
 
   final TravelCatalog catalog;
 
+  static const _modes = [SearchMode.stays, SearchMode.golf, SearchMode.both];
+
   void _search(BuildContext context) {
     tripSearchStore.remember();
     final code = tripSearchStore.airportCode;
-    switch (tripSearchStore.mode) {
-      case SearchMode.flights:
-        context.push('/flights');
-      case SearchMode.golf:
-        context.go('/golf');
-      case SearchMode.stays || SearchMode.both:
-        context.push('/airport/$code');
+    if (tripSearchStore.mode == SearchMode.golf) {
+      context.push('/golf');
+    } else {
+      context.push('/airport/$code');
     }
   }
 
   Future<void> _pickDates(BuildContext context) async {
     final today = dateOnly(DateTime.now());
-    if (tripSearchStore.mode == SearchMode.flights) {
-      final day = await showDatePicker(
-        context: context,
-        firstDate: today,
-        lastDate: today.add(const Duration(days: 365)),
-        initialDate: tripSearchStore.checkIn,
-      );
-      // Keep the stay length so hotels and golf still match the trip.
-      if (day != null) tripSearchStore.setDates(day, day.add(Duration(days: tripSearchStore.nights)));
-      return;
-    }
     final range = await showDateRangePicker(
       context: context,
       firstDate: today,
@@ -91,8 +80,6 @@ class HomeView extends StatelessWidget {
       builder: (context, _) {
         final s = tripSearchStore;
         final airport = catalog.airport(s.airportCode);
-        final origin = catalog.origin(s.originCode);
-        final flying = s.mode == SearchMode.flights;
         return SafeArea(
           bottom: false,
           child: ListView(
@@ -112,7 +99,7 @@ class HomeView extends StatelessWidget {
                   CircleIconButton(
                     icon: Icons.person_outline_rounded,
                     tooltip: 'Profile and account',
-                    onPressed: () => context.push('/profile'),
+                    onPressed: () => context.go('/profile'),
                   ),
                 ],
               ),
@@ -127,24 +114,12 @@ class HomeView extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     SegmentedTabs(
-                      labels: const ['Flights', 'Stays', 'Golf', 'Stay + Golf'],
-                      selected: s.mode.index,
-                      onChanged: (i) => s.setMode(SearchMode.values[i]),
+                      labels: const ['Stays', 'Golf', 'Stay + Golf'],
+                      selected: _modes.indexOf(s.mode).clamp(0, _modes.length - 1),
+                      onChanged: (i) => s.setMode(_modes[i]),
                     ),
-                    if (flying) ...[
-                      _SearchField(
-                        label: 'Flying from',
-                        value: origin == null ? s.originCode : '${origin.code} · ${origin.name}, ${origin.city}',
-                        icon: Icons.flight_takeoff_rounded,
-                        onTap: () async {
-                          final code = await showAirportPicker(context, selected: s.originCode, catalog: catalog, departures: true);
-                          if (code != null) s.setOrigin(code);
-                        },
-                      ),
-                      Divider(color: c.hairline),
-                    ],
                     _SearchField(
-                      label: flying ? 'Flying into' : 'Arrival airport',
+                      label: 'Arrival airport',
                       value: airport == null ? s.airportCode : '${airport.code} · ${airport.name}, ${airport.city}',
                       icon: Icons.flight_land_rounded,
                       onTap: () async {
@@ -157,24 +132,18 @@ class HomeView extends StatelessWidget {
                       children: [
                         Expanded(
                           child: _SearchField(
-                            label: flying ? 'Depart' : 'Dates',
-                            value: flying ? formatDayDate(s.checkIn) : formatDateRange(s.checkIn, s.checkOut),
+                            label: 'Dates',
+                            value: formatDateRange(s.checkIn, s.checkOut),
                             onTap: () => _pickDates(context),
                           ),
                         ),
                         SizedBox(height: 48, child: VerticalDivider(color: c.hairline, width: 1)),
                         Expanded(
                           child: _SearchField(
-                            label: switch (s.mode) {
-                              SearchMode.flights => 'Passengers',
-                              SearchMode.golf => 'Players',
-                              _ => 'Guests',
-                            },
-                            value: switch (s.mode) {
-                              SearchMode.flights => plural(s.adults, 'adult'),
-                              SearchMode.golf => plural(s.players, 'player'),
-                              _ => '${plural(s.adults, 'adult')} · 1 room',
-                            },
+                            label: s.mode == SearchMode.golf ? 'Players' : 'Guests',
+                            value: s.mode == SearchMode.golf
+                                ? plural(s.players, 'player')
+                                : '${plural(s.adults, 'adult')} · 1 room',
                             onTap: () => _pickGuests(context),
                           ),
                         ),
@@ -185,11 +154,34 @@ class HomeView extends StatelessWidget {
                       child: FilledButton.icon(
                         onPressed: () => _search(context),
                         icon: const Icon(Icons.search_rounded, size: 18),
-                        label: Text(flying ? 'Search flights to ${s.airportCode}' : 'Search near ${s.airportCode}'),
+                        label: Text('Search near ${s.airportCode}'),
                       ),
                     ),
                   ],
                 ),
+              ),
+              const SizedBox(height: 14),
+              Row(
+                spacing: 10,
+                children: [
+                  Expanded(
+                    child: _Shortcut(
+                      icon: Icons.hotel_outlined,
+                      title: 'Hotels',
+                      subtitle: 'near ${s.airportCode}',
+                      onTap: () => context.push('/hotels'),
+                    ),
+                  ),
+                  Expanded(
+                    child: _Shortcut(
+                      icon: Icons.golf_course_rounded,
+                      title: 'Tee times',
+                      subtitle: 'near ${s.airportCode}',
+                      golf: true,
+                      onTap: () => context.push('/golf'),
+                    ),
+                  ),
+                ],
               ),
               if (s.recentAirports.isNotEmpty) ...[
                 const SizedBox(height: 24),
@@ -256,6 +248,50 @@ class HomeView extends StatelessWidget {
             Text(plural(courses, 'course'), maxLines: 1, style: TextStyle(fontSize: 12, color: c.textMuted)),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Quick way into hotels or golf near the chosen airport.
+class _Shortcut extends StatelessWidget {
+  const _Shortcut({required this.icon, required this.title, required this.subtitle, required this.onTap, this.golf = false});
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final bool golf;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return AppCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(12),
+      child: Row(
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: golf ? c.golfSoft : c.secondary,
+              borderRadius: BorderRadius.circular(AppRadius.md),
+            ),
+            child: Icon(icon, size: 20, color: golf ? c.onGolfSoft : c.accent),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                Text(subtitle, style: TextStyle(fontSize: 12, color: c.textMuted)),
+              ],
+            ),
+          ),
+          Icon(Icons.chevron_right_rounded, color: c.textSubtle),
+        ],
       ),
     );
   }

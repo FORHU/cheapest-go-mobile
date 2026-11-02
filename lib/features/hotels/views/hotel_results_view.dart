@@ -36,9 +36,43 @@ class _HotelResultsViewState extends State<HotelResultsView> {
     return list;
   }
 
+  Widget _searchPill(BuildContext context, TripSearchStore s) {
+    final c = context.colors;
+    return Material(
+      color: c.surface,
+      shape: StadiumBorder(side: BorderSide(color: c.border)),
+      child: InkWell(
+        customBorder: const StadiumBorder(),
+        onTap: () async {
+          final code = await showAirportPicker(context, selected: s.airportCode, catalog: widget.catalog);
+          if (code != null) s.setAirport(code);
+        },
+        child: SizedBox(
+          height: 44,
+          child: Row(
+            children: [
+              const SizedBox(width: 14),
+              Icon(Icons.search_rounded, size: 18, color: c.accent),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '${s.airportCode} · ${formatDateRange(s.checkIn, s.checkOut)} · ${plural(s.adults, 'guest')}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                ),
+              ),
+              Icon(Icons.expand_more_rounded, color: c.textMuted),
+              const SizedBox(width: 10),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final c = context.colors;
     return ListenableBuilder(
       listenable: Listenable.merge([tripSearchStore, savedStaysStore]),
       builder: (context, _) {
@@ -49,36 +83,16 @@ class _HotelResultsViewState extends State<HotelResultsView> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              Material(
-                color: c.surface,
-                shape: StadiumBorder(side: BorderSide(color: c.border)),
-                child: InkWell(
-                  customBorder: const StadiumBorder(),
-                  onTap: () async {
-                    final code = await showAirportPicker(context, selected: s.airportCode, catalog: widget.catalog);
-                    if (code != null) s.setAirport(code);
-                  },
-                  child: SizedBox(
-                    height: 44,
-                    child: Row(
-                      children: [
-                        const SizedBox(width: 14),
-                        Icon(Icons.search_rounded, size: 18, color: c.accent),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            '${s.airportCode} · ${formatDateRange(s.checkIn, s.checkOut)} · ${plural(s.adults, 'guest')}',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                          ),
-                        ),
-                        Icon(Icons.expand_more_rounded, color: c.textMuted),
-                        const SizedBox(width: 10),
-                      ],
-                    ),
+              Row(
+                spacing: 8,
+                children: [
+                  CircleIconButton(
+                    icon: Icons.chevron_left_rounded,
+                    tooltip: 'Back',
+                    onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                   ),
-                ),
+                  Expanded(child: _searchPill(context, s)),
+                ],
               ),
               const SizedBox(height: 12),
               SingleChildScrollView(

@@ -40,11 +40,15 @@ class ProfileView extends StatelessWidget {
         centerTitle: false,
         elevation: 0,
         scrolledUnderElevation: 2,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          tooltip: 'Back',
-          onPressed: () => Navigator.of(context).maybePop(),
-        ),
+        // A tab in the bottom bar: show back only when opened on top of a page.
+        automaticallyImplyLeading: false,
+        leading: Navigator.of(context).canPop()
+            ? IconButton(
+                icon: const Icon(Icons.arrow_back),
+                tooltip: 'Back',
+                onPressed: () => Navigator.of(context).maybePop(),
+              )
+            : null,
       ),
       body: ListenableBuilder(
         listenable: uiSettingsStore,

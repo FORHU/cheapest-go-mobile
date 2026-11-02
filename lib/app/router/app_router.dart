@@ -25,14 +25,34 @@ GoRouter createAppRouter() => GoRouter(
           builder: (context, state, navigationShell) => MainScaffoldShell(navigationShell: navigationShell),
           branches: [
             StatefulShellBranch(routes: [GoRoute(path: '/', builder: (_, _) => const HomeView())]),
-            StatefulShellBranch(routes: [GoRoute(path: '/hotels', builder: (_, _) => const HotelResultsView())]),
+            StatefulShellBranch(routes: [GoRoute(path: '/flights', builder: (_, _) => const FlightResultsView(asTab: true))]),
             StatefulShellBranch(
               routes: [GoRoute(path: '/map', builder: (_, _) => const SafeArea(bottom: false, child: MapView()))],
             ),
-            StatefulShellBranch(routes: [GoRoute(path: '/golf', builder: (_, _) => const GolfView())]),
             StatefulShellBranch(routes: [GoRoute(path: '/trips', builder: (_, _) => const TripsView())]),
+            StatefulShellBranch(
+              routes: [
+                GoRoute(
+                  path: '/profile',
+                  builder: (context, _) => ListenableBuilder(
+                    listenable: authStore,
+                    builder: (context, _) => ProfileView(
+                      isAuthenticated: authStore.isAuthenticated,
+                      userName: authStore.user?.fullName,
+                      userEmail: authStore.user?.email,
+                      onSignInTap: () => context.push('/login'),
+                      onRegisterTap: () => context.push('/register'),
+                      onSignOutTap: authStore.logout,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
+        // Stays and golf live under the Stay & Play tab; they open as pages.
+        GoRoute(path: '/hotels', builder: (_, _) => const Scaffold(body: HotelResultsView())),
+        GoRoute(path: '/golf', builder: (_, _) => const Scaffold(body: GolfView())),
         GoRoute(
           path: '/airport/:code',
           builder: (_, state) => AirportHubView(code: state.pathParameters['code']!.toUpperCase()),
@@ -48,26 +68,11 @@ GoRouter createAppRouter() => GoRouter(
             roomId: state.uri.queryParameters['room'] ?? '',
           ),
         ),
-        GoRoute(path: '/flights', builder: (_, _) => const FlightResultsView()),
         GoRoute(
           path: '/flight-checkout',
           builder: (_, state) => FlightCheckoutView(offerId: state.uri.queryParameters['offer'] ?? ''),
         ),
         GoRoute(path: '/saved', redirect: (_, _) => '/trips'),
-        GoRoute(
-          path: '/profile',
-          builder: (context, _) => ListenableBuilder(
-            listenable: authStore,
-            builder: (context, _) => ProfileView(
-              isAuthenticated: authStore.isAuthenticated,
-              userName: authStore.user?.fullName,
-              userEmail: authStore.user?.email,
-              onSignInTap: () => context.push('/login'),
-              onRegisterTap: () => context.push('/register'),
-              onSignOutTap: authStore.logout,
-            ),
-          ),
-        ),
         GoRoute(path: '/login', builder: (_, _) => const LoginView()),
         GoRoute(path: '/register', builder: (_, _) => const RegisterView()),
         GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordView()),
@@ -76,7 +81,8 @@ GoRouter createAppRouter() => GoRouter(
 
 final GoRouter appRouter = createAppRouter();
 
-/// Bottom navigation: Home · Hotels · Map (center globe) · Golf · Trips.
+/// Bottom navigation: Stay & Play · Flights · Map (center globe) · Trips · Profile.
+/// Stay & Play is Home, where stays and golf near the arrival airport start.
 class MainScaffoldShell extends StatelessWidget {
   const MainScaffoldShell({required this.navigationShell, super.key});
 
@@ -98,10 +104,10 @@ class MainScaffoldShell extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: GlobeBottomNav(
         tabs: const [
-          GlobeNavTab(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
-          GlobeNavTab(icon: Icons.hotel_outlined, activeIcon: Icons.hotel_rounded, label: 'Hotels'),
-          GlobeNavTab(icon: Icons.golf_course_outlined, activeIcon: Icons.golf_course_rounded, label: 'Golf'),
+          GlobeNavTab(icon: Icons.travel_explore_outlined, activeIcon: Icons.travel_explore_rounded, label: 'Stay & Play'),
+          GlobeNavTab(icon: Icons.flight_outlined, activeIcon: Icons.flight_rounded, label: 'Flights'),
           GlobeNavTab(icon: Icons.luggage_outlined, activeIcon: Icons.luggage_rounded, label: 'Trips'),
+          GlobeNavTab(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
         ],
         currentIndex: _branchForTab.indexOf(branch),
         isGlobeActive: branch == _mapBranch,

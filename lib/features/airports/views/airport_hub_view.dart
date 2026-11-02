@@ -130,7 +130,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                       OutlinedButton(
                         onPressed: () {
                           s.setAirport(airport.code);
-                          context.go('/hotels');
+                          context.push('/hotels');
                         },
                         child: Text('See all ${plural(hotels.length, 'stay')} near ${airport.code}'),
                       ),
@@ -140,7 +140,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                         course: course,
                         onTap: () {
                           s.setAirport(airport.code);
-                          context.go('/golf');
+                          context.push('/golf');
                         },
                       ),
                       const SizedBox(height: 10),
@@ -151,7 +151,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                       OutlinedButton(
                         onPressed: () {
                           s.setAirport(airport.code);
-                          context.go('/golf');
+                          context.push('/golf');
                         },
                         child: Text('See tee times near ${airport.code}'),
                       ),
