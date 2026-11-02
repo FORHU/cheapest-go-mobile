@@ -180,7 +180,7 @@ class _CourseCard extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const PhotoPlaceholder(width: 72, height: 72, label: 'Course', golf: true),
+              PhotoPlaceholder(image: course.photo, label: course.name, width: 72, height: 72, golf: true),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

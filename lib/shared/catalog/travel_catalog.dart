@@ -22,7 +22,21 @@ class Airport {
   final String city;
   final String country;
   final String terminals;
+
+  /// Destination photo, bundled for arrival airports only.
+  String? get photo => _placeCodes.contains(code) ? 'assets/images/places/${code.toLowerCase()}.jpg' : null;
 }
+
+const _placeCodes = {'MNL', 'CRK', 'CEB', 'DVO', 'KLO', 'PPS', 'TAG', 'ILO', 'BKK', 'DPS'};
+const _hotelPhotoCount = 24;
+const _roomPhotoCount = 11;
+const _golfPhotoCount = 16;
+
+/// Stable small hash of an id, so a hotel keeps the same photos every launch.
+int _seed(String id) => id.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff);
+
+String _pick(String folder, String prefix, int count, int n) =>
+    'assets/images/$folder/$prefix${((n % count) + 1).toString().padLeft(2, '0')}.jpg';
 
 class Room {
   const Room({
@@ -80,6 +94,21 @@ class Hotel {
 
   bool get hasShuttle => tags.contains(kTagShuttle);
 
+  /// Cover first, then two room shots (mock photos, see assets/images/README.md).
+  List<String> get photos {
+    final s = _seed(id);
+    final room = s % _roomPhotoCount;
+    // Offset 1…count-1 from the first room, so the two room shots differ.
+    final otherRoom = room + 1 + (s ~/ 7) % (_roomPhotoCount - 1);
+    return [
+      _pick('hotels', 'h', _hotelPhotoCount, s),
+      _pick('rooms', 'r', _roomPhotoCount, room),
+      _pick('rooms', 'r', _roomPhotoCount, otherRoom),
+    ];
+  }
+
+  String get cover => photos.first;
+
   String get distanceLabel => '${distanceKm.toStringAsFixed(1)} km from $distanceFrom';
 
   String get scoreLabel {
@@ -118,6 +147,9 @@ class GolfCourse {
 
   /// What the green fee includes, e.g. `buggy included`.
   final String? inclusion;
+
+  /// Course photo (mock, see assets/images/README.md).
+  String get photo => _pick('golf', 'g', _golfPhotoCount, _seed(id));
 
   String get meta => [
         '$holes holes',

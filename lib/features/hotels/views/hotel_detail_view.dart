@@ -20,6 +20,7 @@ class HotelDetailView extends StatefulWidget {
 
 class _HotelDetailViewState extends State<HotelDetailView> {
   String? _roomId;
+  int _photo = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -44,7 +45,24 @@ class _HotelDetailViewState extends State<HotelDetailView> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                const PhotoPlaceholder(label: 'Hotel photo gallery', radius: 0, fade: true),
+                PageView(
+                  onPageChanged: (i) => setState(() => _photo = i),
+                  children: [
+                    for (final p in hotel.photos) PhotoPlaceholder(image: p, label: hotel.name, radius: 0, fade: true),
+                  ],
+                ),
+                Positioned(
+                  right: 16,
+                  bottom: 14,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(color: const Color(0x8C020617), borderRadius: BorderRadius.circular(999)),
+                    child: Text(
+                      '${_photo + 1} / ${hotel.photos.length}',
+                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                    ),
+                  ),
+                ),
                 Positioned(
                   top: topInset + 12,
                   left: 16,

@@ -230,8 +230,10 @@ class HomeView extends StatelessWidget {
     final stays = catalog.hotelsNear(a.code).length;
     final courses = catalog.coursesNear(a.code).length;
     return SizedBox(
-      width: 140,
+      width: 156,
       child: AppCard(
+        padding: EdgeInsets.zero,
+        clip: true,
         onTap: () {
           tripSearchStore.setAirport(a.code);
           _search(context);
@@ -239,13 +241,36 @@ class HomeView extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(a.code, style: text.headlineMedium?.copyWith(fontSize: 26, color: c.accent)),
-            const SizedBox(height: 4),
-            Text(a.city, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600)),
-            const SizedBox(height: 2),
-            // One fact per line keeps every card the same height.
-            Text(plural(stays, 'stay'), maxLines: 1, style: TextStyle(fontSize: 12, color: c.textMuted)),
-            Text(plural(courses, 'course'), maxLines: 1, style: TextStyle(fontSize: 12, color: c.textMuted)),
+            SizedBox(
+              height: 96,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  PhotoPlaceholder(image: a.photo, label: a.city, radius: 0, fade: true),
+                  Positioned(
+                    left: 12,
+                    bottom: 8,
+                    child: Text(
+                      a.code,
+                      style: text.headlineMedium?.copyWith(fontSize: 24, color: Colors.white),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(a.city, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  // One fact per line keeps every card the same height.
+                  Text(plural(stays, 'stay'), maxLines: 1, style: TextStyle(fontSize: 12, color: c.textMuted)),
+                  Text(plural(courses, 'course'), maxLines: 1, style: TextStyle(fontSize: 12, color: c.textMuted)),
+                ],
+              ),
+            ),
           ],
         ),
       ),

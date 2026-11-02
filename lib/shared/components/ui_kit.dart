@@ -86,9 +86,11 @@ class RatingBadge extends StatelessWidget {
   }
 }
 
-/// Tinted box standing in for a photo until real images arrive.
+/// A cover-fit photo from [image] (a bundled asset), or a tinted box with
+/// [label] when there is no image or it fails to load.
 class PhotoPlaceholder extends StatelessWidget {
   const PhotoPlaceholder({
+    this.image,
     this.label = 'Photo',
     this.width,
     this.height,
@@ -98,6 +100,7 @@ class PhotoPlaceholder extends StatelessWidget {
     super.key,
   });
 
+  final String? image;
   final String label;
   final double? width;
   final double? height;
@@ -110,6 +113,15 @@ class PhotoPlaceholder extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final fallback = Center(
+      child: Text(
+        label,
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        textAlign: TextAlign.center,
+        style: TextStyle(fontSize: 11, color: golf ? c.onGolfSoft : c.onPhoto),
+      ),
+    );
     return ClipRRect(
       borderRadius: BorderRadius.circular(radius),
       child: SizedBox(
@@ -119,12 +131,17 @@ class PhotoPlaceholder extends StatelessWidget {
           fit: StackFit.expand,
           children: [
             ColoredBox(color: golf ? c.golfSoft : c.photo),
-            Center(
-              child: Text(
-                label,
-                style: TextStyle(fontSize: 11, color: golf ? c.onGolfSoft : c.onPhoto),
+            if (image == null)
+              fallback
+            else
+              Image.asset(
+                image!,
+                fit: BoxFit.cover,
+                semanticLabel: label,
+                // Decode at roughly the shown size; covers are 800 px wide.
+                cacheWidth: width == null ? 800 : (width! * 3).round(),
+                errorBuilder: (_, _, _) => fallback,
               ),
-            ),
             if (fade)
               const DecoratedBox(
                 decoration: BoxDecoration(

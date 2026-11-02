@@ -114,7 +114,7 @@ class _TripsViewState extends State<TripsView> {
           onTap: () => context.push('/hotel/${h.id}'),
           child: Row(
             children: [
-              const PhotoPlaceholder(width: 64, height: 64, radius: 10),
+              PhotoPlaceholder(image: h.cover, label: h.name, width: 64, height: 64, radius: 10),
               const SizedBox(width: 12),
               Expanded(
                 child: Column(

@@ -52,25 +52,28 @@ class _AirportHubViewState extends State<AirportHubView> {
                 label: 'Open the map',
                 child: GestureDetector(
                   onTap: () => context.go('/map'),
-                  child: Container(
-                    height: 200 + MediaQuery.paddingOf(context).top,
-                    color: c.photo,
-                    alignment: Alignment.center,
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
+                  child: SizedBox(
+                    height: 220 + MediaQuery.paddingOf(context).top,
+                    child: Stack(
+                      fit: StackFit.expand,
                       children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: c.accent,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: c.surface, width: 4),
+                        PhotoPlaceholder(image: airport.photo, label: airport.city, radius: 0, fade: true),
+                        Positioned(
+                          right: 16,
+                          bottom: 36,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                            decoration: BoxDecoration(color: const Color(0x99020617), borderRadius: BorderRadius.circular(999)),
+                            child: const Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.public_rounded, size: 16, color: Colors.white),
+                                SizedBox(width: 6),
+                                Text('Open the map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                              ],
+                            ),
                           ),
-                          child: Icon(Icons.flight_land_rounded, size: 18, color: c.accentOn),
                         ),
-                        const SizedBox(height: 6),
-                        Text('Open the map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: c.onPhoto)),
                       ],
                     ),
                   ),
@@ -180,7 +183,7 @@ class _StayRow extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          const PhotoPlaceholder(width: 88, height: 88),
+          PhotoPlaceholder(image: hotel.cover, label: hotel.name, width: 88, height: 88),
           const SizedBox(width: 12),
           Expanded(
             child: SizedBox(
@@ -225,7 +228,7 @@ class _CourseRow extends StatelessWidget {
       onTap: onTap,
       child: Row(
         children: [
-          const PhotoPlaceholder(width: 72, height: 72, label: 'Course', golf: true),
+          PhotoPlaceholder(image: course.photo, label: course.name, width: 72, height: 72, golf: true),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

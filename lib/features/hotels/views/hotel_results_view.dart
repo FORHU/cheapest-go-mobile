@@ -194,7 +194,7 @@ class HotelCard extends StatelessWidget {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                const PhotoPlaceholder(label: 'Hotel photo', radius: 0, fade: true),
+                PhotoPlaceholder(image: hotel.cover, label: hotel.name, radius: 0, fade: true),
                 if (hotel.badge != null)
                   Positioned(
                     top: 10,

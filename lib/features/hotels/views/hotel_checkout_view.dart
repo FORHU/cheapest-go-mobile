@@ -97,7 +97,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
             AppCard(
               child: Row(
                 children: [
-                  const PhotoPlaceholder(width: 64, height: 64, radius: 10),
+                  PhotoPlaceholder(image: hotel.cover, label: hotel.name, width: 64, height: 64, radius: 10),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(

@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_checkout_view.dart';
@@ -66,6 +67,25 @@ void main() {
         for (final to in catalog.airports()) {
           if (from == to.code) continue;
           expect(catalog.flights(from, to.code), hasLength(5), reason: '$from → ${to.code}');
+        }
+      }
+    });
+
+    test('every photo the catalogue points at is bundled', () {
+      final paths = <String>{
+        for (final a in catalog.airports()) ...[
+          a.photo!,
+          for (final h in catalog.hotelsNear(a.code)) ...h.photos,
+          for (final c in catalog.coursesNear(a.code)) c.photo,
+        ],
+      };
+      for (final p in paths) {
+        expect(File(p).existsSync(), isTrue, reason: p);
+      }
+      // Two room shots per hotel, never the same picture twice.
+      for (final a in catalog.airports()) {
+        for (final h in catalog.hotelsNear(a.code)) {
+          expect(h.photos[1], isNot(h.photos[2]), reason: h.id);
         }
       }
     });
