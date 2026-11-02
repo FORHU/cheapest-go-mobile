@@ -8,8 +8,8 @@ export 'package:cheapest_go_mobile/shared/theme/tokens/app_effects.dart';
 export 'package:cheapest_go_mobile/shared/theme/tokens/app_radius.dart';
 export 'package:cheapest_go_mobile/shared/theme/tokens/app_spacing.dart';
 
-/// Light and dark Material themes built from the v1 web tokens:
-/// Inter Tight for display text, Inter for everything else.
+/// Light and dark Material themes paired with the v2 web app: Plus Jakarta Sans
+/// throughout, bold and tightly tracked for display text.
 class AppTheme {
   const AppTheme._();
 
@@ -49,11 +49,11 @@ class AppTheme {
     );
 
     final base = ThemeData(useMaterial3: true, brightness: brightness);
-    final body = GoogleFonts.interTextTheme(base.textTheme).apply(
+    final body = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
       bodyColor: c.textPrimary,
       displayColor: c.textPrimary,
     );
-    TextStyle display(double size) => GoogleFonts.interTight(
+    TextStyle display(double size) => GoogleFonts.plusJakartaSans(
           fontSize: size,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.02 * size,

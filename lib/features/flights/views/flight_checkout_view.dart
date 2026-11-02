@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
@@ -168,12 +169,11 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            FilledButton.icon(
-              onPressed: _paying ? null : () => _pay(f, total),
-              icon: _paying
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.lock_outline_rounded, size: 18),
-              label: Text('Pay ${formatPeso(total)}'),
+            AppGradientButton(
+              onPressed: () => _pay(f, total),
+              isLoading: _paying,
+              icon: Icons.lock_outline_rounded,
+              label: 'Pay ${formatPeso(total)}',
             ),
             const SizedBox(height: 6),
             Text('Test mode: no card is charged in this build.',

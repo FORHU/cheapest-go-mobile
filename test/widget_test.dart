@@ -40,15 +40,15 @@ void main() {
     });
   });
 
-  group('v1 theme tokens', () {
-    testWidgets('light theme registers the v1 blue and surface', (tester) async {
+  group('v2-paired theme tokens', () {
+    testWidgets('light theme registers the v2 blue and alabaster ground', (tester) async {
       await tester.pumpWidget(
         MaterialApp(
           theme: AppTheme.light,
           home: Builder(
             builder: (context) {
               expect(context.colors.accent, const Color(0xFF2563EB));
-              expect(context.colors.background, const Color(0xFFF9FAFB));
+              expect(context.colors.background, const Color(0xFFF8FAFC));
               return Scaffold(
                 body: GlassCard(child: AppPrimaryButton(label: 'Book Now', onPressed: () {})),
               );
@@ -60,13 +60,13 @@ void main() {
       expect(find.text('Book Now'), findsOneWidget);
     });
 
-    test('dark theme uses the v1 .dark values', () {
+    test('dark theme uses the v2 obsidian + slate values', () {
       final dark = AppTheme.dark;
       final colors = dark.extension<AppColors>()!;
       expect(dark.brightness, Brightness.dark);
       expect(colors.accent, const Color(0xFF3B82F6));
-      expect(colors.background, const Color(0xFF0A0A0A));
-      expect(colors.surface, const Color(0xFF171717));
+      expect(colors.background, const Color(0xFF020617));
+      expect(colors.surface, const Color(0xFF0F172A));
       expect(dark.colorScheme.primary, colors.accent);
     });
 

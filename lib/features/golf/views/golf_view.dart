@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/airport_picker.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
@@ -283,9 +284,9 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
               ],
             ),
             const SizedBox(height: 16),
-            FilledButton(
+            AppGradientButton(
               onPressed: () => Navigator.pop(context, _players),
-              child: Text('Book tee time · ${formatPeso(total)}'),
+              label: 'Book tee time · ${formatPeso(total)}',
             ),
             const SizedBox(height: 6),
             Text('Test mode: no card is charged in this build.',

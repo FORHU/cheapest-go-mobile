@@ -8,7 +8,7 @@ class AppRadius {
   static const double sm = 8.0;
   static const double base = 10.0;
   static const double md = 12.0;
-  static const double card = 16.0;
+  static const double card = 20.0;
   static const double sheet = 24.0;
   static const double pill = 999.0;
 

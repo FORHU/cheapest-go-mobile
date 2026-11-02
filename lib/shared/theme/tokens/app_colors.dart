@@ -2,9 +2,9 @@ import 'package:flutter/material.dart';
 
 /// Design tokens — colors for CheapestGo Mobile.
 ///
-/// Mirrors the v1 web theme (`cheapest-go-app/src/app/globals.css`): blue 600
-/// primary, blue 50 secondary, shadcn neutral greys, and the dark-mode values
-/// from its `.dark` block.
+/// Paired with the v2 web palette (`cheapestgo-app-v2/src/shared/lib/palette.ts`):
+/// slate neutrals on an alabaster ground, obsidian + slate-900 in dark, and the
+/// blue family (600 light, 500 / 400 dark) for everything interactive.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({
@@ -133,12 +133,12 @@ class AppColors extends ThemeExtension<AppColors> {
   final Color warning;
 
   static const light = AppColors(
-    background: Color(0xFFF9FAFB),
-    backgroundCanvas: Color(0xFFF3F4F6),
+    background: Color(0xFFF8FAFC),
+    backgroundCanvas: Color(0xFFF1F5F9),
     surface: Color(0xFFFFFFFF),
     surfaceElevated: Color(0xFFFFFFFF),
-    surfacePressed: Color(0xFFF5F5F5),
-    surfaceMuted: Color(0xFFF0F0F0),
+    surfacePressed: Color(0xFFF1F5F9),
+    surfaceMuted: Color(0xFFF1F5F9),
     glass: Color(0xB3FFFFFF),
     glassStrong: Color(0xF2FFFFFF),
     accent: Color(0xFF2563EB),
@@ -150,14 +150,14 @@ class AppColors extends ThemeExtension<AppColors> {
     secondary: Color(0xFFEFF6FF),
     onSecondary: Color(0xFF1E3A8A),
     secondaryBorder: Color(0xFFBFDBFE),
-    textPrimary: Color(0xFF0A0A0A),
-    textSecondary: Color(0xFF404040),
-    textMuted: Color(0xFF737373),
-    textSubtle: Color(0xFFA3A3A3),
+    textPrimary: Color(0xFF0F172A),
+    textSecondary: Color(0xFF334155),
+    textMuted: Color(0xFF64748B),
+    textSubtle: Color(0xFF94A3B8),
     label: Color(0xFF64748B),
-    border: Color(0xFFE5E5E5),
-    borderStrong: Color(0xFFD4D4D4),
-    hairline: Color(0xFFF0F0F0),
+    border: Color(0xFFE2E8F0),
+    borderStrong: Color(0xFFCBD5E1),
+    hairline: Color(0xFFF1F5F9),
     photo: Color(0xFFDBEAFE),
     onPhoto: Color(0xFF1E3A8A),
     golfSoft: Color(0xFFDCFCE7),
@@ -170,14 +170,14 @@ class AppColors extends ThemeExtension<AppColors> {
   );
 
   static const dark = AppColors(
-    background: Color(0xFF0A0A0A),
-    backgroundCanvas: Color(0xFF0A0A0A),
-    surface: Color(0xFF171717),
-    surfaceElevated: Color(0xFF1F1F1F),
-    surfacePressed: Color(0xFF262626),
-    surfaceMuted: Color(0xFF262626),
-    glass: Color(0x0AFFFFFF),
-    glassStrong: Color(0xF2171717),
+    background: Color(0xFF020617),
+    backgroundCanvas: Color(0xFF020617),
+    surface: Color(0xFF0F172A),
+    surfaceElevated: Color(0xFF0F172A),
+    surfacePressed: Color(0xFF1E293B),
+    surfaceMuted: Color(0xFF1E293B),
+    glass: Color(0x0DFFFFFF),
+    glassStrong: Color(0xF20F172A),
     accent: Color(0xFF3B82F6),
     accentOn: Color(0xFFFFFFFF),
     accentGlow15: Color(0x263B82F6),
@@ -187,10 +187,10 @@ class AppColors extends ThemeExtension<AppColors> {
     secondary: Color(0xFF172554),
     onSecondary: Color(0xFFBFDBFE),
     secondaryBorder: Color(0xFF1E3A8A),
-    textPrimary: Color(0xFFFAFAFA),
-    textSecondary: Color(0xFFD4D4D4),
-    textMuted: Color(0xFFA1A1A1),
-    textSubtle: Color(0xFF737373),
+    textPrimary: Color(0xFFF1F5F9),
+    textSecondary: Color(0xFFCBD5E1),
+    textMuted: Color(0xFF94A3B8),
+    textSubtle: Color(0xFF64748B),
     label: Color(0xFF94A3B8),
     border: Color(0x1AFFFFFF),
     borderStrong: Color(0x26FFFFFF),
@@ -323,6 +323,12 @@ class AppColors extends ThemeExtension<AppColors> {
     );
   }
 }
+
+/// v2's one brand gradient, blue-600 → cyan-500, for the main action on a
+/// screen (pay, book, select) and nothing else.
+const LinearGradient kBrandGradient = LinearGradient(
+  colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
+);
 
 extension AppColorsContextX on BuildContext {
   AppColors get colors =>

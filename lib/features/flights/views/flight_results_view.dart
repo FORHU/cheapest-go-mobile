@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -164,7 +165,29 @@ class _FlightCard extends StatelessWidget {
               Icon(Icons.luggage_outlined, size: 14, color: c.label),
               const SizedBox(width: 4),
               Expanded(child: Text(offer.baggage, style: TextStyle(fontSize: 12, color: c.textMuted))),
-              PriceText(offer.price, size: 18),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text.rich(
+                      TextSpan(children: [
+                        TextSpan(text: formatPeso(offer.price), style: TextStyle(fontSize: 20, fontWeight: FontWeight.w800, color: c.textPrimary)),
+                        TextSpan(text: ' / person', style: TextStyle(fontSize: 13, color: c.textMuted)),
+                      ]),
+                    ),
+                    Text('Includes taxes & fees', style: TextStyle(fontSize: 12, color: c.textMuted)),
+                  ],
+                ),
+              ),
+              SizedBox(
+                width: 112,
+                child: AppGradientButton(label: 'Select', onPressed: onSelect, height: 44),
+              ),
             ],
           ),
         ],
