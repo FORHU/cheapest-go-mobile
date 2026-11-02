@@ -68,6 +68,17 @@ class _LoginViewState extends State<LoginView> {
                         AuthErrorBanner(message: authStore.errorMessage!),
                         const SizedBox(height: 16),
                       ],
+                      if (authStore.mock) ...[
+                        _DemoAccountCard(
+                          enabled: !loading,
+                          onUse: () {
+                            _emailController.text = kDemoUser.email;
+                            _passwordController.text = kDemoPassword;
+                            _submit();
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       AuthTextField(
                         controller: _emailController,
                         label: 'Email',
@@ -124,6 +135,45 @@ class _LoginViewState extends State<LoginView> {
             ),
           );
         },
+      ),
+    );
+  }
+}
+
+/// Test-build helper: shows the default account and signs in with it.
+class _DemoAccountCard extends StatelessWidget {
+  const _DemoAccountCard({required this.enabled, required this.onUse});
+
+  final bool enabled;
+  final VoidCallback onUse;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: scheme.primaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.person_pin_rounded, color: scheme.primary),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Demo account', style: TextStyle(fontWeight: FontWeight.w700, color: scheme.onPrimaryContainer)),
+                Text(
+                  '${kDemoUser.email}\nPassword: $kDemoPassword',
+                  style: TextStyle(fontSize: 12, color: scheme.onPrimaryContainer),
+                ),
+              ],
+            ),
+          ),
+          TextButton(onPressed: enabled ? onUse : null, child: const Text('Use')),
+        ],
       ),
     );
   }

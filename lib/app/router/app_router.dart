@@ -72,11 +72,17 @@ GoRouter createAppRouter() => GoRouter(
           builder: (_, state) => HotelCheckoutView(
             hotelId: state.uri.queryParameters['hotel'] ?? '',
             roomId: state.uri.queryParameters['room'] ?? '',
+            leadName: authStore.user?.fullName,
+            leadEmail: authStore.user?.email,
           ),
         ),
         GoRoute(
           path: '/flight-checkout',
-          builder: (_, state) => FlightCheckoutView(offerId: state.uri.queryParameters['offer'] ?? ''),
+          builder: (_, state) => FlightCheckoutView(
+            offerId: state.uri.queryParameters['offer'] ?? '',
+            leadName: authStore.user?.fullName,
+            leadEmail: authStore.user?.email,
+          ),
         ),
         GoRoute(path: '/saved', redirect: (_, _) => '/trips'),
         GoRoute(path: '/login', builder: (_, _) => const LoginView()),

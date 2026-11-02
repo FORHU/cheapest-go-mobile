@@ -18,12 +18,18 @@ class HotelCheckoutView extends StatefulWidget {
   const HotelCheckoutView({
     required this.hotelId,
     required this.roomId,
+    this.leadName,
+    this.leadEmail,
     this.catalog = travelCatalog,
     super.key,
   });
 
   final String hotelId;
   final String roomId;
+
+  /// Pre-fills the lead guest from the signed-in traveler.
+  final String? leadName;
+  final String? leadEmail;
   final TravelCatalog catalog;
 
   @override
@@ -32,8 +38,8 @@ class HotelCheckoutView extends StatefulWidget {
 
 class _HotelCheckoutViewState extends State<HotelCheckoutView> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
-  final _email = TextEditingController();
+  late final _name = TextEditingController(text: widget.leadName);
+  late final _email = TextEditingController(text: widget.leadEmail);
   bool _paying = false;
 
   @override

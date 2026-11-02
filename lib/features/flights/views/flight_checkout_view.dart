@@ -15,7 +15,11 @@ int flightTaxes(int fares) => (fares * kFlightTaxRate).round();
 
 /// Review and pay for one flight. Payment is mocked: nothing is charged.
 class FlightCheckoutView extends StatefulWidget {
-  const FlightCheckoutView({required this.offerId, this.catalog = travelCatalog, super.key});
+  const FlightCheckoutView({required this.offerId, this.leadName, this.leadEmail, this.catalog = travelCatalog, super.key});
+
+  /// Pre-fills the lead passenger from the signed-in traveler.
+  final String? leadName;
+  final String? leadEmail;
 
   final String offerId;
   final TravelCatalog catalog;
@@ -26,8 +30,8 @@ class FlightCheckoutView extends StatefulWidget {
 
 class _FlightCheckoutViewState extends State<FlightCheckoutView> {
   final _formKey = GlobalKey<FormState>();
-  final _name = TextEditingController();
-  final _email = TextEditingController();
+  late final _name = TextEditingController(text: widget.leadName);
+  late final _email = TextEditingController(text: widget.leadEmail);
   bool _paying = false;
 
   @override
