@@ -13,9 +13,12 @@ enum _Sort { nearest, price }
 
 /// Stays near the searched arrival airport, v1 property-card style.
 class HotelResultsView extends StatefulWidget {
-  const HotelResultsView({this.catalog = travelCatalog, super.key});
+  const HotelResultsView({this.catalog = travelCatalog, this.showBack = true, super.key});
 
   final TravelCatalog catalog;
+
+  /// False when shown inside a tab rather than opened as a page.
+  final bool showBack;
 
   @override
   State<HotelResultsView> createState() => _HotelResultsViewState();
@@ -86,11 +89,12 @@ class _HotelResultsViewState extends State<HotelResultsView> {
               Row(
                 spacing: 8,
                 children: [
-                  CircleIconButton(
-                    icon: Icons.chevron_left_rounded,
-                    tooltip: 'Back',
-                    onPressed: () => context.canPop() ? context.pop() : context.go('/'),
-                  ),
+                  if (widget.showBack)
+                    CircleIconButton(
+                      icon: Icons.chevron_left_rounded,
+                      tooltip: 'Back',
+                      onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+                    ),
                   Expanded(child: _searchPill(context, s)),
                 ],
               ),

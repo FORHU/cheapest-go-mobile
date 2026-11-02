@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/app/router/globe_bottom_nav.dart';
+import 'package:cheapest_go_mobile/app/router/stay_play_view.dart';
 import 'package:cheapest_go_mobile/features/airports/views/airport_hub_view.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/auth/views/forgot_password_view.dart';
@@ -25,34 +26,39 @@ GoRouter createAppRouter() => GoRouter(
           builder: (context, state, navigationShell) => MainScaffoldShell(navigationShell: navigationShell),
           branches: [
             StatefulShellBranch(routes: [GoRoute(path: '/', builder: (_, _) => const HomeView())]),
-            StatefulShellBranch(routes: [GoRoute(path: '/flights', builder: (_, _) => const FlightResultsView(asTab: true))]),
-            StatefulShellBranch(
-              routes: [GoRoute(path: '/map', builder: (_, _) => const SafeArea(bottom: false, child: MapView()))],
-            ),
-            StatefulShellBranch(routes: [GoRoute(path: '/trips', builder: (_, _) => const TripsView())]),
             StatefulShellBranch(
               routes: [
                 GoRoute(
-                  path: '/profile',
-                  builder: (context, _) => ListenableBuilder(
-                    listenable: authStore,
-                    builder: (context, _) => ProfileView(
-                      isAuthenticated: authStore.isAuthenticated,
-                      userName: authStore.user?.fullName,
-                      userEmail: authStore.user?.email,
-                      onSignInTap: () => context.push('/login'),
-                      onRegisterTap: () => context.push('/register'),
-                      onSignOutTap: authStore.logout,
-                    ),
-                  ),
+                  path: '/stay',
+                  builder: (_, state) => StayPlayView(initialTab: state.uri.queryParameters['tab'] == 'golf' ? 1 : 0),
                 ),
               ],
             ),
+            StatefulShellBranch(
+              routes: [GoRoute(path: '/map', builder: (_, _) => const SafeArea(bottom: false, child: MapView()))],
+            ),
+            StatefulShellBranch(routes: [GoRoute(path: '/flights', builder: (_, _) => const FlightResultsView(asTab: true))]),
+            StatefulShellBranch(routes: [GoRoute(path: '/trips', builder: (_, _) => const TripsView())]),
           ],
         ),
-        // Stays and golf live under the Stay & Play tab; they open as pages.
+        // The same hotel and golf lists, opened as pages from Home, the airport
+        // hub, checkout and trips.
         GoRoute(path: '/hotels', builder: (_, _) => const Scaffold(body: HotelResultsView())),
         GoRoute(path: '/golf', builder: (_, _) => const Scaffold(body: GolfView())),
+        GoRoute(
+          path: '/profile',
+          builder: (context, _) => ListenableBuilder(
+            listenable: authStore,
+            builder: (context, _) => ProfileView(
+              isAuthenticated: authStore.isAuthenticated,
+              userName: authStore.user?.fullName,
+              userEmail: authStore.user?.email,
+              onSignInTap: () => context.push('/login'),
+              onRegisterTap: () => context.push('/register'),
+              onSignOutTap: authStore.logout,
+            ),
+          ),
+        ),
         GoRoute(
           path: '/airport/:code',
           builder: (_, state) => AirportHubView(code: state.pathParameters['code']!.toUpperCase()),
@@ -81,8 +87,8 @@ GoRouter createAppRouter() => GoRouter(
 
 final GoRouter appRouter = createAppRouter();
 
-/// Bottom navigation: Stay & Play · Flights · Map (center globe) · Trips · Profile.
-/// Stay & Play is Home, where stays and golf near the arrival airport start.
+/// Bottom navigation: Home · Stay & Play (hotels + golf) · Map (center globe) ·
+/// Flights · Trips.
 class MainScaffoldShell extends StatelessWidget {
   const MainScaffoldShell({required this.navigationShell, super.key});
 
@@ -104,10 +110,10 @@ class MainScaffoldShell extends StatelessWidget {
       body: navigationShell,
       bottomNavigationBar: GlobeBottomNav(
         tabs: const [
-          GlobeNavTab(icon: Icons.travel_explore_outlined, activeIcon: Icons.travel_explore_rounded, label: 'Stay & Play'),
+          GlobeNavTab(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
+          GlobeNavTab(icon: Icons.hotel_outlined, activeIcon: Icons.hotel_rounded, label: 'Stay & Play'),
           GlobeNavTab(icon: Icons.flight_outlined, activeIcon: Icons.flight_rounded, label: 'Flights'),
           GlobeNavTab(icon: Icons.luggage_outlined, activeIcon: Icons.luggage_rounded, label: 'Trips'),
-          GlobeNavTab(icon: Icons.person_outline_rounded, activeIcon: Icons.person_rounded, label: 'Profile'),
         ],
         currentIndex: _branchForTab.indexOf(branch),
         isGlobeActive: branch == _mapBranch,

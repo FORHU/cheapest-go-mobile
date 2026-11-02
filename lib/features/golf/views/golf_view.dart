@@ -12,9 +12,12 @@ import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 /// Golf courses near the arrival airport, with bookable tee times.
 class GolfView extends StatefulWidget {
-  const GolfView({this.catalog = travelCatalog, super.key});
+  const GolfView({this.catalog = travelCatalog, this.showBack = true, super.key});
 
   final TravelCatalog catalog;
+
+  /// False when shown inside a tab rather than opened as a page.
+  final bool showBack;
 
   @override
   State<GolfView> createState() => _GolfViewState();
@@ -66,12 +69,14 @@ class _GolfViewState extends State<GolfView> {
             children: [
               Row(
                 children: [
-                  CircleIconButton(
-                    icon: Icons.chevron_left_rounded,
-                    tooltip: 'Back',
-                    onPressed: () => context.canPop() ? context.pop() : context.go('/'),
-                  ),
-                  const SizedBox(width: 10),
+                  if (widget.showBack) ...[
+                    CircleIconButton(
+                      icon: Icons.chevron_left_rounded,
+                      tooltip: 'Back',
+                      onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+                    ),
+                    const SizedBox(width: 10),
+                  ],
                   Expanded(
                     child: Text.rich(
                       TextSpan(children: [

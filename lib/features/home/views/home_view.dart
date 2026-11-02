@@ -99,7 +99,7 @@ class HomeView extends StatelessWidget {
                   CircleIconButton(
                     icon: Icons.person_outline_rounded,
                     tooltip: 'Profile and account',
-                    onPressed: () => context.go('/profile'),
+                    onPressed: () => context.push('/profile'),
                   ),
                 ],
               ),
@@ -169,7 +169,7 @@ class HomeView extends StatelessWidget {
                       icon: Icons.hotel_outlined,
                       title: 'Hotels',
                       subtitle: 'near ${s.airportCode}',
-                      onTap: () => context.push('/hotels'),
+                      onTap: () => context.go('/stay'),
                     ),
                   ),
                   Expanded(
@@ -178,7 +178,7 @@ class HomeView extends StatelessWidget {
                       title: 'Tee times',
                       subtitle: 'near ${s.airportCode}',
                       golf: true,
-                      onTap: () => context.push('/golf'),
+                      onTap: () => context.go('/stay?tab=golf'),
                     ),
                   ),
                 ],

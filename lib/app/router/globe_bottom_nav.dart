@@ -79,11 +79,11 @@ class GlobeBottomNav extends StatelessWidget {
             height: barHeight,
             child: Row(
               children: [
-                buildTab(0), // Stay & Play (Home: stays + golf)
-                buildTab(1), // Flights
+                buildTab(0), // Home
+                buildTab(1), // Stay & Play (hotels + golf)
                 const SizedBox(width: _domeWidth), // Center gap for Globe dome
-                buildTab(2), // Trips (Bookings + Saved)
-                buildTab(3), // Profile
+                buildTab(2), // Flights
+                buildTab(3), // Trips (Bookings + Saved)
               ],
             ),
           ),

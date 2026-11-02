@@ -79,17 +79,16 @@ void main() {
     });
   });
 
-  testWidgets('CheapestGoApp renders Stay & Play and the globe navigation', (tester) async {
+  testWidgets('CheapestGoApp renders Home and the globe navigation', (tester) async {
     usePhoneViewport(tester);
     await tester.pumpWidget(const CheapestGoApp());
     await tester.pumpAndSettle();
 
     expect(find.textContaining('flying into'), findsOneWidget);
-    for (final label in ['Stay & Play', 'Flights', 'Trips', 'Profile']) {
+    for (final label in ['Home', 'Stay & Play', 'Flights', 'Trips']) {
       expect(find.text(label), findsOneWidget);
     }
-    expect(find.text('Hotels'), findsOneWidget); // Home shortcut, not a tab
-    expect(find.text('Tee times'), findsOneWidget);
+    expect(find.text('Profile'), findsNothing); // opens from the Home header
     expect(find.byIcon(Icons.public_rounded), findsOneWidget); // Globe dome
   });
 }

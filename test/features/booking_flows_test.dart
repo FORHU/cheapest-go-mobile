@@ -99,6 +99,18 @@ void main() {
     expect(find.text(booking.reference), findsOneWidget);
   });
 
+  testWidgets('Stay & Play tab switches between hotels and golf', (tester) async {
+    await pumpApp(tester);
+    await tester.tap(find.text('Stay & Play'));
+    await tester.pumpAndSettle();
+    expect(find.text('Terminal 3 Garden Hotel'), findsOneWidget);
+    expect(find.byTooltip('Back'), findsNothing);
+
+    await tester.tap(find.text('Golf'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bayshore Links'), findsOneWidget);
+  });
+
   testWidgets('hotel results filter by free shuttle', (tester) async {
     await pumpApp(tester, location: '/hotels');
     expect(find.text('Bay Airport Suites'), findsOneWidget);
