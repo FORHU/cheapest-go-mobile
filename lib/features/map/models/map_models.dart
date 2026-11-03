@@ -65,9 +65,9 @@ List<FlightOffer> flightsInto(TravelCatalog catalog, Airport airport, {int count
 }
 
 /// Directions from each airport (start bearing, degrees clockwise from north,
-/// and width) where its stays and courses can sit without landing in the sea.
+/// and width) where its stays and courses can sit without landing in water.
 const _landBearings = <String, (double, double)>{
-  'MNL': (340, 190), // Manila Bay lies west
+  'MNL': (340, 105), // north to east-north-east; Manila Bay is west
   'CRK': (0, 360),
   'CEB': (260, 70), // Mactan is small; Cebu City is across the channel to the west
   'DVO': (200, 140), // Davao Gulf lies east
@@ -80,10 +80,20 @@ const _landBearings = <String, (double, double)>{
   'ICN': (60, 70), // Incheon and Songdo across the bridge, east
 };
 
+/// Extra land arcs, for airports wedged between two bodies of water.
+const _moreLandBearings = <String, (double, double)>{
+  'MNL': (170, 60), // south towards Imus and Dasmariñas; Laguna de Bay is south-east
+};
+
 double _bearingFor(String airportCode, String id) {
-  final (start, width) = _landBearings[airportCode] ?? (0.0, 360.0);
-  final unit = (id.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff) % 1000) / 1000;
-  return (start + unit * width) % 360;
+  final arcs = [_landBearings[airportCode] ?? (0.0, 360.0), ?_moreLandBearings[airportCode]];
+  final total = arcs.fold(0.0, (sum, a) => sum + a.$2);
+  var at = (id.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff) % 1000) / 1000 * total;
+  for (final (start, width) in arcs) {
+    if (at <= width) return (start + at) % 360;
+    at -= width;
+  }
+  return arcs.first.$1;
 }
 
 /// Minutes a flight spends taxiing, climbing and landing; the rest is cruise.

@@ -16,9 +16,9 @@ void main() {
       });
     }
 
-    testWidgets('is not on the map, which stays full screen', (tester) async {
+    testWidgets('shows on the map too', (tester) async {
       await pumpApp(tester, location: '/map');
-      expect(find.byType(AppHeader), findsNothing);
+      expect(find.byType(AppHeader), findsOneWidget);
     });
 
     testWidgets('profile button opens the profile', (tester) async {

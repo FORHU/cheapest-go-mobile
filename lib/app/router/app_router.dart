@@ -37,7 +37,7 @@ GoRouter createAppRouter() => GoRouter(
               ],
             ),
             StatefulShellBranch(
-              routes: [GoRoute(path: '/map', builder: (_, _) => const SafeArea(bottom: false, child: MapView()))],
+              routes: [GoRoute(path: '/map', builder: (_, _) => const MapView())],
             ),
             StatefulShellBranch(routes: [GoRoute(path: '/flights', builder: (_, _) => const FlightResultsView(asTab: true))]),
             StatefulShellBranch(routes: [GoRoute(path: '/trips', builder: (_, _) => const TripsView())]),
@@ -116,26 +116,27 @@ class MainScaffoldShell extends StatelessWidget {
     final branch = navigationShell.currentIndex;
     final onMap = branch == _mapBranch;
     return Scaffold(
-      // The map stays full screen; every other tab gets the shared header and
-      // pull to refresh (any vertical list in the tab can start it).
-      body: onMap
-          ? navigationShell
-          : Column(
-              children: [
-                const AppHeader(),
-                Expanded(
-                  child: MediaQuery.removePadding(
-                    context: context,
-                    removeTop: true,
-                    child: RefreshIndicator(
+      // Every tab gets the shared header. All but the map also get pull to
+      // refresh (any vertical list in the tab can start it); on the map a
+      // downward drag pans the map instead.
+      body: Column(
+        children: [
+          const AppHeader(),
+          Expanded(
+            child: MediaQuery.removePadding(
+              context: context,
+              removeTop: true,
+              child: onMap
+                  ? navigationShell
+                  : RefreshIndicator(
                       notificationPredicate: (n) => n.metrics.axis == Axis.vertical,
                       onRefresh: refreshAppData,
                       child: navigationShell,
                     ),
-                  ),
-                ),
-              ],
             ),
+          ),
+        ],
+      ),
       bottomNavigationBar: GlobeBottomNav(
         tabs: const [
           GlobeNavTab(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),
