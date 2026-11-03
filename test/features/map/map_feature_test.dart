@@ -112,6 +112,59 @@ void main() {
         expect(offers[i].price, greaterThanOrEqualTo(offers[i - 1].price));
       }
     });
+
+    test('overlapping places are identified within threshold and isolated ones are excluded', () {
+      final places = placesNear(catalog, mnl, MapFilter.overview);
+      expect(places.length, greaterThan(1));
+
+      final first = places.first;
+      final overlaps = findOverlappingPlaces(first, places, thresholdKm: kSpiderfyThresholdKm);
+      expect(overlaps, contains(first));
+      for (final p in overlaps) {
+        expect(distanceKm(first.position, p.position), lessThanOrEqualTo(kSpiderfyThresholdKm));
+      }
+
+      // Synthetic test with controlled distances
+      final p1 = places[0];
+      final closePos = offsetKm(p1.position, 1.2, 45.0);
+      final farPos = offsetKm(p1.position, 10.0, 45.0);
+      final pClose = MapPlace.hotel(catalog.hotelsNear('MNL').last, closePos);
+      final pFar = MapPlace.course(catalog.coursesNear('MNL').last, farPos);
+
+      final candidates = [p1, pClose, pFar];
+      final cluster = findOverlappingPlaces(p1, candidates, thresholdKm: 2.5);
+      expect(cluster.map((p) => p.id), containsAll([p1.id, pClose.id]));
+      expect(cluster.map((p) => p.id), isNot(contains(pFar.id)));
+    });
+
+    test('spider group creates radial fan-out preserving original place coordinates', () {
+      final places = placesNear(catalog, mnl, MapFilter.overview).take(3).toList();
+      final originalPositions = places.map((p) => p.position).toList();
+
+      final spiderGroup = createSpiderGroup(places, radiusKm: 2.0);
+      expect(spiderGroup.places.length, 3);
+      expect(spiderGroup.spiderPlaces.length, 3);
+
+      // Verify original coordinates are strictly untouched
+      for (var i = 0; i < places.length; i++) {
+        expect(places[i].position, equals(originalPositions[i]));
+        expect(spiderGroup.spiderPlaces[i].centerPosition, equals(spiderGroup.center));
+        // Visual spider position is fanned out from centroid
+        expect(
+          distanceKm(spiderGroup.center, spiderGroup.spiderPlaces[i].spiderPosition),
+          closeTo(2.0, 0.05),
+        );
+      }
+
+      // Check containment and lookup
+      expect(spiderGroup.contains(places.first), isTrue);
+      expect(spiderGroup.positionFor(places.first), equals(spiderGroup.spiderPlaces.first.spiderPosition));
+
+      // Single item cluster returns self position
+      final singleSpider = createSpiderGroup([places.first]);
+      expect(singleSpider.spiderPlaces.single.spiderPosition, equals(places.first.position));
+    });
+
   });
 
   group('Airport sheet', () {
@@ -353,6 +406,32 @@ void main() {
       expect(find.text('No flights to track'), findsOneWidget);
       await tester.tap(find.text('Find flights'));
       expect(found, 1);
+    });
+
+    testWidgets('selecting an overlapping place expands spider fan and draws legs on map painter', (tester) async {
+      await pumpApp(tester, location: '/map');
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Stays ${catalog.hotelsNear('MNL').length}'));
+      await tester.pumpAndSettle();
+
+      final first = catalog.hotelsNear('MNL').first;
+      await tester.tap(find.text(first.name));
+      await tester.pumpAndSettle();
+
+      // Place is selected in sheet with price and booking button
+      expect(find.text('See rooms & book'), findsOneWidget);
+
+      // Map canvas painter receives selection and paints
+      final painterFinder = find.byWidgetPredicate(
+        (widget) => widget is CustomPaint && widget.painter is CustomPainter,
+      );
+      expect(painterFinder, findsWidgets);
+
+      // Back button collapses place selection back to list
+      await tester.tap(find.text('All stays'));
+      await tester.pumpAndSettle();
+      expect(find.text('See rooms & book'), findsNothing);
     });
   });
 }

@@ -62,6 +62,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   Airport? _selected;
   MapFilter _filter = MapFilter.overview;
   MapPlace? _place;
+  SpiderGroup? _spiderGroup;
   bool _tracking = false;
 
   /// The booking the tracker shows; the first trackable flight when unset.
@@ -223,6 +224,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     setState(() {
       _selected = airport;
       _place = null;
+      _spiderGroup = null;
     });
     tripSearchStore.setAirport(airport.code);
     _refresh();
@@ -237,14 +239,46 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     setState(() {
       _place = place;
       _filter = place.isGolf ? MapFilter.golf : MapFilter.stays;
+      if (_spiderGroup != null && !_spiderGroup!.contains(place)) {
+        final airport = _selected;
+        final visible = airport != null ? placesNear(widget.catalog, airport, _filter) : const <MapPlace>[];
+        final cluster = findOverlappingPlaces(place, visible);
+        _spiderGroup = cluster.length > 1 ? createSpiderGroup(cluster) : null;
+      }
     });
     _refresh();
+  }
+
+  void _handlePlaceTap(MapPlace place) {
+    if (_spiderGroup != null && _spiderGroup!.contains(place)) {
+      _selectPlace(place);
+      return;
+    }
+
+    final airport = _selected;
+    if (airport != null) {
+      final visible = placesNear(widget.catalog, airport, _filter);
+      final overlapping = findOverlappingPlaces(place, visible, thresholdKm: kSpiderfyThresholdKm);
+      if (overlapping.length > 1) {
+        setState(() {
+          _spiderGroup = createSpiderGroup(overlapping);
+          _place = place;
+          _filter = place.isGolf ? MapFilter.golf : MapFilter.stays;
+        });
+        _refresh();
+        return;
+      }
+    }
+
+    setState(() => _spiderGroup = null);
+    _selectPlace(place);
   }
 
   void _setFilter(MapFilter filter) {
     setState(() {
       _filter = filter;
       _place = null;
+      _spiderGroup = null;
     });
     _refresh();
   }
@@ -253,12 +287,16 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     setState(() {
       _selected = null;
       _place = null;
+      _spiderGroup = null;
     });
     _refresh();
   }
 
   void _setTracking(bool on) {
-    setState(() => _tracking = on);
+    setState(() {
+      _tracking = on;
+      _spiderGroup = null;
+    });
     _syncTracker();
     _refresh();
   }
@@ -406,7 +444,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       case final Airport airport:
         if (!_tracking) _selectAirport(airport);
       case final MapPlace place:
-        _selectPlace(place);
+        _handlePlaceTap(place);
       case final FlightOffer offer:
         _bookFlight(offer);
     }
@@ -433,7 +471,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     _plane = null;
     _targets.clear();
 
-    // The only line on the map is the tracked flight's route.
+    // The only line on the map is the tracked flight's route, plus spider legs for overlapping places.
     final selectedAirport = _selected;
     final flight = _tracking ? _flight : null;
     if (flight != null) {
@@ -443,6 +481,20 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         lineWidth: 3,
         lineOpacity: 0.9,
       ));
+    }
+    if (_spiderGroup case final spider?) {
+      final legColor = (_dark ? const Color(0xB3FFFFFF) : const Color(0xB3004AC6)).toARGB32();
+      for (final sp in spider.spiderPlaces) {
+        await routes.create(PolylineAnnotationOptions(
+          geometry: LineString(coordinates: [
+            _position(spider.center),
+            _position(sp.spiderPosition),
+          ]),
+          lineColor: legColor,
+          lineWidth: 1.5,
+          lineOpacity: 0.85,
+        ));
+      }
     }
 
     // Airports, plus the tracked flight's origin when it isn't one of them.
@@ -503,33 +555,70 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     // Golf tab), or around every airport when none is selected.
     final placeAirports = _tracking ? const <Airport>[] : (selectedAirport == null ? _airports : [selectedAirport]);
     final placeFilter = selectedAirport != null && (_filter == MapFilter.stays || _filter == MapFilter.golf) ? _filter : MapFilter.overview;
+
+    if (_spiderGroup case final spider?) {
+      dotOptions.add(CircleAnnotationOptions(
+        geometry: Point(coordinates: _position(spider.center)),
+        circleRadius: 4.5,
+        circleColor: (_dark ? 0xFF94A3B8 : 0xFF64748B),
+        circleStrokeColor: 0xFFFFFFFF,
+        circleStrokeWidth: 1.5,
+        circleSortKey: 15.0,
+      ));
+    }
+
     for (final airport in placeAirports) {
       for (final p in placesNear(widget.catalog, airport, placeFilter)) {
         final selected = p.id == _place?.id;
-        final at = Point(coordinates: _position(p.position));
+        final inSpider = _spiderGroup != null && _spiderGroup!.contains(p);
+        final pos = inSpider ? _spiderGroup!.positionFor(p) : p.position;
+        final at = Point(coordinates: _position(pos));
         dotTargets.add(p);
+
+        final double radius;
+        final double strokeWidth;
+        final double sortKey;
+        if (selected) {
+          radius = 11;
+          strokeWidth = 3.0; // Glow ring effect
+          sortKey = 50.0;
+        } else if (inSpider) {
+          radius = 8.5;
+          strokeWidth = 2.0;
+          sortKey = 35.0;
+        } else if (selectedAirport == null) {
+          radius = 3.5; // Overview globe view: tiny subtle dots
+          strokeWidth = 0.8;
+          sortKey = 20.0;
+        } else {
+          radius = 7.5; // Regional / airport hub view: clean uniform category markers
+          strokeWidth = 1.5;
+          sortKey = 20.0;
+        }
+
         dotOptions.add(CircleAnnotationOptions(
           geometry: at,
-          circleRadius: selected ? 10 : (selectedAirport == null ? 3.5 : 7.5),
+          circleRadius: radius,
           circleColor: (selected ? _selectedColor : (p.isGolf ? _golfColor : _hotelColor)).toARGB32(),
           circleStrokeColor: 0xFFFFFFFF,
-          circleStrokeWidth: selectedAirport == null ? 0.8 : 1.5,
-          circleSortKey: selected ? 30 : 20,
+          circleStrokeWidth: strokeWidth,
+          circleSortKey: sortKey,
         ));
-        // Only the selected place gets a price label: stays sit close together
-        // and their labels would overlap. The sheet lists every price.
-        if (!selected) continue;
-        labelTargets.add(p);
-        labelOptions.add(PointAnnotationOptions(
-          geometry: at,
-          // Map fonts have no ₱ glyph; every price in the app is in pesos.
-          textField: formatPeso(p.price).replaceFirst('₱', ''),
-          textSize: 12.5,
-          textColor: text,
-          textHaloColor: halo,
-          textHaloWidth: 1.5,
-          textOffset: const [0, -1.5],
-        ));
+
+        // When selected or fanned out in a spider group, show price badge
+        if (selected || (inSpider && selectedAirport != null)) {
+          labelTargets.add(p);
+          labelOptions.add(PointAnnotationOptions(
+            geometry: at,
+            // Map fonts have no ₱ glyph; every price in the app is in pesos.
+            textField: formatPeso(p.price).replaceFirst('₱', ''),
+            textSize: selected ? 12.5 : 11.0,
+            textColor: text,
+            textHaloColor: halo,
+            textHaloWidth: selected ? 2.0 : 1.5,
+            textOffset: const [0, -1.6],
+          ));
+        }
       }
     }
 
@@ -622,7 +711,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       } else {
         final spread = placesNear(widget.catalog, airport, _filter).map((p) => distanceKm(airportAt, p.position));
         zoom = spread.isEmpty ? _airportZoom : math.min(_zoomToFit(2 * spread.reduce(math.max)), 13.0);
-        center = _place?.position ?? airportAt;
+        center = _spiderGroup?.center ?? _place?.position ?? airportAt;
       }
     } else {
       (center, zoom) = _overview(top, bottom);
@@ -722,7 +811,14 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               else
                 Positioned.fill(
                   child: CustomPaint(
-                    painter: _MapCanvasPainter(airports: _airports, selected: airport, colors: c),
+                    painter: _MapCanvasPainter(
+                      airports: _airports,
+                      selected: airport,
+                      colors: c,
+                      spiderGroup: _spiderGroup,
+                      places: airport != null ? placesNear(widget.catalog, airport, _filter) : const [],
+                      selectedPlace: _place,
+                    ),
                   ),
                 ),
               Positioned(
@@ -958,11 +1054,21 @@ class _AirportStrip extends StatelessWidget {
 
 /// Static stand-in for the native map in widget tests, which can't host Mapbox.
 class _MapCanvasPainter extends CustomPainter {
-  _MapCanvasPainter({required this.airports, required this.selected, required this.colors});
+  _MapCanvasPainter({
+    required this.airports,
+    required this.selected,
+    required this.colors,
+    this.spiderGroup,
+    this.places = const [],
+    this.selectedPlace,
+  });
 
   final List<Airport> airports;
   final Airport? selected;
   final AppColors colors;
+  final SpiderGroup? spiderGroup;
+  final List<MapPlace> places;
+  final MapPlace? selectedPlace;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -979,10 +1085,38 @@ class _MapCanvasPainter extends CustomPainter {
       final o = _project(a.latitude, a.longitude, size);
       canvas.drawCircle(o, a.code == selected?.code ? 6 : 4, Paint()..color = colors.accent);
     }
+
+    if (spiderGroup case final spider?) {
+      final legPaint = Paint()
+        ..color = colors.accent.withValues(alpha: 0.5)
+        ..strokeWidth = 1.5;
+      final centerOffset = _project(spider.center.$1, spider.center.$2, size);
+      for (final sp in spider.spiderPlaces) {
+        final spOffset = _project(sp.spiderPosition.$1, sp.spiderPosition.$2, size);
+        canvas.drawLine(centerOffset, spOffset, legPaint);
+      }
+      canvas.drawCircle(centerOffset, 3, Paint()..color = colors.textSecondary);
+    }
+
+    for (final p in places) {
+      final inSpider = spiderGroup != null && spiderGroup!.contains(p);
+      final pos = inSpider ? spiderGroup!.positionFor(p) : p.position;
+      final o = _project(pos.$1, pos.$2, size);
+      final isSel = p.id == selectedPlace?.id;
+      canvas.drawCircle(
+        o,
+        isSel ? 6 : (inSpider ? 4.5 : 3.5),
+        Paint()..color = isSel ? _MapViewState._selectedColor : (p.isGolf ? _MapViewState._golfColor : _MapViewState._hotelColor),
+      );
+    }
   }
 
   Offset _project(double lat, double lng, Size size) => Offset((lng + 180) / 360 * size.width, (90 - lat) / 180 * size.height);
 
   @override
-  bool shouldRepaint(covariant _MapCanvasPainter old) => old.selected != selected || old.colors != colors;
+  bool shouldRepaint(covariant _MapCanvasPainter old) =>
+      old.selected != selected ||
+      old.colors != colors ||
+      old.spiderGroup != spiderGroup ||
+      old.selectedPlace != selectedPlace;
 }
