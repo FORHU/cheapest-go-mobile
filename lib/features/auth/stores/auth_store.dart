@@ -8,8 +8,34 @@ import 'package:cheapest_go_mobile/shared/auth/rbac.dart';
 import 'package:cheapest_go_mobile/shared/auth/roles.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 
+/// While the app runs on mock data, auth stays on the device: a demo user is
+/// signed in by default and nothing calls the API. Build with
+/// `--dart-define=MOCK_AUTH=false` to use the real `/api/v2/auth` endpoints.
+const bool kMockAuth = bool.fromEnvironment('MOCK_AUTH', defaultValue: true);
+
+/// The default account in the mock build.
+const AuthUser kDemoUser = AuthUser(
+  id: 'demo-juan-dela-cruz',
+  email: 'juan.delacruz@cheapestgo.dev',
+  firstName: 'Juan',
+  lastName: 'Dela Cruz',
+  role: Role.user,
+);
+
+/// Password for [kDemoUser] in the mock build.
+const String kDemoPassword = 'cheapestgo123';
+
 class AuthStore extends ChangeNotifier {
+  AuthStore({this.mock = kMockAuth});
+
+  /// Keep auth on the device instead of calling the API.
+  final bool mock;
+
   static const String _cachedUserKey = 'cheapestgo_cached_user';
+
+  /// Set when the traveler signs out, so the demo user isn't signed back in
+  /// on the next launch.
+  static const String _signedOutKey = 'cheapestgo_signed_out';
 
   AuthUser? _user;
   bool _isLoading = false;
@@ -39,6 +65,12 @@ class AuthStore extends ChangeNotifier {
         _user = AuthUser.fromJson(map);
         notifyListeners();
       }
+      if (mock) {
+        if (_user == null && !(prefs.getBool(_signedOutKey) ?? false)) {
+          await _signIn(kDemoUser);
+        }
+        return;
+      }
       final fresh = await authApi.fetchCurrentUser();
       if (fresh != null) {
         _user = fresh;
@@ -52,10 +84,37 @@ class AuthStore extends ChangeNotifier {
     }
   }
 
+  /// Signs in the demo account (mock build).
+  Future<void> signInDemo() async {
+    _errorMessage = null;
+    await _signIn(kDemoUser);
+    notifyListeners();
+  }
+
+  Future<void> _signIn(AuthUser u) async {
+    _user = u;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_cachedUserKey, jsonEncode(u.toJson()));
+      await prefs.remove(_signedOutKey);
+    } catch (_) {}
+  }
+
   Future<bool> login(String email, String password) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+    if (mock) {
+      final ok = email.trim().toLowerCase() == kDemoUser.email && password == kDemoPassword;
+      if (ok) {
+        await _signIn(kDemoUser);
+      } else {
+        _errorMessage = 'In this test build, sign in as ${kDemoUser.email} with password $kDemoPassword.';
+      }
+      _isLoading = false;
+      notifyListeners();
+      return ok;
+    }
     try {
       final u = await authApi.login(email: email, password: password);
       _user = u;
@@ -78,6 +137,26 @@ class AuthStore extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+    if (mock) {
+      try {
+        input.validate();
+        final email = input.email.trim().toLowerCase();
+        await _signIn(AuthUser(
+          id: 'local-$email',
+          email: email,
+          firstName: input.firstName.trim(),
+          lastName: input.lastName.trim(),
+          role: Role.user,
+        ));
+        return true;
+      } catch (err) {
+        _errorMessage = routeError(err).toast ?? err.toString();
+        return false;
+      } finally {
+        _isLoading = false;
+        notifyListeners();
+      }
+    }
     try {
       final u = await authApi.register(input);
       _user = u;
@@ -100,6 +179,12 @@ class AuthStore extends ChangeNotifier {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
+    if (mock) {
+      // Nothing to send in the test build; behave as if the email went out.
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
     try {
       await authApi.resetPassword(email);
       return true;
@@ -117,9 +202,10 @@ class AuthStore extends ChangeNotifier {
     _isLoading = true;
     notifyListeners();
     try {
-      await authApi.logout();
+      if (!mock) await authApi.logout();
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_cachedUserKey);
+      if (mock) await prefs.setBool(_signedOutKey, true);
     } catch (_) {}
     _user = null;
     _isLoading = false;

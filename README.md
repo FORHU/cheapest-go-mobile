@@ -1,6 +1,6 @@
 # CheapestGo Mobile App (Flutter — 3-Tier FAOS Architecture)
 
-Flutter mobile application for CheapestGo (flights & hotels search, prebook, checkout, saved hotels, booked trips, and user profile), structured using the **3-Tier FAOS (Feature-Oriented Architecture Standard)** pattern (`lib/app/`, `lib/features/`, `lib/shared/`).
+Flutter mobile application for CheapestGo (stays and golf near your arrival airport: airport hubs, hotel booking, tee times, trips, and profile; currently on mock data), structured using the **3-Tier FAOS (Feature-Oriented Architecture Standard)** pattern (`lib/app/`, `lib/features/`, `lib/shared/`).
 
 ## Architecture Overview
 
@@ -13,21 +13,24 @@ lib/
 │   └── theme/                    # Material 3 light/dark themes
 ├── features/                     # Isolated business domains (cannot import each other)
 │   ├── auth/                     # Lucia / JWT auth, RBAC Can widget, Login/Register/Reset
-│   ├── hotels/                   # Search, details, Offer/Rate, Prebook lock, Stripe checkout
-│   ├── flights/                  # Multi-provider flight search (Duffel & Mystifly) & checkout
-│   ├── trips/                    # Booked trips & PNR status
-│   ├── saved/                    # Device-local favorite / saved hotels
-│   ├── explore/                  # Home landing & curated guides
-│   └── profile/                  # Account, Display Currency (USD/PHP/KRW), Theme preferences
+│   ├── home/                     # Arrival airport search (Stays / Golf / Stay + Golf)
+│   ├── airports/                 # Airport hub: stays and golf nearest one airport
+│   ├── hotels/                   # Results, detail + room choice, checkout (mock payment)
+│   ├── golf/                     # Courses near the airport, tee times, tee-time booking
+│   ├── map/                      # Mapbox 3D globe / 2D map with airport hubs
+│   ├── trips/                    # Upcoming / past bookings and saved stays
+│   └── profile/                  # Account, theme (system / light / dark), map preferences
 └── shared/                       # Deterministic infrastructure (never imports features/ or app/)
     ├── auth/                     # Role, Permission, RBAC evaluator
-    ├── components/               # Skeleton loader
+    ├── catalog/                  # TravelCatalog interface + MockTravelCatalog (airports, hotels, golf)
+    ├── components/               # UI kit (cards, rating badge, tabs, pills), airport picker, buttons
     ├── errors/                   # ApiError, error_router, retry_policy
     ├── flags/                    # Feature FlagEngine
     ├── lib/                      # env.dart, http.dart, token.dart
     ├── pagination/               # PaginationState
-    ├── stores/                   # UiSettingsStore (Display Currency & ThemeMode)
-    └── utils/                    # CurrencyService (live Frankfurter FX + fallback rates)
+    ├── stores/                   # Trip search, bookings, saved stays, UI settings (ThemeMode, map)
+    ├── theme/tokens/             # AppColors light + dark (v1 web theme), radius, spacing, effects
+    └── utils/                    # Peso, date, and tee-time formatting
 
 tools/
 └── validate_architecture.dart    # Static import-boundary validator

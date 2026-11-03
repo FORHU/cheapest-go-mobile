@@ -5,9 +5,7 @@ const Map<String, Object> featureManifest = {
   'name': 'hotels',
   'dependsOn': <String>[],
   'exposes': <String>[
-    'hotelsStore',
-    'HotelSummary',
-    'HotelSearchView',
+    'HotelResultsView',
     'HotelDetailView',
     'HotelCheckoutView',
   ],

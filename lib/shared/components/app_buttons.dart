@@ -1,9 +1,85 @@
 import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
-import 'package:cheapest_go_mobile/shared/theme/tokens/app_effects.dart';
-import 'package:cheapest_go_mobile/shared/theme/tokens/app_radius.dart';
 
-/// Solid primary-action CTA pill button.
+/// v2's gradient pill (blue-600 → cyan-500) for the one action that matters on
+/// a screen: pay, book, select. Use [AppPrimaryButton] everywhere else.
+class AppGradientButton extends StatelessWidget {
+  const AppGradientButton({
+    required this.label,
+    required this.onPressed,
+    this.icon,
+    this.isLoading = false,
+    this.height = 52,
+    super.key,
+  });
+
+  final String label;
+  final VoidCallback? onPressed;
+  final IconData? icon;
+  final bool isLoading;
+  final double height;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null && !isLoading;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      child: Opacity(
+        opacity: enabled || isLoading ? 1 : 0.5,
+        child: DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: kBrandGradient,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [BoxShadow(color: Color(0x592563EB), blurRadius: 20, offset: Offset(0, 8), spreadRadius: -8)],
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            child: InkWell(
+              customBorder: const StadiumBorder(),
+              onTap: enabled ? onPressed : null,
+              child: SizedBox(
+                height: height,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (isLoading)
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    else if (icon != null)
+                      Icon(icon, size: 18, color: Colors.white),
+                    if (isLoading || icon != null) const SizedBox(width: 8),
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                              ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Solid blue primary action (v1 `primary`), 48 px tall.
 class AppPrimaryButton extends StatelessWidget {
   const AppPrimaryButton({
     required this.label,
@@ -11,8 +87,6 @@ class AppPrimaryButton extends StatelessWidget {
     this.icon,
     this.expand = false,
     this.isLoading = false,
-    this.backgroundColor,
-    this.foregroundColor,
     super.key,
   });
 
@@ -21,78 +95,40 @@ class AppPrimaryButton extends StatelessWidget {
   final IconData? icon;
   final bool expand;
   final bool isLoading;
-  final Color? backgroundColor;
-  final Color? foregroundColor;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final bg = backgroundColor ?? colors.accent;
-    final fg = foregroundColor ?? colors.accentOn;
-
-    Widget content = Row(
-      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (isLoading) ...[
-          SizedBox(
-            width: 16,
-            height: 16,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(fg),
-            ),
-          ),
-          const SizedBox(width: 8),
-        ] else if (icon != null) ...[
-          Icon(icon, size: 18, color: fg),
-          const SizedBox(width: 6),
+    final fg = Theme.of(context).colorScheme.onPrimary;
+    final button = FilledButton(
+      onPressed: isLoading ? null : onPressed,
+      child: Row(
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (isLoading)
+            SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(strokeWidth: 2, color: fg),
+            )
+          else if (icon != null)
+            Icon(icon, size: 18),
+          if (isLoading || icon != null) const SizedBox(width: 8),
+          Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)),
         ],
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: fg,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w700,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ),
-      ],
-    );
-
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: AppRadius.brPill,
-        boxShadow: AppEffects.buttonGlow(bg),
-      ),
-      child: Material(
-        color: bg,
-        borderRadius: AppRadius.brPill,
-        child: InkWell(
-          borderRadius: AppRadius.brPill,
-          onTap: isLoading ? null : onPressed,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            child: content,
-          ),
-        ),
       ),
     );
+    return expand ? SizedBox(width: double.infinity, child: button) : button;
   }
 }
 
-/// Frosted secondary pill button.
+/// Soft blue secondary action (v1 `secondary`), 44 px tall.
 class AppSecondaryButton extends StatelessWidget {
   const AppSecondaryButton({
     required this.label,
     required this.onPressed,
     this.icon,
     this.expand = false,
-    this.textColor,
     super.key,
   });
 
@@ -100,107 +136,20 @@ class AppSecondaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final IconData? icon;
   final bool expand;
-  final Color? textColor;
 
   @override
   Widget build(BuildContext context) {
-    final colors = context.colors;
-    final textCol = textColor ?? colors.textPrimary;
-
-    Widget content = Row(
-      mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        if (icon != null) ...[
-          Icon(icon, size: 18, color: textCol),
-          const SizedBox(width: 6),
+    final button = OutlinedButton(
+      onPressed: onPressed,
+      child: Row(
+        mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null) ...[Icon(icon, size: 18), const SizedBox(width: 8)],
+          Flexible(child: Text(label, maxLines: 1, overflow: TextOverflow.ellipsis)),
         ],
-        Flexible(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              color: textCol,
-              fontSize: 13.5,
-              fontWeight: FontWeight.w600,
-              letterSpacing: -0.2,
-            ),
-          ),
-        ),
-      ],
-    );
-
-    return Material(
-      color: colors.surface,
-      shape: RoundedRectangleBorder(
-        borderRadius: AppRadius.brPill,
-        side: BorderSide(color: colors.border, width: 0.8),
-      ),
-      child: InkWell(
-        borderRadius: AppRadius.brPill,
-        onTap: onPressed,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-          child: content,
-        ),
       ),
     );
-  }
-}
-
-/// Minimalist toggleable pill filter chip.
-class AppFilterChip extends StatelessWidget {
-  const AppFilterChip({
-    required this.label,
-    required this.selected,
-    required this.onSelected,
-    this.icon,
-    super.key,
-  });
-
-  final String label;
-  final bool selected;
-  final ValueChanged<bool> onSelected;
-  final IconData? icon;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = context.colors;
-
-    final bg = selected ? colors.textPrimary : colors.surface;
-    final fg = selected ? Colors.white : colors.textSecondary;
-    final borderCol = selected ? colors.textPrimary : colors.border;
-
-    return GestureDetector(
-      onTap: () => onSelected(!selected),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: AppRadius.brPill,
-          border: Border.all(color: borderCol, width: 0.8),
-          boxShadow: selected ? AppEffects.cardShadowLight : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null) ...[
-              Icon(icon, size: 14, color: fg),
-              const SizedBox(width: 6),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: fg,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return expand ? SizedBox(width: double.infinity, child: button) : button;
   }
 }
