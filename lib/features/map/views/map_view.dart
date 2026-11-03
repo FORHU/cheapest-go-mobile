@@ -70,6 +70,9 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   double _sheetHeight = 0;
   Size _mapSize = const Size(360, 640);
 
+  /// The zoom pins are clustered for: the camera's target, or where the user zoomed to.
+  double _clusterZoom = 4;
+
   Timer? _ticker;
   StreamSubscription<geo.Position>? _gps;
   geo.Position? _fix;
@@ -409,14 +412,24 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         _selectPlace(place);
       case final FlightOffer offer:
         _bookFlight(offer);
+      case final _PinCluster cluster:
+        _zoomIntoCluster(cluster);
     }
   }
 
   /// Redraws the pins and moves the camera to match the current selection.
+  /// Pins cluster for the zoom the camera is heading to.
   void _refresh({bool animate = true}) {
-    _syncQueue = _syncQueue.then((_) => _syncAnnotations()).then((_) => _moveCamera(animate: animate)).catchError((Object e) {
-      debugPrint('Map refresh: $e');
-    });
+    _syncQueue = _syncQueue
+        .then((_) {
+          final target = _cameraTarget();
+          if (target != null) _clusterZoom = target.$2;
+        })
+        .then((_) => _syncAnnotations())
+        .then((_) => _moveCamera(animate: animate))
+        .catchError((Object e) {
+          debugPrint('Map refresh: $e');
+        });
   }
 
   Future<void> _syncAnnotations() async {
@@ -434,7 +447,6 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     _targets.clear();
 
     // The only line on the map is the tracked flight's route.
-    final selectedAirport = _selected;
     final flight = _tracking ? _flight : null;
     if (flight != null) {
       await routes.create(PolylineAnnotationOptions(
@@ -445,129 +457,17 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       ));
     }
 
-    // Airports, plus the tracked flight's origin when it isn't one of them.
-    // Plain loops and locals here: a closure over the nullable `flight` in this
-    // async method crashed the 32-bit ARM release build (SIGSEGV on the Realme C21Y).
-    final originCode = flight?.origin.code;
-    final destinationCode = flight?.destination.code;
-    final selectedCode = _selected?.code;
-    final airports = <Airport>[..._airports];
-    if (flight != null) {
-      var known = false;
-      for (final a in _airports) {
-        if (a.code == originCode) known = true;
-      }
-      if (!known) airports.add(flight.origin);
-    }
-    final labelsAbove = _labelsAbove(airports);
-    final dotTargets = <Object>[];
-    final dotOptions = <CircleAnnotationOptions>[];
-    final labelTargets = <Object>[];
-    final labelOptions = <PointAnnotationOptions>[];
-    // On the Flights tab the departure cities get their own flight pin below;
-    // skip the airport pin under it so pins and labels don't double up.
-    final flightOrigins = <String>{};
-    if (!_tracking && _selected != null && _filter == MapFilter.flights) {
-      for (final offer in flightsInto(widget.catalog, _selected!)) {
-        flightOrigins.add(offer.origin);
-      }
-    }
-    for (final a in airports) {
-      if (flightOrigins.contains(a.code)) continue;
-      final selected = a.code == selectedCode || a.code == originCode || a.code == destinationCode;
-      final at = Point(coordinates: Position(a.longitude, a.latitude));
-      dotTargets.add(a);
-      dotOptions.add(CircleAnnotationOptions(
-        geometry: at,
-        // The open airport shrinks a little so the stays and courses right at
-        // the terminal (drawn above it) stay tappable.
-        circleRadius: a.code == selectedCode ? 7 : (selected ? 9 : 6.5),
-        circleColor: (selected ? _selectedColor : _flightColor).toARGB32(),
-        circleStrokeColor: 0xFFFFFFFF,
-        circleStrokeWidth: 2,
-        circleSortKey: a.code == selectedCode ? 1 : 10,
-      ));
-      labelTargets.add(a);
-      labelOptions.add(PointAnnotationOptions(
-        geometry: at,
-        textField: a.code,
-        textSize: selected ? 13 : 11.5,
-        textColor: text,
-        textHaloColor: halo,
-        textHaloWidth: 1.5,
-        textOffset: [0, labelsAbove.contains(a.code) ? -1.5 : 1.5],
-      ));
-    }
-
-    // Stays and courses: around the selected airport (narrowed by the Stays or
-    // Golf tab), or around every airport when none is selected.
-    final placeAirports = _tracking ? const <Airport>[] : (selectedAirport == null ? _airports : [selectedAirport]);
-    final placeFilter = selectedAirport != null && (_filter == MapFilter.stays || _filter == MapFilter.golf) ? _filter : MapFilter.overview;
-    for (final airport in placeAirports) {
-      for (final p in placesNear(widget.catalog, airport, placeFilter)) {
-        final selected = p.id == _place?.id;
-        final at = Point(coordinates: _position(p.position));
-        dotTargets.add(p);
-        dotOptions.add(CircleAnnotationOptions(
-          geometry: at,
-          circleRadius: selected ? 10 : (selectedAirport == null ? 3.5 : 7.5),
-          circleColor: (selected ? _selectedColor : (p.isGolf ? _golfColor : _hotelColor)).toARGB32(),
-          circleStrokeColor: 0xFFFFFFFF,
-          circleStrokeWidth: selectedAirport == null ? 0.8 : 1.5,
-          circleSortKey: selected ? 30 : 20,
-        ));
-        // Only the selected place gets a price label: stays sit close together
-        // and their labels would overlap. The sheet lists every price.
-        if (!selected) continue;
-        labelTargets.add(p);
-        labelOptions.add(PointAnnotationOptions(
-          geometry: at,
-          // Map fonts have no ₱ glyph; every price in the app is in pesos.
-          textField: formatPeso(p.price).replaceFirst('₱', ''),
-          textSize: 12.5,
-          textColor: text,
-          textHaloColor: halo,
-          textHaloWidth: 1.5,
-          textOffset: const [0, -1.5],
-        ));
-      }
-    }
-
-    // Flights tab: a pin at each city a flight comes from; tapping it books that flight.
-    if (!_tracking && selectedAirport != null && _filter == MapFilter.flights) {
-      for (final offer in flightsInto(widget.catalog, selectedAirport)) {
-        final origin = widget.catalog.origin(offer.origin);
-        if (origin == null) continue;
-        final at = Point(coordinates: Position(origin.longitude, origin.latitude));
-        dotTargets.add(offer);
-        dotOptions.add(CircleAnnotationOptions(
-          geometry: at,
-          circleRadius: 8,
-          circleColor: _flightColor.toARGB32(),
-          circleStrokeColor: 0xFFFFFFFF,
-          circleStrokeWidth: 2,
-          circleSortKey: 25,
-        ));
-        labelTargets.add(offer);
-        labelOptions.add(PointAnnotationOptions(
-          geometry: at,
-          textField: '${offer.origin} ${formatPeso(offer.price).replaceFirst('₱', '')}',
-          textSize: 11.5,
-          textColor: text,
-          textHaloColor: halo,
-          textHaloWidth: 1.5,
-          textOffset: const [0, -1.5],
-        ));
-      }
-    }
-
-    final created = await dots.createMulti(dotOptions);
+    // Pins are built and clustered in plain (non-async) methods: a closure over
+    // the nullable `flight` inside this async method crashed the 32-bit ARM
+    // release build (SIGSEGV on the Realme C21Y).
+    final layout = _clusterPins(_buildPins(flight, text, halo));
+    final created = await dots.createMulti(layout.dots);
     for (var i = 0; i < created.length; i++) {
-      if (created[i] case final a?) _targets[a.id] = dotTargets[i];
+      if (created[i] case final a?) _targets[a.id] = layout.dotTargets[i];
     }
-    final createdLabels = await labels.createMulti(labelOptions);
+    final createdLabels = await labels.createMulti(layout.labels);
     for (var i = 0; i < createdLabels.length; i++) {
-      if (createdLabels[i] case final a?) _targets[a.id] = labelTargets[i];
+      if (createdLabels[i] case final a?) _targets[a.id] = layout.labelTargets[i];
     }
 
     if (flight != null) {
@@ -581,6 +481,256 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     }
   }
 
+  /// Every pin the map should show, before clustering.
+  List<_Pin> _buildPins(TrackedFlight? flight, int text, int halo) {
+    final pins = <_Pin>[];
+    final selectedAirport = _selected;
+    final originCode = flight?.origin.code;
+    final destinationCode = flight?.destination.code;
+    final selectedCode = selectedAirport?.code;
+
+    // Airports, plus the tracked flight's origin when it isn't one of them.
+    final airports = <Airport>[..._airports];
+    if (flight != null) {
+      var known = false;
+      for (final a in _airports) {
+        if (a.code == originCode) known = true;
+      }
+      if (!known) airports.add(flight.origin);
+    }
+    final labelsAbove = _labelsAbove(airports);
+
+    // On the Flights tab the departure cities get their own flight pin below;
+    // skip the airport pin under it so pins and labels don't double up.
+    final flightOrigins = <String>{};
+    final flightOffers = <FlightOffer>[];
+    if (!_tracking && selectedAirport != null && _filter == MapFilter.flights) {
+      for (final offer in flightsInto(widget.catalog, selectedAirport)) {
+        flightOrigins.add(offer.origin);
+        flightOffers.add(offer);
+      }
+    }
+
+    for (final a in airports) {
+      if (flightOrigins.contains(a.code)) continue;
+      final selected = a.code == selectedCode || a.code == originCode || a.code == destinationCode;
+      final at = Point(coordinates: Position(a.longitude, a.latitude));
+      pins.add(_Pin(
+        kind: _PinKind.flight,
+        at: (a.latitude, a.longitude),
+        target: a,
+        pinned: selected,
+        dot: CircleAnnotationOptions(
+          geometry: at,
+          // The open airport shrinks a little so the stays and courses right at
+          // the terminal (drawn above it) stay tappable.
+          circleRadius: a.code == selectedCode ? 7 : (selected ? 9 : 6.5),
+          circleColor: (selected ? _selectedColor : _flightColor).toARGB32(),
+          circleStrokeColor: 0xFFFFFFFF,
+          circleStrokeWidth: 2,
+          circleSortKey: a.code == selectedCode ? 1 : 10,
+        ),
+        label: PointAnnotationOptions(
+          geometry: at,
+          textField: a.code,
+          textSize: selected ? 13 : 11.5,
+          textColor: text,
+          textHaloColor: halo,
+          textHaloWidth: 1.5,
+          textOffset: [0, labelsAbove.contains(a.code) ? -1.5 : 1.5],
+        ),
+      ));
+    }
+
+    // Stays and courses: around the selected airport (narrowed by the Stays or
+    // Golf tab), or around every airport when none is selected.
+    final placeAirports = _tracking ? const <Airport>[] : (selectedAirport == null ? _airports : [selectedAirport]);
+    final placeFilter = selectedAirport != null && (_filter == MapFilter.stays || _filter == MapFilter.golf) ? _filter : MapFilter.overview;
+    final selectedPlaceId = _place?.id;
+    for (final airport in placeAirports) {
+      for (final p in placesNear(widget.catalog, airport, placeFilter)) {
+        final selected = p.id == selectedPlaceId;
+        final at = Point(coordinates: _position(p.position));
+        pins.add(_Pin(
+          kind: p.isGolf ? _PinKind.golf : _PinKind.hotel,
+          at: p.position,
+          target: p,
+          pinned: selected,
+          dot: CircleAnnotationOptions(
+            geometry: at,
+            circleRadius: selected ? 10 : (selectedAirport == null ? 5 : 7.5),
+            circleColor: (selected ? _selectedColor : (p.isGolf ? _golfColor : _hotelColor)).toARGB32(),
+            circleStrokeColor: 0xFFFFFFFF,
+            circleStrokeWidth: 1.5,
+            circleSortKey: selected ? 30 : 20,
+          ),
+          // Only the selected place gets a price label: stays sit close together
+          // and their labels would overlap. The sheet lists every price.
+          label: selected
+              ? PointAnnotationOptions(
+                  geometry: at,
+                  // Map fonts have no ₱ glyph; every price in the app is in pesos.
+                  textField: formatPeso(p.price).replaceFirst('₱', ''),
+                  textSize: 12.5,
+                  textColor: text,
+                  textHaloColor: halo,
+                  textHaloWidth: 1.5,
+                  textOffset: const [0, -1.5],
+                )
+              : null,
+        ));
+      }
+    }
+
+    // Flights tab: a pin at each city a flight comes from; tapping it books that flight.
+    for (final offer in flightOffers) {
+      final origin = widget.catalog.origin(offer.origin);
+      if (origin == null) continue;
+      final at = Point(coordinates: Position(origin.longitude, origin.latitude));
+      pins.add(_Pin(
+        kind: _PinKind.flight,
+        at: (origin.latitude, origin.longitude),
+        target: offer,
+        dot: CircleAnnotationOptions(
+          geometry: at,
+          circleRadius: 8,
+          circleColor: _flightColor.toARGB32(),
+          circleStrokeColor: 0xFFFFFFFF,
+          circleStrokeWidth: 2,
+          circleSortKey: 25,
+        ),
+        label: PointAnnotationOptions(
+          geometry: at,
+          textField: '${offer.origin} ${formatPeso(offer.price).replaceFirst('₱', '')}',
+          textSize: 11.5,
+          textColor: text,
+          textHaloColor: halo,
+          textHaloWidth: 1.5,
+          textOffset: const [0, -1.5],
+        ),
+      ));
+    }
+    return pins;
+  }
+
+  /// Merges pins of the same kind that would overlap at the current zoom into
+  /// one bubble with a count. Selected pins never merge.
+  _PinLayout _clusterPins(List<_Pin> pins) {
+    final layout = _PinLayout();
+    for (final kind in _PinKind.values) {
+      final loose = <_Pin>[];
+      for (final pin in pins) {
+        if (pin.kind != kind) continue;
+        if (pin.pinned) {
+          layout.add(pin.dot, pin.target, pin.label);
+        } else {
+          loose.add(pin);
+        }
+      }
+      final points = <LatLng>[for (final pin in loose) pin.at];
+      for (final group in clusterGroups(points, _clusterZoom)) {
+        if (group.length == 1) {
+          final pin = loose[group.first];
+          layout.add(pin.dot, pin.target, pin.label);
+          continue;
+        }
+        var lat = 0.0, lng = 0.0;
+        final members = <LatLng>[];
+        for (final i in group) {
+          lat += loose[i].at.$1;
+          lng += loose[i].at.$2;
+          members.add(loose[i].at);
+        }
+        // Bubbles of different kinds at the same place would cover each other:
+        // nudge each kind its own way (flights up, hotels lower left, golf
+        // lower right), a fixed number of pixels at this zoom.
+        final (dx, dy) = switch (kind) {
+          _PinKind.flight => (0.0, -16.0),
+          _PinKind.hotel => (-17.0, 11.0),
+          _PinKind.golf => (17.0, 11.0),
+        };
+        final degPerPx = 360 / (512 * math.pow(2, _clusterZoom));
+        final cLat = lat / group.length, cLng = lng / group.length;
+        final at = Point(
+          coordinates: Position(cLng + dx * degPerPx, cLat - dy * degPerPx * math.cos(cLat * math.pi / 180)),
+        );
+        final color = _kindColor(kind);
+        final cluster = _PinCluster(kind, members);
+        layout.add(
+          CircleAnnotationOptions(
+            geometry: at,
+            circleRadius: 12 + math.min(group.length, 20) * 0.35,
+            circleColor: color.toARGB32(),
+            circleStrokeColor: 0xFFFFFFFF,
+            circleStrokeWidth: 2.5,
+            circleSortKey: 40,
+          ),
+          cluster,
+          PointAnnotationOptions(
+            geometry: at,
+            textField: '${group.length}',
+            textSize: 12.5,
+            textColor: 0xFFFFFFFF,
+            textHaloColor: color.toARGB32(),
+            textHaloWidth: 0.6,
+          ),
+        );
+      }
+    }
+    return layout;
+  }
+
+  static Color _kindColor(_PinKind kind) => switch (kind) {
+        _PinKind.hotel => _hotelColor,
+        _PinKind.golf => _golfColor,
+        _PinKind.flight => _flightColor,
+      };
+
+  /// Zooms in on a cluster until its pins come apart.
+  void _zoomIntoCluster(_PinCluster cluster) {
+    var south = 90.0, north = -90.0, west = 180.0, east = -180.0;
+    for (final p in cluster.points) {
+      south = math.min(south, p.$1);
+      north = math.max(north, p.$1);
+      west = math.min(west, p.$2);
+      east = math.max(east, p.$2);
+    }
+    final (top, bottom) = _cameraPadding();
+    final fit = _zoomToFitBox((south, west), (north, east), _mapSize.width, _mapSize.height - top - bottom);
+    final zoom = math.min(math.max(_clusterZoom + 2, fit), 16.0);
+    final center = ((south + north) / 2, (west + east) / 2);
+    _clusterZoom = zoom;
+    _syncQueue = _syncQueue.then((_) => _syncAnnotations()).then((_) async {
+      final map = _map;
+      if (map == null) return;
+      await map.flyTo(
+        CameraOptions(
+          center: Point(coordinates: _position(center)),
+          zoom: zoom,
+          padding: MbxEdgeInsets(top: top, left: 0, bottom: bottom, right: 0),
+        ),
+        MapAnimationOptions(duration: 700),
+      );
+    }).catchError((Object e) {
+      debugPrint('Cluster zoom: $e');
+    });
+  }
+
+  /// Re-clusters when the user has zoomed far enough for pins to merge or split.
+  void _onMapIdle(MapIdleEventData _) {
+    final map = _map;
+    if (map == null) return;
+    map.getCameraState().then((state) {
+      if (!mounted || (state.zoom - _clusterZoom).abs() < 0.5) return;
+      _clusterZoom = state.zoom;
+      _syncQueue = _syncQueue.then((_) => _syncAnnotations()).catchError((Object e) {
+        debugPrint('Re-cluster: $e');
+      });
+    }).catchError((Object e) {
+      debugPrint('Camera state: $e');
+    });
+  }
+
   void _updatePlane() {
     final plane = _plane, layer = _planeLayer, flight = _flight;
     if (plane == null || layer == null || flight == null) return;
@@ -588,12 +738,41 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     layer.update(plane).catchError((Object e) => debugPrint('Plane update: $e'));
   }
 
+  /// Space kept clear at the top (switch and legend) and bottom (sheet, tracker
+  /// panel, or the airport cards when zoomed out).
+  (double, double) _cameraPadding() {
+    final top = MediaQuery.paddingOf(context).top + 56;
+    final bottom = (_tracking || _selected != null) ? _sheetHeight + 24 : 136.0;
+    return (top, bottom);
+  }
+
   Future<void> _moveCamera({bool animate = true}) async {
     final map = _map;
-    if (map == null || !mounted) return;
-    final top = MediaQuery.paddingOf(context).top + 56;
-    // Room for the sheet or tracker panel, or for the airport cards when zoomed out.
-    final bottom = (_tracking || _selected != null) ? _sheetHeight + 24 : 136.0;
+    final target = _cameraTarget();
+    if (map == null || target == null) return;
+    final (center, zoom) = target;
+    final (top, bottom) = _cameraPadding();
+    final camera = CameraOptions(
+      center: Point(coordinates: _position(center)),
+      zoom: zoom,
+      pitch: 0,
+      padding: MbxEdgeInsets(top: top, left: 0, bottom: bottom, right: 0),
+    );
+    try {
+      if (animate) {
+        await map.flyTo(camera, MapAnimationOptions(duration: 1000));
+      } else {
+        await map.setCamera(camera);
+      }
+    } catch (e) {
+      debugPrint('Map camera: $e');
+    }
+  }
+
+  /// Where the camera should be for the current selection: center and zoom.
+  (LatLng, double)? _cameraTarget() {
+    if (!mounted) return null;
+    final (top, bottom) = _cameraPadding();
 
     LatLng center;
     double zoom;
@@ -627,22 +806,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     } else {
       (center, zoom) = _overview(top, bottom);
     }
-
-    final camera = CameraOptions(
-      center: Point(coordinates: _position(center)),
-      zoom: _tier == MapTier.standard ? zoom - 0.3 : zoom,
-      pitch: 0,
-      padding: MbxEdgeInsets(top: top, left: 0, bottom: bottom, right: 0),
-    );
-    try {
-      if (animate) {
-        await map.flyTo(camera, MapAnimationOptions(duration: 1000));
-      } else {
-        await map.setCamera(camera);
-      }
-    } catch (e) {
-      debugPrint('Map camera: $e');
-    }
+    return (center, _tier == MapTier.standard ? zoom - 0.3 : zoom);
   }
 
   /// Center and zoom that frame every arrival airport above the bottom cards.
@@ -717,6 +881,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
                     styleUri: _tier == MapTier.standard ? MapboxStyles.STANDARD : (dark ? MapboxStyles.DARK : MapboxStyles.LIGHT),
                     onMapCreated: _onMapCreated,
                     onStyleLoadedListener: _onStyleLoaded,
+                    onMapIdleListener: _onMapIdle,
                   ),
                 )
               else
@@ -864,6 +1029,47 @@ class _ModeSwitch extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+enum _PinKind { hotel, golf, flight }
+
+/// One pin before clustering: its dot, optional label, and what tapping it opens.
+class _Pin {
+  _Pin({required this.kind, required this.at, required this.target, required this.dot, this.label, this.pinned = false});
+
+  final _PinKind kind;
+  final LatLng at;
+  final Object target;
+  final CircleAnnotationOptions dot;
+  final PointAnnotationOptions? label;
+
+  /// Selected pins always stay on their own.
+  final bool pinned;
+}
+
+/// Several pins of one kind merged into a bubble; tapping it zooms in.
+class _PinCluster {
+  _PinCluster(this.kind, this.points);
+
+  final _PinKind kind;
+  final List<LatLng> points;
+}
+
+/// The dots and labels to draw, each with what tapping it opens.
+class _PinLayout {
+  final dots = <CircleAnnotationOptions>[];
+  final dotTargets = <Object>[];
+  final labels = <PointAnnotationOptions>[];
+  final labelTargets = <Object>[];
+
+  void add(CircleAnnotationOptions dot, Object target, PointAnnotationOptions? label) {
+    dots.add(dot);
+    dotTargets.add(target);
+    if (label != null) {
+      labels.add(label);
+      labelTargets.add(target);
+    }
   }
 }
 
