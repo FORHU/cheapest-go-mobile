@@ -88,6 +88,7 @@ class _FlightResultsViewState extends State<FlightResultsView> {
       return SafeArea(
         bottom: false,
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
             Text('Flights', style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 26)),

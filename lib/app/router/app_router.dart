@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cheapest_go_mobile/app/router/app_header.dart';
 import 'package:cheapest_go_mobile/app/router/globe_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/router/stay_play_view.dart';
 import 'package:cheapest_go_mobile/features/airports/views/airport_hub_view.dart';
@@ -17,6 +18,7 @@ import 'package:cheapest_go_mobile/features/hotels/views/hotel_results_view.dart
 import 'package:cheapest_go_mobile/features/map/views/map_view.dart';
 import 'package:cheapest_go_mobile/features/profile/views/profile_view.dart';
 import 'package:cheapest_go_mobile/features/trips/views/trips_view.dart';
+import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 
 /// FAOS `app/` layer: routes and the tab shell.
 GoRouter createAppRouter() => GoRouter(
@@ -112,8 +114,28 @@ class MainScaffoldShell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final branch = navigationShell.currentIndex;
+    final onMap = branch == _mapBranch;
     return Scaffold(
-      body: navigationShell,
+      // The map stays full screen; every other tab gets the shared header and
+      // pull to refresh (any vertical list in the tab can start it).
+      body: onMap
+          ? navigationShell
+          : Column(
+              children: [
+                const AppHeader(),
+                Expanded(
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeTop: true,
+                    child: RefreshIndicator(
+                      notificationPredicate: (n) => n.metrics.axis == Axis.vertical,
+                      onRefresh: refreshAppData,
+                      child: navigationShell,
+                    ),
+                  ),
+                ),
+              ],
+            ),
       bottomNavigationBar: GlobeBottomNav(
         tabs: const [
           GlobeNavTab(icon: Icons.home_outlined, activeIcon: Icons.home_rounded, label: 'Home'),

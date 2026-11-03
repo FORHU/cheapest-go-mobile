@@ -83,27 +83,9 @@ class HomeView extends StatelessWidget {
         return SafeArea(
           bottom: false,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text.rich(
-                      TextSpan(children: [
-                        const TextSpan(text: 'Cheapest'),
-                        TextSpan(text: 'Go', style: TextStyle(color: c.accent)),
-                      ]),
-                      style: text.headlineSmall?.copyWith(fontSize: 22),
-                    ),
-                  ),
-                  CircleIconButton(
-                    icon: Icons.person_outline_rounded,
-                    tooltip: 'Profile and account',
-                    onPressed: () => context.push('/profile'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
               Text('Where are you\nflying into?', style: text.headlineLarge),
               const SizedBox(height: 6),
               Text('Stays and tee times near your arrival airport.', style: TextStyle(fontSize: 14, color: c.textMuted)),

@@ -84,6 +84,7 @@ class _HotelResultsViewState extends State<HotelResultsView> {
         return SafeArea(
           bottom: false,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               Row(
