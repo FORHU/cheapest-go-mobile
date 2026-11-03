@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
+import 'package:cheapest_go_mobile/shared/flights/flight_status.dart';
+import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/saved_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -182,6 +184,8 @@ class _BookingCard extends StatelessWidget {
           Text(booking.when, style: TextStyle(fontSize: 13, color: c.textSecondary)),
           const SizedBox(height: 2),
           Text(booking.detail, style: TextStyle(fontSize: 12, color: c.textMuted)),
+          if (booking.flight case final flight?)
+            if (DateTime.now().toUtc().isBefore(flight.arrivalUtc.add(kTrackAfterLanding))) _FlightTracking(booking: booking, flight: flight),
           const SizedBox(height: 10),
           Divider(color: c.hairline),
           const SizedBox(height: 8),
@@ -195,6 +199,63 @@ class _BookingCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Live status of an upcoming or current flight, its offline map, and a way
+/// to follow it on the map.
+class _FlightTracking extends StatelessWidget {
+  const _FlightTracking({required this.booking, required this.flight});
+
+  final Booking booking;
+  final BookedFlight flight;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return ListenableBuilder(
+      listenable: Listenable.merge([offlineRouteMaps, flightSimulator]),
+      builder: (context, _) {
+        final status = flightStatusService.statusOf(flight, flightSimulator.nowFor(booking.reference));
+        final map = offlineRouteMaps.statusOf(booking.reference);
+        final label = switch (status.phase) {
+          FlightPhase.scheduled => 'Scheduled',
+          FlightPhase.boarding => 'Boarding now',
+          FlightPhase.inAir => 'In the air · ${(status.progress * 100).round()}%',
+          FlightPhase.landed => 'Landed',
+        };
+        final mapLabel = switch (map.state) {
+          OfflineMapState.ready => 'Offline map saved',
+          OfflineMapState.downloading => 'Saving offline map · ${(map.progress * 100).round()}%',
+          OfflineMapState.failed => "Offline map didn't save",
+          OfflineMapState.none => 'Offline map not saved yet',
+        };
+        return Padding(
+          padding: const EdgeInsets.only(top: 10),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.accent)),
+                    Text(mapLabel, style: TextStyle(fontSize: 11.5, color: c.textMuted)),
+                  ],
+                ),
+              ),
+              OutlinedButton.icon(
+                onPressed: () {
+                  flightToTrack.value = booking.reference;
+                  context.go('/map');
+                },
+                icon: const Icon(Icons.my_location_rounded, size: 16),
+                label: const Text('Track'),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

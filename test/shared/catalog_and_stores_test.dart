@@ -125,6 +125,19 @@ void main() {
       expect(late.durationLabel, '3h 20m');
     });
 
+    test('arrival is in the local time at the destination', () {
+      const toSeoul = FlightOffer(
+        id: 'MNL-ICN-0', airline: 'A', flightNo: 'A 1', origin: 'MNL', destination: 'ICN',
+        departs: '06:15', durationMinutes: 236, stopover: null, baggage: '', price: 1,
+      );
+      expect(toSeoul.arrives, '11:11'); // 10:11 in Manila, Seoul is an hour ahead
+      const toBangkok = FlightOffer(
+        id: 'MNL-BKK-0', airline: 'A', flightNo: 'A 2', origin: 'MNL', destination: 'BKK',
+        departs: '00:20', durationMinutes: 30, stopover: null, baggage: '', price: 1,
+      );
+      expect(toBangkok.arrives, '23:50-1'); // 00:50 in Manila, Bangkok is an hour behind
+    });
+
     test('a hotel is priced from its cheapest room', () {
       final h = catalog.hotel('mnl-t3-garden')!;
       expect(h.fromRate, 4400);

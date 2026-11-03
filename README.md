@@ -17,8 +17,8 @@ lib/
 │   ├── airports/                 # Airport hub: stays and golf nearest one airport
 │   ├── hotels/                   # Results, detail + room choice, checkout (mock payment)
 │   ├── golf/                     # Courses near the airport, tee times, tee-time booking
-│   ├── map/                      # Mapbox 3D globe / 2D map: airports, stays, golf, routes in (follows the app theme)
-│   ├── trips/                    # Upcoming / past bookings and saved stays
+│   ├── map/                      # Mapbox 3D globe / 2D map: airports, stays, golf, routes in; My flights tracker (GPS or schedule)
+│   ├── trips/                    # Upcoming / past bookings and saved stays; flight status + Track
 │   └── profile/                  # Account, theme (system / light / dark), 2D / 3D map
 └── shared/                       # Deterministic infrastructure (never imports features/ or app/)
     ├── auth/                     # Role, Permission, RBAC evaluator
@@ -26,11 +26,12 @@ lib/
     ├── components/               # UI kit (cards, rating badge, tabs, pills), airport picker, buttons
     ├── errors/                   # ApiError, error_router, retry_policy
     ├── flags/                    # Feature FlagEngine
+    ├── flights/                  # FlightStatusService (schedule mock), debug FlightSimulator, offline route maps (Mapbox TileStore)
     ├── lib/                      # env.dart, http.dart, token.dart
     ├── pagination/               # PaginationState
-    ├── stores/                   # Trip search, bookings, saved stays, UI settings (ThemeMode, map)
+    ├── stores/                   # Trip search, bookings (saved on the device), saved stays, UI settings (ThemeMode, map)
     ├── theme/tokens/             # AppColors light + dark (v1 web theme), radius, spacing, effects
-    └── utils/                    # Peso, date, and tee-time formatting
+    └── utils/                    # Peso, date, and tee-time formatting; great-circle geometry
 
 tools/
 └── validate_architecture.dart    # Static import-boundary validator

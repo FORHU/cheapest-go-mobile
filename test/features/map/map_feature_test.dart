@@ -5,12 +5,41 @@ import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dar
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
 import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
+import 'package:cheapest_go_mobile/shared/flights/flight_status.dart';
+import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
+import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import '../../test_helpers.dart';
+
+/// Books [offer] so it departs [departsIn] from now (negative: already left).
+Booking bookFlight(FlightOffer offer, Duration departsIn) => bookingsStore.addFlight(
+      origin: offer.origin,
+      destination: offer.destination,
+      airline: offer.airline,
+      flightNo: offer.flightNo,
+      day: DateTime.now(),
+      departs: offer.departs,
+      arrives: offer.arrives,
+      stops: offer.stopsLabel,
+      passengers: 1,
+      total: offer.price,
+      flight: BookedFlight(
+        offerId: offer.id,
+        airline: offer.airline,
+        flightNo: offer.flightNo,
+        origin: offer.origin,
+        destination: offer.destination,
+        departureUtc: DateTime.now().toUtc().add(departsIn),
+        durationMinutes: offer.durationMinutes,
+      ),
+    );
 
 void main() {
   const catalog = travelCatalog;
   final mnl = catalog.airport('MNL')!;
+  final mnlToIcn = catalog.flights('MNL', 'ICN').firstWhere((f) => f.nonStop);
+  final mnlToCeb = catalog.flights('MNL', 'CEB').firstWhere((f) => f.nonStop);
 
   group('Map models', () {
     test('places near an airport are the catalogue stays and courses, at their distance', () {
@@ -33,19 +62,20 @@ void main() {
       expect(placesNear(catalog, mnl, MapFilter.golf).every((p) => p.isGolf), isTrue);
     });
 
-    test('tracked flights land at arrival airports and move along their route', () {
-      final flights = trackedFlights(catalog);
-      expect(flights, isNotEmpty);
-      final arrivals = catalog.airports().map((a) => a.code).toSet();
-      for (final f in flights) {
-        expect(arrivals, contains(f.destination.code));
-        expect(f.offer.nonStop, isTrue);
-        expect(f.groundSpeedKnots, inInclusiveRange(250, 600));
-        expect(distanceKm(f.positionAt(0), f.from), lessThan(1));
-        expect(distanceKm(f.positionAt(1), f.to), lessThan(1));
-        final half = f.positionAt(0.5);
-        expect(distanceKm(f.from, half), closeTo(distanceKm(half, f.to), 1));
-      }
+    test('a booked flight is trackable until 6 h after landing and moves along its route', () {
+      final b = bookFlight(mnlToIcn, const Duration(hours: -1));
+      final now = DateTime.now().toUtc();
+      final tracked = trackableFlights(catalog, [b], (_) => now);
+      expect(tracked.single.destination.code, 'ICN');
+      final f = tracked.single;
+      expect(f.groundSpeedKnots, inInclusiveRange(250, 600));
+      expect(distanceKm(f.positionAt(0), f.from), lessThan(1));
+      expect(distanceKm(f.positionAt(1), f.to), lessThan(1));
+      final half = f.positionAt(0.5);
+      expect(distanceKm(f.from, half), closeTo(distanceKm(half, f.to), 1));
+
+      final later = b.flight!.arrivalUtc.add(kTrackAfterLanding + const Duration(minutes: 1));
+      expect(trackableFlights(catalog, [b], (_) => later), isEmpty);
     });
 
     test('flights into an airport are the cheapest per origin, cheapest first', () {
@@ -128,29 +158,58 @@ void main() {
   });
 
   group('Flight tracker panel', () {
-    testWidgets('time left falls as progress grows, and it links the arrival airport', (tester) async {
-      final flight = trackedFlights(catalog).first;
-      var explore = 0;
-      Widget hud(double progress) => MaterialApp(
-            theme: AppTheme.dark,
-            home: Scaffold(
-              body: FlightTelemetryHud(
+    final booking = bookFlight(mnlToIcn, const Duration(days: 1));
+    final flight = TrackedFlight(booking: booking, origin: mnl, destination: catalog.airport('ICN')!);
+    final dep = booking.flight!.departureUtc;
+
+    Widget hud(DateTime now, {PositionSource source = PositionSource.schedule, VoidCallback? onExplore, VoidCallback? onSave}) => MaterialApp(
+          theme: AppTheme.dark,
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: FlightTelemetryHud(
                 flight: flight,
-                progress: progress,
-                onNextFlight: () {},
-                onViewDestinationHub: () => explore++,
+                status: flightStatusService.statusOf(booking.flight!, now),
+                positionSource: source,
+                offlineMap: const OfflineMapStatus(OfflineMapState.none),
+                onDownloadMap: onSave ?? () {},
                 onExitTracking: () {},
+                onViewDestinationHub: onExplore,
               ),
             ),
-          );
+          ),
+        );
 
-      await tester.pumpWidget(hud(0.2));
+    testWidgets('before take-off it counts down in local times', (tester) async {
+      var saved = 0;
+      await tester.pumpWidget(hud(dep.subtract(const Duration(hours: 3)), onSave: () => saved++));
+      expect(find.text('Departs in 3h 00m'), findsOneWidget);
+      expect(find.textContaining('MNL time'), findsOneWidget);
+      await tester.tap(find.text('Save'));
+      expect(saved, 1);
+
+      await tester.pumpWidget(hud(dep.subtract(const Duration(minutes: 20))));
+      expect(find.text('Boarding · departs in 20 min'), findsOneWidget);
+    });
+
+    testWidgets('in the air: time left falls, and it says where the position comes from', (tester) async {
+      final span = booking.flight!.arrivalUtc.difference(dep);
+      await tester.pumpWidget(hud(dep.add(span * 0.2)));
       final early = tester.widget<Text>(find.textContaining('nm to go')).data;
-      await tester.pumpWidget(hud(0.8));
-      final late = tester.widget<Text>(find.textContaining('nm to go')).data;
-      expect(early, isNot(late));
+      expect(find.textContaining('Estimated from the schedule'), findsOneWidget);
 
-      await tester.tap(find.text('Stays & golf near ${flight.destination.code}'));
+      await tester.pumpWidget(hud(dep.add(span * 0.8), source: PositionSource.gps));
+      expect(tester.widget<Text>(find.textContaining('nm to go')).data, isNot(early));
+      expect(find.text('Your position from GPS'), findsOneWidget);
+
+      await tester.pumpWidget(hud(dep.add(span * 0.5), source: PositionSource.scheduleNoPermission));
+      expect(find.textContaining('Allow location'), findsOneWidget);
+    });
+
+    testWidgets('after landing it hands over to the arrival airport', (tester) async {
+      var explore = 0;
+      await tester.pumpWidget(hud(booking.flight!.arrivalUtc.add(const Duration(minutes: 30)), onExplore: () => explore++));
+      expect(find.text('Landed in Seoul'), findsOneWidget);
+      await tester.tap(find.text('Stays & golf near ICN'));
       expect(explore, 1);
     });
   });
@@ -189,23 +248,48 @@ void main() {
       expect(find.text('${ceb.city}, ${ceb.country}'), findsOneWidget);
     });
 
-    testWidgets('live flights move, then hand over to the arrival airport', (tester) async {
-      await pumpApp(tester, location: '/map');
-      await tester.tap(find.text('Live flights'));
+    testWidgets('Trips › Track opens the flight in the air on the map', (tester) async {
+      final b = bookFlight(mnlToIcn, const Duration(hours: -1));
+      await pumpApp(tester, location: '/trips');
+      final card = find.ancestor(of: find.text(b.reference), matching: find.byType(AppCard));
+      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+      final track = find.descendant(of: card, matching: find.text('Track'));
+      expect(find.descendant(of: card, matching: find.textContaining('In the air')), findsOneWidget);
+      // Bring it up clear of the bottom navigation before tapping.
+      await tester.drag(find.byType(Scrollable).first, Offset(0, 300 - tester.getCenter(track).dy));
+      await tester.pumpAndSettle();
+      await tester.tap(track);
       await tester.pump();
-      expect(find.byType(FlightTelemetryHud), findsOneWidget);
+      await tester.pump();
 
-      final before = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud)).progress;
-      await tester.pump(const Duration(seconds: 2));
-      final after = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud)).progress;
-      expect(after, greaterThan(before));
+      final hud = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud));
+      expect(hud.flight.reference, b.reference);
+      expect(hud.status.phase, FlightPhase.inAir);
+      expect(find.textContaining('nm to go'), findsOneWidget);
+      await tester.tap(find.byTooltip('Stop tracking'));
+      await tester.pump();
+    });
 
-      final destination = trackedFlights(catalog).first.destination;
-      await tester.tap(find.text('Stays & golf near ${destination.code}'));
+    testWidgets('a landed flight hands over to its arrival airport', (tester) async {
+      final b = bookFlight(mnlToCeb, const Duration(hours: -3));
+      flightToTrack.value = b.reference;
+      await pumpApp(tester, location: '/map');
+      await tester.pump();
+      expect(find.text('Landed in Cebu'), findsOneWidget);
+
+      await tester.tap(find.text('Stays & golf near CEB'));
       await tester.pumpAndSettle();
       expect(find.byType(FlightTelemetryHud), findsNothing);
-      expect(find.text('${destination.city}, ${destination.country}'), findsOneWidget);
-      expect(tripSearchStore.airportCode, destination.code);
+      expect(find.text('Cebu, Philippines'), findsOneWidget);
+      expect(tripSearchStore.airportCode, 'CEB');
+    });
+
+    testWidgets('My flights with nothing booked offers to find flights', (tester) async {
+      var found = 0;
+      await tester.pumpWidget(MaterialApp(theme: AppTheme.light, home: Scaffold(body: NoFlightsCard(onFindFlights: () => found++))));
+      expect(find.text('No flights to track'), findsOneWidget);
+      await tester.tap(find.text('Find flights'));
+      expect(found, 1);
     });
   });
 }
