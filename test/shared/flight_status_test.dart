@@ -94,4 +94,21 @@ void main() {
     reopened.seedDemoHistory();
     expect(reopened.all.length, 1, reason: 'demo trips only fill an empty store');
   });
+
+  test('reset demo data drops test bookings and keeps the sample trips', () async {
+    SharedPreferences.setMockInitialValues({});
+    final store = BookingsStore()..seedDemoHistory();
+    final samples = store.all.length;
+    store.addFlight(
+      origin: 'MNL', destination: 'ICN', airline: 'A', flightNo: 'A 1', day: DateTime(2026, 11, 20),
+      departs: '08:30', arrives: '13:30', stops: 'Non-stop', passengers: 1, total: 1, flight: flight,
+    );
+    await store.resetToDemo();
+    expect(store.all.length, samples);
+    expect(store.flights, isEmpty);
+
+    final reopened = BookingsStore();
+    await reopened.init();
+    expect(reopened.all.length, samples);
+  });
 }

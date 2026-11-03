@@ -211,7 +211,8 @@ class _FlightSearchCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const UiLabel('Passengers'),
+                            // One line: scale down rather than break the word.
+                            const FittedBox(fit: BoxFit.scaleDown, alignment: Alignment.centerLeft, child: UiLabel('Passengers')),
                             const SizedBox(height: 2),
                             Text('${s.adults}', style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                           ],
@@ -219,11 +220,13 @@ class _FlightSearchCard extends StatelessWidget {
                       ),
                       IconButton(
                         tooltip: 'Fewer passengers',
+                        visualDensity: VisualDensity.compact,
                         onPressed: s.adults > 1 ? () => s.setAdults(s.adults - 1) : null,
                         icon: const Icon(Icons.remove_circle_outline_rounded),
                       ),
                       IconButton(
                         tooltip: 'More passengers',
+                        visualDensity: VisualDensity.compact,
                         onPressed: () => s.setAdults(s.adults + 1),
                         icon: Icon(Icons.add_circle_rounded, color: c.accent),
                       ),

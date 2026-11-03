@@ -1,3 +1,4 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
@@ -55,6 +56,28 @@ void main() {
       }
       // Same spot every time.
       expect(placesNear(catalog, mnl, MapFilter.overview).first.position, places.first.position);
+    });
+
+    test('every stay and course sits on the land side of its airport', () {
+      // The land directions per airport, as in map_models.dart.
+      const land = {
+        'MNL': (340.0, 190.0), 'CEB': (260.0, 70.0), 'DVO': (200.0, 140.0), 'KLO': (130.0, 70.0),
+        'PPS': (205.0, 25.0), 'BKK': (250.0, 160.0), 'TAG': (20.0, 70.0), 'ILO': (270.0, 180.0), 'DPS': (340.0, 60.0), 'ICN': (60.0, 70.0),
+      };
+      double bearing(LatLng a, LatLng b) {
+        double r(double d) => d * math.pi / 180;
+        final y = math.sin(r(b.$2 - a.$2)) * math.cos(r(b.$1));
+        final x = math.cos(r(a.$1)) * math.sin(r(b.$1)) - math.sin(r(a.$1)) * math.cos(r(b.$1)) * math.cos(r(b.$2 - a.$2));
+        return (math.atan2(y, x) * 180 / math.pi + 360) % 360;
+      }
+
+      for (final MapEntry(key: code, value: (start, width)) in land.entries) {
+        final airport = catalog.airport(code)!;
+        for (final p in placesNear(catalog, airport, MapFilter.overview)) {
+          final offset = (bearing((airport.latitude, airport.longitude), p.position) - start + 360) % 360;
+          expect(offset, lessThanOrEqualTo(width + 0.5), reason: '${p.id} near $code');
+        }
+      }
     });
 
     test('filters keep only stays or only golf', () {

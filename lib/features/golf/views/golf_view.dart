@@ -29,6 +29,8 @@ class _GolfViewState extends State<GolfView> {
   Future<void> _book(GolfCourse course, DateTime day, String time) async {
     final players = await showModalBottomSheet<int>(
       context: context,
+      // Over the whole app, so the bottom bar never covers the sheet.
+      useRootNavigator: true,
       isScrollControlled: true,
       builder: (_) => _TeeTimeSheet(course: course, day: day, time: time, initialPlayers: tripSearchStore.players),
     );

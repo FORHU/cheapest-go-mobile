@@ -26,8 +26,31 @@ void main() {
       await tester.tap(find.byTooltip('Profile and account'));
       await tester.pumpAndSettle();
       expect(find.byType(AppHeader), findsNothing);
-      expect(find.textContaining('Map View Mode'), findsOneWidget);
+      expect(find.text('App Theme'), findsOneWidget);
+      expect(find.text('Display Currency'), findsNothing, reason: 'prices are always in pesos');
     });
+  });
+
+  testWidgets('Profile › Reset demo data asks first, then clears test bookings', (tester) async {
+    SharedPreferences.setMockInitialValues({});
+    bookingsStore.addStay(
+      airportCode: 'CEB', hotelName: 'Test Stay', roomName: 'Twin', checkIn: DateTime(2099), checkOut: DateTime(2099, 1, 3),
+      adults: 2, total: 1000,
+    );
+    await pumpApp(tester, location: '/profile');
+    await tester.scrollUntilVisible(find.text('Reset demo data'), 200, scrollable: find.byType(Scrollable).first);
+    await tester.tap(find.text('Reset demo data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+    expect(bookingsStore.all.any((b) => b.title == 'Test Stay'), isTrue);
+
+    await tester.tap(find.text('Reset demo data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Reset'));
+    await tester.pumpAndSettle();
+    expect(bookingsStore.all.any((b) => b.title == 'Test Stay'), isFalse);
+    expect(find.text('Demo data reset'), findsOneWidget);
   });
 
   testWidgets('pull to refresh on Trips reloads bookings saved on the device', (tester) async {

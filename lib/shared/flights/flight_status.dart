@@ -8,6 +8,7 @@
 library;
 
 import 'package:flutter/foundation.dart';
+import 'package:cheapest_go_mobile/shared/lib/demo.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 
 enum FlightPhase { scheduled, boarding, inAir, landed }
@@ -65,7 +66,7 @@ const FlightStatusService flightStatusService = ScheduleFlightStatusService();
 /// A flight is worth tracking until this long after it lands.
 const Duration kTrackAfterLanding = Duration(hours: 6);
 
-/// Debug builds only: replays a booked flight fast, from just before
+/// Demo tools only (see [kDemoTools]): replays a booked flight fast, from just before
 /// take-off, so the tracker can be tried without waiting for a real departure.
 class FlightSimulator extends ChangeNotifier {
   FlightSimulator({DateTime Function()? clock}) : _clock = clock ?? DateTime.now;
@@ -81,7 +82,7 @@ class FlightSimulator extends ChangeNotifier {
   bool isRunning(String reference) => _runs.containsKey(reference);
 
   void start(String reference, BookedFlight flight) {
-    assert(!kReleaseMode, 'The flight simulator is for debug builds only');
+    assert(kDemoTools, 'The flight simulator is a demo tool only');
     _runs[reference] = (_clock().toUtc(), flight.departureUtc.subtract(_lead));
     notifyListeners();
   }

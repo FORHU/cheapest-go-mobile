@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart' as geo;
 import 'package:go_router/go_router.dart';
@@ -14,6 +14,7 @@ import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/flights/flight_status.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
+import 'package:cheapest_go_mobile/shared/lib/demo.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
@@ -441,17 +442,27 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     }
 
     // Airports, plus the tracked flight's origin when it isn't one of them.
-    final airports = [
-      ..._airports,
-      if (flight != null && !_airports.any((a) => a.code == flight.origin.code)) flight.origin,
-    ];
+    // Plain loops and locals here: a closure over the nullable `flight` in this
+    // async method crashed the 32-bit ARM release build (SIGSEGV on the Realme C21Y).
+    final originCode = flight?.origin.code;
+    final destinationCode = flight?.destination.code;
+    final selectedCode = _selected?.code;
+    final airports = <Airport>[..._airports];
+    if (flight != null) {
+      var known = false;
+      for (final a in _airports) {
+        if (a.code == originCode) known = true;
+      }
+      if (!known) airports.add(flight.origin);
+    }
+    final labelsAbove = _labelsAbove(airports);
     final dotTargets = <Object>[];
     final dotOptions = <CircleAnnotationOptions>[];
     final labelTargets = <Object>[];
     final labelOptions = <PointAnnotationOptions>[];
     for (final a in airports) {
-      final selected = a.code == _selected?.code || (flight != null && (a.code == flight.destination.code || a.code == flight.origin.code));
-      final at = Point(coordinates: _position((a.latitude, a.longitude)));
+      final selected = a.code == selectedCode || a.code == originCode || a.code == destinationCode;
+      final at = Point(coordinates: Position(a.longitude, a.latitude));
       dotTargets.add(a);
       dotOptions.add(CircleAnnotationOptions(
         geometry: at,
@@ -469,7 +480,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         textColor: text,
         textHaloColor: halo,
         textHaloWidth: 1.5,
-        textOffset: [0, _labelAbove(a, airports) ? -1.5 : 1.5],
+        textOffset: [0, labelsAbove.contains(a.code) ? -1.5 : 1.5],
       ));
     }
 
@@ -604,20 +615,24 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   /// A zoom that fits a route of [km] across most of a phone's width.
   double _zoomToFit(double km) => (math.log(40075 * 0.35 * 360 / (256 * math.max(km, 50))) / math.ln2).clamp(1.5, 8.0);
 
-  /// Puts an airport's label above its pin when its nearest neighbour lies to
-  /// the south, so close pairs like Clark and Manila don't cover each other.
-  static bool _labelAbove(Airport a, List<Airport> all) {
-    Airport? nearest;
-    var best = double.infinity;
-    for (final o in all) {
-      if (o.code == a.code) continue;
-      final d = distanceKm((a.latitude, a.longitude), (o.latitude, o.longitude));
-      if (d < best) {
-        best = d;
-        nearest = o;
+  /// Airports whose label goes above the pin: those whose nearest neighbour lies
+  /// to the south, so close pairs like Clark and Manila don't cover each other.
+  static Set<String> _labelsAbove(List<Airport> all) {
+    final above = <String>{};
+    for (final a in all) {
+      Airport? nearest;
+      var best = double.infinity;
+      for (final o in all) {
+        if (o.code == a.code) continue;
+        final d = distanceKm((a.latitude, a.longitude), (o.latitude, o.longitude));
+        if (d < best) {
+          best = d;
+          nearest = o;
+        }
       }
+      if (nearest != null && best < 250 && nearest.latitude < a.latitude) above.add(a.code);
     }
-    return nearest != null && best < 250 && nearest.latitude < a.latitude;
+    return above;
   }
 
   static Position _position(LatLng p) => Position(p.$2, p.$1);
@@ -721,7 +736,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       onNextFlight: flights.length > 1 ? _nextFlight : null,
       flightLabel: flights.length > 1 ? '${i + 1} of ${flights.length}' : null,
       onViewDestinationHub: flight.hasHub(widget.catalog) ? () => _exploreDestination(flight) : null,
-      onSimulate: kDebugMode ? () => _toggleSimulation(flight) : null,
+      onSimulate: kDemoTools ? () => _toggleSimulation(flight) : null,
       simulating: flightSimulator.isRunning(flight.reference),
     );
   }

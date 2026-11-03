@@ -264,6 +264,13 @@ class BookingsStore extends ChangeNotifier {
 
   static const _demoRoom = 'Deluxe King';
 
+  /// Back to the sample trips only, dropping every booking made since.
+  Future<void> resetToDemo() async {
+    _bookings.clear();
+    seedDemoHistory();
+    await _save();
+  }
+
   Booking _add(Booking booking) {
     _bookings.add(booking);
     notifyListeners();

@@ -41,6 +41,8 @@ class HomeView extends StatelessWidget {
   Future<void> _pickGuests(BuildContext context) async {
     await showModalBottomSheet<void>(
       context: context,
+      // Over the whole app, so the bottom bar never covers the sheet.
+      useRootNavigator: true,
       builder: (context) => ListenableBuilder(
         listenable: tripSearchStore,
         builder: (context, _) => SafeArea(

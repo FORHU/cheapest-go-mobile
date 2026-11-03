@@ -39,15 +39,16 @@ const double _driveKmPerMinute = 0.5;
 /// Stays and courses near [airport], placed at their distance from it.
 ///
 /// The mock catalogue has no coordinates for them, so each sits on a bearing
-/// derived from its id: the same spot every launch, not its real address.
+/// derived from its id, inside the airport's land directions: the same spot
+/// every launch, on land, but not its real address.
 List<MapPlace> placesNear(TravelCatalog catalog, Airport airport, MapFilter filter) {
   final from = (airport.latitude, airport.longitude);
   return [
     if (filter != MapFilter.golf)
-      for (final h in catalog.hotelsNear(airport.code)) MapPlace.hotel(h, offsetKm(from, h.distanceKm, _bearingFor(h.id))),
+      for (final h in catalog.hotelsNear(airport.code)) MapPlace.hotel(h, offsetKm(from, h.distanceKm, _bearingFor(airport.code, h.id))),
     if (filter != MapFilter.stays)
       for (final c in catalog.coursesNear(airport.code))
-        MapPlace.course(c, offsetKm(from, c.driveMinutes * _driveKmPerMinute, _bearingFor(c.id))),
+        MapPlace.course(c, offsetKm(from, c.driveMinutes * _driveKmPerMinute, _bearingFor(airport.code, c.id))),
   ];
 }
 
@@ -63,7 +64,27 @@ List<FlightOffer> flightsInto(TravelCatalog catalog, Airport airport, {int count
   return offers.take(count).toList();
 }
 
-double _bearingFor(String id) => (id.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff) % 360).toDouble();
+/// Directions from each airport (start bearing, degrees clockwise from north,
+/// and width) where its stays and courses can sit without landing in the sea.
+const _landBearings = <String, (double, double)>{
+  'MNL': (340, 190), // Manila Bay lies west
+  'CRK': (0, 360),
+  'CEB': (260, 70), // Mactan is small; Cebu City is across the channel to the west
+  'DVO': (200, 140), // Davao Gulf lies east
+  'KLO': (130, 70), // inland Panay; the sea is north and west
+  'PPS': (205, 25), // along Palawan towards Narra; the island is narrow
+  'TAG': (20, 70), // Panglao is small; Bohol is north-east
+  'ILO': (270, 180), // Guimaras Strait lies south
+  'BKK': (250, 160), // the city side; the Gulf of Thailand is south
+  'DPS': (340, 60), // north of the isthmus, towards Kuta and Denpasar
+  'ICN': (60, 70), // Incheon and Songdo across the bridge, east
+};
+
+double _bearingFor(String airportCode, String id) {
+  final (start, width) = _landBearings[airportCode] ?? (0.0, 360.0);
+  final unit = (id.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff) % 1000) / 1000;
+  return (start + unit * width) % 360;
+}
 
 /// Minutes a flight spends taxiing, climbing and landing; the rest is cruise.
 const int _groundMinutes = 35;

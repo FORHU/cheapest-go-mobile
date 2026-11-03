@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
@@ -50,6 +51,28 @@ class _HotelDetailViewState extends State<HotelDetailView> {
                   children: [
                     for (final p in hotel.photos) PhotoPlaceholder(image: p, label: hotel.name, radius: 0, fade: true),
                   ],
+                ),
+                // Darkens the top of the photo, with light status bar icons over it,
+                // so the clock and battery stay readable in either theme.
+                Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  height: topInset + 72,
+                  child: const AnnotatedRegion<SystemUiOverlayStyle>(
+                    value: SystemUiOverlayStyle.light,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Color(0x73000000), Color(0x00000000)],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
                 Positioned(
                   right: 16,
