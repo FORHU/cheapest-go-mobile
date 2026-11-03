@@ -65,6 +65,7 @@ class _GolfViewState extends State<GolfView> {
         return SafeArea(
           bottom: false,
           child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
             children: [
               Row(

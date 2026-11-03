@@ -32,6 +32,7 @@ class _TripsViewState extends State<TripsView> {
       builder: (context, _) => SafeArea(
         bottom: false,
         child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
           children: [
             Text('Trips', style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 26)),

@@ -238,10 +238,17 @@ abstract class TravelCatalog {
   Hotel? hotel(String id);
   List<GolfCourse> coursesNear(String airportCode);
   GolfCourse? course(String id);
+
+  /// Reloads the catalogue (pull to refresh).
+  Future<void> refresh();
 }
 
 class MockTravelCatalog implements TravelCatalog {
   const MockTravelCatalog();
+
+  /// Mock data is fixed, so there is nothing to reload.
+  @override
+  Future<void> refresh() async {}
 
   @override
   List<Airport> airports() => _airports;
