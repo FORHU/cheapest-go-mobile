@@ -3,228 +3,209 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
-import 'package:cheapest_go_mobile/features/map/components/map_tier_toggle.dart';
 import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
-import 'package:cheapest_go_mobile/features/map/views/map_view.dart';
+import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
+import '../../test_helpers.dart';
 
 void main() {
-  group('Map Feature Models & Hubs Tests', () {
-    test('kGlobalDestinationHubs contains comprehensive hub data', () {
-      expect(kGlobalDestinationHubs.isNotEmpty, isTrue);
+  const catalog = travelCatalog;
+  final mnl = catalog.airport('MNL')!;
 
-      // Verify Manila hub
-      final mnl = kGlobalDestinationHubs.firstWhere((h) => h.code == 'MNL');
-      expect(mnl.name, 'Manila');
-      expect(mnl.airportHotels.isNotEmpty, isTrue);
-      expect(mnl.directFlights.isNotEmpty, isTrue);
-      expect(mnl.golfCourses.isNotEmpty, isTrue);
+  group('Map models', () {
+    test('places near an airport are the catalogue stays and courses, at their distance', () {
+      final places = placesNear(catalog, mnl, MapFilter.overview);
+      final hotels = catalog.hotelsNear('MNL');
+      final courses = catalog.coursesNear('MNL');
+      expect(places.where((p) => !p.isGolf).map((p) => p.id), hotels.map((h) => h.id));
+      expect(places.where((p) => p.isGolf).map((p) => p.id), courses.map((c) => c.id));
 
-      // Verify Clark hub with golf
-      final crk = kGlobalDestinationHubs.firstWhere((h) => h.code == 'CRK');
-      expect(crk.name, 'Clark');
-      expect(crk.golfCourses.any((g) => g.name.contains('Mimosa')), isTrue);
-
-      // Verify Bali hub
-      final dps = kGlobalDestinationHubs.firstWhere((h) => h.code == 'DPS');
-      expect(dps.name, 'Bali');
-      expect(dps.golfCourses.any((g) => g.name.contains('New Kuta')), isTrue);
+      for (final h in hotels) {
+        final place = places.firstWhere((p) => p.id == h.id);
+        expect(distanceKm((mnl.latitude, mnl.longitude), place.position), closeTo(h.distanceKm, 0.05));
+      }
+      // Same spot every time.
+      expect(placesNear(catalog, mnl, MapFilter.overview).first.position, places.first.position);
     });
 
-    test('kActiveTrackedFlights contains valid live telemetry routes', () {
-      expect(kActiveTrackedFlights.isNotEmpty, isTrue);
-      final flight = kActiveTrackedFlights.first;
-      expect(flight.flightNumber, 'PR 537');
-      expect(flight.originHub.code, 'MNL');
-      expect(flight.destinationHub.code, 'SIN');
-      expect(flight.cruisingAltitudeFeet, 36000);
-      expect(flight.groundSpeedKnots, 495);
-    });
-  });
-
-  group('Map Tier Toggle Widget Tests', () {
-    testWidgets('toggles between 2D Lite and 3D Standard Globe', (tester) async {
-      MapTier selectedTier = MapTier.standard;
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.dark,
-          home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) {
-                return MapTierToggle(
-                  currentTier: selectedTier,
-                  onTierChanged: (t) => setState(() => selectedTier = t),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-
-      expect(find.text('2D Lite'), findsOneWidget);
-      expect(find.text('3D Globe'), findsOneWidget);
-
-      // Tap 2D Lite
-      await tester.tap(find.text('2D Lite'));
-      await tester.pumpAndSettle();
-      expect(selectedTier, MapTier.lite);
-
-      // Tap 3D Globe
-      await tester.tap(find.text('3D Globe'));
-      await tester.pumpAndSettle();
-      expect(selectedTier, MapTier.standard);
+    test('filters keep only stays or only golf', () {
+      expect(placesNear(catalog, mnl, MapFilter.stays).every((p) => !p.isGolf), isTrue);
+      expect(placesNear(catalog, mnl, MapFilter.golf).every((p) => p.isGolf), isTrue);
     });
 
-    testWidgets('toggles between Light and Dark map theme modes', (tester) async {
-      MapThemeMode selectedTheme = MapThemeMode.dark;
+    test('tracked flights land at arrival airports and move along their route', () {
+      final flights = trackedFlights(catalog);
+      expect(flights, isNotEmpty);
+      final arrivals = catalog.airports().map((a) => a.code).toSet();
+      for (final f in flights) {
+        expect(arrivals, contains(f.destination.code));
+        expect(f.offer.nonStop, isTrue);
+        expect(f.groundSpeedKnots, inInclusiveRange(250, 600));
+        expect(distanceKm(f.positionAt(0), f.from), lessThan(1));
+        expect(distanceKm(f.positionAt(1), f.to), lessThan(1));
+        final half = f.positionAt(0.5);
+        expect(distanceKm(f.from, half), closeTo(distanceKm(half, f.to), 1));
+      }
+    });
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.dark,
-          home: Scaffold(
-            body: StatefulBuilder(
-              builder: (context, setState) {
-                return MapTierToggle(
-                  currentTier: MapTier.standard,
-                  onTierChanged: (_) {},
-                  mapThemeMode: selectedTheme,
-                  onThemeModeChanged: (m) => setState(() => selectedTheme = m),
-                );
-              },
-            ),
-          ),
-        ),
-      );
-
-      // Verify dark mode icon is rendered (tooltip 'Switch to Light Map')
-      expect(find.byTooltip('Switch to Light Map'), findsOneWidget);
-
-      await tester.tap(find.byTooltip('Switch to Light Map'));
-      await tester.pumpAndSettle();
-      expect(selectedTheme, MapThemeMode.light);
-
-      // Verify light mode icon is rendered (tooltip 'Switch to Dark Map')
-      expect(find.byTooltip('Switch to Dark Map'), findsOneWidget);
-
-      await tester.tap(find.byTooltip('Switch to Dark Map'));
-      await tester.pumpAndSettle();
-      expect(selectedTheme, MapThemeMode.dark);
+    test('flights into an airport are the cheapest per origin, cheapest first', () {
+      final offers = flightsInto(catalog, mnl);
+      expect(offers, isNotEmpty);
+      expect(offers.every((f) => f.destination == 'MNL'), isTrue);
+      expect(offers.map((f) => f.origin).toSet().length, offers.length);
+      for (var i = 1; i < offers.length; i++) {
+        expect(offers[i].price, greaterThanOrEqualTo(offers[i - 1].price));
+      }
     });
   });
 
-  group('Airport Hub Sheet Widget Tests', () {
-    testWidgets('renders airport hotels, flights, and golf tabs properly', (tester) async {
-      final hub = kGlobalDestinationHubs.firstWhere((h) => h.code == 'MNL');
-      int nextCount = 0;
-      int prevCount = 0;
-      int closeCount = 0;
-
-      await tester.pumpWidget(
+  group('Airport sheet', () {
+    Widget sheet({
+      MapFilter filter = MapFilter.overview,
+      MapPlace? selected,
+      void Function(MapFilter)? onFilter,
+      void Function(MapPlace)? onPlace,
+      void Function(MapPlace)? onOpen,
+      VoidCallback? onHub,
+      void Function(FlightOffer)? onFlight,
+    }) =>
         MaterialApp(
-          theme: AppTheme.dark,
+          theme: AppTheme.light,
           home: Scaffold(
             body: AirportHubSheet(
-              hub: hub,
-              onNextHub: () => nextCount++,
-              onPreviousHub: () => prevCount++,
-              onClose: () => closeCount++,
+              airport: mnl,
+              places: placesNear(catalog, mnl, MapFilter.overview),
+              filter: filter,
+              selectedPlace: selected,
+              onFilterChanged: onFilter ?? (_) {},
+              onPlaceSelected: onPlace ?? (_) {},
+              onOpenPlace: onOpen ?? (_) {},
+              onOpenHub: onHub ?? () {},
+              onBookFlight: onFlight ?? (_) {},
+              onNextAirport: () {},
+              onPreviousAirport: () {},
+              onClose: () {},
             ),
           ),
-        ),
-      );
+        );
 
-      // Hub header
-      expect(find.text('MNL'), findsOneWidget);
+    testWidgets('overview shows peso prices and opens the airport hub', (tester) async {
+      var hub = 0;
+      MapFilter? picked;
+      await tester.pumpWidget(sheet(onHub: () => hub++, onFilter: (f) => picked = f));
+
+      expect(find.text('Manila, Philippines'), findsOneWidget);
+      expect(find.textContaining('₱'), findsWidgets);
+      expect(find.textContaining('\$'), findsNothing);
+
+      await tester.tap(find.text('Open the MNL airport hub'));
+      expect(hub, 1);
+      await tester.tap(find.textContaining('Golf ·'));
+      expect(picked, MapFilter.golf);
+    });
+
+    testWidgets('a stay in the list selects it; its preview opens it to book', (tester) async {
+      MapPlace? selected;
+      MapPlace? opened;
+      await tester.pumpWidget(sheet(filter: MapFilter.stays, onPlace: (p) => selected = p));
+      final first = catalog.hotelsNear('MNL').first;
+      await tester.tap(find.text(first.name));
+      expect(selected?.id, first.id);
+
+      await tester.pumpWidget(sheet(selected: selected, onOpen: (p) => opened = p));
+      expect(find.text('See rooms & book'), findsOneWidget);
+      await tester.tap(find.text('See rooms & book'));
+      expect(opened?.id, first.id);
+    });
+
+    testWidgets('flights in list books the tapped flight', (tester) async {
+      FlightOffer? booked;
+      await tester.pumpWidget(sheet(filter: MapFilter.flights, onFlight: (f) => booked = f));
+      final cheapest = flightsInto(catalog, mnl).first;
+      await tester.tap(find.textContaining('${cheapest.origin} → MNL'));
+      expect(booked?.id, cheapest.id);
+    });
+  });
+
+  group('Flight tracker panel', () {
+    testWidgets('time left falls as progress grows, and it links the arrival airport', (tester) async {
+      final flight = trackedFlights(catalog).first;
+      var explore = 0;
+      Widget hud(double progress) => MaterialApp(
+            theme: AppTheme.dark,
+            home: Scaffold(
+              body: FlightTelemetryHud(
+                flight: flight,
+                progress: progress,
+                onNextFlight: () {},
+                onViewDestinationHub: () => explore++,
+                onExitTracking: () {},
+              ),
+            ),
+          );
+
+      await tester.pumpWidget(hud(0.2));
+      final early = tester.widget<Text>(find.textContaining('nm to go')).data;
+      await tester.pumpWidget(hud(0.8));
+      final late = tester.widget<Text>(find.textContaining('nm to go')).data;
+      expect(early, isNot(late));
+
+      await tester.tap(find.text('Stays & golf near ${flight.destination.code}'));
+      expect(explore, 1);
+    });
+  });
+
+  group('Map tab', () {
+    setUp(() => tripSearchStore.setAirport('MNL'));
+
+    testWidgets('opens on the searched airport and books a stay from the map', (tester) async {
+      await pumpApp(tester, location: '/map');
       expect(find.text('Manila, Philippines'), findsOneWidget);
 
-      // Overview Tab is default
-      expect(find.text('AIRPORT STAYS'), findsOneWidget);
-      expect(find.text('DIRECT FLIGHTS'), findsOneWidget);
-
-      // Switch to Airport Hotels tab
-      await tester.tap(find.textContaining('Airport Hotels'));
+      await tester.tap(find.textContaining('Stays ·'));
       await tester.pumpAndSettle();
-      expect(find.text('Belmont Hotel Manila'), findsOneWidget);
-      expect(find.text('Book Stay'), findsWidgets);
-
-      // Switch to Direct Flights tab
-      await tester.tap(find.textContaining('Direct Flights'));
+      final first = catalog.hotelsNear('MNL').first;
+      await tester.tap(find.text(first.name));
       await tester.pumpAndSettle();
-      expect(find.textContaining('MNL ➔ SIN'), findsOneWidget);
-
-      // Switch to Golf Getaways tab
-      await tester.ensureVisible(find.textContaining('Golf Getaways'));
+      await tester.tap(find.text('See rooms & book'));
       await tester.pumpAndSettle();
-      await tester.tap(find.textContaining('Golf Getaways'), warnIfMissed: false);
-      await tester.pumpAndSettle();
-      expect(find.text('Villamor Golf Club'), findsOneWidget);
-
-      // Next & Previous buttons
-      await tester.tap(find.byTooltip('Next Hub'));
-      expect(nextCount, 1);
-      await tester.tap(find.byTooltip('Previous Hub'));
-      expect(prevCount, 1);
+      expect(find.text(first.name), findsWidgets);
+      expect(find.byType(AirportHubSheet), findsNothing);
     });
-  });
 
-  group('Flight Telemetry HUD Widget Tests', () {
-    testWidgets('displays active telemetry HUD and triggers callbacks', (tester) async {
-      final flight = kActiveTrackedFlights.first;
-      int nextFlightCount = 0;
-      int destinationExploreCount = 0;
-      int exitCount = 0;
+    testWidgets('zoomed out, every airport shows its stays and golf; tapping one opens it', (tester) async {
+      await pumpApp(tester, location: '/map');
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AirportHubSheet), findsNothing);
 
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.dark,
-          home: Scaffold(
-            body: FlightTelemetryHud(
-              flight: flight,
-              progress: 0.65,
-              onNextFlight: () => nextFlightCount++,
-              onViewDestinationHub: () => destinationExploreCount++,
-              onExitTracking: () => exitCount++,
-            ),
-          ),
-        ),
-      );
+      final ceb = catalog.airport('CEB')!;
+      final label = '${catalog.hotelsNear('CEB').length} stays · ${catalog.coursesNear('CEB').length} golf';
+      await tester.scrollUntilVisible(find.text('CEB · ${ceb.city}'), 200, scrollable: find.byType(Scrollable).last);
+      expect(find.text(label), findsOneWidget);
 
-      expect(find.text('PR 537'), findsOneWidget);
-      expect(find.text('Philippine Airlines'), findsOneWidget);
-      expect(find.text('MNL'), findsOneWidget);
-      expect(find.text('SIN'), findsOneWidget);
-      expect(find.text('36,000 FT'), findsOneWidget);
-      expect(find.text('495 KTS'), findsOneWidget);
-
-      // Trigger next route
-      await tester.tap(find.text('Next Route'));
-      expect(nextFlightCount, 1);
-
-      // Trigger destination explore
-      await tester.tap(find.textContaining('Explore Hotels & Golf at Singapore'));
-      expect(destinationExploreCount, 1);
+      await tester.tap(find.text('CEB · ${ceb.city}'));
+      await tester.pumpAndSettle();
+      expect(find.text('${ceb.city}, ${ceb.country}'), findsOneWidget);
     });
-  });
 
-  group('MapView Screen Smoke Test', () {
-    testWidgets('renders MapView and switches mode to Live In-Flight', (tester) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: AppTheme.dark,
-          home: const MapView(),
-        ),
-      );
-
-      // Initial state is 3D Globe with Hubs & Stays
-      expect(find.byType(MapView), findsOneWidget);
-      expect(find.text('Hubs & Stays'), findsOneWidget);
-      expect(find.text('All Hubs'), findsOneWidget);
-
-      // Toggle to Live In-Flight Tracker
-      await tester.tap(find.text('Hubs & Stays'));
+    testWidgets('live flights move, then hand over to the arrival airport', (tester) async {
+      await pumpApp(tester, location: '/map');
+      await tester.tap(find.text('Live flights'));
       await tester.pump();
-      expect(find.text('Live In-Flight'), findsOneWidget);
       expect(find.byType(FlightTelemetryHud), findsOneWidget);
+
+      final before = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud)).progress;
+      await tester.pump(const Duration(seconds: 2));
+      final after = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud)).progress;
+      expect(after, greaterThan(before));
+
+      final destination = trackedFlights(catalog).first.destination;
+      await tester.tap(find.text('Stays & golf near ${destination.code}'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FlightTelemetryHud), findsNothing);
+      expect(find.text('${destination.city}, ${destination.country}'), findsOneWidget);
+      expect(tripSearchStore.airportCode, destination.code);
     });
   });
 }

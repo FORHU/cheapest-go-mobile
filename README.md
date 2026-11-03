@@ -17,9 +17,9 @@ lib/
 │   ├── airports/                 # Airport hub: stays and golf nearest one airport
 │   ├── hotels/                   # Results, detail + room choice, checkout (mock payment)
 │   ├── golf/                     # Courses near the airport, tee times, tee-time booking
-│   ├── map/                      # Mapbox 3D globe / 2D map with airport hubs
+│   ├── map/                      # Mapbox 3D globe / 2D map: airports, stays, golf, routes in (follows the app theme)
 │   ├── trips/                    # Upcoming / past bookings and saved stays
-│   └── profile/                  # Account, theme (system / light / dark), map preferences
+│   └── profile/                  # Account, theme (system / light / dark), 2D / 3D map
 └── shared/                       # Deterministic infrastructure (never imports features/ or app/)
     ├── auth/                     # Role, Permission, RBAC evaluator
     ├── catalog/                  # TravelCatalog interface + MockTravelCatalog (airports, hotels, golf)

@@ -470,65 +470,6 @@ class ProfileView extends StatelessWidget {
               },
             ),
           ),
-          Divider(
-            height: 1,
-            indent: 64,
-            endIndent: 16,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-          ),
-
-          // 4. Map Style Theme (Light vs Dark)
-          ListTile(
-            leading: _buildLeadingIcon(
-              Icons.palette_outlined,
-              const Color(0xFFEC4899),
-              theme,
-            ),
-            title: const Text(
-              'Map Theme Style',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-            subtitle: Text(
-              uiSettingsStore.mapThemeMode == MapThemeMode.light
-                  ? 'Light aesthetic basemap'
-                  : 'Dark slate night basemap',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            trailing: DropdownButton<MapThemeMode>(
-              value: uiSettingsStore.mapThemeMode,
-              underline: const SizedBox.shrink(),
-              borderRadius: BorderRadius.circular(12),
-              items: const [
-                DropdownMenuItem(
-                  value: MapThemeMode.light,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.light_mode, size: 16, color: Color(0xFFF59E0B)),
-                      SizedBox(width: 8),
-                      Text('Light Map'),
-                    ],
-                  ),
-                ),
-                DropdownMenuItem(
-                  value: MapThemeMode.dark,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.dark_mode, size: 16, color: Color(0xFF6366F1)),
-                      SizedBox(width: 8),
-                      Text('Dark Map'),
-                    ],
-                  ),
-                ),
-              ],
-              onChanged: (v) {
-                if (v != null) uiSettingsStore.setMapThemeMode(v);
-              },
-            ),
-          ),
         ],
       ),
     );

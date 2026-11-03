@@ -7,19 +7,16 @@ class UiSettingsStore extends ChangeNotifier {
   static const String _currencyKey = 'cheapestgo_display_currency';
   static const String _themeModeKey = 'cheapestgo_theme_mode';
   static const String _mapTierKey = 'cheapestgo_map_tier';
-  static const String _mapThemeModeKey = 'cheapestgo_map_theme_mode';
 
   String _displayCurrency = 'USD';
   ThemeMode _themeMode = ThemeMode.system;
   MapTier _mapTier = MapTier.lite;
-  MapThemeMode _mapThemeMode = MapThemeMode.dark;
   DeviceCapabilities? _deviceCapabilities;
   No3dReason? _no3dReason;
 
   String get displayCurrency => _displayCurrency;
   ThemeMode get themeMode => _themeMode;
   MapTier get mapTier => _mapTier;
-  MapThemeMode get mapThemeMode => _mapThemeMode;
   DeviceCapabilities? get deviceCapabilities => _deviceCapabilities;
   No3dReason? get no3dReason => _no3dReason;
   bool get is3dSupported => _no3dReason == null;
@@ -44,13 +41,6 @@ class UiSettingsStore extends ChangeNotifier {
       final savedTheme = prefs.getString(_themeModeKey);
       if (savedTheme == 'dark') _themeMode = ThemeMode.dark;
       if (savedTheme == 'light') _themeMode = ThemeMode.light;
-
-      final savedMapTheme = prefs.getString(_mapThemeModeKey);
-      if (savedMapTheme == 'light') {
-        _mapThemeMode = MapThemeMode.light;
-      } else if (savedMapTheme == 'dark') {
-        _mapThemeMode = MapThemeMode.dark;
-      }
 
       final savedTier = prefs.getString(_mapTierKey);
       if (savedTier == 'standard' && is3dSupported) {
@@ -96,16 +86,6 @@ class UiSettingsStore extends ChangeNotifier {
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_mapTierKey, tier.name);
-    } catch (_) {}
-  }
-
-  Future<void> setMapThemeMode(MapThemeMode mode) async {
-    if (_mapThemeMode == mode) return;
-    _mapThemeMode = mode;
-    notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_mapThemeModeKey, mode.name);
     } catch (_) {}
   }
 }

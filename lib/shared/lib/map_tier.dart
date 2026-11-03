@@ -11,12 +11,6 @@ enum MapTier {
   standard,
 }
 
-/// Basemap style mode (Light vs Dark).
-enum MapThemeMode {
-  light,
-  dark,
-}
-
 /// What the phone reports about itself; null when unknown.
 class DeviceCapabilities {
   const DeviceCapabilities({
