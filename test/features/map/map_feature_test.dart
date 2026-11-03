@@ -270,6 +270,27 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('the tracker pauses on another tab and comes back on return', (tester) async {
+      final b = bookFlight(mnlToIcn, const Duration(hours: -1));
+      flightToTrack.value = b.reference;
+      await pumpApp(tester, location: '/map');
+      await tester.pump();
+      expect(find.byType(FlightTelemetryHud), findsOneWidget);
+
+      await tester.tap(find.text('Trips'));
+      await tester.pumpAndSettle();
+      expect(find.byType(FlightTelemetryHud), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.public_rounded).first);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      final hud = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud));
+      expect(hud.flight.reference, b.reference);
+      expect(hud.status.phase, FlightPhase.inAir);
+      await tester.tap(find.byTooltip('Stop tracking'));
+      await tester.pump();
+    });
+
     testWidgets('a landed flight hands over to its arrival airport', (tester) async {
       final b = bookFlight(mnlToCeb, const Duration(hours: -3));
       flightToTrack.value = b.reference;

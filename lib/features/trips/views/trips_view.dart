@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
@@ -205,14 +206,39 @@ class _BookingCard extends StatelessWidget {
 
 /// Live status of an upcoming or current flight, its offline map, and a way
 /// to follow it on the map.
-class _FlightTracking extends StatelessWidget {
+class _FlightTracking extends StatefulWidget {
   const _FlightTracking({required this.booking, required this.flight});
 
   final Booking booking;
   final BookedFlight flight;
 
   @override
+  State<_FlightTracking> createState() => _FlightTrackingState();
+}
+
+class _FlightTrackingState extends State<_FlightTracking> {
+  /// The status moves on with time, so the card re-reads it on this beat.
+  static const _refreshEvery = Duration(seconds: 5);
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _timer = Timer.periodic(_refreshEvery, (_) {
+      if (mounted && TickerMode.valuesOf(context).enabled) setState(() {});
+    });
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final booking = widget.booking;
+    final flight = widget.flight;
     final c = context.colors;
     return ListenableBuilder(
       listenable: Listenable.merge([offlineRouteMaps, flightSimulator]),
