@@ -49,10 +49,12 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   static const _gpsMaxAccuracyM = 5000.0;
 
   static const _airportZoom = 9.0;
-  static const _placeZoom = 11.5;
 
+  // One colour per kind of pin, explained by the legend over the map.
   static const _selectedColor = Color(0xFF06B6D4);
+  static const _hotelColor = Color(0xFF2563EB);
   static const _golfColor = Color(0xFF16A34A);
+  static const _flightColor = Color(0xFFEA580C);
 
   late final List<Airport> _airports = widget.catalog.airports();
 
@@ -405,6 +407,8 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         if (!_tracking) _selectAirport(airport);
       case final MapPlace place:
         _selectPlace(place);
+      case final FlightOffer offer:
+        _bookFlight(offer);
     }
   }
 
@@ -435,7 +439,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     if (flight != null) {
       await routes.create(PolylineAnnotationOptions(
         geometry: LineString(coordinates: [for (var i = 0; i <= 24; i++) _position(interpolate(flight.from, flight.to, i / 24))]),
-        lineColor: c.accent.toARGB32(),
+        lineColor: _flightColor.toARGB32(),
         lineWidth: 3,
         lineOpacity: 0.9,
       ));
@@ -460,17 +464,28 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     final dotOptions = <CircleAnnotationOptions>[];
     final labelTargets = <Object>[];
     final labelOptions = <PointAnnotationOptions>[];
+    // On the Flights tab the departure cities get their own flight pin below;
+    // skip the airport pin under it so pins and labels don't double up.
+    final flightOrigins = <String>{};
+    if (!_tracking && _selected != null && _filter == MapFilter.flights) {
+      for (final offer in flightsInto(widget.catalog, _selected!)) {
+        flightOrigins.add(offer.origin);
+      }
+    }
     for (final a in airports) {
+      if (flightOrigins.contains(a.code)) continue;
       final selected = a.code == selectedCode || a.code == originCode || a.code == destinationCode;
       final at = Point(coordinates: Position(a.longitude, a.latitude));
       dotTargets.add(a);
       dotOptions.add(CircleAnnotationOptions(
         geometry: at,
-        circleRadius: selected ? 9 : 6.5,
-        circleColor: (selected ? _selectedColor : c.accent).toARGB32(),
+        // The open airport shrinks a little so the stays and courses right at
+        // the terminal (drawn above it) stay tappable.
+        circleRadius: a.code == selectedCode ? 7 : (selected ? 9 : 6.5),
+        circleColor: (selected ? _selectedColor : _flightColor).toARGB32(),
         circleStrokeColor: 0xFFFFFFFF,
         circleStrokeWidth: 2,
-        circleSortKey: 10,
+        circleSortKey: a.code == selectedCode ? 1 : 10,
       ));
       labelTargets.add(a);
       labelOptions.add(PointAnnotationOptions(
@@ -495,11 +510,11 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         dotTargets.add(p);
         dotOptions.add(CircleAnnotationOptions(
           geometry: at,
-          circleRadius: selected ? 9 : (selectedAirport == null ? 3.5 : 6),
-          circleColor: (selected ? _selectedColor : (p.isGolf ? _golfColor : c.accent)).toARGB32(),
+          circleRadius: selected ? 10 : (selectedAirport == null ? 3.5 : 7.5),
+          circleColor: (selected ? _selectedColor : (p.isGolf ? _golfColor : _hotelColor)).toARGB32(),
           circleStrokeColor: 0xFFFFFFFF,
           circleStrokeWidth: selectedAirport == null ? 0.8 : 1.5,
-          circleSortKey: selected ? 5 : 0,
+          circleSortKey: selected ? 30 : 20,
         ));
         // Only the selected place gets a price label: stays sit close together
         // and their labels would overlap. The sheet lists every price.
@@ -510,6 +525,34 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
           // Map fonts have no ₱ glyph; every price in the app is in pesos.
           textField: formatPeso(p.price).replaceFirst('₱', ''),
           textSize: 12.5,
+          textColor: text,
+          textHaloColor: halo,
+          textHaloWidth: 1.5,
+          textOffset: const [0, -1.5],
+        ));
+      }
+    }
+
+    // Flights tab: a pin at each city a flight comes from; tapping it books that flight.
+    if (!_tracking && selectedAirport != null && _filter == MapFilter.flights) {
+      for (final offer in flightsInto(widget.catalog, selectedAirport)) {
+        final origin = widget.catalog.origin(offer.origin);
+        if (origin == null) continue;
+        final at = Point(coordinates: Position(origin.longitude, origin.latitude));
+        dotTargets.add(offer);
+        dotOptions.add(CircleAnnotationOptions(
+          geometry: at,
+          circleRadius: 8,
+          circleColor: _flightColor.toARGB32(),
+          circleStrokeColor: 0xFFFFFFFF,
+          circleStrokeWidth: 2,
+          circleSortKey: 25,
+        ));
+        labelTargets.add(offer);
+        labelOptions.add(PointAnnotationOptions(
+          geometry: at,
+          textField: '${offer.origin} ${formatPeso(offer.price).replaceFirst('₱', '')}',
+          textSize: 11.5,
           textColor: text,
           textHaloColor: halo,
           textHaloWidth: 1.5,
@@ -561,13 +604,25 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     } else if (_tracking) {
       (center, zoom) = _overview(top, bottom);
     } else if (_selected case final airport?) {
-      if (_place case final place?) {
-        center = place.position;
-        zoom = _placeZoom;
+      // Selecting a place keeps the same framing (all its neighbours stay in
+      // view) and only recentres on it; zooming in to street level hid them.
+      final airportAt = (airport.latitude, airport.longitude);
+      if (_filter == MapFilter.flights) {
+        var south = airport.latitude, north = airport.latitude, west = airport.longitude, east = airport.longitude;
+        for (final offer in flightsInto(widget.catalog, airport)) {
+          final o = widget.catalog.origin(offer.origin);
+          if (o == null) continue;
+          south = math.min(south, o.latitude);
+          north = math.max(north, o.latitude);
+          west = math.min(west, o.longitude);
+          east = math.max(east, o.longitude);
+        }
+        center = ((south + north) / 2, (west + east) / 2);
+        zoom = _zoomToFitBox((south, west), (north, east), _mapSize.width, _mapSize.height - top - bottom);
       } else {
-        center = (airport.latitude, airport.longitude);
-        final spread = placesNear(widget.catalog, airport, _filter).map((p) => distanceKm(center, p.position));
+        final spread = placesNear(widget.catalog, airport, _filter).map((p) => distanceKm(airportAt, p.position));
         zoom = spread.isEmpty ? _airportZoom : math.min(_zoomToFit(2 * spread.reduce(math.max)), 13.0);
+        center = _place?.position ?? airportAt;
       }
     } else {
       (center, zoom) = _overview(top, bottom);
@@ -647,7 +702,8 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
 
     return LayoutBuilder(
       builder: (context, box) {
-        _sheetHeight = _tracking ? 360 : math.min(380, box.maxHeight * 0.48);
+        // Room for the place preview and its book button, now that the header sits above the map.
+        _sheetHeight = _tracking ? 360 : math.min(410, box.maxHeight * 0.58);
         _mapSize = box.biggest;
         final airport = _selected;
         return ColoredBox(
@@ -672,7 +728,16 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               Positioned(
                 top: 8,
                 right: 12,
-                child: _ModeSwitch(tracking: _tracking, onChanged: _setTracking),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _ModeSwitch(tracking: _tracking, onChanged: _setTracking),
+                    if (!_tracking) ...[
+                      const SizedBox(height: 8),
+                      const _PinLegend(),
+                    ],
+                  ],
+                ),
               ),
               if (_tracking)
                 Positioned(
@@ -795,6 +860,45 @@ class _ModeSwitch extends StatelessWidget {
                   ),
                 ),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// What each pin colour means.
+class _PinLegend extends StatelessWidget {
+  const _PinLegend();
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    Widget item(Color color, String label) => Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle, border: Border.all(color: Colors.white, width: 1.5)),
+            ),
+            const SizedBox(width: 5),
+            Text(label, style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: c.textSecondary)),
+          ],
+        );
+    return Material(
+      color: c.glassStrong,
+      shape: StadiumBorder(side: BorderSide(color: c.border)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            item(_MapViewState._hotelColor, 'Hotels'),
+            const SizedBox(width: 10),
+            item(_MapViewState._golfColor, 'Golf'),
+            const SizedBox(width: 10),
+            item(_MapViewState._flightColor, 'Flights'),
           ],
         ),
       ),

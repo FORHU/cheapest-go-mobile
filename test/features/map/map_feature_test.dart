@@ -61,7 +61,7 @@ void main() {
     test('every stay and course sits on the land side of its airport', () {
       // The land directions per airport, as in map_models.dart.
       const land = {
-        'MNL': (340.0, 190.0), 'CEB': (260.0, 70.0), 'DVO': (200.0, 140.0), 'KLO': (130.0, 70.0),
+        'MNL': (340.0, 105.0), 'CEB': (260.0, 70.0), 'DVO': (200.0, 140.0), 'KLO': (130.0, 70.0),
         'PPS': (205.0, 25.0), 'BKK': (250.0, 160.0), 'TAG': (20.0, 70.0), 'ILO': (270.0, 180.0), 'DPS': (340.0, 60.0), 'ICN': (60.0, 70.0),
       };
       double bearing(LatLng a, LatLng b) {
@@ -74,8 +74,10 @@ void main() {
       for (final MapEntry(key: code, value: (start, width)) in land.entries) {
         final airport = catalog.airport(code)!;
         for (final p in placesNear(catalog, airport, MapFilter.overview)) {
-          final offset = (bearing((airport.latitude, airport.longitude), p.position) - start + 360) % 360;
-          expect(offset, lessThanOrEqualTo(width + 0.5), reason: '${p.id} near $code');
+          final b = bearing((airport.latitude, airport.longitude), p.position);
+          final inMain = (b - start + 360) % 360 <= width + 0.5;
+          final inSouth = code == 'MNL' && (b - 170 + 360) % 360 <= 60.5; // second Manila arc
+          expect(inMain || inSouth, isTrue, reason: '${p.id} near $code at ${b.round()}°');
         }
       }
     });
@@ -153,8 +155,21 @@ void main() {
 
       await tester.tap(find.text('Open the MNL airport hub'));
       expect(hub, 1);
-      await tester.tap(find.textContaining('Golf ·'));
+      await tester.tap(find.text('Golf ${catalog.coursesNear('MNL').length}'));
       expect(picked, MapFilter.golf);
+    });
+
+    testWidgets('all four tabs fit on a phone, Flights included', (tester) async {
+      usePhoneViewport(tester);
+      MapFilter? picked;
+      await tester.pumpWidget(sheet(onFilter: (f) => picked = f));
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+      for (final label in ['Overview', 'Stays ${catalog.hotelsNear('MNL').length}', 'Golf ${catalog.coursesNear('MNL').length}', 'Flights']) {
+        final r = tester.getRect(find.text(label));
+        expect(r.left >= 0 && r.right <= screen.width, isTrue, reason: '$label is off screen');
+      }
+      await tester.tap(find.text('Flights'));
+      expect(picked, MapFilter.flights);
     });
 
     testWidgets('a stay in the list selects it; its preview opens it to book', (tester) async {
@@ -243,8 +258,12 @@ void main() {
     testWidgets('opens on the searched airport and books a stay from the map', (tester) async {
       await pumpApp(tester, location: '/map');
       expect(find.text('Manila, Philippines'), findsOneWidget);
+      // The legend names one colour per kind of pin.
+      for (final kind in ['Hotels', 'Golf', 'Flights']) {
+        expect(find.descendant(of: find.byType(Material), matching: find.text(kind)), findsWidgets);
+      }
 
-      await tester.tap(find.textContaining('Stays ·'));
+      await tester.tap(find.text('Stays ${catalog.hotelsNear('MNL').length}'));
       await tester.pumpAndSettle();
       final first = catalog.hotelsNear('MNL').first;
       await tester.tap(find.text(first.name));

@@ -90,21 +90,13 @@ class AirportHubSheet extends StatelessWidget {
             ),
           ),
           if (place == null) ...[
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
+            // All four always fit; a scrolling row hid "Flights" off the edge.
+            Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
-              child: Row(
-                children: [
-                  for (final (f, label, icon) in [
-                    (MapFilter.overview, 'Overview', Icons.flight_land_rounded),
-                    (MapFilter.stays, 'Stays · ${stays.length}', Icons.hotel_rounded),
-                    (MapFilter.golf, 'Golf · ${courses.length}', Icons.golf_course_rounded),
-                    (MapFilter.flights, 'Flights in', Icons.flight_rounded),
-                  ]) ...[
-                    FilterPill(label: label, icon: icon, selected: filter == f, onTap: () => onFilterChanged(f)),
-                    const SizedBox(width: 8),
-                  ],
-                ],
+              child: SegmentedTabs(
+                labels: ['Overview', 'Stays ${stays.length}', 'Golf ${courses.length}', 'Flights'],
+                selected: MapFilter.values.indexOf(filter),
+                onChanged: (i) => onFilterChanged(MapFilter.values[i]),
               ),
             ),
             Flexible(
