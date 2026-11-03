@@ -1,7 +1,9 @@
+import 'dart:async';
 import 'dart:io' show Platform;
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart' as geo;
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Size;
 import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
@@ -10,6 +12,9 @@ import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
 import 'package:cheapest_go_mobile/features/map/models/world_landmass_data.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
+import 'package:cheapest_go_mobile/shared/flights/flight_status.dart';
+import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
+import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -21,11 +26,9 @@ import 'package:cheapest_go_mobile/shared/utils/format.dart';
 ///
 /// Selecting an airport zooms in on its stays and golf courses; the sheet
 /// below lists them and opens a place, the airport hub, or a flight in.
-/// "Live flights" follows mock flights into those airports.
-/// Whether the sample "Live flights" tracker is offered. It replays mock
-/// flights, so release builds leave it out unless built with
-/// `--dart-define=SHOW_DEMO_FLIGHTS=true`.
-const bool kShowDemoFlights = bool.fromEnvironment('SHOW_DEMO_FLIGHTS', defaultValue: !kReleaseMode);
+/// "My flights" follows the traveler's booked flights: status before take-off,
+/// the plane in the air (GPS when the phone has a fix, else the schedule), and
+/// the arrival airport's stays and golf after landing.
 
 class MapView extends StatefulWidget {
   const MapView({this.catalog = travelCatalog, super.key});
@@ -36,38 +39,39 @@ class MapView extends StatefulWidget {
   State<MapView> createState() => _MapViewState();
 }
 
-class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
-  /// The tracker replays a flight this many times faster than real time.
-  static const _timeLapse = 60;
+class _MapViewState extends State<MapView> {
+  /// How often the tracker panel and the plane update.
+  static const _tickEvery = Duration(seconds: 1);
 
-  /// How often the plane moves on the map; the panel updates every frame.
-  static const _planeUpdateEvery = Duration(milliseconds: 500);
+  /// A GPS fix older than this, or vaguer than [_gpsMaxAccuracyM], falls back to the schedule.
+  static const _gpsMaxAge = Duration(minutes: 1);
+  static const _gpsMaxAccuracyM = 5000.0;
 
-  static const _overviewCenter = (3.5, 113.0);
-  static const _overviewZoom = 3.0;
   static const _airportZoom = 9.0;
   static const _placeZoom = 11.5;
-
-  /// Routes drawn into each airport when the map shows them all.
-  static const _overviewRoutesPerAirport = 2;
 
   static const _selectedColor = Color(0xFF06B6D4);
   static const _golfColor = Color(0xFF16A34A);
 
   late final List<Airport> _airports = widget.catalog.airports();
-  late final List<TrackedFlight> _flights = trackedFlights(widget.catalog);
 
   late MapTier _tier = uiSettingsStore.mapTier;
   Airport? _selected;
   MapFilter _filter = MapFilter.overview;
   MapPlace? _place;
   bool _tracking = false;
-  int _flightIndex = 0;
+
+  /// The booking the tracker shows; the first trackable flight when unset.
+  String? _trackedRef;
   bool _dark = false;
   double _sheetHeight = 0;
+  Size _mapSize = const Size(360, 640);
 
-  late final AnimationController _clock;
-  DateTime _lastPlaneUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+  Timer? _ticker;
+  StreamSubscription<geo.Position>? _gps;
+  geo.Position? _fix;
+  bool _askingLocation = false;
+  bool _locationDenied = false;
 
   MapboxMap? _map;
   PolylineAnnotationManager? _routes;
@@ -91,7 +95,37 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
     }
   }
 
-  TrackedFlight get _flight => _flights[_flightIndex];
+  List<TrackedFlight> get _flights => trackableFlights(widget.catalog, bookingsStore.flights, flightSimulator.nowFor);
+
+  TrackedFlight? get _flight {
+    final flights = _flights;
+    if (flights.isEmpty) return null;
+    for (final f in flights) {
+      if (f.reference == _trackedRef) return f;
+    }
+    return flights.first;
+  }
+
+  FlightStatus _statusOf(TrackedFlight f) => flightStatusService.statusOf(f.flight, flightSimulator.nowFor(f.reference));
+
+  /// Where to draw the plane, and where that position comes from.
+  (LatLng, PositionSource) _planeAt(TrackedFlight f, FlightStatus status) {
+    final estimated = _locationDenied ? PositionSource.scheduleNoPermission : PositionSource.schedule;
+    switch (status.phase) {
+      case FlightPhase.scheduled:
+      case FlightPhase.boarding:
+        return (f.from, estimated);
+      case FlightPhase.landed:
+        return (f.to, estimated);
+      case FlightPhase.inAir:
+        final fix = _fix;
+        final fresh = fix != null &&
+            !flightSimulator.isRunning(f.reference) &&
+            DateTime.now().difference(fix.timestamp) < _gpsMaxAge &&
+            fix.accuracy < _gpsMaxAccuracyM;
+        return fresh ? ((fix.latitude, fix.longitude), PositionSource.gps) : (f.positionAt(status.progress), estimated);
+    }
+  }
 
   List<MapPlace> get _places {
     final airport = _selected;
@@ -101,22 +135,43 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
   @override
   void initState() {
     super.initState();
-    _clock = AnimationController(vsync: this)
-      ..addListener(_onClockTick)
-      ..addStatusListener((s) {
-        if (s == AnimationStatus.completed) _clock.forward(from: 0);
-      });
     _selected = widget.catalog.airport(tripSearchStore.airportCode);
     uiSettingsStore.addListener(_onSettingsChanged);
     tripSearchStore.addListener(_onSearchChanged);
+    bookingsStore.addListener(_onFlightsChanged);
+    flightSimulator.addListener(_onFlightsChanged);
+    offlineRouteMaps.addListener(_onFlightsChanged);
+    flightToTrack.addListener(_onTrackRequest);
+    // Trips may have asked for a flight before this tab was first built.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _onTrackRequest());
   }
 
   @override
   void dispose() {
     uiSettingsStore.removeListener(_onSettingsChanged);
     tripSearchStore.removeListener(_onSearchChanged);
-    _clock.dispose();
+    bookingsStore.removeListener(_onFlightsChanged);
+    flightSimulator.removeListener(_onFlightsChanged);
+    offlineRouteMaps.removeListener(_onFlightsChanged);
+    flightToTrack.removeListener(_onTrackRequest);
+    _ticker?.cancel();
+    _gps?.cancel();
     super.dispose();
+  }
+
+  void _onFlightsChanged() {
+    if (!mounted) return;
+    setState(() {});
+    if (_tracking) _refresh();
+  }
+
+  /// Opens the tracker on the booking Trips asked for.
+  void _onTrackRequest() {
+    final reference = flightToTrack.value;
+    if (!mounted || reference == null) return;
+    flightToTrack.value = null;
+    _trackedRef = reference;
+    _setTracking(true);
   }
 
   void _onSettingsChanged() {
@@ -171,35 +226,71 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
 
   void _setTracking(bool on) {
     setState(() => _tracking = on);
+    _ticker?.cancel();
+    _ticker = null;
     if (on) {
-      _startFlight();
+      _ticker = Timer.periodic(_tickEvery, (_) => _tick());
+      _maybeStartGps();
     } else {
-      _clock.stop();
+      _gps?.cancel();
+      _gps = null;
     }
     _refresh();
   }
 
-  void _startFlight() {
-    _clock
-      ..duration = _flight.duration ~/ _timeLapse
-      ..value = _flight.startProgress
-      ..forward();
+  void _tick() {
+    if (!mounted) return;
+    setState(() {});
+    _maybeStartGps();
+    _updatePlane();
+  }
+
+  /// Asks for location once the tracked flight is boarding or in the air.
+  Future<void> _maybeStartGps() async {
+    final flight = _flight;
+    if (_gps != null || _askingLocation || _locationDenied || _isTestEnvironment || flight == null) return;
+    final phase = _statusOf(flight).phase;
+    if (phase != FlightPhase.boarding && phase != FlightPhase.inAir) return;
+    _askingLocation = true;
+    try {
+      var permission = await geo.Geolocator.checkPermission();
+      if (permission == geo.LocationPermission.denied) permission = await geo.Geolocator.requestPermission();
+      if (permission == geo.LocationPermission.denied || permission == geo.LocationPermission.deniedForever) {
+        if (mounted) setState(() => _locationDenied = true);
+        return;
+      }
+      if (!mounted || !_tracking) return;
+      _gps = geo.Geolocator.getPositionStream(
+        locationSettings: const geo.LocationSettings(accuracy: geo.LocationAccuracy.high, distanceFilter: 200),
+      ).listen((p) => _fix = p, onError: (Object e) => debugPrint('GPS: $e'));
+    } catch (e) {
+      debugPrint('Location: $e');
+    } finally {
+      _askingLocation = false;
+    }
   }
 
   void _nextFlight() {
-    setState(() => _flightIndex = (_flightIndex + 1) % _flights.length);
-    _startFlight();
+    final flights = _flights;
+    if (flights.length < 2) return;
+    final i = flights.indexWhere((f) => f.reference == _flight?.reference);
+    setState(() => _trackedRef = flights[(i + 1) % flights.length].reference);
     _refresh();
   }
 
+  void _toggleSimulation(TrackedFlight flight) {
+    if (flightSimulator.isRunning(flight.reference)) {
+      flightSimulator.stop(flight.reference);
+    } else {
+      flightSimulator.start(flight.reference, flight.flight);
+    }
+  }
+
   /// Leaves the tracker for the flight's arrival airport.
-  void _exploreDestination() {
-    _clock.stop();
-    setState(() {
-      _tracking = false;
-      _filter = MapFilter.overview;
-    });
-    _selectAirport(_flight.destination);
+  void _exploreDestination(TrackedFlight flight) {
+    _setTracking(false);
+    setState(() => _filter = MapFilter.overview);
+    _selectAirport(flight.destination);
   }
 
   // --- Navigation ----------------------------------------------------------
@@ -299,45 +390,29 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
     _plane = null;
     _targets.clear();
 
-    // Routes: the tracked flight; the flights into the selected airport; or,
-    // with nothing selected, the cheapest few into every airport.
+    // The only line on the map is the tracked flight's route.
     final selectedAirport = _selected;
-    final routeAirports = _tracking
-        ? const <Airport>[]
-        : selectedAirport == null
-            ? _airports
-            : (_filter == MapFilter.overview || _filter == MapFilter.flights ? [selectedAirport] : const <Airport>[]);
-    final lines = <(LatLng, LatLng)>[
-      if (_tracking) (_flight.from, _flight.to),
-      for (final to in routeAirports)
-        for (final f in selectedAirport == null
-            ? flightsInto(widget.catalog, to, count: _overviewRoutesPerAirport, abroadOnly: true)
-            : flightsInto(widget.catalog, to))
-          if (widget.catalog.origin(f.origin) case final o?) ((o.latitude, o.longitude), (to.latitude, to.longitude)),
-    ];
-    if (lines.isNotEmpty) {
-      await routes.createMulti([
-        for (final (a, b) in lines)
-          PolylineAnnotationOptions(
-            geometry: LineString(coordinates: [for (var i = 0; i <= 24; i++) _position(interpolate(a, b, i / 24))]),
-            lineColor: c.accent.toARGB32(),
-            lineWidth: _tracking ? 3 : 1.8,
-            lineOpacity: _tracking ? 0.9 : 0.55,
-          ),
-      ]);
+    final flight = _tracking ? _flight : null;
+    if (flight != null) {
+      await routes.create(PolylineAnnotationOptions(
+        geometry: LineString(coordinates: [for (var i = 0; i <= 24; i++) _position(interpolate(flight.from, flight.to, i / 24))]),
+        lineColor: c.accent.toARGB32(),
+        lineWidth: 3,
+        lineOpacity: 0.9,
+      ));
     }
 
     // Airports, plus the tracked flight's origin when it isn't one of them.
     final airports = [
       ..._airports,
-      if (_tracking && !_airports.any((a) => a.code == _flight.origin.code)) _flight.origin,
+      if (flight != null && !_airports.any((a) => a.code == flight.origin.code)) flight.origin,
     ];
     final dotTargets = <Object>[];
     final dotOptions = <CircleAnnotationOptions>[];
     final labelTargets = <Object>[];
     final labelOptions = <PointAnnotationOptions>[];
     for (final a in airports) {
-      final selected = a.code == _selected?.code || (_tracking && (a.code == _flight.destination.code || a.code == _flight.origin.code));
+      final selected = a.code == _selected?.code || (flight != null && (a.code == flight.destination.code || a.code == flight.origin.code));
       final at = Point(coordinates: _position((a.latitude, a.longitude)));
       dotTargets.add(a);
       dotOptions.add(CircleAnnotationOptions(
@@ -360,12 +435,10 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
       ));
     }
 
-    // Stays and courses: around the selected airport (as its tab filters
-    // them), or around every airport when none is selected.
-    final placeAirports = _tracking || _filter == MapFilter.flights && selectedAirport != null
-        ? const <Airport>[]
-        : (selectedAirport == null ? _airports : [selectedAirport]);
-    final placeFilter = selectedAirport == null ? MapFilter.overview : _filter;
+    // Stays and courses: around the selected airport (narrowed by the Stays or
+    // Golf tab), or around every airport when none is selected.
+    final placeAirports = _tracking ? const <Airport>[] : (selectedAirport == null ? _airports : [selectedAirport]);
+    final placeFilter = selectedAirport != null && (_filter == MapFilter.stays || _filter == MapFilter.golf) ? _filter : MapFilter.overview;
     for (final airport in placeAirports) {
       for (final p in placesNear(widget.catalog, airport, placeFilter)) {
         final selected = p.id == _place?.id;
@@ -405,9 +478,9 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
       if (createdLabels[i] case final a?) _targets[a.id] = labelTargets[i];
     }
 
-    if (_tracking) {
+    if (flight != null) {
       _plane = await planeLayer.create(CircleAnnotationOptions(
-        geometry: Point(coordinates: _position(_flight.positionAt(_clock.value))),
+        geometry: Point(coordinates: _position(_planeAt(flight, _statusOf(flight)).$1)),
         circleRadius: 7,
         circleColor: 0xFFFFFFFF,
         circleStrokeColor: _selectedColor.toARGB32(),
@@ -416,13 +489,10 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
     }
   }
 
-  void _onClockTick() {
-    final now = DateTime.now();
-    if (now.difference(_lastPlaneUpdate) < _planeUpdateEvery) return;
-    _lastPlaneUpdate = now;
-    final plane = _plane, layer = _planeLayer;
-    if (plane == null || layer == null) return;
-    plane.geometry = Point(coordinates: _position(_flight.positionAt(_clock.value)));
+  void _updatePlane() {
+    final plane = _plane, layer = _planeLayer, flight = _flight;
+    if (plane == null || layer == null || flight == null) return;
+    plane.geometry = Point(coordinates: _position(_planeAt(flight, _statusOf(flight)).$1));
     layer.update(plane).catchError((Object e) => debugPrint('Plane update: $e'));
   }
 
@@ -430,18 +500,19 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
     final map = _map;
     if (map == null || !mounted) return;
     final top = MediaQuery.paddingOf(context).top + 56;
-    final bottom = (_tracking || _selected != null) ? _sheetHeight + 24 : 24.0;
+    // Room for the sheet or tracker panel, or for the airport cards when zoomed out.
+    final bottom = (_tracking || _selected != null) ? _sheetHeight + 24 : 136.0;
 
     LatLng center;
     double zoom;
-    if (_tracking) {
-      center = _flight.positionAt(0.5);
-      zoom = _zoomToFit(distanceKm(_flight.from, _flight.to));
+    final flight = _tracking ? _flight : null;
+    if (flight != null) {
+      center = flight.positionAt(0.5);
+      zoom = _zoomToFitBox(flight.from, flight.to, _mapSize.width, _mapSize.height - top - bottom);
+    } else if (_tracking) {
+      (center, zoom) = _overview(top, bottom);
     } else if (_selected case final airport?) {
-      if (_filter == MapFilter.flights) {
-        center = (airport.latitude, airport.longitude);
-        zoom = 3.2;
-      } else if (_place case final place?) {
+      if (_place case final place?) {
         center = place.position;
         zoom = _placeZoom;
       } else {
@@ -450,8 +521,7 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
         zoom = spread.isEmpty ? _airportZoom : math.min(_zoomToFit(2 * spread.reduce(math.max)), 13.0);
       }
     } else {
-      center = _overviewCenter;
-      zoom = _overviewZoom;
+      (center, zoom) = _overview(top, bottom);
     }
 
     final camera = CameraOptions(
@@ -469,6 +539,28 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
     } catch (e) {
       debugPrint('Map camera: $e');
     }
+  }
+
+  /// Center and zoom that frame every arrival airport above the bottom cards.
+  (LatLng, double) _overview(double top, double bottom) {
+    final lats = _airports.map((a) => a.latitude);
+    final lngs = _airports.map((a) => a.longitude);
+    final sw = (lats.reduce(math.min), lngs.reduce(math.min));
+    final ne = (lats.reduce(math.max), lngs.reduce(math.max));
+    return (((sw.$1 + ne.$1) / 2, (sw.$2 + ne.$2) / 2), _zoomToFitBox(sw, ne, _mapSize.width, _mapSize.height - top - bottom));
+  }
+
+  /// A zoom that fits the box spanning [a] and [b] into [width] × [height]
+  /// logical pixels, with some margin (Web Mercator, so latitude stretches;
+  /// Mapbox draws the world 512 px wide at zoom 0).
+  static double _zoomToFitBox(LatLng a, LatLng b, double width, double height) {
+    double y(double lat) => math.log(math.tan(math.pi / 4 + lat * math.pi / 360));
+    final dLng = math.max((a.$2 - b.$2).abs(), 0.5) / 360;
+    final dLat = math.max((y(a.$1) - y(b.$1)).abs(), 0.01) / (2 * math.pi);
+    const margin = 0.75;
+    final zx = math.log(width * margin / (512 * dLng)) / math.ln2;
+    final zy = math.log(math.max(height, 120) * margin / (512 * dLat)) / math.ln2;
+    return math.min(zx, zy).clamp(1.0, 8.0);
   }
 
   /// A zoom that fits a route of [km] across most of a phone's width.
@@ -502,7 +594,8 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
 
     return LayoutBuilder(
       builder: (context, box) {
-        _sheetHeight = _tracking ? 330 : math.min(380, box.maxHeight * 0.48);
+        _sheetHeight = _tracking ? 360 : math.min(380, box.maxHeight * 0.48);
+        _mapSize = box.biggest;
         final airport = _selected;
         return ColoredBox(
           color: c.background,
@@ -523,27 +616,17 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
                     painter: _MapCanvasPainter(airports: _airports, selected: airport, colors: c),
                   ),
                 ),
-              if (kShowDemoFlights)
-                Positioned(
-                  top: 8,
-                  right: 12,
-                  child: _ModeSwitch(tracking: _tracking, onChanged: _setTracking),
-                ),
+              Positioned(
+                top: 8,
+                right: 12,
+                child: _ModeSwitch(tracking: _tracking, onChanged: _setTracking),
+              ),
               if (_tracking)
                 Positioned(
                   left: 12,
                   right: 12,
                   bottom: 12,
-                  child: AnimatedBuilder(
-                    animation: _clock,
-                    builder: (context, _) => FlightTelemetryHud(
-                      flight: _flight,
-                      progress: _clock.value,
-                      onNextFlight: _nextFlight,
-                      onViewDestinationHub: _exploreDestination,
-                      onExitTracking: () => _setTracking(false),
-                    ),
-                  ),
+                  child: _buildTracker(context),
                 )
               else if (airport != null)
                 Positioned(
@@ -583,9 +666,30 @@ class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
       },
     );
   }
+
+  Widget _buildTracker(BuildContext context) {
+    final flights = _flights;
+    final flight = _flight;
+    if (flight == null) return NoFlightsCard(onFindFlights: () => context.go('/flights'));
+    final status = _statusOf(flight);
+    final i = flights.indexWhere((f) => f.reference == flight.reference);
+    return FlightTelemetryHud(
+      flight: flight,
+      status: status,
+      positionSource: _planeAt(flight, status).$2,
+      offlineMap: offlineRouteMaps.statusOf(flight.reference),
+      onDownloadMap: () => offlineRouteMaps.download(flight.booking),
+      onExitTracking: () => _setTracking(false),
+      onNextFlight: flights.length > 1 ? _nextFlight : null,
+      flightLabel: flights.length > 1 ? '${i + 1} of ${flights.length}' : null,
+      onViewDestinationHub: flight.hasHub(widget.catalog) ? () => _exploreDestination(flight) : null,
+      onSimulate: kDebugMode ? () => _toggleSimulation(flight) : null,
+      simulating: flightSimulator.isRunning(flight.reference),
+    );
+  }
 }
 
-/// Airports ↔ live flights switch, top right over the map.
+/// Airports ↔ my flights switch, top right over the map.
 class _ModeSwitch extends StatelessWidget {
   const _ModeSwitch({required this.tracking, required this.onChanged});
 
@@ -604,7 +708,7 @@ class _ModeSwitch extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (final (on, label, icon) in [(false, 'Airports', Icons.place_rounded), (true, 'Live flights', Icons.flight_rounded)])
+            for (final (on, label, icon) in [(false, 'Airports', Icons.place_rounded), (true, 'My flights', Icons.flight_rounded)])
               Semantics(
                 selected: tracking == on,
                 button: true,

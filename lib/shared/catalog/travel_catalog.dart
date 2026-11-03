@@ -28,9 +28,12 @@ class Airport {
 
   double get latitude => _coords[code]!.$1;
   double get longitude => _coords[code]!.$2;
+
+  /// Local time's offset from UTC (no daylight saving in the mock data).
+  Duration get utcOffset => Duration(minutes: (_utcOffsetHours[code]! * 60).round());
 }
 
-const _placeCodes = {'MNL', 'CRK', 'CEB', 'DVO', 'KLO', 'PPS', 'TAG', 'ILO', 'BKK', 'DPS'};
+const _placeCodes = {'MNL', 'CRK', 'CEB', 'DVO', 'KLO', 'PPS', 'TAG', 'ILO', 'BKK', 'DPS', 'ICN'};
 const _hotelPhotoCount = 24;
 const _roomPhotoCount = 11;
 const _golfPhotoCount = 16;
@@ -195,17 +198,29 @@ class FlightOffer {
 
   bool get nonStop => stopover == null;
 
-  /// Arrival time in the departure time zone, `HH:mm`; `+1` marks the next day.
+  /// Arrival time in the destination's local time, `HH:mm`; `+1` marks the
+  /// next day, `-1` the day before (flying west across midnight).
   String get arrives {
     final p = departs.split(':');
-    final total = int.parse(p[0]) * 60 + int.parse(p[1]) + durationMinutes;
-    final hhmm = '${(total ~/ 60 % 24).toString().padLeft(2, '0')}:${(total % 60).toString().padLeft(2, '0')}';
-    return total >= 24 * 60 ? '$hhmm+1' : hhmm;
+    final zoneShift = (((_utcOffsetHours[destination] ?? 0) - (_utcOffsetHours[origin] ?? 0)) * 60).round();
+    final total = int.parse(p[0]) * 60 + int.parse(p[1]) + durationMinutes + zoneShift;
+    final inDay = total % (24 * 60);
+    final hhmm = '${(inDay ~/ 60).toString().padLeft(2, '0')}:${(inDay % 60).toString().padLeft(2, '0')}';
+    if (total >= 24 * 60) return '$hhmm+1';
+    if (total < 0) return '$hhmm-1';
+    return hhmm;
   }
 
   String get durationLabel => '${durationMinutes ~/ 60}h ${(durationMinutes % 60).toString().padLeft(2, '0')}m';
 
   String get stopsLabel => nonStop ? 'Non-stop' : '1 stop · $stopover';
+
+  /// Departure instant (UTC) for this flight on [day], read in the origin's local time.
+  DateTime departureUtcOn(DateTime day) {
+    final p = departs.split(':');
+    final local = DateTime.utc(day.year, day.month, day.day, int.parse(p[0]), int.parse(p[1]));
+    return local.subtract(Duration(minutes: ((_utcOffsetHours[origin] ?? 0) * 60).round()));
+  }
 }
 
 const kTagShuttle = 'Free airport shuttle';
@@ -336,12 +351,12 @@ const _airports = [
   Airport(code: 'ILO', name: 'Iloilo International', city: 'Iloilo', country: 'Philippines', terminals: 'Main terminal'),
   Airport(code: 'BKK', name: 'Suvarnabhumi', city: 'Bangkok', country: 'Thailand', terminals: 'Main terminal'),
   Airport(code: 'DPS', name: 'Ngurah Rai International', city: 'Bali', country: 'Indonesia', terminals: 'Domestic + international'),
+  Airport(code: 'ICN', name: 'Incheon International', city: 'Seoul', country: 'South Korea', terminals: 'Terminals 1–2'),
 ];
 
 const _originsAbroad = [
   Airport(code: 'SIN', name: 'Changi', city: 'Singapore', country: 'Singapore', terminals: 'Terminals 1–4'),
   Airport(code: 'HKG', name: 'Hong Kong International', city: 'Hong Kong', country: 'Hong Kong', terminals: 'Terminals 1–2'),
-  Airport(code: 'ICN', name: 'Incheon International', city: 'Seoul', country: 'South Korea', terminals: 'Terminals 1–2'),
   Airport(code: 'NRT', name: 'Narita International', city: 'Tokyo', country: 'Japan', terminals: 'Terminals 1–3'),
   Airport(code: 'KIX', name: 'Kansai International', city: 'Osaka', country: 'Japan', terminals: 'Terminals 1–2'),
   Airport(code: 'TPE', name: 'Taoyuan International', city: 'Taipei', country: 'Taiwan', terminals: 'Terminals 1–2'),
@@ -375,6 +390,13 @@ const _coords = <String, (double, double)>{
   'SYD': (-33.95, 151.18),
   'DXB': (25.25, 55.36),
   'LAX': (33.94, -118.41),
+};
+
+/// Hours ahead of UTC per airport, for departure and arrival times.
+const _utcOffsetHours = <String, double>{
+  'MNL': 8, 'CRK': 8, 'CEB': 8, 'DVO': 8, 'KLO': 8, 'PPS': 8, 'TAG': 8, 'ILO': 8,
+  'BKK': 7, 'DPS': 8, 'SIN': 8, 'HKG': 8, 'ICN': 9, 'NRT': 9, 'KIX': 9, 'TPE': 8,
+  'KUL': 8, 'SGN': 7, 'SYD': 10, 'DXB': 4, 'LAX': -8,
 };
 
 // Invented carriers so mock fares are never mistaken for real ones.
@@ -642,10 +664,18 @@ final _moreHotels = <Hotel>[
   _stay('dps-ubud', 'DPS', 'Ubud Rice Terrace Lodge', 'Ubud', 37.0, 'International terminal', 9.4, 1430, 6600, [_spa, _bfast, _pool], freeDays: 5),
   _stay('dps-nusa-dua', 'DPS', 'Nusa Dua Lagoon Resort', 'Nusa Dua', 12.5, 'International terminal', 9.2, 2760, 10400, [_beach, _pool, _spa, _family], suite: true, badge: 'Top rated', freeDays: 7),
   _stay('dps-canggu', 'DPS', 'Canggu Surf House', 'Canggu', 19.0, 'International terminal', 8.6, 1150, 3700, [_beach, _late, _kitchen]),
+  // Seoul (Incheon)
+  _stay('icn-airport-stay', 'ICN', 'Incheon Airside Hotel', 'Unseo-dong', 1.2, 'Terminal 1', 8.6, 2140, 5200, [kTagShuttle, _desk, _bfast], badge: 'Closest to terminal'),
+  _stay('icn-paradise-bay', 'ICN', 'Yeongjong Bay Resort', 'Yeongjong-do', 6.8, 'Terminal 1', 9.0, 1380, 8400, [_spa, _pool, _gym], suite: true, badge: 'Top rated'),
+  _stay('icn-songdo-central', 'ICN', 'Songdo Central Suites', 'Songdo', 24.0, 'Terminal 2', 8.7, 1610, 6300, [_kitchen, _gym, _bfast]),
+  _stay('icn-wolmi-harbor', 'ICN', 'Wolmido Harbor Inn', 'Jung-gu, Incheon', 19.5, 'Terminal 1', 8.1, 720, 3400, [_bfast, _family]),
   _stay('dps-jimbaran', 'DPS', 'Jimbaran Cliff Hotel', 'Jimbaran', 6.5, 'International terminal', 8.9, 870, 7100, [_beach, _spa, _golfView], suite: true),
 ];
 
 const _moreCourses = <GolfCourse>[
+  // Seoul (Incheon)
+  GolfCourse(id: 'icn-sky-links', airportCode: 'ICN', name: 'Sky Links Incheon', holes: 18, par: 72, driveMinutes: 10, pricePerPlayer: 11500, inclusion: 'cart included', teeTimes: ['06:20', '07:50', '12:40']),
+  GolfCourse(id: 'icn-ocean-dunes', airportCode: 'ICN', name: 'Ocean Dunes Country Club', holes: 27, par: 72, driveMinutes: 30, pricePerPlayer: 9800, inclusion: 'cart + caddy', teeTimes: ['06:00', '08:10', '13:30']),
   // Manila (keep Bayshore's 06:40 the only one at that time)
   GolfCourse(id: 'mnl-fort-links', airportCode: 'MNL', name: 'Fort Links Golf Club', holes: 18, par: 72, driveMinutes: 35, pricePerPlayer: 8900, inclusion: 'buggy + caddy', teeTimes: ['06:10', '07:30', '13:40']),
   GolfCourse(id: 'mnl-laguna-lakes', airportCode: 'MNL', name: 'Laguna Lakes Country Club', holes: 36, par: 72, driveMinutes: 70, pricePerPlayer: 4900, teeTimes: ['05:50', '07:15', '12:20', '14:00']),

@@ -1,8 +1,53 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 enum BookingKind { flight, stay, teeTime }
+
+/// The flight inside a flight booking, kept so the trip can be tracked.
+class BookedFlight {
+  const BookedFlight({
+    required this.offerId,
+    required this.airline,
+    required this.flightNo,
+    required this.origin,
+    required this.destination,
+    required this.departureUtc,
+    required this.durationMinutes,
+  });
+
+  final String offerId;
+  final String airline;
+  final String flightNo;
+  final String origin;
+  final String destination;
+  final DateTime departureUtc;
+  final int durationMinutes;
+
+  DateTime get arrivalUtc => departureUtc.add(Duration(minutes: durationMinutes));
+
+  Map<String, Object?> toJson() => {
+        'offerId': offerId,
+        'airline': airline,
+        'flightNo': flightNo,
+        'origin': origin,
+        'destination': destination,
+        'departureUtc': departureUtc.toIso8601String(),
+        'durationMinutes': durationMinutes,
+      };
+
+  factory BookedFlight.fromJson(Map<String, Object?> j) => BookedFlight(
+        offerId: j['offerId']! as String,
+        airline: j['airline']! as String,
+        flightNo: j['flightNo']! as String,
+        origin: j['origin']! as String,
+        destination: j['destination']! as String,
+        departureUtc: DateTime.parse(j['departureUtc']! as String).toUtc(),
+        durationMinutes: j['durationMinutes']! as int,
+      );
+}
 
 class Booking {
   const Booking({
@@ -14,6 +59,7 @@ class Booking {
     required this.when,
     required this.detail,
     required this.total,
+    this.flight,
   });
 
   final String reference;
@@ -28,11 +74,40 @@ class Booking {
 
   /// Total charged, in whole pesos.
   final int total;
+
+  /// The booked flight, for flight bookings made with one.
+  final BookedFlight? flight;
+
+  Map<String, Object?> toJson() => {
+        'reference': reference,
+        'kind': kind.name,
+        'airportCode': airportCode,
+        'title': title,
+        'start': start.toIso8601String(),
+        'when': when,
+        'detail': detail,
+        'total': total,
+        if (flight != null) 'flight': flight!.toJson(),
+      };
+
+  factory Booking.fromJson(Map<String, Object?> j) => Booking(
+        reference: j['reference']! as String,
+        kind: BookingKind.values.byName(j['kind']! as String),
+        airportCode: j['airportCode']! as String,
+        title: j['title']! as String,
+        start: DateTime.parse(j['start']! as String),
+        when: j['when']! as String,
+        detail: j['detail']! as String,
+        total: j['total']! as int,
+        flight: j['flight'] == null ? null : BookedFlight.fromJson((j['flight']! as Map).cast<String, Object?>()),
+      );
 }
 
-/// In-memory bookings for the mock build. Nothing is sent anywhere and the
-/// list resets when the app restarts.
+/// Bookings for the mock build, kept on the device so they survive a restart
+/// (a traveler opens the app mid-flight). Nothing is sent anywhere.
 class BookingsStore extends ChangeNotifier {
+  static const _key = 'cheapestgo_bookings_v1';
+
   BookingsStore({Random? random, DateTime Function()? clock})
       : _random = random ?? Random(),
         _clock = clock ?? DateTime.now;
@@ -42,6 +117,41 @@ class BookingsStore extends ChangeNotifier {
   final List<Booking> _bookings = [];
 
   List<Booking> get all => List.unmodifiable(_bookings);
+
+  /// Flight bookings that carry their flight, earliest departure first.
+  List<Booking> get flights => _bookings.where((b) => b.flight != null).toList()
+    ..sort((a, b) => a.flight!.departureUtc.compareTo(b.flight!.departureUtc));
+
+  Booking? byReference(String reference) {
+    for (final b in _bookings) {
+      if (b.reference == reference) return b;
+    }
+    return null;
+  }
+
+  /// Loads the bookings saved on this device.
+  Future<void> init() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final saved = prefs.getString(_key);
+      if (saved == null) return;
+      _bookings
+        ..clear()
+        ..addAll([
+          for (final item in jsonDecode(saved) as List) Booking.fromJson((item as Map).cast<String, Object?>()),
+        ]);
+      notifyListeners();
+    } catch (e) {
+      debugPrint('Bookings not loaded: $e');
+    }
+  }
+
+  Future<void> _save() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_key, jsonEncode([for (final b in _bookings) b.toJson()]));
+    } catch (_) {}
+  }
 
   List<Booking> get upcoming {
     final today = dateOnly(_clock());
@@ -88,9 +198,11 @@ class BookingsStore extends ChangeNotifier {
     required String stops,
     required int passengers,
     required int total,
+    BookedFlight? flight,
   }) {
     return _add(Booking(
       reference: _newReference('CG-F'),
+      flight: flight,
       kind: BookingKind.flight,
       airportCode: destination,
       title: '$airline $flightNo',
@@ -122,9 +234,10 @@ class BookingsStore extends ChangeNotifier {
     ));
   }
 
-  /// Fills the store with a few earlier trips so Trips › Past has something
-  /// to show in the mock build. Dates are relative to today.
+  /// Fills an empty store with a few earlier trips so Trips › Past has
+  /// something to show in the mock build. Dates are relative to today.
   void seedDemoHistory() {
+    if (_bookings.isNotEmpty) return;
     final today = dateOnly(_clock());
     DateTime ago(int days) => today.subtract(Duration(days: days));
     addFlight(
@@ -154,6 +267,7 @@ class BookingsStore extends ChangeNotifier {
   Booking _add(Booking booking) {
     _bookings.add(booking);
     notifyListeners();
+    _save();
     return booking;
   }
 

@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
+import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -58,7 +59,18 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
       stops: f.stopsLabel,
       passengers: s.adults,
       total: total,
+      flight: BookedFlight(
+        offerId: f.id,
+        airline: f.airline,
+        flightNo: f.flightNo,
+        origin: f.origin,
+        destination: f.destination,
+        departureUtc: f.departureUtcOn(s.checkIn),
+        durationMinutes: f.durationMinutes,
+      ),
     );
+    // Save the route's map for the flight now, while there's a connection.
+    offlineRouteMaps.download(booking);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Flight booked · ref ${booking.reference}')),
     );

@@ -14,4 +14,4 @@ catalogue comes from `cheapestgo-api-v2`.
 | `hotels/` | 24 | Hotel exteriors, pools, resorts (card covers) |
 | `rooms/` | 11 | Bedrooms, suites, lobbies (gallery) |
 | `golf/` | 16 | Courses, greens, golfers |
-| `places/` | 10 | One per arrival airport, named by IATA code |
+| `places/` | 11 | One per arrival airport, named by IATA code |
