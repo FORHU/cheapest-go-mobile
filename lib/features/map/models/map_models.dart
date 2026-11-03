@@ -33,6 +33,116 @@ class MapPlace {
   int get price => hotel?.fromRate ?? course!.pricePerPlayer;
 }
 
+/// Default distance threshold (in kilometres) under which places are considered
+/// visually overlapping at regional/airport zoom and candidates for spiderfying.
+const double kSpiderfyThresholdKm = 2.5;
+
+/// Default radial offset distance (in kilometres) used to fan out overlapping pins.
+const double kSpiderfyRadiusKm = 2.4;
+
+/// A place fanned out visually in a spiderfied group, maintaining its pure catalog data
+/// and original coordinates while presenting an offset position on the map.
+class SpiderfiedPlace {
+  const SpiderfiedPlace({
+    required this.place,
+    required this.spiderPosition,
+    required this.centerPosition,
+  });
+
+  /// The underlying catalog place (coordinates remain pure and untouched).
+  final MapPlace place;
+
+  /// The visually displaced position where the pin is rendered.
+  final LatLng spiderPosition;
+
+  /// The original anchor/center position of the overlapping cluster.
+  final LatLng centerPosition;
+}
+
+/// A collection of overlapping places that have been expanded into a radial spider fan.
+class SpiderGroup {
+  const SpiderGroup({
+    required this.center,
+    required this.spiderPlaces,
+  });
+
+  /// The centroid anchor of the overlapping cluster.
+  final LatLng center;
+
+  /// The places in the cluster with their visual fanned-out positions.
+  final List<SpiderfiedPlace> spiderPlaces;
+
+  /// Returns the underlying places in this group.
+  List<MapPlace> get places => [for (final sp in spiderPlaces) sp.place];
+
+  /// Whether [place] belongs to this spiderfied group.
+  bool contains(MapPlace place) => places.any((p) => p.id == place.id);
+
+  /// Gets the fanned-out position for [place], or its natural position if not in this group.
+  LatLng positionFor(MapPlace place) {
+    for (final sp in spiderPlaces) {
+      if (sp.place.id == place.id) return sp.spiderPosition;
+    }
+    return place.position;
+  }
+}
+
+/// Finds all places in [candidates] that visually overlap with [target] within [thresholdKm].
+List<MapPlace> findOverlappingPlaces(
+  MapPlace target,
+  List<MapPlace> candidates, {
+  double thresholdKm = kSpiderfyThresholdKm,
+}) =>
+    [
+      for (final p in candidates)
+        if (distanceKm(target.position, p.position) <= thresholdKm) p,
+    ];
+
+/// Creates a [SpiderGroup] fanning out [cluster] places radially around their centroid.
+///
+/// Keeps original place coordinates pure. The offset is visual only.
+SpiderGroup createSpiderGroup(
+  List<MapPlace> cluster, {
+  double radiusKm = kSpiderfyRadiusKm,
+}) {
+  assert(cluster.isNotEmpty, 'Cannot create a spider group from an empty cluster');
+  if (cluster.length == 1) {
+    final single = cluster.first;
+    return SpiderGroup(
+      center: single.position,
+      spiderPlaces: [
+        SpiderfiedPlace(
+          place: single,
+          spiderPosition: single.position,
+          centerPosition: single.position,
+        ),
+      ],
+    );
+  }
+
+  // Calculate centroid
+  final avgLat = cluster.fold(0.0, (sum, p) => sum + p.position.$1) / cluster.length;
+  final avgLng = cluster.fold(0.0, (sum, p) => sum + p.position.$2) / cluster.length;
+  final center = (avgLat, avgLng);
+
+  // Slightly enlarge the radius if there are 4+ places so they have ample breathing room
+  final effectiveRadius = cluster.length > 3 ? radiusKm * (1.0 + (cluster.length - 3) * 0.15) : radiusKm;
+
+  final n = cluster.length;
+  final spiderPlaces = <SpiderfiedPlace>[];
+  for (var i = 0; i < n; i++) {
+    final bearingDeg = (360.0 / n * i) % 360.0;
+    final fannedPos = offsetKm(center, effectiveRadius, bearingDeg);
+    spiderPlaces.add(SpiderfiedPlace(
+      place: cluster[i],
+      spiderPosition: fannedPos,
+      centerPosition: center,
+    ));
+  }
+
+  return SpiderGroup(center: center, spiderPlaces: spiderPlaces);
+}
+
 /// Rough driving speed used to place a course from its drive time.
 const double _driveKmPerMinute = 0.5;
 
