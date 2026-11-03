@@ -39,7 +39,7 @@ class MapView extends StatefulWidget {
   State<MapView> createState() => _MapViewState();
 }
 
-class _MapViewState extends State<MapView> {
+class _MapViewState extends State<MapView> with WidgetsBindingObserver {
   /// How often the tracker panel and the plane update.
   static const _tickEvery = Duration(seconds: 1);
 
@@ -72,6 +72,15 @@ class _MapViewState extends State<MapView> {
   geo.Position? _fix;
   bool _askingLocation = false;
   bool _locationDenied = false;
+
+  /// False while another tab is showing (the tab shell turns tickers off).
+  bool _tabVisible = true;
+
+  /// False while the app is in the background.
+  bool _foreground = true;
+
+  /// The tracker only ticks, and GPS only runs, while it's on screen.
+  bool get _trackerOnScreen => _tracking && _tabVisible && _foreground;
 
   MapboxMap? _map;
   PolylineAnnotationManager? _routes;
@@ -142,6 +151,7 @@ class _MapViewState extends State<MapView> {
     flightSimulator.addListener(_onFlightsChanged);
     offlineRouteMaps.addListener(_onFlightsChanged);
     flightToTrack.addListener(_onTrackRequest);
+    WidgetsBinding.instance.addObserver(this);
     // Trips may have asked for a flight before this tab was first built.
     WidgetsBinding.instance.addPostFrameCallback((_) => _onTrackRequest());
   }
@@ -154,9 +164,29 @@ class _MapViewState extends State<MapView> {
     flightSimulator.removeListener(_onFlightsChanged);
     offlineRouteMaps.removeListener(_onFlightsChanged);
     flightToTrack.removeListener(_onTrackRequest);
+    WidgetsBinding.instance.removeObserver(this);
     _ticker?.cancel();
     _gps?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final visible = TickerMode.valuesOf(context).enabled;
+    if (visible != _tabVisible) {
+      _tabVisible = visible;
+      _syncTracker();
+    }
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final foreground = state == AppLifecycleState.resumed;
+    if (foreground != _foreground) {
+      _foreground = foreground;
+      _syncTracker();
+    }
   }
 
   void _onFlightsChanged() {
@@ -226,16 +256,24 @@ class _MapViewState extends State<MapView> {
 
   void _setTracking(bool on) {
     setState(() => _tracking = on);
-    _ticker?.cancel();
-    _ticker = null;
-    if (on) {
-      _ticker = Timer.periodic(_tickEvery, (_) => _tick());
+    _syncTracker();
+    _refresh();
+  }
+
+  /// Starts the tracker's clock and GPS while it's on screen; stops both when
+  /// the tracker closes, another tab shows, or the app goes to the background.
+  void _syncTracker() {
+    if (_trackerOnScreen) {
+      _ticker ??= Timer.periodic(_tickEvery, (_) => _tick());
       _maybeStartGps();
+      if (mounted) setState(() {});
+      _updatePlane();
     } else {
+      _ticker?.cancel();
+      _ticker = null;
       _gps?.cancel();
       _gps = null;
     }
-    _refresh();
   }
 
   void _tick() {
@@ -259,7 +297,7 @@ class _MapViewState extends State<MapView> {
         if (mounted) setState(() => _locationDenied = true);
         return;
       }
-      if (!mounted || !_tracking) return;
+      if (!mounted || !_trackerOnScreen) return;
       _gps = geo.Geolocator.getPositionStream(
         locationSettings: const geo.LocationSettings(accuracy: geo.LocationAccuracy.high, distanceFilter: 200),
       ).listen((p) => _fix = p, onError: (Object e) => debugPrint('GPS: $e'));
