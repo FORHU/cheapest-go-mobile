@@ -81,7 +81,7 @@ class ProfileView extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'CheapestGo Mobile v${env.appVersion} (${env.appEnv.name})',
+                      'CheapestGo Mobile v${env.appVersion}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
