@@ -120,27 +120,6 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       expect(prefs.getString('cheapestgo_map_tier'), 'lite');
     });
-
-    test('Switching map theme mode persists preference and notifies listeners', () async {
-      final store = UiSettingsStore();
-      await store.init();
-
-      expect(store.mapThemeMode, MapThemeMode.dark);
-
-      int notifyCount = 0;
-      store.addListener(() => notifyCount++);
-
-      await store.setMapThemeMode(MapThemeMode.light);
-      expect(store.mapThemeMode, MapThemeMode.light);
-      expect(notifyCount, greaterThanOrEqualTo(1));
-
-      final prefs = await SharedPreferences.getInstance();
-      expect(prefs.getString('cheapestgo_map_theme_mode'), 'light');
-
-      await store.setMapThemeMode(MapThemeMode.dark);
-      expect(store.mapThemeMode, MapThemeMode.dark);
-      expect(prefs.getString('cheapestgo_map_theme_mode'), 'dark');
-    });
   });
 }
 

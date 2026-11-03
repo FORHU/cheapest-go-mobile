@@ -1,49 +1,87 @@
 import 'dart:io' show Platform;
 import 'dart:math' as math;
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kIsWeb, kReleaseMode;
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Size;
 import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
 import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
 import 'package:cheapest_go_mobile/features/map/models/world_landmass_data.dart';
+import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
+import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_radius.dart';
+import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
-/// Interactive Map View
+/// Map tab: the catalogue's arrival airports on a native Mapbox map (2D, or
+/// the 3D globe on capable phones), following the app's light or dark theme.
 ///
-/// Implements 2D Map (`MapTier.lite`) and 3D Globe (`MapTier.standard`) modes
-/// powered by native Mapbox GL (`mapbox_maps_flutter`), matching the `gate-closes-app-v2`
-/// map shell architecture with dynamic dusk atmospheric lighting, airport hubs,
-/// direct flight paths, radar beacons, and live in-flight telemetry HUD.
+/// Selecting an airport zooms in on its stays and golf courses; the sheet
+/// below lists them and opens a place, the airport hub, or a flight in.
+/// "Live flights" follows mock flights into those airports.
+/// Whether the sample "Live flights" tracker is offered. It replays mock
+/// flights, so release builds leave it out unless built with
+/// `--dart-define=SHOW_DEMO_FLIGHTS=true`.
+const bool kShowDemoFlights = bool.fromEnvironment('SHOW_DEMO_FLIGHTS', defaultValue: !kReleaseMode);
+
 class MapView extends StatefulWidget {
-  const MapView({super.key});
+  const MapView({this.catalog = travelCatalog, super.key});
+
+  final TravelCatalog catalog;
 
   @override
   State<MapView> createState() => _MapViewState();
 }
 
-class _MapViewState extends State<MapView> with TickerProviderStateMixin {
-  MapTier _currentTier = MapTier.standard;
-  MapThemeMode _currentMapTheme = MapThemeMode.dark;
-  String _selectedCategory = 'all';
-  MapDestinationHub? _selectedHub;
-  bool _isInFlightTrackingMode = false;
-  int _activeFlightIndex = 0;
+class _MapViewState extends State<MapView> with SingleTickerProviderStateMixin {
+  /// The tracker replays a flight this many times faster than real time.
+  static const _timeLapse = 60;
 
-  // Native Mapbox Controller & Annotation Managers
-  MapboxMap? _mapboxMap;
-  CircleAnnotationManager? _circleManager;
-  PointAnnotationManager? _pointManager;
-  PolylineAnnotationManager? _polyManager;
+  /// How often the plane moves on the map; the panel updates every frame.
+  static const _planeUpdateEvery = Duration(milliseconds: 500);
 
-  // Fallback animation controllers for headless tests / offline simulator
-  late AnimationController _globeRotationController;
-  late AnimationController _flightProgressController;
-  late AnimationController _radarPulseController;
+  static const _overviewCenter = (3.5, 113.0);
+  static const _overviewZoom = 3.0;
+  static const _airportZoom = 9.0;
+  static const _placeZoom = 11.5;
 
-  final double _rotationLon = 121 * math.pi / 180;
-  final double _pitch = 0.0;
-  final Offset _panOffset2D = Offset.zero;
+  /// Routes drawn into each airport when the map shows them all.
+  static const _overviewRoutesPerAirport = 2;
+
+  static const _selectedColor = Color(0xFF06B6D4);
+  static const _golfColor = Color(0xFF16A34A);
+
+  late final List<Airport> _airports = widget.catalog.airports();
+  late final List<TrackedFlight> _flights = trackedFlights(widget.catalog);
+
+  late MapTier _tier = uiSettingsStore.mapTier;
+  Airport? _selected;
+  MapFilter _filter = MapFilter.overview;
+  MapPlace? _place;
+  bool _tracking = false;
+  int _flightIndex = 0;
+  bool _dark = false;
+  double _sheetHeight = 0;
+
+  late final AnimationController _clock;
+  DateTime _lastPlaneUpdate = DateTime.fromMillisecondsSinceEpoch(0);
+
+  MapboxMap? _map;
+  PolylineAnnotationManager? _routes;
+  CircleAnnotationManager? _dots;
+  PointAnnotationManager? _labels;
+  CircleAnnotationManager? _planeLayer;
+  CircleAnnotation? _plane;
+
+  /// What each annotation on the map stands for: an [Airport] or a [MapPlace].
+  final Map<String, Object> _targets = {};
+
+  /// Annotation updates run one after another so a quick second tap can't
+  /// interleave with the first and leave duplicate pins.
+  Future<void> _syncQueue = Future.value();
 
   bool get _isTestEnvironment {
     try {
@@ -53,685 +91,637 @@ class _MapViewState extends State<MapView> with TickerProviderStateMixin {
     }
   }
 
+  TrackedFlight get _flight => _flights[_flightIndex];
+
+  List<MapPlace> get _places {
+    final airport = _selected;
+    return airport == null ? const [] : placesNear(widget.catalog, airport, MapFilter.overview);
+  }
+
   @override
   void initState() {
     super.initState();
-    _currentTier = uiSettingsStore.mapTier;
-    _currentMapTheme = uiSettingsStore.mapThemeMode;
-    uiSettingsStore.addListener(_handleUiStoreChange);
-    _selectedHub = kGlobalDestinationHubs.first; // Default MNL
-
-    _globeRotationController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 50),
-    )..repeat();
-
-    _flightProgressController = AnimationController(
-      vsync: this,
-      duration: const Duration(seconds: 24),
-    )..repeat();
-
-    _radarPulseController = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 1800),
-    )..repeat();
+    _clock = AnimationController(vsync: this)
+      ..addListener(_onClockTick)
+      ..addStatusListener((s) {
+        if (s == AnimationStatus.completed) _clock.forward(from: 0);
+      });
+    _selected = widget.catalog.airport(tripSearchStore.airportCode);
+    uiSettingsStore.addListener(_onSettingsChanged);
+    tripSearchStore.addListener(_onSearchChanged);
   }
 
   @override
   void dispose() {
-    uiSettingsStore.removeListener(_handleUiStoreChange);
-    _globeRotationController.dispose();
-    _flightProgressController.dispose();
-    _radarPulseController.dispose();
+    uiSettingsStore.removeListener(_onSettingsChanged);
+    tripSearchStore.removeListener(_onSearchChanged);
+    _clock.dispose();
     super.dispose();
   }
 
-  void _handleUiStoreChange() {
-    if (!mounted) return;
-    if (_currentTier != uiSettingsStore.mapTier || _currentMapTheme != uiSettingsStore.mapThemeMode) {
-      setState(() {
-        _currentTier = uiSettingsStore.mapTier;
-        _currentMapTheme = uiSettingsStore.mapThemeMode;
-      });
+  void _onSettingsChanged() {
+    if (mounted && _tier != uiSettingsStore.mapTier) setState(() => _tier = uiSettingsStore.mapTier);
+  }
+
+  /// Follows the arrival airport picked elsewhere (Home, the airport hub).
+  void _onSearchChanged() {
+    final airport = widget.catalog.airport(tripSearchStore.airportCode);
+    if (mounted && airport != null && airport.code != _selected?.code && !_tracking) _selectAirport(airport);
+  }
+
+  // --- Selection -----------------------------------------------------------
+
+  void _selectAirport(Airport airport) {
+    setState(() {
+      _selected = airport;
+      _place = null;
+    });
+    tripSearchStore.setAirport(airport.code);
+    _refresh();
+  }
+
+  void _stepAirport(int step) {
+    final i = _airports.indexWhere((a) => a.code == _selected?.code);
+    _selectAirport(_airports[(i + step) % _airports.length]);
+  }
+
+  void _selectPlace(MapPlace place) {
+    setState(() {
+      _place = place;
+      _filter = place.isGolf ? MapFilter.golf : MapFilter.stays;
+    });
+    _refresh();
+  }
+
+  void _setFilter(MapFilter filter) {
+    setState(() {
+      _filter = filter;
+      _place = null;
+    });
+    _refresh();
+  }
+
+  void _closeSheet() {
+    setState(() {
+      _selected = null;
+      _place = null;
+    });
+    _refresh();
+  }
+
+  void _setTracking(bool on) {
+    setState(() => _tracking = on);
+    if (on) {
+      _startFlight();
+    } else {
+      _clock.stop();
+    }
+    _refresh();
+  }
+
+  void _startFlight() {
+    _clock
+      ..duration = _flight.duration ~/ _timeLapse
+      ..value = _flight.startProgress
+      ..forward();
+  }
+
+  void _nextFlight() {
+    setState(() => _flightIndex = (_flightIndex + 1) % _flights.length);
+    _startFlight();
+    _refresh();
+  }
+
+  /// Leaves the tracker for the flight's arrival airport.
+  void _exploreDestination() {
+    _clock.stop();
+    setState(() {
+      _tracking = false;
+      _filter = MapFilter.overview;
+    });
+    _selectAirport(_flight.destination);
+  }
+
+  // --- Navigation ----------------------------------------------------------
+
+  void _openPlace(MapPlace place) {
+    final hotel = place.hotel;
+    if (hotel != null) {
+      context.push('/hotel/${hotel.id}');
+    } else {
+      tripSearchStore
+        ..setAirport(place.airportCode)
+        ..setMode(SearchMode.golf);
+      context.push('/golf');
     }
   }
 
-  TrackedFlight get _currentFlight => kActiveTrackedFlights[_activeFlightIndex];
+  void _bookFlight(FlightOffer offer) {
+    tripSearchStore
+      ..setOrigin(offer.origin)
+      ..setAirport(offer.destination);
+    context.push('/flight-checkout?offer=${offer.id}');
+  }
 
-  // --- Mapbox Style & Annotation Management ---
+  // --- Mapbox --------------------------------------------------------------
 
-  Future<void> _onMapCreated(MapboxMap mapboxMap) async {
-    _mapboxMap = mapboxMap;
+  Future<void> _onMapCreated(MapboxMap map) async {
+    _map = map;
+    _routes = _dots = _labels = _planeLayer = null;
+    _plane = null;
     try {
-      await mapboxMap.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
-      await mapboxMap.compass.updateSettings(CompassSettings(enabled: false));
-      await mapboxMap.gestures.updateSettings(
-        GesturesSettings(
-          scrollEnabled: true,
-          pinchToZoomEnabled: true,
-          doubleTapToZoomInEnabled: true,
-          rotateEnabled: true,
-          pitchEnabled: _currentTier == MapTier.standard,
-        ),
-      );
-      await mapboxMap.setCamera(
-        CameraOptions(
-          center: Point(coordinates: Position(121.0194, 14.5086)),
-          zoom: 2.8,
-          pitch: _currentTier == MapTier.standard ? 35.0 : 0.0,
-        ),
+      await map.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
+      await map.compass.updateSettings(CompassSettings(enabled: false));
+      await map.gestures.updateSettings(GesturesSettings(pitchEnabled: _tier == MapTier.standard));
+      // Top left, so the sheet never covers the Mapbox logo and attribution.
+      await map.logo.updateSettings(LogoSettings(position: OrnamentPosition.TOP_LEFT, marginLeft: 12, marginTop: 14));
+      await map.attribution.updateSettings(
+        AttributionSettings(position: OrnamentPosition.TOP_LEFT, marginLeft: 100, marginTop: 14),
       );
     } catch (e) {
       debugPrint('Mapbox setup: $e');
     }
   }
 
-  Future<void> _onStyleLoaded(StyleLoadedEventData event) async {
-    final map = _mapboxMap;
+  Future<void> _onStyleLoaded(StyleLoadedEventData _) async {
+    final map = _map;
     if (map == null) return;
-    final style = map.style;
+    try {
+      if (_tier == MapTier.standard) {
+        await map.style.setProjection(StyleProjection(name: StyleProjectionName.globe));
+        await map.style.setStyleImportConfigProperty('basemap', 'lightPreset', _dark ? 'night' : 'day');
+      } else {
+        await map.style.setProjection(StyleProjection(name: StyleProjectionName.mercator));
+      }
+    } catch (e) {
+      debugPrint('Mapbox style: $e');
+    }
+    try {
+      _routes = await map.annotations.createPolylineAnnotationManager();
+      _dots = await map.annotations.createCircleAnnotationManager();
+      _labels = await map.annotations.createPointAnnotationManager();
+      _planeLayer = await map.annotations.createCircleAnnotationManager();
+      _dots!.tapEvents(onTap: (a) => _onTargetTap(a.id));
+      _labels!.tapEvents(onTap: (a) => _onTargetTap(a.id));
+    } catch (e) {
+      debugPrint('Mapbox annotations: $e');
+    }
+    _refresh(animate: false);
+  }
 
-    final isLight = _currentMapTheme == MapThemeMode.light;
-    if (_currentTier == MapTier.standard) {
-      try {
-        await style.setProjection(StyleProjection(name: StyleProjectionName.globe));
-        if (isLight) {
-          // Vibrant daylight atmosphere
-          await style.setStyleImportConfigProperty('basemap', 'colorWater', '#A0C8F0');
-          await style.setStyleImportConfigProperty('basemap', 'colorLand', '#E8ECEF');
-          await style.setStyleImportConfigProperty('basemap', 'colorGreenspace', '#C2E0C6');
-          await style.setStyleImportConfigProperty('basemap', 'lightPreset', 'day');
-        } else {
-          // Gate-closes standard dusk atmosphere colors
-          await style.setStyleImportConfigProperty('basemap', 'colorWater', '#1D4A70');
-          await style.setStyleImportConfigProperty('basemap', 'colorLand', '#4C7656');
-          await style.setStyleImportConfigProperty('basemap', 'colorGreenspace', '#5C8F62');
-          await style.setStyleImportConfigProperty('basemap', 'lightPreset', 'dusk');
-        }
-      } catch (e) {
-        debugPrint('Mapbox standard config skipped: $e');
+  void _onTargetTap(String annotationId) {
+    switch (_targets[annotationId]) {
+      case final Airport airport:
+        if (!_tracking) _selectAirport(airport);
+      case final MapPlace place:
+        _selectPlace(place);
+    }
+  }
+
+  /// Redraws the pins and moves the camera to match the current selection.
+  void _refresh({bool animate = true}) {
+    _syncQueue = _syncQueue.then((_) => _syncAnnotations()).then((_) => _moveCamera(animate: animate)).catchError((Object e) {
+      debugPrint('Map refresh: $e');
+    });
+  }
+
+  Future<void> _syncAnnotations() async {
+    final routes = _routes, dots = _dots, labels = _labels, planeLayer = _planeLayer;
+    if (routes == null || dots == null || labels == null || planeLayer == null) return;
+    final c = _dark ? AppColors.dark : AppColors.light;
+    final text = c.textPrimary.toARGB32();
+    final halo = c.background.toARGB32();
+
+    await routes.deleteAll();
+    await dots.deleteAll();
+    await labels.deleteAll();
+    await planeLayer.deleteAll();
+    _plane = null;
+    _targets.clear();
+
+    // Routes: the tracked flight; the flights into the selected airport; or,
+    // with nothing selected, the cheapest few into every airport.
+    final selectedAirport = _selected;
+    final routeAirports = _tracking
+        ? const <Airport>[]
+        : selectedAirport == null
+            ? _airports
+            : (_filter == MapFilter.overview || _filter == MapFilter.flights ? [selectedAirport] : const <Airport>[]);
+    final lines = <(LatLng, LatLng)>[
+      if (_tracking) (_flight.from, _flight.to),
+      for (final to in routeAirports)
+        for (final f in selectedAirport == null
+            ? flightsInto(widget.catalog, to, count: _overviewRoutesPerAirport, abroadOnly: true)
+            : flightsInto(widget.catalog, to))
+          if (widget.catalog.origin(f.origin) case final o?) ((o.latitude, o.longitude), (to.latitude, to.longitude)),
+    ];
+    if (lines.isNotEmpty) {
+      await routes.createMulti([
+        for (final (a, b) in lines)
+          PolylineAnnotationOptions(
+            geometry: LineString(coordinates: [for (var i = 0; i <= 24; i++) _position(interpolate(a, b, i / 24))]),
+            lineColor: c.accent.toARGB32(),
+            lineWidth: _tracking ? 3 : 1.8,
+            lineOpacity: _tracking ? 0.9 : 0.55,
+          ),
+      ]);
+    }
+
+    // Airports, plus the tracked flight's origin when it isn't one of them.
+    final airports = [
+      ..._airports,
+      if (_tracking && !_airports.any((a) => a.code == _flight.origin.code)) _flight.origin,
+    ];
+    final dotTargets = <Object>[];
+    final dotOptions = <CircleAnnotationOptions>[];
+    final labelTargets = <Object>[];
+    final labelOptions = <PointAnnotationOptions>[];
+    for (final a in airports) {
+      final selected = a.code == _selected?.code || (_tracking && (a.code == _flight.destination.code || a.code == _flight.origin.code));
+      final at = Point(coordinates: _position((a.latitude, a.longitude)));
+      dotTargets.add(a);
+      dotOptions.add(CircleAnnotationOptions(
+        geometry: at,
+        circleRadius: selected ? 9 : 6.5,
+        circleColor: (selected ? _selectedColor : c.accent).toARGB32(),
+        circleStrokeColor: 0xFFFFFFFF,
+        circleStrokeWidth: 2,
+        circleSortKey: 10,
+      ));
+      labelTargets.add(a);
+      labelOptions.add(PointAnnotationOptions(
+        geometry: at,
+        textField: a.code,
+        textSize: selected ? 13 : 11.5,
+        textColor: text,
+        textHaloColor: halo,
+        textHaloWidth: 1.5,
+        textOffset: [0, _labelAbove(a, airports) ? -1.5 : 1.5],
+      ));
+    }
+
+    // Stays and courses: around the selected airport (as its tab filters
+    // them), or around every airport when none is selected.
+    final placeAirports = _tracking || _filter == MapFilter.flights && selectedAirport != null
+        ? const <Airport>[]
+        : (selectedAirport == null ? _airports : [selectedAirport]);
+    final placeFilter = selectedAirport == null ? MapFilter.overview : _filter;
+    for (final airport in placeAirports) {
+      for (final p in placesNear(widget.catalog, airport, placeFilter)) {
+        final selected = p.id == _place?.id;
+        final at = Point(coordinates: _position(p.position));
+        dotTargets.add(p);
+        dotOptions.add(CircleAnnotationOptions(
+          geometry: at,
+          circleRadius: selected ? 9 : (selectedAirport == null ? 3.5 : 6),
+          circleColor: (selected ? _selectedColor : (p.isGolf ? _golfColor : c.accent)).toARGB32(),
+          circleStrokeColor: 0xFFFFFFFF,
+          circleStrokeWidth: selectedAirport == null ? 0.8 : 1.5,
+          circleSortKey: selected ? 5 : 0,
+        ));
+        // Only the selected place gets a price label: stays sit close together
+        // and their labels would overlap. The sheet lists every price.
+        if (!selected) continue;
+        labelTargets.add(p);
+        labelOptions.add(PointAnnotationOptions(
+          geometry: at,
+          // Map fonts have no ₱ glyph; every price in the app is in pesos.
+          textField: formatPeso(p.price).replaceFirst('₱', ''),
+          textSize: 12.5,
+          textColor: text,
+          textHaloColor: halo,
+          textHaloWidth: 1.5,
+          textOffset: const [0, -1.5],
+        ));
+      }
+    }
+
+    final created = await dots.createMulti(dotOptions);
+    for (var i = 0; i < created.length; i++) {
+      if (created[i] case final a?) _targets[a.id] = dotTargets[i];
+    }
+    final createdLabels = await labels.createMulti(labelOptions);
+    for (var i = 0; i < createdLabels.length; i++) {
+      if (createdLabels[i] case final a?) _targets[a.id] = labelTargets[i];
+    }
+
+    if (_tracking) {
+      _plane = await planeLayer.create(CircleAnnotationOptions(
+        geometry: Point(coordinates: _position(_flight.positionAt(_clock.value))),
+        circleRadius: 7,
+        circleColor: 0xFFFFFFFF,
+        circleStrokeColor: _selectedColor.toARGB32(),
+        circleStrokeWidth: 4,
+      ));
+    }
+  }
+
+  void _onClockTick() {
+    final now = DateTime.now();
+    if (now.difference(_lastPlaneUpdate) < _planeUpdateEvery) return;
+    _lastPlaneUpdate = now;
+    final plane = _plane, layer = _planeLayer;
+    if (plane == null || layer == null) return;
+    plane.geometry = Point(coordinates: _position(_flight.positionAt(_clock.value)));
+    layer.update(plane).catchError((Object e) => debugPrint('Plane update: $e'));
+  }
+
+  Future<void> _moveCamera({bool animate = true}) async {
+    final map = _map;
+    if (map == null || !mounted) return;
+    final top = MediaQuery.paddingOf(context).top + 56;
+    final bottom = (_tracking || _selected != null) ? _sheetHeight + 24 : 24.0;
+
+    LatLng center;
+    double zoom;
+    if (_tracking) {
+      center = _flight.positionAt(0.5);
+      zoom = _zoomToFit(distanceKm(_flight.from, _flight.to));
+    } else if (_selected case final airport?) {
+      if (_filter == MapFilter.flights) {
+        center = (airport.latitude, airport.longitude);
+        zoom = 3.2;
+      } else if (_place case final place?) {
+        center = place.position;
+        zoom = _placeZoom;
+      } else {
+        center = (airport.latitude, airport.longitude);
+        final spread = placesNear(widget.catalog, airport, _filter).map((p) => distanceKm(center, p.position));
+        zoom = spread.isEmpty ? _airportZoom : math.min(_zoomToFit(2 * spread.reduce(math.max)), 13.0);
       }
     } else {
-      try {
-        await style.setProjection(StyleProjection(name: StyleProjectionName.mercator));
-      } catch (_) {}
+      center = _overviewCenter;
+      zoom = _overviewZoom;
     }
 
+    final camera = CameraOptions(
+      center: Point(coordinates: _position(center)),
+      zoom: _tier == MapTier.standard ? zoom - 0.3 : zoom,
+      pitch: 0,
+      padding: MbxEdgeInsets(top: top, left: 0, bottom: bottom, right: 0),
+    );
     try {
-      _circleManager = await map.annotations.createCircleAnnotationManager();
-      _pointManager = await map.annotations.createPointAnnotationManager();
-      _polyManager = await map.annotations.createPolylineAnnotationManager();
-
-      _circleManager?.tapEvents(onTap: (annotation) {
-        _handlePointTap(annotation.geometry);
-      });
-      _pointManager?.tapEvents(onTap: (annotation) {
-        _handlePointTap(annotation.geometry);
-      });
-
-      await _syncMapboxAnnotations();
-
-      // Recenter camera nicely on selected hub
-      await map.setCamera(
-        CameraOptions(
-          center: Point(coordinates: Position(121.0194, 14.5086)),
-          zoom: 2.8,
-          pitch: _currentTier == MapTier.standard ? 35.0 : 0.0,
-        ),
-      );
+      if (animate) {
+        await map.flyTo(camera, MapAnimationOptions(duration: 1000));
+      } else {
+        await map.setCamera(camera);
+      }
     } catch (e) {
-      debugPrint('Annotation manager initialization error: $e');
+      debugPrint('Map camera: $e');
     }
   }
 
-  void _handlePointTap(Point point) {
-    final lon = point.coordinates.lng.toDouble();
-    final lat = point.coordinates.lat.toDouble();
+  /// A zoom that fits a route of [km] across most of a phone's width.
+  double _zoomToFit(double km) => (math.log(40075 * 0.35 * 360 / (256 * math.max(km, 50))) / math.ln2).clamp(1.5, 8.0);
 
-    MapDestinationHub? closest;
-    double minDistance = double.infinity;
-
-    for (final hub in kGlobalDestinationHubs) {
-      final d = math.sqrt(math.pow(hub.longitude - lon, 2) + math.pow(hub.latitude - lat, 2));
-      if (d < minDistance) {
-        minDistance = d;
-        closest = hub;
+  /// Puts an airport's label above its pin when its nearest neighbour lies to
+  /// the south, so close pairs like Clark and Manila don't cover each other.
+  static bool _labelAbove(Airport a, List<Airport> all) {
+    Airport? nearest;
+    var best = double.infinity;
+    for (final o in all) {
+      if (o.code == a.code) continue;
+      final d = distanceKm((a.latitude, a.longitude), (o.latitude, o.longitude));
+      if (d < best) {
+        best = d;
+        nearest = o;
       }
     }
-
-    if (closest != null) {
-      setState(() => _selectedHub = closest);
-      _flyToHub(closest);
-      _syncMapboxAnnotations();
-    }
+    return nearest != null && best < 250 && nearest.latitude < a.latitude;
   }
 
-  Future<void> _flyToHub(MapDestinationHub hub) async {
-    final map = _mapboxMap;
-    if (map == null) return;
-    try {
-      await map.flyTo(
-        CameraOptions(
-          center: Point(coordinates: Position(hub.longitude, hub.latitude)),
-          zoom: 4.5,
-          pitch: _currentTier == MapTier.standard ? 35.0 : 0.0,
-        ),
-        MapAnimationOptions(duration: 1200),
-      );
-    } catch (_) {}
-  }
+  static Position _position(LatLng p) => Position(p.$2, p.$1);
 
-  Future<void> _syncMapboxAnnotations() async {
-    final circleManager = _circleManager;
-    final pointManager = _pointManager;
-    final polyManager = _polyManager;
-    if (circleManager == null || pointManager == null || polyManager == null) return;
-
-    try {
-      await circleManager.deleteAll();
-      await pointManager.deleteAll();
-      await polyManager.deleteAll();
-
-      // 1. Flight Corridors
-      final polylineOptions = <PolylineAnnotationOptions>[];
-      void addFlightRoute(MapDestinationHub from, MapDestinationHub to) {
-        polylineOptions.add(
-          PolylineAnnotationOptions(
-            geometry: LineString(
-              coordinates: [
-                Position(from.longitude, from.latitude),
-                Position(to.longitude, to.latitude),
-              ],
-            ),
-            lineColor: const Color(0xFF3FE1FD).toARGB32(),
-            lineWidth: 2.2,
-            lineOpacity: 0.8,
-          ),
-        );
-      }
-
-      addFlightRoute(kGlobalDestinationHubs[0], kGlobalDestinationHubs[3]); // MNL -> SIN
-      addFlightRoute(kGlobalDestinationHubs[1], kGlobalDestinationHubs[2]); // CRK -> DPS
-      addFlightRoute(kGlobalDestinationHubs[3], kGlobalDestinationHubs[4]); // SIN -> HND
-      addFlightRoute(kGlobalDestinationHubs[5], kGlobalDestinationHubs[6]); // DXB -> LHR
-      addFlightRoute(kGlobalDestinationHubs[6], kGlobalDestinationHubs[7]); // LHR -> JFK
-      await polyManager.createMulti(polylineOptions);
-
-      // 2. Hub Pins & Badges
-      final circleOptions = <CircleAnnotationOptions>[];
-      final pointOptions = <PointAnnotationOptions>[];
-
-      for (final hub in kGlobalDestinationHubs) {
-        if (!_filterMatch(hub)) {
-          continue;
-        }
-
-        final isSelected = _selectedHub?.code == hub.code;
-        final color = isSelected
-            ? const Color(0xFF3FE1FD).toARGB32()
-            : (hub.category == 'golf'
-                ? const Color(0xFF4EDEA3).toARGB32()
-                : const Color(0xFF2563EB).toARGB32());
-
-        circleOptions.add(
-          CircleAnnotationOptions(
-            geometry: Point(coordinates: Position(hub.longitude, hub.latitude)),
-            circleRadius: isSelected ? 8.5 : 5.5,
-            circleColor: color,
-            circleStrokeColor: const Color(0xFFFFFFFF).toARGB32(),
-            circleStrokeWidth: isSelected ? 2.5 : 1.2,
-          ),
-        );
-
-        pointOptions.add(
-          PointAnnotationOptions(
-            geometry: Point(coordinates: Position(hub.longitude, hub.latitude)),
-            textField: '${hub.code} • \$${hub.hotelPrice.toInt()}',
-            textSize: isSelected ? 11.5 : 9.5,
-            textColor: const Color(0xFFFFFFFF).toARGB32(),
-            textHaloColor: const Color(0xFF000000).toARGB32(),
-            textHaloWidth: 1.8,
-            textOffset: hub.code == 'CRK' ? [0.0, -1.8] : [0.0, 1.6],
-          ),
-        );
-      }
-
-      await circleManager.createMulti(circleOptions);
-      await pointManager.createMulti(pointOptions);
-    } catch (e) {
-      debugPrint('Sync annotations error: $e');
-    }
-  }
-
-  bool _filterMatch(MapDestinationHub hub) {
-    if (_selectedCategory == 'all') {
-      return true;
-    }
-    if (_selectedCategory == 'golf') {
-      return hub.golfCourses.isNotEmpty;
-    }
-    if (_selectedCategory == 'hotels') {
-      return hub.airportHotels.isNotEmpty;
-    }
-    if (_selectedCategory == 'flights') {
-      return hub.directFlights.isNotEmpty;
-    }
-    return true;
-  }
-
-  void _cycleNextHub() {
-    final curIdx = kGlobalDestinationHubs.indexWhere((h) => h.code == _selectedHub?.code);
-    final nextIdx = (curIdx + 1) % kGlobalDestinationHubs.length;
-    final next = kGlobalDestinationHubs[nextIdx];
-    setState(() => _selectedHub = next);
-    _flyToHub(next);
-    _syncMapboxAnnotations();
-  }
-
-  void _cyclePreviousHub() {
-    final curIdx = kGlobalDestinationHubs.indexWhere((h) => h.code == _selectedHub?.code);
-    final prevIdx = (curIdx - 1 + kGlobalDestinationHubs.length) % kGlobalDestinationHubs.length;
-    final prev = kGlobalDestinationHubs[prevIdx];
-    setState(() => _selectedHub = prev);
-    _flyToHub(prev);
-    _syncMapboxAnnotations();
-  }
-
-  void _cycleNextFlight() {
-    setState(() {
-      _activeFlightIndex = (_activeFlightIndex + 1) % kActiveTrackedFlights.length;
-    });
-    _flyToHub(_currentFlight.originHub);
-  }
-
-  int get _initialHubTab {
-    switch (_selectedCategory) {
-      case 'hotels':
-        return 1;
-      case 'flights':
-        return 2;
-      case 'golf':
-        return 3;
-      default:
-        return 0;
-    }
-  }
+  // --- UI ------------------------------------------------------------------
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: const Color(0xFF070B14),
-      child: Stack(
-        children: [
-          // 1. Native Mapbox 3D Globe / 2D Canvas
-          if (!_isTestEnvironment)
-            Positioned.fill(
-              child: MapWidget(
-                key: ValueKey('cheapest-go-mapbox-${_currentTier.name}-${_currentMapTheme.name}'),
-                styleUri: _currentTier == MapTier.standard
-                    ? MapboxStyles.STANDARD
-                    : (_currentMapTheme == MapThemeMode.light
-                        ? MapboxStyles.LIGHT
-                        : MapboxStyles.DARK),
-                onMapCreated: _onMapCreated,
-                onStyleLoadedListener: _onStyleLoaded,
-              ),
-            )
-          else
-            // Headless test fallback
-            SizedBox.expand(
-              child: CustomPaint(
-                painter: _MapCanvasPainter(
-                  tier: _currentTier,
-                  themeMode: _currentMapTheme,
-                  rotationLon: _rotationLon,
-                  pitch: _pitch,
-                  panOffset2D: _panOffset2D,
-                  hubs: kGlobalDestinationHubs,
-                  selectedHub: _selectedHub,
-                  selectedCategory: _selectedCategory,
-                  isInFlightTrackingMode: _isInFlightTrackingMode,
-                  activeFlight: _currentFlight,
-                  flightProgress: _flightProgressController.value,
-                  pulseValue: _radarPulseController.value,
-                ),
-              ),
-            ),
+    final c = context.colors;
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    if (dark != _dark) _dark = dark;
 
-          // 2. Top Header Controls (Map Tier Toggle, Flight Tracker Toggle, Filter Chips)
-          SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      // Mode Switch: Hub Explorer vs In-Flight Live Tracker
-                      GestureDetector(
-                        onTap: () {
-                          setState(() {
-                            _isInFlightTrackingMode = !_isInFlightTrackingMode;
-                          });
-                          if (_isInFlightTrackingMode) {
-                            _flyToHub(_currentFlight.originHub);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              colors: _isInFlightTrackingMode
-                                  ? [const Color(0xFF006242), const Color(0xFF004AC6)]
-                                  : [const Color(0xFF1E293B), const Color(0xFF0F172A)],
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: _isInFlightTrackingMode
-                                  ? const Color(0xFF3FE1FD)
-                                  : Colors.white.withValues(alpha: 0.2),
-                            ),
-                            boxShadow: _isInFlightTrackingMode
-                                ? [
-                                    BoxShadow(
-                                      color: const Color(0xFF3FE1FD).withValues(alpha: 0.35),
-                                      blurRadius: 10,
-                                    ),
-                                  ]
-                                : null,
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                _isInFlightTrackingMode ? Icons.flight_takeoff : Icons.explore,
-                                size: 14,
-                                color: _isInFlightTrackingMode
-                                    ? const Color(0xFF3FE1FD)
-                                    : Colors.white70,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                _isInFlightTrackingMode ? 'Live In-Flight' : 'Hubs & Stays',
-                                style: TextStyle(
-                                  color: _isInFlightTrackingMode ? Colors.white : const Color(0xFFDAE2FD),
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+    return LayoutBuilder(
+      builder: (context, box) {
+        _sheetHeight = _tracking ? 330 : math.min(380, box.maxHeight * 0.48);
+        final airport = _selected;
+        return ColoredBox(
+          color: c.background,
+          child: Stack(
+            children: [
+              if (!_isTestEnvironment)
+                Positioned.fill(
+                  child: MapWidget(
+                    key: ValueKey('cheapest-go-map-${_tier.name}-${dark ? 'dark' : 'light'}'),
+                    styleUri: _tier == MapTier.standard ? MapboxStyles.STANDARD : (dark ? MapboxStyles.DARK : MapboxStyles.LIGHT),
+                    onMapCreated: _onMapCreated,
+                    onStyleLoadedListener: _onStyleLoaded,
+                  ),
+                )
+              else
+                Positioned.fill(
+                  child: CustomPaint(
+                    painter: _MapCanvasPainter(airports: _airports, selected: airport, colors: c),
                   ),
                 ),
+              if (kShowDemoFlights)
+                Positioned(
+                  top: 8,
+                  right: 12,
+                  child: _ModeSwitch(tracking: _tracking, onChanged: _setTracking),
+                ),
+              if (_tracking)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  child: AnimatedBuilder(
+                    animation: _clock,
+                    builder: (context, _) => FlightTelemetryHud(
+                      flight: _flight,
+                      progress: _clock.value,
+                      onNextFlight: _nextFlight,
+                      onViewDestinationHub: _exploreDestination,
+                      onExitTracking: () => _setTracking(false),
+                    ),
+                  ),
+                )
+              else if (airport != null)
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxHeight: _sheetHeight),
+                    child: AirportHubSheet(
+                      airport: airport,
+                      places: _places,
+                      filter: _filter,
+                      selectedPlace: _place,
+                      catalog: widget.catalog,
+                      onFilterChanged: _setFilter,
+                      onPlaceSelected: _selectPlace,
+                      onClearPlace: () => _setFilter(_place!.isGolf ? MapFilter.golf : MapFilter.stays),
+                      onOpenPlace: _openPlace,
+                      onOpenHub: () => context.push('/airport/${airport.code}'),
+                      onBookFlight: _bookFlight,
+                      onNextAirport: () => _stepAirport(1),
+                      onPreviousAirport: () => _stepAirport(-1),
+                      onClose: _closeSheet,
+                    ),
+                  ),
+                )
+              else
+                Positioned(
+                  left: 12,
+                  right: 12,
+                  bottom: 12,
+                  child: _AirportStrip(airports: _airports, catalog: widget.catalog, onTap: _selectAirport),
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
 
-                // Category Filter Pills (Only shown in Hub Explorer mode)
-                if (!_isInFlightTrackingMode)
-                  SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+/// Airports ↔ live flights switch, top right over the map.
+class _ModeSwitch extends StatelessWidget {
+  const _ModeSwitch({required this.tracking, required this.onChanged});
+
+  final bool tracking;
+  final ValueChanged<bool> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return Material(
+      color: c.glassStrong,
+      shape: StadiumBorder(side: BorderSide(color: c.border)),
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(3),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            for (final (on, label, icon) in [(false, 'Airports', Icons.place_rounded), (true, 'Live flights', Icons.flight_rounded)])
+              Semantics(
+                selected: tracking == on,
+                button: true,
+                child: InkWell(
+                  customBorder: const StadiumBorder(),
+                  onTap: () {
+                    if (tracking != on) onChanged(on);
+                  },
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      gradient: tracking == on ? kBrandGradient : null,
+                      borderRadius: AppRadius.brPill,
+                    ),
                     child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildFilterChip('all', 'All Hubs', Icons.scatter_plot),
-                        _buildFilterChip('hotels', 'Airport Hotels', Icons.hotel),
-                        _buildFilterChip('flights', 'Direct Flights', Icons.flight),
-                        _buildFilterChip('golf', 'Golf Getaways', Icons.sports_golf),
+                        Icon(icon, size: 15, color: tracking == on ? Colors.white : c.textSecondary),
+                        const SizedBox(width: 5),
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: 12.5,
+                            fontWeight: FontWeight.w600,
+                            color: tracking == on ? Colors.white : c.textSecondary,
+                          ),
+                        ),
                       ],
                     ),
                   ),
-              ],
-            ),
-          ),
-
-          // 3. Live Flight Telemetry HUD (Shown when tracking is active)
-          if (_isInFlightTrackingMode)
-            Positioned(
-              top: 110,
-              left: 16,
-              right: 16,
-              child: FlightTelemetryHud(
-                flight: _currentFlight,
-                progress: _flightProgressController.value,
-                onNextFlight: _cycleNextFlight,
-                onViewDestinationHub: () => _flyToHub(_currentFlight.destinationHub),
-                onExitTracking: () => setState(() => _isInFlightTrackingMode = false),
-              ),
-            ),
-
-          // 4. Bottom Destination Airport & Hotel Explorer Sheet
-          if (!_isInFlightTrackingMode && _selectedHub != null)
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 84,
-              child: AirportHubSheet(
-                hub: _selectedHub!,
-                initialTab: _initialHubTab,
-                onNextHub: _cycleNextHub,
-                onPreviousHub: _cyclePreviousHub,
-                onClose: () => setState(() => _selectedHub = null),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFilterChip(String category, String label, IconData icon) {
-    final isSelected = _selectedCategory == category;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8),
-      child: GestureDetector(
-        onTap: () {
-          setState(() => _selectedCategory = category);
-          _syncMapboxAnnotations();
-        },
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? const Color(0xFF0058C6)
-                : const Color(0xFF131B2E).withValues(alpha: 0.85),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: isSelected ? const Color(0xFF3FE1FD) : Colors.white.withValues(alpha: 0.15),
-            ),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, size: 14, color: isSelected ? Colors.white : Colors.white70),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  color: isSelected ? Colors.white : const Color(0xFFBAC3DE),
                 ),
               ),
-            ],
-          ),
+          ],
         ),
       ),
     );
   }
 }
 
-// ============================================================================
-// Headless Test Canvas Painter (Preserves 100% test pass rate in CI/unit tests)
-// ============================================================================
+/// Zoomed out: one card per arrival airport with its stays, golf and lowest
+/// rate, since at this zoom their pins sit too close to tell apart.
+class _AirportStrip extends StatelessWidget {
+  const _AirportStrip({required this.airports, required this.catalog, required this.onTap});
 
+  final List<Airport> airports;
+  final TravelCatalog catalog;
+  final ValueChanged<Airport> onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = context.colors;
+    return SizedBox(
+      height: 100,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: airports.length,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          final a = airports[i];
+          final hotels = catalog.hotelsNear(a.code);
+          final golf = catalog.coursesNear(a.code).length;
+          final from = hotels.isEmpty ? null : hotels.map((h) => h.fromRate).reduce(math.min);
+          return SizedBox(
+            width: 200,
+            child: AppCard(
+              color: c.glassStrong,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              onTap: () => onTap(a),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('${a.code} · ${a.city}', maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 2),
+                  Text('${plural(hotels.length, 'stay')} · $golf golf', style: TextStyle(fontSize: 12, color: c.textSecondary)),
+                  if (from != null) ...[
+                    const SizedBox(height: 4),
+                    PriceText(from, suffix: '/night', size: 13),
+                  ],
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// Static stand-in for the native map in widget tests, which can't host Mapbox.
 class _MapCanvasPainter extends CustomPainter {
-  _MapCanvasPainter({
-    required this.tier,
-    this.themeMode = MapThemeMode.dark,
-    required this.rotationLon,
-    required this.pitch,
-    required this.panOffset2D,
-    required this.hubs,
-    required this.selectedHub,
-    required this.selectedCategory,
-    required this.isInFlightTrackingMode,
-    required this.activeFlight,
-    required this.flightProgress,
-    required this.pulseValue,
-  });
+  _MapCanvasPainter({required this.airports, required this.selected, required this.colors});
 
-  final MapTier tier;
-  final MapThemeMode themeMode;
-  final double rotationLon;
-  final double pitch;
-  final Offset panOffset2D;
-  final List<MapDestinationHub> hubs;
-  final MapDestinationHub? selectedHub;
-  final String selectedCategory;
-  final bool isInFlightTrackingMode;
-  final TrackedFlight activeFlight;
-  final double flightProgress;
-  final double pulseValue;
+  final List<Airport> airports;
+  final Airport? selected;
+  final AppColors colors;
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (tier == MapTier.standard) {
-      _paint3DGlobe(canvas, size);
-    } else {
-      _paint2DMap(canvas, size);
-    }
-  }
-
-  void _paint3DGlobe(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height * 0.44);
-    final radius = math.min(size.width, size.height) * 0.40;
-
-    // Oceanic sphere
-    final oceanPaint = Paint()
-      ..shader = RadialGradient(
-        colors: const [Color(0xFF14305A), Color(0xFF07122A), Color(0xFF030814)],
-        stops: const [0.0, 0.75, 1.0],
-      ).createShader(Rect.fromCircle(center: center, radius: radius));
-    canvas.drawCircle(center, radius, oceanPaint);
-
-    // Continent Polygons
-    final landPaint = Paint()
-      ..color = const Color(0xFF26734D).withValues(alpha: 0.35)
-      ..style = PaintingStyle.fill;
-    final coastPaint = Paint()
-      ..color = const Color(0xFF4EDEA3).withValues(alpha: 0.70)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
+    final land = Paint()..color = colors.surfaceMuted;
     for (final polygon in kWorldLandmasses) {
       final path = Path();
-      bool first = true;
-      for (final pt in polygon.points) {
-        final latRad = pt.$1 * math.pi / 180;
-        final lonRad = pt.$2 * math.pi / 180;
-        final screenPt = _project3D(latRad, lonRad, center, radius, rotationLon, pitch);
-        if (screenPt != null) {
-          if (first) {
-            path.moveTo(screenPt.dx, screenPt.dy);
-            first = false;
-          } else {
-            path.lineTo(screenPt.dx, screenPt.dy);
-          }
-        }
+      for (final (i, pt) in polygon.points.indexed) {
+        final o = _project(pt.$1, pt.$2, size);
+        i == 0 ? path.moveTo(o.dx, o.dy) : path.lineTo(o.dx, o.dy);
       }
-      if (!first) {
-        path.close();
-        canvas.drawPath(path, landPaint);
-        canvas.drawPath(path, coastPaint);
-      }
+      canvas.drawPath(path..close(), land);
     }
-
-    // Outer Rim Ring
-    final rimPaint = Paint()
-      ..color = const Color(0xFF3FE1FD).withValues(alpha: 0.55)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6;
-    canvas.drawCircle(center, radius, rimPaint);
-
-    // Hub Pins
-    for (final hub in hubs) {
-      final pt = _project3D(hub.latRad, hub.lonRad, center, radius, rotationLon, pitch);
-      if (pt != null) {
-        final isSelected = selectedHub?.code == hub.code;
-        _drawHubPin(canvas, pt, hub, isSelected);
-      }
+    for (final a in airports) {
+      final o = _project(a.latitude, a.longitude, size);
+      canvas.drawCircle(o, a.code == selected?.code ? 6 : 4, Paint()..color = colors.accent);
     }
   }
 
-  void _paint2DMap(Canvas canvas, Size size) {
-    final isLight = themeMode == MapThemeMode.light;
-    final bgPaint = Paint()..color = isLight ? const Color(0xFFE2E8F0) : const Color(0xFF070F22);
-    canvas.drawRect(Offset.zero & size, bgPaint);
-
-    final landPaint = Paint()
-      ..color = isLight
-          ? const Color(0xFFCBD5E1)
-          : const Color(0xFF26734D).withValues(alpha: 0.35)
-      ..style = PaintingStyle.fill;
-    final coastPaint = Paint()
-      ..color = isLight
-          ? const Color(0xFF64748B)
-          : const Color(0xFF4EDEA3).withValues(alpha: 0.75)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.2;
-
-    for (final polygon in kWorldLandmasses) {
-      final path = Path();
-      bool first = true;
-      for (final pt in polygon.points) {
-        final latRad = pt.$1 * math.pi / 180;
-        final lonRad = pt.$2 * math.pi / 180;
-        final screenPt = _project2D(latRad, lonRad, size, panOffset2D);
-        if (first) {
-          path.moveTo(screenPt.dx, screenPt.dy);
-          first = false;
-        } else {
-          path.lineTo(screenPt.dx, screenPt.dy);
-        }
-      }
-      path.close();
-      canvas.drawPath(path, landPaint);
-      canvas.drawPath(path, coastPaint);
-    }
-
-    for (final hub in hubs) {
-      final pt = _project2D(hub.latRad, hub.lonRad, size, panOffset2D);
-      final isSelected = selectedHub?.code == hub.code;
-      _drawHubPin(canvas, pt, hub, isSelected);
-    }
-  }
-
-  void _drawHubPin(Canvas canvas, Offset pt, MapDestinationHub hub, bool isSelected) {
-    final glowColor = isSelected ? const Color(0xFF3FE1FD) : const Color(0xFF2563EB);
-    canvas.drawCircle(pt, isSelected ? 8 : 5, Paint()..color = glowColor.withValues(alpha: 0.35));
-    canvas.drawCircle(pt, isSelected ? 4.5 : 3.0, Paint()..color = glowColor);
-    canvas.drawCircle(pt, isSelected ? 2.0 : 1.5, Paint()..color = Colors.white);
-  }
-
-  Offset? _project3D(double lat, double lon, Offset center, double radius, double rotLon, double pitch) {
-    final dLon = lon - rotLon;
-    final x = math.cos(lat) * math.sin(dLon);
-    final y = math.sin(lat);
-    final z = math.cos(lat) * math.cos(dLon);
-    final yP = y * math.cos(pitch) - z * math.sin(pitch);
-    final zP = y * math.sin(pitch) + z * math.cos(pitch);
-    if (zP < 0) return null;
-    return Offset(center.dx + x * radius, center.dy - yP * radius);
-  }
-
-  Offset _project2D(double lat, double lon, Size size, Offset pan) {
-    final x = ((lon + math.pi) / (2 * math.pi)) * size.width + pan.dx;
-    final y = ((math.pi / 2 - lat) / math.pi) * size.height + pan.dy;
-    return Offset(x, y);
-  }
+  Offset _project(double lat, double lng, Size size) => Offset((lng + 180) / 360 * size.width, (90 - lat) / 180 * size.height);
 
   @override
-  bool shouldRepaint(covariant _MapCanvasPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _MapCanvasPainter old) => old.selected != selected || old.colors != colors;
 }

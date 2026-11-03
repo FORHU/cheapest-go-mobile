@@ -25,6 +25,9 @@ class Airport {
 
   /// Destination photo, bundled for arrival airports only.
   String? get photo => _placeCodes.contains(code) ? 'assets/images/places/${code.toLowerCase()}.jpg' : null;
+
+  double get latitude => _coords[code]!.$1;
+  double get longitude => _coords[code]!.$2;
 }
 
 const _placeCodes = {'MNL', 'CRK', 'CEB', 'DVO', 'KLO', 'PPS', 'TAG', 'ILO', 'BKK', 'DPS'};
@@ -349,7 +352,7 @@ const _originsAbroad = [
   Airport(code: 'LAX', name: 'Los Angeles International', city: 'Los Angeles', country: 'United States', terminals: 'Terminals 1–8'),
 ];
 
-/// Latitude, longitude per airport, for mock flight times and fares.
+/// Latitude, longitude per airport, for the map and for mock flight times and fares.
 const _coords = <String, (double, double)>{
   'MNL': (14.51, 121.02),
   'CRK': (15.19, 120.56),

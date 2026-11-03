@@ -51,7 +51,10 @@ class _AirportHubViewState extends State<AirportHubView> {
                 button: true,
                 label: 'Open the map',
                 child: GestureDetector(
-                  onTap: () => context.go('/map'),
+                  onTap: () {
+                    tripSearchStore.setAirport(airport.code);
+                    context.go('/map');
+                  },
                   child: SizedBox(
                     height: 220 + MediaQuery.paddingOf(context).top,
                     child: Stack(
