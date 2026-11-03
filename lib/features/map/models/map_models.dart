@@ -141,3 +141,37 @@ List<TrackedFlight> trackableFlights(
             if (catalog.origin(b.flight!.destination) case final destination?)
               TrackedFlight(booking: b, origin: origin, destination: destination),
     ];
+
+/// Pixels between pins, at the map's zoom, under which they merge into a cluster.
+const double kClusterRadiusPx = 34;
+
+/// Groups [points] whose pins would sit within [radiusPx] of each other at
+/// [zoom] (Web Mercator, Mapbox's 512 px world). Each group is a list of
+/// indices into [points]; a group of one is a pin on its own.
+///
+/// Greedy and stable: points are taken in order and each one gathers the
+/// unclaimed points near it, so the same input always clusters the same way.
+List<List<int>> clusterGroups(List<LatLng> points, double zoom, {double radiusPx = kClusterRadiusPx}) {
+  final scale = 512 * math.pow(2, zoom);
+  final xs = [for (final p in points) (p.$2 + 180) / 360 * scale];
+  final ys = [
+    for (final p in points) (1 - math.log(math.tan(math.pi / 4 + p.$1.clamp(-85.0, 85.0) * math.pi / 360)) / math.pi) / 2 * scale,
+  ];
+  final claimed = List<bool>.filled(points.length, false);
+  final groups = <List<int>>[];
+  for (var i = 0; i < points.length; i++) {
+    if (claimed[i]) continue;
+    claimed[i] = true;
+    final group = [i];
+    for (var j = i + 1; j < points.length; j++) {
+      if (claimed[j]) continue;
+      final dx = xs[i] - xs[j], dy = ys[i] - ys[j];
+      if (dx * dx + dy * dy <= radiusPx * radiusPx) {
+        claimed[j] = true;
+        group.add(j);
+      }
+    }
+    groups.add(group);
+  }
+  return groups;
+}
