@@ -21,6 +21,15 @@ class SavedStaysStore extends ChangeNotifier {
     } catch (_) {}
   }
 
+  Future<void> clear() async {
+    _ids.clear();
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_key);
+    } catch (_) {}
+  }
+
   Future<void> toggle(String hotelId) async {
     if (!_ids.remove(hotelId)) _ids.add(hotelId);
     notifyListeners();

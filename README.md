@@ -61,5 +61,9 @@ flutter analyze
 flutter test
 
 # Start the app
-flutter run
+flutter run --dart-define-from-file=.env
+
+# Presentation build: release speed, with the demo tools (flight simulator,
+# Profile › Reset demo data). A release build without DEMO=true has neither.
+flutter build apk --release --dart-define-from-file=.env --dart-define=DEMO=true
 ```

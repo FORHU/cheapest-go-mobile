@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:cheapest_go_mobile/shared/lib/demo.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
+import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
+import 'package:cheapest_go_mobile/shared/stores/saved_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
 /// Pure Material 3 Profile & Account View
@@ -65,6 +68,13 @@ class ProfileView extends StatelessWidget {
               const SizedBox(height: 8),
               _buildPreferencesCard(context, theme),
               const SizedBox(height: 32),
+
+              if (kDemoTools) ...[
+                _buildSectionHeader('DEMO', theme),
+                const SizedBox(height: 8),
+                _buildDemoCard(context, theme),
+                const SizedBox(height: 32),
+              ],
 
               // 3. App Version & Build Footer
               Center(
@@ -211,6 +221,7 @@ class ProfileView extends StatelessWidget {
                       label: const Text('Log Out'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: colorScheme.error,
+                        backgroundColor: Colors.transparent,
                         side: BorderSide(
                           color: colorScheme.error.withValues(alpha: 0.4),
                         ),
@@ -315,51 +326,7 @@ class ProfileView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 1. Display Currency
-          ListTile(
-            leading: _buildLeadingIcon(
-              Icons.currency_exchange_rounded,
-              const Color(0xFF10B981),
-              theme,
-            ),
-            title: const Text(
-              'Display Currency',
-              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-            ),
-            subtitle: Text(
-              'Real-time rates: ${uiSettingsStore.displayCurrency}',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
-              ),
-            ),
-            trailing: DropdownButton<String>(
-              value: uiSettingsStore.displayCurrency,
-              underline: const SizedBox.shrink(),
-              borderRadius: BorderRadius.circular(12),
-              items: const ['USD', 'EUR', 'GBP', 'PHP', 'KRW', 'JPY', 'SGD', 'AED']
-                  .map(
-                    (c) => DropdownMenuItem(
-                      value: c,
-                      child: Text(
-                        c,
-                        style: const TextStyle(fontWeight: FontWeight.bold),
-                      ),
-                    ),
-                  )
-                  .toList(),
-              onChanged: (v) {
-                if (v != null) uiSettingsStore.setDisplayCurrency(v);
-              },
-            ),
-          ),
-          Divider(
-            height: 1,
-            indent: 64,
-            endIndent: 16,
-            color: colorScheme.outlineVariant.withValues(alpha: 0.3),
-          ),
-
-          // 2. Theme Mode
+          // 1. Theme Mode
           ListTile(
             leading: _buildLeadingIcon(
               Icons.brightness_6_rounded,
@@ -406,7 +373,7 @@ class ProfileView extends StatelessWidget {
             color: colorScheme.outlineVariant.withValues(alpha: 0.3),
           ),
 
-          // 3. Map View Mode
+          // 2. Map View Mode (prices are always in pesos, so there is no currency setting)
           ListTile(
             leading: _buildLeadingIcon(
               Icons.public_rounded,
@@ -414,7 +381,7 @@ class ProfileView extends StatelessWidget {
               theme,
             ),
             title: const Text(
-              'Map View Mode',
+              'Map',
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
@@ -476,6 +443,47 @@ class ProfileView extends StatelessWidget {
   }
 
 
+
+  /// Presentation tools; only in debug builds and `DEMO=true` builds.
+  Widget _buildDemoCard(BuildContext context, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return Card(
+      elevation: 0,
+      color: colorScheme.surfaceContainer,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(color: colorScheme.outlineVariant.withValues(alpha: 0.5)),
+      ),
+      child: ListTile(
+        leading: _buildLeadingIcon(Icons.restart_alt_rounded, const Color(0xFFF59E0B), theme),
+        title: const Text('Reset demo data', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        subtitle: Text(
+          'Removes test bookings and saved stays; keeps the sample past trips.',
+          style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
+        ),
+        onTap: () => _resetDemoData(context),
+      ),
+    );
+  }
+
+  Future<void> _resetDemoData(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reset demo data?'),
+        content: const Text('Bookings made on this phone and saved stays will be removed.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Reset')),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    await Future.wait([bookingsStore.resetToDemo(), savedStaysStore.clear()]);
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demo data reset')));
+    }
+  }
 
   Widget _buildLeadingIcon(IconData icon, Color color, ThemeData theme) {
     return Container(

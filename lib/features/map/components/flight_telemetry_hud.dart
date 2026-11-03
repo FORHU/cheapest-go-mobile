@@ -51,7 +51,7 @@ class FlightTelemetryHud extends StatelessWidget {
   /// Null when the arrival airport has no stays or golf in the catalogue.
   final VoidCallback? onViewDestinationHub;
 
-  /// Debug builds only: replay the flight fast, or stop the replay.
+  /// Demo tools only (see `kDemoTools`): replay the flight fast, or stop the replay.
   final VoidCallback? onSimulate;
   final bool simulating;
 
@@ -121,7 +121,7 @@ class FlightTelemetryHud extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onSimulate,
                 icon: Icon(simulating ? Icons.stop_rounded : Icons.fast_forward_rounded, size: 18),
-                label: Text(simulating ? 'Stop simulation' : 'Simulate this flight (debug)'),
+                label: Text(simulating ? 'Stop simulation' : 'Simulate this flight (demo)'),
               ),
             ),
         ],

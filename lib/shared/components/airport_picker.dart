@@ -13,6 +13,8 @@ Future<String?> showAirportPicker(
   final airports = departures ? catalog.origins() : catalog.airports();
   return showModalBottomSheet<String>(
     context: context,
+    // Over the whole app, so the bottom bar never covers the sheet.
+    useRootNavigator: true,
     isScrollControlled: true,
     builder: (context) {
       final c = context.colors;
