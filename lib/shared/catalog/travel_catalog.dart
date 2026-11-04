@@ -6,6 +6,7 @@
 library;
 
 import 'dart:math';
+import 'package:cheapest_go_mobile/shared/catalog/api_travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 class Airport {
@@ -51,6 +52,7 @@ class Room {
     required this.meta,
     required this.nightlyRate,
     this.cancellation,
+    this.images = const [],
   });
 
   final String id;
@@ -62,8 +64,27 @@ class Room {
 
   /// Free-cancellation note, or `null` when the rate is non-refundable.
   final String? cancellation;
+  final List<String> images;
 
   bool get refundable => cancellation != null;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'meta': meta,
+        'nightlyRate': nightlyRate,
+        'cancellation': cancellation,
+        'images': images,
+      };
+
+  factory Room.fromJson(Map<String, dynamic> json) => Room(
+        id: json['id'] as String,
+        name: json['name'] as String,
+        meta: json['meta'] as String,
+        nightlyRate: (json['nightlyRate'] as num).toInt(),
+        cancellation: json['cancellation'] as String?,
+        images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      );
 }
 
 class Hotel {
@@ -79,6 +100,11 @@ class Hotel {
     required this.tags,
     required this.rooms,
     this.badge,
+    this.images = const [],
+    this.latitude,
+    this.longitude,
+    this.address,
+    this.description,
   });
 
   final String id;
@@ -94,14 +120,20 @@ class Hotel {
   final List<String> tags;
   final List<Room> rooms;
   final String? badge;
+  final List<String> images;
+  final double? latitude;
+  final double? longitude;
+  final String? address;
+  final String? description;
 
   /// Lowest nightly rate across the rooms.
-  int get fromRate => rooms.map((r) => r.nightlyRate).reduce((a, b) => a < b ? a : b);
+  int get fromRate => rooms.isEmpty ? 0 : rooms.map((r) => r.nightlyRate).reduce((a, b) => a < b ? a : b);
 
   bool get hasShuttle => tags.contains(kTagShuttle);
 
-  /// Cover first, then two room shots (mock photos, see assets/images/README.md).
+  /// Cover first, then two room shots (live photos if available, else mock photos).
   List<String> get photos {
+    if (images.isNotEmpty) return images;
     final s = _seed(id);
     final room = s % _roomPhotoCount;
     // Offset 1…count-1 from the first room, so the two room shots differ.
@@ -123,6 +155,44 @@ class Hotel {
     if (score >= 8) return 'Very good';
     return 'Good';
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'airportCode': airportCode,
+        'name': name,
+        'area': area,
+        'distanceKm': distanceKm,
+        'distanceFrom': distanceFrom,
+        'score': score,
+        'reviews': reviews,
+        'tags': tags,
+        'rooms': rooms.map((r) => r.toJson()).toList(),
+        'badge': badge,
+        'images': images,
+        'latitude': latitude,
+        'longitude': longitude,
+        'address': address,
+        'description': description,
+      };
+
+  factory Hotel.fromJson(Map<String, dynamic> json) => Hotel(
+        id: json['id'] as String,
+        airportCode: json['airportCode'] as String,
+        name: json['name'] as String,
+        area: json['area'] as String,
+        distanceKm: (json['distanceKm'] as num).toDouble(),
+        distanceFrom: json['distanceFrom'] as String,
+        score: (json['score'] as num).toDouble(),
+        reviews: (json['reviews'] as num).toInt(),
+        tags: (json['tags'] as List).map((e) => e.toString()).toList(),
+        rooms: (json['rooms'] as List).map((r) => Room.fromJson(r as Map<String, dynamic>)).toList(),
+        badge: json['badge'] as String?,
+        images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        latitude: (json['latitude'] as num?)?.toDouble(),
+        longitude: (json['longitude'] as num?)?.toDouble(),
+        address: json['address'] as String?,
+        description: json['description'] as String?,
+      );
 }
 
 class GolfCourse {
@@ -176,6 +246,7 @@ class FlightOffer {
     required this.stopover,
     required this.baggage,
     required this.price,
+    this.arrivesOverride,
   });
 
   /// `<origin>-<destination>-<index>`, stable for the same route.
@@ -196,11 +267,17 @@ class FlightOffer {
   /// One-way fare per passenger in whole pesos.
   final int price;
 
+  /// If the API returns the explicit arrival time string (e.g. `16:30` or `16:30+1`).
+  final String? arrivesOverride;
+
   bool get nonStop => stopover == null;
 
   /// Arrival time in the destination's local time, `HH:mm`; `+1` marks the
   /// next day, `-1` the day before (flying west across midnight).
   String get arrives {
+    if (arrivesOverride != null && arrivesOverride!.isNotEmpty) {
+      return arrivesOverride!;
+    }
     final p = departs.split(':');
     final zoneShift = (((_utcOffsetHours[destination] ?? 0) - (_utcOffsetHours[origin] ?? 0)) * 60).round();
     final total = int.parse(p[0]) * 60 + int.parse(p[1]) + durationMinutes + zoneShift;
@@ -221,6 +298,34 @@ class FlightOffer {
     final local = DateTime.utc(day.year, day.month, day.day, int.parse(p[0]), int.parse(p[1]));
     return local.subtract(Duration(minutes: ((_utcOffsetHours[origin] ?? 0) * 60).round()));
   }
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'airline': airline,
+        'flightNo': flightNo,
+        'origin': origin,
+        'destination': destination,
+        'departs': departs,
+        'durationMinutes': durationMinutes,
+        'stopover': stopover,
+        'baggage': baggage,
+        'price': price,
+        'arrivesOverride': arrivesOverride,
+      };
+
+  factory FlightOffer.fromJson(Map<String, dynamic> json) => FlightOffer(
+        id: json['id'] as String,
+        airline: json['airline'] as String,
+        flightNo: json['flightNo'] as String,
+        origin: json['origin'] as String,
+        destination: json['destination'] as String,
+        departs: json['departs'] as String,
+        durationMinutes: (json['durationMinutes'] as num).toInt(),
+        stopover: json['stopover'] as String?,
+        baggage: json['baggage'] as String,
+        price: (json['price'] as num).toInt(),
+        arrivesOverride: json['arrivesOverride'] as String?,
+      );
 }
 
 const kTagShuttle = 'Free airport shuttle';
@@ -241,6 +346,33 @@ abstract class TravelCatalog {
 
   /// Reloads the catalogue (pull to refresh).
   Future<void> refresh();
+
+  /// Asynchronously fetches hotels for [airportCode] from the live API or cache.
+  Future<List<Hotel>> fetchHotels(
+    String airportCode, {
+    DateTime? checkIn,
+    DateTime? checkOut,
+    int? adults,
+  });
+
+  /// Asynchronously fetches detailed property information for [id].
+  Future<Hotel?> fetchHotel(
+    String id, {
+    DateTime? checkIn,
+    DateTime? checkOut,
+    int? adults,
+  });
+
+  /// Asynchronously fetches flight offers from [from] to [to].
+  Future<List<FlightOffer>> fetchFlights(
+    String from,
+    String to, {
+    DateTime? departureDate,
+    int? adults,
+  });
+
+  /// Returns true if results for [key] were served from offline cached storage.
+  bool isOfflineData(String key);
 }
 
 class MockTravelCatalog implements TravelCatalog {
@@ -249,6 +381,36 @@ class MockTravelCatalog implements TravelCatalog {
   /// Mock data is fixed, so there is nothing to reload.
   @override
   Future<void> refresh() async {}
+
+  @override
+  Future<List<Hotel>> fetchHotels(
+    String airportCode, {
+    DateTime? checkIn,
+    DateTime? checkOut,
+    int? adults,
+  }) async =>
+      hotelsNear(airportCode);
+
+  @override
+  Future<Hotel?> fetchHotel(
+    String id, {
+    DateTime? checkIn,
+    DateTime? checkOut,
+    int? adults,
+  }) async =>
+      hotel(id);
+
+  @override
+  Future<List<FlightOffer>> fetchFlights(
+    String from,
+    String to, {
+    DateTime? departureDate,
+    int? adults,
+  }) async =>
+      flights(from, to);
+
+  @override
+  bool isOfflineData(String key) => false;
 
   @override
   List<Airport> airports() => _airports;
@@ -325,6 +487,8 @@ class MockTravelCatalog implements TravelCatalog {
   static int _flightNumber(String from, String to, int i) =>
       100 + (from.codeUnitAt(0) * 7 + to.codeUnitAt(1) * 3 + i * 41) % 800;
 
+  static double distanceKm((double, double) a, (double, double) b) => _distanceKm(a, b);
+
   static double _distanceKm((double, double) a, (double, double) b) {
     const r = 6371.0;
     double rad(double d) => d * pi / 180;
@@ -342,8 +506,77 @@ class MockTravelCatalog implements TravelCatalog {
   }
 }
 
+class DefaultTravelCatalog implements TravelCatalog {
+  const DefaultTravelCatalog();
+
+  static TravelCatalog? _delegate;
+  static TravelCatalog get delegate => _delegate ??= _createDefaultCatalog();
+  static set delegate(TravelCatalog c) => _delegate = c;
+
+  static TravelCatalog _createDefaultCatalog() {
+    const mode = String.fromEnvironment('CATALOG', defaultValue: 'mock');
+    if (mode == 'api') {
+      return ApiTravelCatalog();
+    }
+    return const MockTravelCatalog();
+  }
+
+  @override
+  List<Airport> airports() => delegate.airports();
+  @override
+  Airport? airport(String code) => delegate.airport(code);
+  @override
+  List<Airport> origins() => delegate.origins();
+  @override
+  Airport? origin(String code) => delegate.origin(code);
+  @override
+  List<FlightOffer> flights(String from, String to) => delegate.flights(from, to);
+  @override
+  FlightOffer? flight(String id) => delegate.flight(id);
+  @override
+  List<Hotel> hotelsNear(String airportCode) => delegate.hotelsNear(airportCode);
+  @override
+  Hotel? hotel(String id) => delegate.hotel(id);
+  @override
+  List<GolfCourse> coursesNear(String airportCode) => delegate.coursesNear(airportCode);
+  @override
+  GolfCourse? course(String id) => delegate.course(id);
+  @override
+  Future<void> refresh() => delegate.refresh();
+
+  @override
+  Future<List<Hotel>> fetchHotels(
+    String airportCode, {
+    DateTime? checkIn,
+    DateTime? checkOut,
+    int? adults,
+  }) =>
+      delegate.fetchHotels(airportCode, checkIn: checkIn, checkOut: checkOut, adults: adults);
+
+  @override
+  Future<Hotel?> fetchHotel(
+    String id, {
+    DateTime? checkIn,
+    DateTime? checkOut,
+    int? adults,
+  }) =>
+      delegate.fetchHotel(id, checkIn: checkIn, checkOut: checkOut, adults: adults);
+
+  @override
+  Future<List<FlightOffer>> fetchFlights(
+    String from,
+    String to, {
+    DateTime? departureDate,
+    int? adults,
+  }) =>
+      delegate.fetchFlights(from, to, departureDate: departureDate, adults: adults);
+
+  @override
+  bool isOfflineData(String key) => delegate.isOfflineData(key);
+}
+
 /// The catalogue the app reads from.
-const TravelCatalog travelCatalog = MockTravelCatalog();
+const TravelCatalog travelCatalog = DefaultTravelCatalog();
 
 // Mock data. Airports are real; every hotel, course, and price is invented.
 

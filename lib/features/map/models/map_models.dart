@@ -155,7 +155,13 @@ List<MapPlace> placesNear(TravelCatalog catalog, Airport airport, MapFilter filt
   final from = (airport.latitude, airport.longitude);
   return [
     if (filter != MapFilter.golf)
-      for (final h in catalog.hotelsNear(airport.code)) MapPlace.hotel(h, offsetKm(from, h.distanceKm, _bearingFor(airport.code, h.id))),
+      for (final h in catalog.hotelsNear(airport.code))
+        MapPlace.hotel(
+          h,
+          h.latitude != null && h.longitude != null
+              ? (h.latitude!, h.longitude!)
+              : offsetKm(from, h.distanceKm, _bearingFor(airport.code, h.id)),
+        ),
     if (filter != MapFilter.stays)
       for (final c in catalog.coursesNear(airport.code))
         MapPlace.course(c, offsetKm(from, c.driveMinutes * _driveKmPerMinute, _bearingFor(airport.code, c.id))),

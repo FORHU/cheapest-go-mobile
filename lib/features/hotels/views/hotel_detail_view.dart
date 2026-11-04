@@ -24,6 +24,22 @@ class _HotelDetailViewState extends State<HotelDetailView> {
   int _photo = 0;
 
   @override
+  void initState() {
+    super.initState();
+    final s = tripSearchStore;
+    widget.catalog
+        .fetchHotel(
+      widget.hotelId,
+      checkIn: s.checkIn,
+      checkOut: s.checkOut,
+      adults: s.adults,
+    )
+        .then((_) {
+      if (mounted) setState(() {});
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final c = context.colors;
     final hotel = widget.catalog.hotel(widget.hotelId);

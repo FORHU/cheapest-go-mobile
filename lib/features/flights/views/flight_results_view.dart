@@ -6,6 +6,7 @@ import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_radius.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 enum _Sort { cheapest, earliest }
@@ -27,6 +28,49 @@ class _FlightResultsViewState extends State<FlightResultsView> {
   _Sort _sort = _Sort.cheapest;
   bool _nonStopOnly = false;
   bool _checkedBagOnly = false;
+  bool _loading = false;
+  String? _lastOrigin;
+  String? _lastDest;
+  DateTime? _lastDepDate;
+  int? _lastAdults;
+
+  @override
+  void initState() {
+    super.initState();
+    _triggerFetchIfNeeded();
+  }
+
+  void _triggerFetchIfNeeded({bool force = false}) {
+    final s = tripSearchStore;
+    if (!force &&
+        _lastOrigin == s.originCode &&
+        _lastDest == s.airportCode &&
+        _lastDepDate == s.checkIn &&
+        _lastAdults == s.adults) {
+      return;
+    }
+    _lastOrigin = s.originCode;
+    _lastDest = s.airportCode;
+    _lastDepDate = s.checkIn;
+    _lastAdults = s.adults;
+
+    final existing = widget.catalog.flights(s.originCode, s.airportCode);
+    if (existing.isEmpty && mounted) {
+      setState(() => _loading = true);
+    }
+    widget.catalog
+        .fetchFlights(
+      s.originCode,
+      s.airportCode,
+      departureDate: s.checkIn,
+      adults: s.adults,
+    )
+        .then((_) {
+      if (mounted) setState(() => _loading = false);
+    }).catchError((_) {
+      if (mounted) setState(() => _loading = false);
+    });
+  }
 
   List<FlightOffer> _results(String from, String to) {
     final list = widget.catalog.flights(from, to).where((f) {
@@ -44,12 +88,40 @@ class _FlightResultsViewState extends State<FlightResultsView> {
   }
 
   Widget _build(BuildContext context) {
+    _triggerFetchIfNeeded();
     final c = context.colors;
     final s = tripSearchStore;
     final results = _results(s.originCode, s.airportCode);
     final cheapest = results.isEmpty ? null : results.map((f) => f.price).reduce((a, b) => a < b ? a : b);
+    final isOffline = widget.catalog.isOfflineData('${s.originCode}_${s.airportCode}');
 
     final list = <Widget>[
+      if (isOffline)
+        Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: c.surfaceMuted,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: c.border),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.cloud_off_rounded, size: 16, color: c.accent),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Showing saved results · Offline',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: c.textMuted,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
       SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         clipBehavior: Clip.none,
@@ -66,39 +138,59 @@ class _FlightResultsViewState extends State<FlightResultsView> {
       const SizedBox(height: 14),
       UiLabel('${plural(results.length, 'flight')} · prices per passenger'),
       const SizedBox(height: 10),
-      if (results.isEmpty)
+      if (_loading && results.isEmpty)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 40),
+          child: Center(child: CircularProgressIndicator.adaptive()),
+        )
+      else if (results.isEmpty)
         EmptyState(
           icon: Icons.flight_outlined,
           title: 'No flights match',
           message: s.originCode == s.airportCode
               ? 'Pick a departure airport different from where you land.'
               : 'Clear a filter to see more flights.',
-        ),
-      for (final f in results) ...[
-        _FlightCard(
-          offer: f,
-          cheapest: f.price == cheapest,
-          onSelect: () => context.push('/flight-checkout?offer=${f.id}'),
-        ),
-        const SizedBox(height: 12),
-      ],
+        )
+      else
+        for (final f in results) ...[
+          _FlightCard(
+            offer: f,
+            cheapest: f.price == cheapest,
+            onSelect: () => context.push('/flight-checkout?offer=${f.id}'),
+          ),
+          const SizedBox(height: 12),
+        ],
     ];
+
+    Future<void> onRefresh() async {
+      _triggerFetchIfNeeded(force: true);
+      await widget.catalog.fetchFlights(
+        s.originCode,
+        s.airportCode,
+        departureDate: s.checkIn,
+        adults: s.adults,
+      );
+      if (mounted) setState(() {});
+    }
 
     if (widget.asTab) {
       return SafeArea(
         bottom: false,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-          children: [
-            Text('Flights', style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 26)),
-            const SizedBox(height: 4),
-            Text('Every carrier we reach, sorted by what you actually pay.', style: TextStyle(fontSize: 13, color: c.textMuted)),
-            const SizedBox(height: 14),
-            _FlightSearchCard(catalog: widget.catalog),
-            const SizedBox(height: 18),
-            ...list,
-          ],
+        child: RefreshIndicator(
+          onRefresh: onRefresh,
+          child: ListView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              Text('Flights', style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 26)),
+              const SizedBox(height: 4),
+              Text('Every carrier we reach, sorted by what you actually pay.', style: TextStyle(fontSize: 13, color: c.textMuted)),
+              const SizedBox(height: 14),
+              _FlightSearchCard(catalog: widget.catalog),
+              const SizedBox(height: 18),
+              ...list,
+            ],
+          ),
         ),
       );
     }
@@ -120,9 +212,13 @@ class _FlightResultsViewState extends State<FlightResultsView> {
           ),
         ),
       ),
-      body: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-        children: list,
+      body: RefreshIndicator(
+        onRefresh: onRefresh,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+          children: list,
+        ),
       ),
     );
   }

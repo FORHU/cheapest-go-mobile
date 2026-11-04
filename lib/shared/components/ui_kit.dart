@@ -133,6 +133,14 @@ class PhotoPlaceholder extends StatelessWidget {
             ColoredBox(color: golf ? c.golfSoft : c.photo),
             if (image == null)
               fallback
+            else if (image!.startsWith('http://') || image!.startsWith('https://'))
+              Image.network(
+                image!,
+                fit: BoxFit.cover,
+                semanticLabel: label,
+                cacheWidth: width == null ? 800 : (width! * 3).round(),
+                errorBuilder: (_, _, _) => fallback,
+              )
             else
               Image.asset(
                 image!,
