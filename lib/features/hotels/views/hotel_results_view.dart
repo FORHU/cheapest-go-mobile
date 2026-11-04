@@ -28,6 +28,49 @@ class _HotelResultsViewState extends State<HotelResultsView> {
   _Sort _sort = _Sort.nearest;
   bool _shuttleOnly = false;
   bool _ratedOnly = false;
+  bool _loading = false;
+  String? _lastLoadedCode;
+  DateTime? _lastCheckIn;
+  DateTime? _lastCheckOut;
+  int? _lastAdults;
+
+  @override
+  void initState() {
+    super.initState();
+    _triggerFetchIfNeeded();
+  }
+
+  void _triggerFetchIfNeeded({bool force = false}) {
+    final s = tripSearchStore;
+    if (!force &&
+        _lastLoadedCode == s.airportCode &&
+        _lastCheckIn == s.checkIn &&
+        _lastCheckOut == s.checkOut &&
+        _lastAdults == s.adults) {
+      return;
+    }
+    _lastLoadedCode = s.airportCode;
+    _lastCheckIn = s.checkIn;
+    _lastCheckOut = s.checkOut;
+    _lastAdults = s.adults;
+
+    final existing = widget.catalog.hotelsNear(s.airportCode);
+    if (existing.isEmpty && mounted) {
+      setState(() => _loading = true);
+    }
+    widget.catalog
+        .fetchHotels(
+      s.airportCode,
+      checkIn: s.checkIn,
+      checkOut: s.checkOut,
+      adults: s.adults,
+    )
+        .then((_) {
+      if (mounted) setState(() => _loading = false);
+    }).catchError((_) {
+      if (mounted) setState(() => _loading = false);
+    });
+  }
 
   List<Hotel> _results(String code) {
     final list = widget.catalog.hotelsNear(code).where((h) {
@@ -79,84 +122,133 @@ class _HotelResultsViewState extends State<HotelResultsView> {
     return ListenableBuilder(
       listenable: Listenable.merge([tripSearchStore, savedStaysStore]),
       builder: (context, _) {
+        _triggerFetchIfNeeded();
         final s = tripSearchStore;
         final results = _results(s.airportCode);
+        final isOffline = widget.catalog.isOfflineData(s.airportCode);
+
         return SafeArea(
           bottom: false,
-          child: ListView(
-            physics: const AlwaysScrollableScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-            children: [
-              Row(
-                spacing: 8,
-                children: [
-                  if (widget.showBack)
-                    CircleIconButton(
-                      icon: Icons.chevron_left_rounded,
-                      tooltip: 'Back',
-                      onPressed: () => context.canPop() ? context.pop() : context.go('/'),
-                    ),
-                  Expanded(child: _searchPill(context, s)),
-                ],
-              ),
-              const SizedBox(height: 12),
-              SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
+          child: RefreshIndicator(
+            onRefresh: () async {
+              _triggerFetchIfNeeded(force: true);
+              await widget.catalog.fetchHotels(
+                s.airportCode,
+                checkIn: s.checkIn,
+                checkOut: s.checkOut,
+                adults: s.adults,
+              );
+              if (mounted) setState(() {});
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                Row(
+                  spacing: 8,
                   children: [
-                    FilterPill(
-                      label: 'Nearest to terminal',
-                      selected: _sort == _Sort.nearest,
-                      onTap: () => setState(() => _sort = _Sort.nearest),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterPill(
-                      label: 'Lowest price',
-                      selected: _sort == _Sort.price,
-                      onTap: () => setState(() => _sort = _Sort.price),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterPill(
-                      label: 'Free shuttle',
-                      selected: _shuttleOnly,
-                      onTap: () => setState(() => _shuttleOnly = !_shuttleOnly),
-                    ),
-                    const SizedBox(width: 8),
-                    FilterPill(
-                      label: 'Rating 8+',
-                      selected: _ratedOnly,
-                      onTap: () => setState(() => _ratedOnly = !_ratedOnly),
-                    ),
+                    if (widget.showBack)
+                      CircleIconButton(
+                        icon: Icons.chevron_left_rounded,
+                        tooltip: 'Back',
+                        onPressed: () => context.canPop() ? context.pop() : context.go('/'),
+                      ),
+                    Expanded(child: _searchPill(context, s)),
                   ],
                 ),
-              ),
-              const SizedBox(height: 14),
-              UiLabel('${plural(results.length, 'stay')} near ${s.airportCode}'),
-              const SizedBox(height: 10),
-              if (results.isEmpty)
-                EmptyState(
-                  icon: Icons.filter_alt_off_outlined,
-                  title: 'No stays match',
-                  message: 'Clear a filter to see more stays near ${s.airportCode}.',
-                  action: OutlinedButton(
-                    onPressed: () => setState(() {
-                      _shuttleOnly = false;
-                      _ratedOnly = false;
-                    }),
-                    child: const Text('Clear filters'),
+                const SizedBox(height: 12),
+                if (isOffline) ...[
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                    decoration: BoxDecoration(
+                      color: context.colors.surfaceMuted,
+                      borderRadius: BorderRadius.circular(AppRadius.md),
+                      border: Border.all(color: context.colors.border),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.cloud_off_rounded, size: 16, color: context.colors.accent),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Text(
+                            'Showing saved results · Offline',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                              color: context.colors.textMuted,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  clipBehavior: Clip.none,
+                  child: Row(
+                    children: [
+                      FilterPill(
+                        label: 'Nearest to terminal',
+                        selected: _sort == _Sort.nearest,
+                        onTap: () => setState(() => _sort = _Sort.nearest),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterPill(
+                        label: 'Lowest price',
+                        selected: _sort == _Sort.price,
+                        onTap: () => setState(() => _sort = _Sort.price),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterPill(
+                        label: 'Free shuttle',
+                        selected: _shuttleOnly,
+                        onTap: () => setState(() => _shuttleOnly = !_shuttleOnly),
+                      ),
+                      const SizedBox(width: 8),
+                      FilterPill(
+                        label: 'Rating 8+',
+                        selected: _ratedOnly,
+                        onTap: () => setState(() => _ratedOnly = !_ratedOnly),
+                      ),
+                    ],
                   ),
                 ),
-              for (final h in results) ...[
-                HotelCard(
-                  hotel: h,
-                  saved: savedStaysStore.isSaved(h.id),
-                  onToggleSaved: () => savedStaysStore.toggle(h.id),
-                  onTap: () => context.push('/hotel/${h.id}'),
-                ),
                 const SizedBox(height: 14),
+                UiLabel('${plural(results.length, 'stay')} near ${s.airportCode}'),
+                const SizedBox(height: 10),
+                if (_loading && results.isEmpty) ...[
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 40),
+                    child: Center(child: CircularProgressIndicator.adaptive()),
+                  ),
+                ] else if (results.isEmpty) ...[
+                  EmptyState(
+                    icon: Icons.filter_alt_off_outlined,
+                    title: 'No stays match',
+                    message: 'Clear a filter to see more stays near ${s.airportCode}.',
+                    action: OutlinedButton(
+                      onPressed: () => setState(() {
+                        _shuttleOnly = false;
+                        _ratedOnly = false;
+                      }),
+                      child: const Text('Clear filters'),
+                    ),
+                  ),
+                ] else ...[
+                  for (final h in results) ...[
+                    HotelCard(
+                      hotel: h,
+                      saved: savedStaysStore.isSaved(h.id),
+                      onToggleSaved: () => savedStaysStore.toggle(h.id),
+                      onTap: () => context.push('/hotel/${h.id}'),
+                    ),
+                    const SizedBox(height: 14),
+                  ],
+                ],
               ],
-            ],
+            ),
           ),
         );
       },
