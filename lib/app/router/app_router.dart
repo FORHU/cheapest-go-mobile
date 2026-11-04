@@ -76,6 +76,7 @@ GoRouter createAppRouter() => GoRouter(
             roomId: state.uri.queryParameters['room'] ?? '',
             leadName: authStore.user?.fullName,
             leadEmail: authStore.user?.email,
+            simulatedPriceShift: int.tryParse(state.uri.queryParameters['shift'] ?? ''),
           ),
         ),
         GoRoute(
@@ -84,6 +85,7 @@ GoRouter createAppRouter() => GoRouter(
             offerId: state.uri.queryParameters['offer'] ?? '',
             leadName: authStore.user?.fullName,
             leadEmail: authStore.user?.email,
+            simulatedPriceShift: int.tryParse(state.uri.queryParameters['shift'] ?? ''),
           ),
         ),
         GoRoute(path: '/saved', redirect: (_, _) => '/trips'),
