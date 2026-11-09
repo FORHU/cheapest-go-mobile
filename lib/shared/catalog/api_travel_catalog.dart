@@ -485,10 +485,18 @@ class ApiTravelCatalog implements TravelCatalog {
     final firstSeg = segments.isNotEmpty ? segments.first as Map<String, dynamic>? : null;
     final lastSeg = segments.isNotEmpty ? segments.last as Map<String, dynamic>? : null;
 
-    final airlineObj = firstSeg?['airline'] as Map<String, dynamic>?;
-    final airline = airlineObj?['name']?.toString() ?? 'Commercial Flight';
+    // api-v2 sends `airline` as the IATA code ("7C") with the name in
+    // `airlineName`; older payloads sent an object {code, name}. Accept both.
+    final rawAirline = firstSeg?['airline'];
+    final airlineObj = rawAirline is Map<String, dynamic> ? rawAirline : null;
+    final airlineCode = airlineObj?['code']?.toString() ??
+        (rawAirline is String ? rawAirline : null);
+    final airline = firstSeg?['airlineName']?.toString() ??
+        airlineObj?['name']?.toString() ??
+        airlineCode ??
+        'Commercial Flight';
     final flightNo = firstSeg?['flightNumber']?.toString() ??
-        '${airlineObj?['code']?.toString() ?? 'CG'} ${200 + index * 15}';
+        '${airlineCode ?? 'CG'} ${200 + index * 15}';
 
     String departs = '08:00';
     final depTime = (firstSeg?['departure'] as Map<String, dynamic>?)?['time']?.toString();
