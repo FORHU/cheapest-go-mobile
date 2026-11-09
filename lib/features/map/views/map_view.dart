@@ -488,7 +488,6 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     _targets.clear();
 
     // The only line on the map is the tracked flight's route, plus spider legs for overlapping places.
-    final selectedAirport = _selected;
     final flight = _tracking ? _flight : null;
     if (flight != null) {
       await routes.create(PolylineAnnotationOptions(
