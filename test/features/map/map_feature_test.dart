@@ -82,6 +82,24 @@ void main() {
       }
     });
 
+    test('pins close together cluster, and come apart as you zoom in', () {
+      final stays = placesNear(catalog, mnl, MapFilter.stays).map((p) => p.position).toList();
+      // Zoomed out over the region, all of Manila's stays are one bubble.
+      expect(clusterGroups(stays, 4).length, 1);
+      // Close in, every stay is its own pin.
+      expect(clusterGroups(stays, 16).length, stays.length);
+      // In between, fewer bubbles than stays; every stay is in exactly one.
+      final mid = clusterGroups(stays, 10);
+      expect(mid.length, lessThan(stays.length));
+      expect([for (final g in mid) ...g]..sort(), List.generate(stays.length, (i) => i));
+    });
+
+    test('far-apart airports never cluster at city zoom, and do when zoomed out', () {
+      final airports = [for (final a in catalog.airports()) (a.latitude, a.longitude)];
+      expect(clusterGroups(airports, 9).length, airports.length);
+      expect(clusterGroups(airports, 3).length, lessThan(airports.length));
+    });
+
     test('filters keep only stays or only golf', () {
       expect(placesNear(catalog, mnl, MapFilter.stays).every((p) => !p.isGolf), isTrue);
       expect(placesNear(catalog, mnl, MapFilter.golf).every((p) => p.isGolf), isTrue);
