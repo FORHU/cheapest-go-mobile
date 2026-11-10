@@ -37,6 +37,8 @@ Future<void> main(List<String> args) async {
     final globals = File('${v2.path}/src/app/globals.css');
     if (!globals.existsSync()) _fail('No globals.css at ${globals.path} — is that really V2?');
 
+    _warnIfNotAtThePin(v2, pin);
+
     _checkTailwindVersion(v2, pin, check);
 
     final ramp  = _tailwindRamp(v2, pin);
@@ -89,38 +91,60 @@ void _checkTailwindVersion(Directory v2, Map<String, dynamic> pin, bool check) {
     if (declared == null) return;
 
     final expected = pin['tailwind'];
-    if (expected != null && declared.toString() != expected.toString()) {
+    // The pin records an exact version because it also names a download; package.json states a
+    // range. Comparing the numbers alone catches a real bump without tripping over the caret.
+    final loosened = declared.toString().replaceFirst(RegExp(r'^[\^~]'), '');
+    if (expected != null && loosened != expected.toString()) {
         _fail('V2 now declares tailwindcss $declared but $_pinFile says $expected.\n'
             'The ramp changes with the Tailwind version: install V2\'s dependencies, re-run '
             'without --check, and bump "tailwind" in $_pinFile.');
     }
 }
 
-/// Tailwind's published stops. Absent when V2's dependencies are not installed, which is the
-/// normal case in CI — the committed file then stands, guarded by the version check above.
-Map<String, Argb> _tailwindRamp(Directory v2, Map<String, dynamic> pin) {
-    final file = File('${v2.path}/node_modules/tailwindcss/theme.css');
-    if (!file.existsSync()) {
-        final existing = File('$_generatedDir/tw_palette.dart');
-        if (!existing.existsSync()) {
-            _fail('Tailwind is not installed in ${v2.path} and no palette has been generated yet.\n'
-                'Run `npm ci` there once, then re-run this.');
-        }
-        return _paletteAlreadyGenerated(existing);
-    }
-    return _colorsIn([file.readAsStringSync()]);
+/// Says so when the V2 checkout is not the commit we mirror.
+///
+/// CI checks out the pinned commit exactly, but a person's sibling clone is wherever they last
+/// left it — usually ahead. Without this, the run reports every generated file as stale, which
+/// reads as "the tooling is broken" rather than "you are looking at a different V2".
+void _warnIfNotAtThePin(Directory v2, Map<String, dynamic> pin) {
+    final pinned = pin['commit']?.toString();
+    if (pinned == null || !Directory('${v2.path}/.git').existsSync()) return;
+
+    final result = Process.runSync('git', ['-C', v2.path, 'rev-parse', 'HEAD']);
+    if (result.exitCode != 0) return;
+
+    final head = (result.stdout as String).trim();
+    if (head.isEmpty || head == pinned) return;
+
+    stdout.writeln('NOTE: ${v2.path} is at ${head.substring(0, 10)}, '
+        'but $_pinFile says ${pinned.substring(0, 10)}.');
+    stdout.writeln('      Differences below are that gap, not a mistake in the generated files.');
+    stdout.writeln('      To mirror this newer V2 on purpose, bump "commit" in $_pinFile and');
+    stdout.writeln('      regenerate; to compare against the pin, check that commit out first.\n');
 }
 
-/// Re-reads the committed palette so a run without Tailwind installed reproduces it exactly
-/// rather than dropping every stop.
-Map<String, Argb> _paletteAlreadyGenerated(File dart) {
-    final out = <String, Argb>{};
-    final entry = RegExp(r"//\s*--color-([a-z0-9-]+)\n\s*static const \w+ = Color\((0x[0-9A-F]{8})\)");
-    for (final m in entry.allMatches(dart.readAsStringSync())) {
-        out['--color-${m.group(1)}'] = int.parse(m.group(2)!.substring(2), radix: 16);
+/// Where Tailwind's own ramp and scales are read from.
+///
+/// This used to fall back to re-reading the committed Dart when the file was missing, so a run
+/// without it quietly produced a palette with 244 stops missing — and the check then compared
+/// that truncated output against an equally truncated file and passed. A generator that
+/// degrades silently is worse than one that stops, so it stops.
+File _tailwindTheme(Directory v2) {
+    final file = File('${v2.path}/node_modules/tailwindcss/theme.css');
+    if (!file.existsSync()) {
+        _fail('Tailwind\'s theme.css is not at ${file.path}.\n\n'
+            'It holds the 244 ramp stops and the type scale, and nothing else states them.\n'
+            'Either install V2\'s dependencies, or fetch just that one file at the pinned version:\n\n'
+            '  mkdir -p ${v2.path}/node_modules/tailwindcss\n'
+            '  curl -sSfL https://unpkg.com/tailwindcss@<version>/theme.css \\\n'
+            '    -o ${v2.path}/node_modules/tailwindcss/theme.css\n\n'
+            'The version is "tailwind" in $_pinFile.');
     }
-    return out;
+    return file;
 }
+
+Map<String, Argb> _tailwindRamp(Directory v2, Map<String, dynamic> pin) =>
+    _colorsIn([_tailwindTheme(v2).readAsStringSync()]);
 
 /// The bodies of every `selector { ... }` block. Brace-counted rather than regexed, because
 /// globals.css nests `@media` and `@layer` around the blocks we want.
@@ -187,8 +211,7 @@ _Scale _scaleIn(Directory v2, File globals) {
     final scale = _Scale();
     final sources = <String>[];
 
-    final tailwind = File('${v2.path}/node_modules/tailwindcss/theme.css');
-    if (tailwind.existsSync()) sources.add(tailwind.readAsStringSync());
+    sources.add(_tailwindTheme(v2).readAsStringSync());
     sources.addAll(_blocks(globals.readAsStringSync(), '@theme'));
 
     final decl = RegExp(r'(--[a-z0-9-]+(?:--line-height)?)\s*:\s*([^;]+);', caseSensitive: false);

@@ -9,10 +9,6 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
-    env:
-      # Job level so the steps below can test it in an `if`: a secret cannot be read there
-      # directly, and a step's own env is not in scope for its own condition.
-      V2_READ_TOKEN: ${{ secrets.V2_READ_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -26,23 +22,23 @@ jobs:
       # from V2 at the commit in design_pin.json, not written here. Checking out that exact
       # commit — not a branch — is what makes the check below deterministic. See docs/adr/0002.
       #
-      # Needs a token that can read the private V2 repository. Without the secret the step is
-      # skipped rather than failed: a fork cannot have it, and a red build that nobody can fix
-      # teaches people to ignore red builds.
+      # V2 is a public repository, so the default GITHUB_TOKEN reads it and no secret is
+      # involved. This was once gated on a V2_READ_TOKEN secret and skipped without it, which
+      # meant a green build that had checked nothing — the exact failure the check exists to
+      # prevent. If V2 ever goes private, add the token here and let the step *fail* without
+      # it rather than skip.
       - name: Read the Design Pin
         id: pin
         run: |
           echo "commit=$(jq -r .commit design_pin.json)" >> "$GITHUB_OUTPUT"
           echo "repo=$(jq -r .repo design_pin.json)" >> "$GITHUB_OUTPUT"
+          echo "tailwind=$(jq -r .tailwind design_pin.json)" >> "$GITHUB_OUTPUT"
 
       - name: Check out V2 at the pinned commit
-        id: v2
-        if: ${{ env.V2_READ_TOKEN != '' }}
         uses: actions/checkout@v4
         with:
           repository: ${{ steps.pin.outputs.repo }}
           ref: ${{ steps.pin.outputs.commit }}
-          token: ${{ secrets.V2_READ_TOKEN }}
           path: .v2
           # globals.css and the locale files are all the generator reads.
           sparse-checkout: |
@@ -51,11 +47,22 @@ jobs:
             package.json
           sparse-checkout-cone-mode: false
 
+      # Tailwind's ramp and type scale live in its own theme.css, which a sparse checkout of V2
+      # does not carry and `npm ci` would take minutes to produce. One version-pinned file is
+      # all the generator needs, so fetch exactly that. The generator refuses to run without
+      # it rather than quietly emitting a palette with 244 stops missing.
+      - name: Fetch Tailwind's theme at the pinned version
+        run: |
+          mkdir -p .v2/node_modules/tailwindcss
+          curl -sSfL "https://unpkg.com/tailwindcss@${{ steps.pin.outputs.tailwind }}/theme.css" \
+            -o .v2/node_modules/tailwindcss/theme.css
+          grep -c '^  --color-' .v2/node_modules/tailwindcss/theme.css
+
       - name: Install dependencies
         run: flutter pub get
 
+      # Unconditional on purpose: a check that can skip is a check nobody can rely on.
       - name: Design tokens and copy match the pin
-        if: ${{ steps.v2.outcome == 'success' }}
         run: dart run tools/sync_design.dart --check --v2 .v2
 
       - name: Validate FAOS Architecture
