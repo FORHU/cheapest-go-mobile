@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/lib/http.dart';
@@ -305,6 +306,8 @@ class ApiTravelCatalog implements TravelCatalog {
       'adults': adults ?? 1,
       'cabinClass': 'economy',
       'tripType': 'one-way',
+      // Every price in the app is in pesos; the API adds `displayPrice` in PHP to each offer.
+      'currency': 'PHP',
     };
 
     try {
@@ -317,13 +320,21 @@ class ApiTravelCatalog implements TravelCatalog {
       final list = <FlightOffer>[];
       if (res is Map<String, dynamic> && res['offers'] is List) {
         final offers = res['offers'] as List;
+        var unpriced = 0;
         for (var i = 0; i < offers.length; i++) {
           final item = offers[i];
           if (item is Map<String, dynamic>) {
             final f = _parseFlightOffer(item, from, to, i);
+            if (f == null) {
+              unpriced++;
+              continue;
+            }
             list.add(f);
             _flightById[f.id] = f;
           }
+        }
+        if (unpriced > 0) {
+          debugPrint('[catalog] $routeKey: skipped $unpriced of ${offers.length} offers with no PHP price');
         }
       }
 
@@ -479,7 +490,22 @@ class ApiTravelCatalog implements TravelCatalog {
     );
   }
 
-  FlightOffer _parseFlightOffer(Map<String, dynamic> offer, String origin, String dest, int index) {
+  /// The fare in pesos, or null when the offer carries none.
+  ///
+  /// Prefers the API's `displayPrice` (converted server-side), then `price` when the
+  /// airline already priced it in PHP. Never the airline's figure in another currency:
+  /// that would show $117.55 as ₱118.
+  static int? _pesoPrice(Map<String, dynamic> offer) {
+    int? pick(Object? raw) {
+      if (raw is! Map<String, dynamic>) return null;
+      if (raw['currency']?.toString().toUpperCase() != 'PHP') return null;
+      return ((raw['total'] ?? raw['pricePerAdult']) as num?)?.round();
+    }
+
+    return pick(offer['displayPrice']) ?? pick(offer['price']);
+  }
+
+  FlightOffer? _parseFlightOffer(Map<String, dynamic> offer, String origin, String dest, int index) {
     final offerId = offer['offerId']?.toString() ?? '$origin-$dest-$index';
     final segments = (offer['segments'] as List?) ?? const [];
     final firstSeg = segments.isNotEmpty ? segments.first as Map<String, dynamic>? : null;
@@ -523,11 +549,8 @@ class ApiTravelCatalog implements TravelCatalog {
     final checkedBags = (baggageObj?['checkedBags'] as num?)?.toInt() ?? 0;
     final baggage = checkedBags > 0 ? '$checkedBags checked bag (20kg)' : 'Cabin bag only';
 
-    final priceObj = offer['price'] as Map<String, dynamic>?;
-    final price = (priceObj?['total'] as num?)?.round() ??
-        (priceObj?['pricePerAdult'] as num?)?.round() ??
-        (offer['price'] as num?)?.round() ??
-        4500;
+    final price = _pesoPrice(offer);
+    if (price == null) return null;
 
     return FlightOffer(
       id: offerId,

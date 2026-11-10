@@ -205,6 +205,57 @@ void main() {
       // Verify persistence
       expect(prefs.getString('cheapestgo_cache_flights_SIN_MNL'), contains('SQ 912'));
     });
+
+    test('fetchFlights asks for pesos and shows the API\'s PHP price, never a USD figure as pesos', () async {
+      Map<String, dynamic> usdOffer(String id, {Map<String, dynamic>? displayPrice}) => {
+            'offerId': id,
+            'totalDuration': 243,
+            'totalStops': 0,
+            'price': {'total': 117.55, 'pricePerAdult': 117.55, 'currency': 'USD'},
+            'displayPrice': ?displayPrice,
+            'segments': [
+              {
+                // api-v2's current shape: the code as a string, the name beside it.
+                'airline': '7C',
+                'airlineName': 'Jeju Air',
+                'flightNumber': '7C2302',
+                'origin': 'MNL',
+                'destination': 'ICN',
+                'departure': {'airport': 'MNL', 'time': '2026-11-25T18:34:00'},
+                'arrival': {'airport': 'ICN', 'time': '2026-11-26T04:10:00'},
+              },
+            ],
+          };
+
+      Map<String, dynamic>? sent;
+      final mockHttp = HttpClientAdapter(
+        client: MockClient((request) async {
+          sent = jsonDecode(request.body) as Map<String, dynamic>;
+          final body = {
+            'offers': [
+              usdOffer('converted', displayPrice: {
+                'currency': 'PHP',
+                'total': 6914.71,
+                'pricePerAdult': 6914.71,
+                'rateSource': 'live',
+              }),
+              // No rate on the server: no displayPrice, so the app has no peso price for it.
+              usdOffer('unconverted'),
+            ],
+          };
+          return http_pkg.Response(jsonEncode(body), 200, headers: {'content-type': 'application/json'});
+        }),
+      );
+
+      final catalog = ApiTravelCatalog(client: mockHttp, prefs: await SharedPreferences.getInstance());
+      final flights = await catalog.fetchFlights('MNL', 'ICN');
+
+      expect(sent?['currency'], 'PHP');
+      expect(flights.map((f) => f.id), ['converted']);
+      expect(flights.single.price, 6915);
+      expect(flights.single.airline, 'Jeju Air');
+      expect(flights.single.flightNo, '7C2302');
+    });
   });
 
   group('ApiTravelCatalog - Offline Fallback & Cache', () {
