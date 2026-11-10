@@ -1,0 +1,3352 @@
+{
+  "@@locale": "en",
+  "about_builtBody": "We focus on travelers in Southeast Asia — local currencies, local context, and support that understands how you travel.",
+  "about_builtTitle": "Built for the region",
+  "about_contactUs": "Contact us",
+  "about_dealsBody": "Curated weekend getaways and travel deals, updated daily, so the best value is the first thing you see.",
+  "about_dealsTitle": "Deals & packages",
+  "about_flightsBody": "Search and book flights worldwide through our airline partners, with clear pricing and no surprise fees at checkout.",
+  "about_flightsTitle": "Flights",
+  "about_heroBody": "CheapestGo is a modern travel platform that helps you discover, compare, and book flights and hotels in one place — at prices you can actually trust.",
+  "about_heroLabel": "About CheapestGo",
+  "about_heroTitle": "Travel that respects your time and your wallet.",
+  "about_hotelsBody": "Millions of hotels and unique stays, sourced from leading global suppliers so you always have real availability and rates.",
+  "about_hotelsTitle": "Hotels & stays",
+  "about_meta_description": "CheapestGo is a modern online travel agency helping travelers across Southeast Asia find and book flights, hotels, and packages at transparent prices.",
+  "about_meta_title": "About Us — CheapestGo",
+  "about_missionBody": "Booking travel should feel effortless, not adversarial. Too many platforms bury fees, inflate prices, and make you second-guess every click. We built CheapestGo to do the opposite: surface the best real prices, show exactly what you pay, and get you booked in as few steps as possible — whether you are chasing a weekend escape or planning the trip of a lifetime.",
+  "about_missionTitle": "Our mission",
+  "about_partnersBody": "Our flight, hotel, and payment inventory comes from established global providers, so the availability and rates you see are real and bookable.",
+  "about_partnersTitle": "Powered by trusted partners",
+  "about_privacy": "Privacy Policy",
+  "about_refund": "Refund Policy",
+  "about_secureBody": "Payments are processed by Stripe and we never store your card details. Your data is encrypted in transit and at rest.",
+  "about_secureTitle": "Secure by default",
+  "about_startExploring": "Start exploring",
+  "about_terms": "Terms of Service",
+  "about_transparentBody": "We apply a single, transparent service markup that is already included in the price you see. No hidden fees, ever.",
+  "about_transparentTitle": "Transparent pricing",
+  "about_valuesTitle": "What makes us different",
+  "about_whatWeDoTitle": "What we do",
+  "about_whoBody": "CheapestGo is operated by FORHU Inc., headquartered at 30 Wall Street, 8th Floor, New York, NY 10005, United States. Questions, feedback, or partnership ideas are always welcome.",
+  "about_whoTitle": "Who runs CheapestGo",
+  "account_preferences_displayCurrency": "Display Currency",
+  "account_preferences_emailNotifications": "Email notifications",
+  "account_preferences_emailNotificationsHint": "Booking confirmations, price alerts, and trip reminders",
+  "account_preferences_language": "Language",
+  "account_preferences_notifications": "Notifications",
+  "account_preferences_subtitle": "Customize your browsing and notification settings.",
+  "account_preferences_title": "Preferences",
+  "account_priceAlerts_alertAt": "Alert at",
+  "account_priceAlerts_delete": "Delete alert",
+  "account_priceAlerts_emptyBody": "Set up alerts from the search results page to track prices.",
+  "account_priceAlerts_emptyTitle": "No price alerts",
+  "account_priceAlerts_subtitle": "Get notified when prices drop for your saved routes.",
+  "account_priceAlerts_title": "Price Alerts",
+  "account_profile_admin": "Admin",
+  "account_profile_displayName": "Display name",
+  "account_profile_password": "Password",
+  "account_profile_subtitle": "Your personal account information.",
+  "account_profile_title": "Profile",
+  "account_savedTrips_hint": "Tap the heart icon on any hotel or flight to save it here.",
+  "account_savedTrips_remove": "Remove from saved",
+  "account_savedTrips_title": "Saved Trips",
+  "account_subtitle": "Manage your profile, preferences, and saved items.",
+  "account_title": "My Account",
+  "ai_askAnything": "Ask anything...",
+  "ai_goHome": "Go to home",
+  "ai_greeting": "What's on the agenda today?",
+  "ai_metaTitle": "Cheap — AI Travel Assistant",
+  "ai_newChat": "New chat",
+  "ai_prompts_bali": "Find me a beachfront resort in Bali for 2 adults, Feb 14-21...",
+  "ai_prompts_cebu": "Weekend getaway in Cebu for a couple, next month...",
+  "ai_prompts_manila": "Family resort near Manila, 2 adults 2 kids...",
+  "ai_prompts_tokyo": "Luxury hotel in Tokyo under $200/night with pool...",
+  "ai_sendHint": "Enter to send · Shift+Enter for new line",
+  "ai_suggestions_1": "Find me cheap flights to Tokyo next month",
+  "ai_suggestions_2": "What hotels are available in Bali for 2 adults?",
+  "ai_suggestions_3": "Plan a 5-day trip to Paris on a budget",
+  "ai_suggestions_4": "What's the cheapest day to fly to NYC?",
+  "appBanner_badge": "Mobile App",
+  "appBanner_downloadBtn": "Download App",
+  "appBanner_downloads": "Downloads",
+  "appBanner_installBtn": "Install App",
+  "appBanner_learnMore": "Learn More",
+  "appBanner_rating": "App Rating",
+  "appBanner_savings": "Extra Savings",
+  "appBanner_subtitle": "Get exclusive app-only deals, instant notifications, and manage your trips on the go.",
+  "appBanner_title": "Travel smarter with our app",
+  "auth_agreePrefix": "By signing up you agree to our",
+  "auth_atLeast8": "At least 8 characters",
+  "auth_backToSignIn": "Back to sign in",
+  "auth_checkInbox": "Check your inbox",
+  "auth_chooseStrong": "Choose a strong password for your account.",
+  "auth_clickLinkSuffix": ". Click the link in the email to set a new password.",
+  "auth_createAccount": "Create account",
+  "auth_createOne": "Create one",
+  "auth_createYourAccount": "Create your account",
+  "auth_emailInvalid": "Enter a valid email",
+  "auth_emailPlaceholder": "your@email.com",
+  "auth_emailRequired": "Email is required",
+  "auth_firstName": "First name",
+  "auth_firstNameRequired": "First name is required",
+  "auth_firstNameShort": "First",
+  "auth_forgotBody": "Enter your email and we'll send you a reset link.",
+  "auth_forgotPasswordQ": "Forgot password?",
+  "auth_forgotPitch": "Locked out is temporary. Your trips are still where you left them.",
+  "auth_forgotSubtitle": "We will email you a link to set a new one",
+  "auth_haveAccount": "Already have an account?",
+  "auth_hidePassword": "Hide password",
+  "auth_lastName": "Last name",
+  "auth_lastNameShort": "Last",
+  "auth_loginPitch": "Your trips, your saved searches, and every booking in one place.",
+  "auth_noAccount": "Don't have an account?",
+  "auth_noResetToken": "No reset token found. Please use the link sent to your email.",
+  "auth_notUsedBefore": "Choose something you have not used here before",
+  "auth_passwordPlaceholder": "Your password",
+  "auth_passwordRequired": "Password is required",
+  "auth_passwordUpdated": "Password updated",
+  "auth_passwordWeak": "Password does not meet requirements",
+  "auth_registerPitch": "One account. Every fare we can find, on every route we cover.",
+  "auth_registerSubtitle": "Start finding the cheapest fares worldwide",
+  "auth_repeatPassword": "Repeat your password",
+  "auth_resetPassword": "Reset password",
+  "auth_resetYourPassword": "Reset your password",
+  "auth_sendResetLink": "Send reset link",
+  "auth_setNewPassword": "Set a new password",
+  "auth_showPassword": "Show password",
+  "auth_signInToContinue": "Sign in to your account to continue",
+  "auth_signInWithGoogle": "Sign in with Google",
+  "auth_signIn_continueWithApple": "Continue with Apple",
+  "auth_signIn_continueWithEmail": "Continue with email",
+  "auth_signIn_continueWithGoogle": "Continue with Google",
+  "auth_signIn_emailLabel": "Email address",
+  "auth_signIn_emailPlaceholder": "you@example.com",
+  "auth_signIn_orDivider": "or",
+  "auth_signIn_privacyLink": "Privacy",
+  "auth_signIn_terms": "By signing in you agree to our {terms} and {privacy}.",
+  "@auth_signIn_terms": {
+    "placeholders": {
+      "terms": {},
+      "privacy": {}
+    }
+  },
+  "auth_signIn_termsLink": "Terms",
+  "auth_signIn_title": "Sign in to CheapestGo",
+  "auth_signUpWithGoogle": "Sign up with Google",
+  "auth_staff_pitch": "The same account you use everywhere else. This door just knows where to put you.",
+  "auth_staff_subtitle": "Support and administration for CheapestGo",
+  "auth_staff_title": "Staff sign in",
+  "auth_strongPassword": "Create a strong password",
+  "auth_tryAgain": "try again",
+  "auth_welcomeBack": "Welcome back",
+  "checkout_agreePrefix": "By continuing you agree to our",
+  "checkout_alert_close": "Close",
+  "checkout_alert_fareChangedTitle": "The fare changed",
+  "checkout_alert_fareGoneTitle": "This fare is no longer available",
+  "checkout_alert_paymentTitle": "Your payment didn't go through",
+  "checkout_alert_searchAgain": "Search again",
+  "checkout_allSet": "You're all set!",
+  "checkout_back": "Back",
+  "checkout_backToBookingDetails": "Back to booking details",
+  "checkout_booked": "BOOKED",
+  "checkout_bookingErrorTitle": "Booking error",
+  "checkout_bookingFor_guestFirstName": "Guest First Name *",
+  "checkout_bookingFor_guestLastName": "Guest Last Name *",
+  "checkout_bookingFor_myself": "Myself",
+  "checkout_bookingFor_someoneElse": "Someone else",
+  "checkout_bookingFor_whoIsBooking": "Who is the booking for?",
+  "checkout_bookingPage_loading": "Checking your booking…",
+  "checkout_bookingPage_notFound": "We couldn't find that booking",
+  "checkout_bookingPage_notFoundDescription": "It may belong to a different account. Sign in with the account you booked with.",
+  "checkout_bookingPage_reference": "Booking reference",
+  "checkout_bookingPage_refresh": "Refresh status",
+  "checkout_bookingPage_stillWorking": "Still working on it — this page updates by itself.",
+  "checkout_bookingPage_viewTrips": "View my trips",
+  "checkout_bookingReference": "Booking Reference",
+  "checkout_cancellation_cancelAfter": "Cancel after",
+  "checkout_cancellation_cancelBy": "Cancel by",
+  "checkout_cancellation_description": "How much will it cost to cancel the rooms?",
+  "checkout_cancellation_earlyDepartureFee": "Early Departure Fee: {amount} if you check out before your scheduled date.",
+  "@checkout_cancellation_earlyDepartureFee": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_cancellation_footer": "Cancellation costs are based on the total booking value. All dates and times are mentioned in GMT.",
+  "checkout_cancellation_freeCancellation": "Free cancellation available — see deadlines below",
+  "checkout_cancellation_freeCancellationLabel": "Free Cancellation",
+  "checkout_cancellation_fullRefund": "(Full refund)",
+  "checkout_cancellation_noShowPenalty": "No-Show Penalty: {amount} if you don’t check in without cancelling.",
+  "@checkout_cancellation_noShowPenalty": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_cancellation_nonRefundable": "Non-refundable — this booking cannot be cancelled for a refund",
+  "checkout_cancellation_refund": "{amount} Refund",
+  "@checkout_cancellation_refund": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_cancellation_title": "Cancellation Policy",
+  "checkout_cardNamePlaceholder": "John Doe",
+  "checkout_checkIn": "Check-in",
+  "checkout_checkOut": "Check-out",
+  "checkout_chooseYourDates": "Choose your dates",
+  "checkout_completeYourBooking": "Complete your booking",
+  "checkout_confirmingBooking": "Confirming your booking",
+  "checkout_confirmingFinalPrice": "Confirming the final price…",
+  "checkout_confirmingWithHotel": "Confirming with the hotel...",
+  "checkout_continue": "Continue",
+  "checkout_continueToPayment": "Continue to payment",
+  "checkout_datePicker_chooseMonth": "Choose year and month",
+  "checkout_datePicker_chooseYear": "Choose year",
+  "checkout_datePicker_nextMonth": "Next month",
+  "checkout_datePicker_nextYear": "Next year",
+  "checkout_datePicker_nextYears": "Later years",
+  "checkout_datePicker_placeholder": "Select date",
+  "checkout_datePicker_previousMonth": "Previous month",
+  "checkout_datePicker_previousYear": "Previous year",
+  "checkout_datePicker_previousYears": "Earlier years",
+  "checkout_dontClosePage": "Please don't close this page",
+  "checkout_duplicateBookingDesc": "Cancel your existing booking first, or go back and keep it.",
+  "checkout_duplicateBookingTitle": "You already have a booking at {hotel} for overlapping dates.",
+  "@checkout_duplicateBookingTitle": {
+    "placeholders": {
+      "hotel": {}
+    }
+  },
+  "checkout_errors_paymentFailed": "Payment failed. Please try again.",
+  "checkout_errors_paymentProcessing": "Payment is processing. Check your trips shortly.",
+  "checkout_example": "e.g. {value}",
+  "@checkout_example": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "checkout_failed_released": "You have not been charged — the hold on your card has been released.",
+  "checkout_failed_title": "We couldn't complete your booking",
+  "checkout_failed_tryAgain": "Try again",
+  "checkout_failed_unknown": "We couldn't confirm whether your payment was taken. Check your trips or contact support before trying again.",
+  "checkout_finalizingDetails": "Finalizing booking details...",
+  "checkout_flight_adultN": "ADULT {n}",
+  "@checkout_flight_adultN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "checkout_flight_cardHeld": "Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing.",
+  "checkout_flight_contactHint": "Your e-ticket is sent here, and the airline uses this number for flight changes.",
+  "checkout_flight_contactTitle": "Contact details",
+  "checkout_flight_countryNoResults": "No countries found",
+  "checkout_flight_countryPlaceholder": "Select country",
+  "checkout_flight_duplicateBody": "Your booking departing {route} on {date} is still active.",
+  "@checkout_flight_duplicateBody": {
+    "placeholders": {
+      "route": {},
+      "date": {}
+    }
+  },
+  "checkout_flight_duplicateClose": "Close",
+  "checkout_flight_duplicateHint": "Check it before you book another flight on the same date.",
+  "checkout_flight_duplicateTitle": "You already have a flight that day",
+  "checkout_flight_genderPlaceholder": "Select gender",
+  "checkout_flight_infantN": "INFANT {n}",
+  "@checkout_flight_infantN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "checkout_flight_nameHint": "Enter names exactly as they appear on the passport.",
+  "checkout_flight_needsReview_description": "Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed.",
+  "checkout_flight_needsReview_title": "We're confirming this with the airline",
+  "checkout_flight_offerExpired": "This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again.",
+  "checkout_flight_passportPlaceholder": "e.g. P1234567A",
+  "checkout_flight_passportTitle": "Passport details",
+  "checkout_flight_priceChanged": "The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare.",
+  "@checkout_flight_priceChanged": {
+    "placeholders": {
+      "was": {},
+      "now": {}
+    }
+  },
+  "checkout_flight_receipt_allSet": "You’re all set",
+  "checkout_flight_receipt_approxTotal": "Approx. in {currency}",
+  "@checkout_flight_receipt_approxTotal": {
+    "placeholders": {
+      "currency": {}
+    }
+  },
+  "checkout_flight_receipt_arriveAt": "Arrive At",
+  "checkout_flight_receipt_carryOnBag": "1 carry-on bag",
+  "checkout_flight_receipt_checkedBagsCount": "{count, plural, one {# checked bag} other {# checked bags}}",
+  "@checkout_flight_receipt_checkedBagsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkout_flight_receipt_confirmedBadge": "Confirmed",
+  "checkout_flight_receipt_confirmedSentTo": "Your flight to {destination} is confirmed, flight details and receipt has been sent to {email}",
+  "@checkout_flight_receipt_confirmedSentTo": {
+    "placeholders": {
+      "destination": {},
+      "email": {}
+    }
+  },
+  "checkout_flight_receipt_confirmedToDestination": "Your flight to {destination} is confirmed.",
+  "@checkout_flight_receipt_confirmedToDestination": {
+    "placeholders": {
+      "destination": {}
+    }
+  },
+  "checkout_flight_receipt_contact": "Contact",
+  "checkout_flight_receipt_copyReference": "Copy",
+  "checkout_flight_receipt_copyReferenceDone": "Copied",
+  "checkout_flight_receipt_departFrom": "Depart From",
+  "checkout_flight_receipt_fareLine": "Fare · {count, plural, one {# passenger} other {# passengers}}",
+  "@checkout_flight_receipt_fareLine": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkout_flight_receipt_includedLabel": "Included",
+  "checkout_flight_receipt_loadingItinerary": "Loading your flight details…",
+  "checkout_flight_receipt_next_hotel": "Book a hotel",
+  "checkout_flight_receipt_next_hotelLine": "Stays in {city} · {dates}",
+  "@checkout_flight_receipt_next_hotelLine": {
+    "placeholders": {
+      "city": {},
+      "dates": {}
+    }
+  },
+  "checkout_flight_receipt_next_teeTime": "Book a tee time",
+  "checkout_flight_receipt_next_teeTimeAnywhere": "Browse our golf courses",
+  "checkout_flight_receipt_next_teeTimeLine": "Golf courses in {city}",
+  "@checkout_flight_receipt_next_teeTimeLine": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "checkout_flight_receipt_next_title": "Complete your trip",
+  "checkout_flight_receipt_outbound": "Outbound",
+  "checkout_flight_receipt_paidBadge": "Paid",
+  "checkout_flight_receipt_passengerSectionTitle": "Passengers",
+  "checkout_flight_receipt_passengersCount": "{count, plural, one {# passenger} other {# passengers}}",
+  "@checkout_flight_receipt_passengersCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkout_flight_receipt_paymentProcessedSecurely": "Payment processed securely by Stripe.",
+  "checkout_flight_receipt_paymentSummary": "Payment Summary",
+  "checkout_flight_receipt_refundable": "Refundable (fees may apply)",
+  "checkout_flight_receipt_return": "Return",
+  "checkout_flight_receipt_taxesAndFees": "Taxes & fees",
+  "checkout_flight_receipt_terminal": "Terminal",
+  "checkout_flight_receipt_viewBookings": "View Bookings",
+  "checkout_flight_settling_description": "The airline is confirming your ticket. This can take a few minutes — it will appear in your trips as soon as it's issued.",
+  "checkout_flight_summary_arrivingAt": "Arriving at",
+  "checkout_flight_summary_departing": "Departing",
+  "checkout_flight_summary_fareDetails": "Fare details",
+  "checkout_flight_summary_hideItineraries": "Hide flight itineraries",
+  "checkout_flight_summary_noCarryOnBag": "No carry-on bag",
+  "checkout_flight_summary_noCheckedBag": "No checked bag",
+  "checkout_flight_summary_showItineraries": "Show flight itineraries",
+  "checkout_flight_summary_totalPrice": "total price",
+  "checkout_flight_whosFlying": "Who's flying?",
+  "checkout_goBack": "← Go back",
+  "checkout_goBackBtn": "Go back",
+  "checkout_guestDetails": "Guest details",
+  "checkout_guestLabel": "Guest",
+  "checkout_guestsCount": "{count, plural, one {# guest} other {# guests}}",
+  "@checkout_guestsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkout_keepExistingBooking": "Keep existing booking",
+  "checkout_loadingPaymentForm": "Loading payment form...",
+  "checkout_modifyBooking": "Modify booking",
+  "checkout_multiRoom_description": "Booking several rooms at once isn't available yet — this checkout is for a single room for your whole party. Please book rooms separately for now.",
+  "checkout_multiRoom_title": "One room at a time",
+  "checkout_needsReview_description": "Your payment hasn't been taken yet. We'll email you as soon as it's confirmed, or release the hold on your card if it isn't.",
+  "checkout_needsReview_title": "We're confirming this with the hotel",
+  "checkout_nightsCount": "{count, plural, one {# night} other {# nights}}",
+  "@checkout_nightsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "checkout_notPayableOnline_chooseAnother": "Choose another room",
+  "checkout_notPayableOnline_description": "The hotel collects payment for this rate itself. Choose a different room to book and pay here.",
+  "checkout_notPayableOnline_title": "This room can't be paid for online",
+  "checkout_payNow": "Pay {amount}",
+  "@checkout_payNow": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_paymentDetails": "Payment details",
+  "checkout_paymentDetailsTitle": "Payment Details",
+  "checkout_paymentInfo": "Payment info",
+  "checkout_paymentSecure": "Your payment information is encrypted and never stored on our servers.",
+  "checkout_payment_card": "Card",
+  "checkout_payment_cardNumber": "Card number",
+  "checkout_payment_countries_ID": "Indonesia",
+  "checkout_payment_countries_JP": "Japan",
+  "checkout_payment_countries_KR": "South Korea",
+  "checkout_payment_countries_MY": "Malaysia",
+  "checkout_payment_countries_PH": "Philippines",
+  "checkout_payment_countries_SG": "Singapore",
+  "checkout_payment_countries_TH": "Thailand",
+  "checkout_payment_countries_US": "United States",
+  "checkout_payment_countries_VN": "Vietnam",
+  "checkout_payment_country": "Country",
+  "checkout_payment_mmYY": "MM / YY",
+  "checkout_payment_payeeFirstName": "Payee First Name",
+  "checkout_payment_payeeLastName": "Payee Last Name",
+  "checkout_payment_paymentInformation": "Payment Information",
+  "checkout_payment_securedMessage": "Your payment information is secured.",
+  "checkout_payment_securityCode": "Security code",
+  "checkout_pickDatesDescription": "Pick check-in and check-out to continue.",
+  "checkout_planAnotherTrip": "Plan another trip",
+  "checkout_priceBreakdown": "Price breakdown",
+  "checkout_priceChanged_backToSearch": "Back to search",
+  "checkout_priceChanged_description": "The price for this room changed between when you selected it and when we tried to confirm your booking.",
+  "checkout_priceChanged_newPrice": "New price",
+  "checkout_priceChanged_originalPrice": "Original price",
+  "checkout_priceChanged_refundNotice": "Your payment of {amount} has been automatically refunded. It may take 3–5 business days to appear on your statement.",
+  "@checkout_priceChanged_refundNotice": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_priceChanged_title": "Price has changed",
+  "checkout_priceMoved_accept": "Continue at the new price",
+  "checkout_priceMoved_chooseAnother": "Choose another room",
+  "checkout_priceMoved_down": "Good news — this room now costs less than when you chose it.",
+  "checkout_priceMoved_now": "Now",
+  "checkout_priceMoved_refreshing": "Checking the latest price…",
+  "checkout_priceMoved_title": "The price has changed",
+  "checkout_priceMoved_up": "This room now costs more than when you chose it.",
+  "checkout_priceMoved_was": "Was",
+  "checkout_promos_applied": "Applied",
+  "checkout_promos_apply": "Apply",
+  "checkout_promos_availableForBooking": "Available promos for this booking",
+  "checkout_promos_availablePromos": "Available promos",
+  "checkout_promos_failedToApply": "Failed to apply promo. Please try again.",
+  "checkout_promos_hotelDeal": "Hotel Deal",
+  "checkout_promos_loadingPromos": "Loading available promos...",
+  "checkout_promos_location": "Location",
+  "checkout_promos_minAmount": "Min. {amount}",
+  "@checkout_promos_minAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_promos_newUser": "New User",
+  "checkout_promos_off": "off",
+  "checkout_promos_promo": "Promo",
+  "checkout_promos_seasonal": "Seasonal",
+  "checkout_promos_until": "Until {date}",
+  "@checkout_promos_until": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "checkout_promos_upTo": "Up to {amount}",
+  "@checkout_promos_upTo": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_rating_average": "Average",
+  "checkout_rating_exceptional": "Exceptional",
+  "checkout_rating_fabulous": "Fabulous",
+  "checkout_rating_good": "Good",
+  "checkout_rating_pleasant": "Pleasant",
+  "checkout_rating_veryGood": "Very Good",
+  "checkout_receiptSent": "Your booking is confirmed. A receipt has been sent to {email}.",
+  "@checkout_receiptSent": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "checkout_retry": "Retry",
+  "checkout_roomFallback": "Standard Room",
+  "checkout_searchAvailableRooms": "Search available rooms →",
+  "checkout_secureYourBooking": "Secure your booking",
+  "checkout_securedByStripe": "Secured by Stripe",
+  "checkout_securingReservation": "Securing your reservation...",
+  "checkout_selectYourDates": "Select your dates",
+  "checkout_serviceFee": "Service fee",
+  "checkout_settling_checkTrips": "View my trips",
+  "checkout_settling_description": "The hotel is confirming your reservation. Please keep this page open.",
+  "checkout_settling_doNotPayAgain": "Please don't pay again — you won't be charged twice.",
+  "checkout_settling_title": "Confirming your booking",
+  "checkout_signIn": "Sign In",
+  "checkout_signInArrow": "Sign in →",
+  "checkout_signInBannerDesc": "You'll receive booking confirmation and updates via email.",
+  "checkout_signInToComplete": "Sign in to complete your booking",
+  "checkout_specialRequests_placeholder": "The property will do its best to arrange it.",
+  "checkout_specialRequests_title": "Any special requests?",
+  "checkout_steps_confirmed": "Confirmed",
+  "checkout_steps_details": "Details",
+  "checkout_steps_payment": "Payment",
+  "checkout_steps_verification": "Verification",
+  "checkout_stripe_completePayment": "Complete Payment",
+  "checkout_stripe_loadError": "Failed to load the payment form. Please refresh and try again.",
+  "checkout_stripe_payNow": "Pay Now",
+  "checkout_stripe_processing": "Payment is processing...",
+  "checkout_stripe_unexpectedError": "An unexpected error occurred.",
+  "checkout_submit_continueToPayment": "Continue to Payment • {amount}",
+  "@checkout_submit_continueToPayment": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_submit_goBackDifferentHotel": "Go back & choose a different hotel",
+  "checkout_submit_goBackReselect": "Go back & reselect room",
+  "checkout_submit_hotelUnavailable": "Hotel temporarily unavailable",
+  "checkout_submit_hotelUnavailableDesc": "This hotel cannot be booked right now. Please go back and choose a different hotel.",
+  "checkout_submit_processingBooking": "Processing Your Booking...",
+  "checkout_submit_sessionExpired": "Room session expired",
+  "checkout_submit_sessionExpiredDesc": "Your room hold has expired. Go back and reselect the room to get a fresh session — you can pick the same room again.",
+  "checkout_submit_signInToComplete": "Sign In to Complete Booking",
+  "checkout_submit_verificationFailed": "Verification failed — see error above",
+  "checkout_submit_verifyingPrice": "Verifying Price...",
+  "checkout_submit_verifyingRoom": "Verifying Room...",
+  "checkout_submit_waitingMessage": "Please wait while we confirm your reservation with the hotel...",
+  "checkout_submit_waitingWarning": "This may take up to 30 seconds. Do not close this page.",
+  "checkout_success_bookFlightBundle": "Book your flight now and get a bundle discount on your total.",
+  "checkout_success_bookingConfirmed": "Booking Confirmed! 🎉",
+  "checkout_success_bookingId": "Booking ID",
+  "checkout_success_bundleDeal": "✦ Bundle Deal",
+  "checkout_success_bundleDiscountApplied": "Bundle discount applied",
+  "checkout_success_checkEmail": "Check your email for booking details and updates",
+  "checkout_success_checkIn": "Check-in",
+  "checkout_success_checkOut": "Check-out",
+  "checkout_success_confirmationSentTo": "Confirmation sent to",
+  "checkout_success_downloadReceipt": "Download receipt",
+  "checkout_success_emailInfo": "Your booking confirmation will be emailed to you within a few minutes.",
+  "checkout_success_flightHotelBundle": "Flight + Hotel Bundle",
+  "checkout_success_freeCancellationInfo": "If your booking is free cancellation, you can cancel or modify via My Trips.",
+  "checkout_success_hotel": "Hotel",
+  "checkout_success_hotelCheckInInfo": "Present your booking ID at the hotel reception upon arrival.",
+  "checkout_success_hotelSuccess": "Your hotel has been booked successfully.",
+  "checkout_success_needFlight": "Need a flight to {destination}?",
+  "@checkout_success_needFlight": {
+    "placeholders": {
+      "destination": {}
+    }
+  },
+  "checkout_success_openingDestination": "Opening your destination…",
+  "checkout_success_returnToHome": "Return to Home",
+  "checkout_success_room": "Room",
+  "checkout_success_saveUpTo": "Save up to 8%",
+  "checkout_success_saved": "{amount} saved",
+  "@checkout_success_saved": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_success_searchFlightsAndBundle": "Search flights & bundle",
+  "checkout_success_sent": "Sent",
+  "checkout_success_stayDuration": "Stay Duration",
+  "checkout_success_total": "Total",
+  "checkout_success_viewMyTrips": "View My Trips",
+  "checkout_success_whatsNext": "What's Next",
+  "checkout_summary_adult": "Adult",
+  "checkout_summary_adults": "Adults",
+  "checkout_summary_averagePerNight": "average per night",
+  "checkout_summary_calculatingPerNight": "Calculated per night...",
+  "checkout_summary_checkInAndOut": "Check-in & Check-out",
+  "checkout_summary_checkInLabel": "Check-in",
+  "checkout_summary_checkOutLabel": "Check-out",
+  "checkout_summary_child": "Child",
+  "checkout_summary_children": "Children",
+  "checkout_summary_dates": "Dates",
+  "checkout_summary_edit": "Edit",
+  "checkout_summary_fetchingPolicy": "Fetching cancellation policy…",
+  "checkout_summary_flight": "Flight",
+  "checkout_summary_freeCancellationBefore": "Free cancellation before {date}",
+  "@checkout_summary_freeCancellationBefore": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "checkout_summary_freeCancellationShort": "Free cancellation",
+  "checkout_summary_guests": "Guests",
+  "checkout_summary_included": "included",
+  "checkout_summary_includedInPrice": "Included",
+  "checkout_summary_night": "night",
+  "checkout_summary_nights": "nights",
+  "checkout_summary_nonRefundable": "Non-refundable",
+  "checkout_summary_priceDetails": "Price details",
+  "checkout_summary_promoCode": "Promo: {code}",
+  "@checkout_summary_promoCode": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "checkout_summary_room": "Room",
+  "checkout_summary_roomConfirmed": "Room Confirmed",
+  "checkout_summary_roomNights": "1 room × {nights} {count}",
+  "@checkout_summary_roomNights": {
+    "placeholders": {
+      "nights": {},
+      "count": {}
+    }
+  },
+  "checkout_summary_serviceFee": "Platform service fee",
+  "checkout_summary_taxes": "Taxes",
+  "checkout_summary_termsNotProvided": "Cancellation terms not provided by supplier — confirm with property before booking",
+  "checkout_summary_total": "Total",
+  "checkout_summary_updateDates": "Update dates",
+  "checkout_summary_youSave": "You save {amount} with this promo",
+  "@checkout_summary_youSave": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_summary_yourRoom": "Your Room",
+  "checkout_supplierDown_description": "Nothing is wrong with your booking — the hotel's system didn't answer. Please try again in a moment.",
+  "checkout_supplierDown_retry": "Try again",
+  "checkout_supplierDown_title": "We couldn't reach the hotel just now",
+  "checkout_title": "Checkout",
+  "checkout_totalPaid": "Total paid",
+  "checkout_unavailable_chooseAnother": "Choose another room",
+  "checkout_unavailable_description": "Someone else booked it, or the hotel closed it, while you were deciding. You have not been charged.",
+  "checkout_unavailable_title": "This room is no longer available",
+  "checkout_userDetails_age": "Age",
+  "checkout_userDetails_agePlaceholder": "0–17",
+  "checkout_userDetails_childN": "CHILD {n}",
+  "@checkout_userDetails_childN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "checkout_userDetails_country": "Country",
+  "checkout_userDetails_dateOfBirth": "Date of birth",
+  "checkout_userDetails_email": "Email",
+  "checkout_userDetails_emailPlaceholder": "Email",
+  "checkout_userDetails_firstName": "First name",
+  "checkout_userDetails_firstNamePlaceholder": "First name",
+  "checkout_userDetails_gender": "Gender",
+  "checkout_userDetails_genderFemale": "Female",
+  "checkout_userDetails_genderMale": "Male",
+  "checkout_userDetails_guest1": "GUEST 1 (YOU)",
+  "checkout_userDetails_guestN": "GUEST {n}",
+  "@checkout_userDetails_guestN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "checkout_userDetails_lastName": "Last name",
+  "checkout_userDetails_lastNamePlaceholder": "Last name",
+  "checkout_userDetails_no": "No",
+  "checkout_userDetails_passportExpiry": "Passport expiry",
+  "checkout_userDetails_passportNumber": "Passport number",
+  "checkout_userDetails_phone": "Phone",
+  "checkout_userDetails_phoneNumber": "Phone number",
+  "checkout_userDetails_phonePlaceholder": "Number",
+  "checkout_userDetails_title": "Your details",
+  "checkout_userDetails_travelingForWork": "Traveling for work?",
+  "checkout_userDetails_yes": "Yes",
+  "checkout_validation_ageInvalid": "Enter an age from 0 to 17",
+  "checkout_validation_bookingFailed": "Booking confirmation failed: {message}. Your payment will be automatically refunded.",
+  "@checkout_validation_bookingFailed": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "checkout_validation_emailInvalid": "Enter a valid email address",
+  "checkout_validation_fieldRequired": "This field is required",
+  "checkout_validation_firstNameRequired": "First name is required",
+  "checkout_validation_fixHighlighted": "Please fix the highlighted fields before continuing.",
+  "checkout_validation_invalidPrice": "Invalid booking price. Please retry.",
+  "checkout_validation_lastNameRequired": "Last name is required",
+  "checkout_validation_nameInvalid": "Name must only contain letters",
+  "checkout_validation_paymentSetupFailed": "Payment setup failed",
+  "checkout_validation_phoneDigitsOnly": "Phone number must contain digits only",
+  "checkout_validation_phoneRequired": "Phone number is required",
+  "checkout_validation_priceVerifying": "Price is still being verified — please wait a moment and try again.",
+  "checkout_validation_quoteExpiringSoon": "Your price hold expires in 5 minutes — please complete your booking soon.",
+  "checkout_validation_refreshingSession": "Refreshing your price hold…",
+  "checkout_validation_required": "Required",
+  "checkout_validation_requiresAuth": "Authentication required",
+  "checkout_validation_sessionExpired": "Booking session expired. Please go back and select the room again.",
+  "checkout_validation_sessionExpiredCharge": "Your session expired during payment. Your card was charged — please contact support with payment reference: {id}",
+  "@checkout_validation_sessionExpiredCharge": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "checkout_validation_specialRequestsTooLong": "Please keep special requests under 500 characters",
+  "checkout_verifyingPayment": "Verifying payment...",
+  "checkout_viewExistingBooking": "View existing booking",
+  "checkout_voucher_apply": "Apply",
+  "checkout_voucher_enterPromoCode": "ENTER PROMO CODE",
+  "checkout_voucher_failedToValidate": "Failed to validate voucher. Please try again.",
+  "checkout_voucher_havePromoCode": "Have a promo code?",
+  "checkout_voucher_off": "OFF",
+  "checkout_voucher_promoCode": "Promo code",
+  "checkout_voucher_removeVoucher": "Remove voucher",
+  "checkout_voucher_saved": "{amount} saved",
+  "@checkout_voucher_saved": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "checkout_whosCheckingIn": "Who's checking in?",
+  "checkout_whosCheckingInYou": "Who’s checking in? (Your Details)",
+  "common_back": "Back",
+  "common_close": "Close",
+  "common_closeSettings": "Close settings",
+  "common_currency": "Currency",
+  "common_filter": "Filter",
+  "common_freeCancel": "Free cancel",
+  "common_goBack": "Go back",
+  "common_language": "Language",
+  "common_openInMaps": "Open in Maps",
+  "common_primary": "Primary",
+  "common_retry": "Retry",
+  "common_scrollLeft": "Scroll left",
+  "common_scrollRight": "Scroll right",
+  "common_settings": "Settings",
+  "common_share": "Share",
+  "currencyPicker_label": "Select currency",
+  "deals_all": "All",
+  "deals_allDealsCount": "All {count} deals",
+  "@deals_allDealsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "deals_collapse": "Collapse ↑",
+  "deals_emptyBody": "Check back soon — we update our deals regularly.",
+  "deals_emptyTitle": "No active deals right now",
+  "deals_headerDefault": "Exclusive Deals & Offers",
+  "deals_headerPersonalized": "Flight Deals from {city}",
+  "@deals_headerPersonalized": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "deals_limitedTime": "Limited-time offers",
+  "deals_loadError": "Could not load deals",
+  "deals_metaTitle": "Deals",
+  "deals_oneWay": "One Way",
+  "deals_popularRoute": "Popular Route",
+  "deals_roundTrip": "Round Trip",
+  "deals_searchFlights": "Search Flights",
+  "deals_subtitle": "Handpicked deals with the lowest prices we could find. Prices update frequently — book early to lock in your rate.",
+  "deals_subtitleDefault": "Low fares on popular routes",
+  "deals_subtitlePersonalized": "Low fares departing from {city}",
+  "@deals_subtitlePersonalized": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "deals_todaysBest": "Today's Best Hotel Deals",
+  "destinations_hotelsAvailableFor": "Hotels available for {from} — {to}",
+  "@destinations_hotelsAvailableFor": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "destinations_metaTitle": "Hotels in {place}",
+  "@destinations_metaTitle": {
+    "placeholders": {
+      "place": {}
+    }
+  },
+  "destinations_plural": "Destinations",
+  "destinations_singular": "Destination",
+  "documents_actions_checkIn": "Check in with airline",
+  "documents_actions_eticket": "View e-ticket",
+  "documents_actions_receipt": "View payment receipt",
+  "documents_actions_voucher": "View hotel voucher",
+  "documents_eticket_atCheckIn": "Assigned at check-in",
+  "documents_eticket_checkInHint": "Check in with the airline to get your boarding pass. Airlines usually open check-in 24–48 hours before departure.",
+  "documents_eticket_fareConditions": "Fare conditions",
+  "documents_eticket_flight": "Flight",
+  "documents_eticket_footer": "Present this with the passport or ID used to book. Names must match your travel document.",
+  "documents_eticket_from": "From",
+  "documents_eticket_nonChangeable": "changes not permitted",
+  "documents_eticket_nonRefundable": "Non-refundable",
+  "documents_eticket_passenger": "Passenger",
+  "documents_eticket_pnr": "Booking reference",
+  "documents_eticket_refundable": "Refundable",
+  "documents_eticket_seat": "Seat",
+  "documents_eticket_ticketNumber": "E-ticket number",
+  "documents_eticket_title": "E-ticket & itinerary",
+  "documents_eticket_to": "To",
+  "documents_pending_awaitingConfirmation": "Your payment went through. We are waiting for the property to confirm — your voucher appears here as soon as it does.",
+  "documents_pending_awaitingTicket": "Your payment went through. The airline has not issued the ticket yet — your e-ticket appears here as soon as it does.",
+  "documents_receipt_bookingReference": "Booking reference",
+  "documents_receipt_card": "Card",
+  "documents_receipt_footer": "This receipt confirms a payment. It is not a travel document — your e-ticket or hotel voucher is what you show on arrival.",
+  "documents_receipt_paid": "Payment successful",
+  "documents_receipt_paymentDate": "Payment date",
+  "documents_receipt_paymentMethod": "Payment method",
+  "documents_receipt_receiptNumber": "Receipt number",
+  "documents_receipt_title": "Payment receipt",
+  "documents_receipt_totalPaid": "Total paid",
+  "documents_section": "Travel documents",
+  "documents_status_confirmed": "Confirmed",
+  "documents_status_ticketed": "Ticketed",
+  "documents_voucher_checkIn": "Check-in",
+  "documents_voucher_checkOut": "Check-out",
+  "documents_voucher_confirmationNumber": "Hotel confirmation number",
+  "documents_voucher_footer": "Present this voucher and a valid government-issued ID or passport at check-in. The property may apply additional requirements.",
+  "documents_voucher_fromTime": "From {time}",
+  "@documents_voucher_fromTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "documents_voucher_guests": "Guests",
+  "documents_voucher_leadGuest": "Lead guest",
+  "documents_voucher_mealPlan": "Meal plan",
+  "documents_voucher_occupancy": "{adults, plural, one {# adult} other {# adults}}{children, plural, =0 {} one {, # child} other {, # children}}",
+  "@documents_voucher_occupancy": {
+    "placeholders": {
+      "adults": {
+        "type": "num"
+      },
+      "children": {
+        "type": "num"
+      }
+    }
+  },
+  "documents_voucher_ourReference": "Our reference",
+  "documents_voucher_paidOnline": "Paid online",
+  "documents_voucher_payAtProperty": "Pay at property",
+  "documents_voucher_paymentStatus": "Payment status",
+  "documents_voucher_requestsNotGuaranteed": "Requests are passed to the property and are not guaranteed.",
+  "documents_voucher_room": "Room",
+  "documents_voucher_specialRequests": "Special requests",
+  "documents_voucher_stay": "Stay",
+  "documents_voucher_title": "Hotel booking voucher",
+  "documents_voucher_untilTime": "Until {time}",
+  "@documents_voucher_untilTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "errors_auth_description": "There was an error processing your authentication request. This could happen if the link expired or was already used.",
+  "errors_auth_goHome": "Go to homepage",
+  "errors_auth_retryDescription": "Something went wrong during authentication. Please try again.",
+  "errors_auth_signInAgain": "Try signing in again",
+  "errors_auth_title": "Authentication Error",
+  "errors_generic": "Something went wrong. Please try again.",
+  "errors_notFound": "Page not found.",
+  "errors_page_body": "This page could not be loaded. Trying again usually clears it.",
+  "errors_page_goHome": "Go home",
+  "errors_page_notFoundBody": "The link may be out of date, or the stay may no longer be listed.",
+  "errors_page_notFoundTitle": "This page does not exist",
+  "errors_page_searchStays": "Search stays",
+  "errors_page_title": "Something went wrong",
+  "errors_page_tryAgain": "Try again",
+  "errors_searchFailed": "Search failed. Check your connection and try again.",
+  "flights_card_currentlySelected": "Currently Selected",
+  "flights_card_direct": "Direct",
+  "flights_card_fareOptions": "Available Fare Options",
+  "flights_card_freeCancellation": "Free Cancellation",
+  "flights_card_includesTaxes": "includes taxes & fees",
+  "flights_card_nonRefundable": "Non-refundable",
+  "flights_card_perPerson": "per person",
+  "flights_card_stop": "stop",
+  "flights_card_stops": "stops",
+  "flights_card_viewDeal": "View deal",
+  "flights_filtersPanel_airlines": "Airlines",
+  "flights_filtersPanel_anyStops": "Any Stops",
+  "flights_filtersPanel_arrival": "Arrival",
+  "flights_filtersPanel_arrivalAirports": "Arrival Airports",
+  "flights_filtersPanel_branded": "Branded",
+  "flights_filtersPanel_cheapestFirst": "Cheapest First",
+  "flights_filtersPanel_departure": "Departure",
+  "flights_filtersPanel_direct": "Direct",
+  "flights_filtersPanel_earliestDeparture": "Earliest Departure",
+  "flights_filtersPanel_fareType": "Fare Type",
+  "flights_filtersPanel_fastestFirst": "Fastest First",
+  "flights_filtersPanel_flightDuration": "Flight Duration",
+  "flights_filtersPanel_ndc": "NDC",
+  "flights_filtersPanel_nonStopOnly": "Non-stop only",
+  "flights_filtersPanel_oneStop": "1 Stop",
+  "flights_filtersPanel_pricePerPerson": "Price Per Person",
+  "flights_filtersPanel_provider": "Provider",
+  "flights_filtersPanel_rangeFrom": "{label} from",
+  "@flights_filtersPanel_rangeFrom": {
+    "placeholders": {
+      "label": {}
+    }
+  },
+  "flights_filtersPanel_rangeTo": "{label} to",
+  "@flights_filtersPanel_rangeTo": {
+    "placeholders": {
+      "label": {}
+    }
+  },
+  "flights_filtersPanel_refundable": "Refundable",
+  "flights_filtersPanel_refundableFares": "Refundable fares",
+  "flights_filtersPanel_refundableFaresDescription": "Fares that allow cancellation with a refund",
+  "flights_filtersPanel_reset": "Reset",
+  "flights_filtersPanel_selectAllAirlines": "Select all airlines",
+  "flights_filtersPanel_selectAllAirports": "Select all airports",
+  "flights_filtersPanel_showAll": "Show all",
+  "flights_filtersPanel_showLess": "Show less",
+  "flights_filtersPanel_sortBy": "Sort By",
+  "flights_filtersPanel_stops": "Stops",
+  "flights_filtersPanel_times": "Times",
+  "flights_filtersPanel_twoStopsPlus": "2 Stops +",
+  "flights_filtersPanel_underHours": "Under {hours} hours",
+  "@flights_filtersPanel_underHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "flights_filtersPanel_upToOneStop": "Up to 1 stop",
+  "flights_filters_airlines": "Airlines",
+  "flights_filters_anyStops": "Any stops",
+  "flights_filters_cheapest": "Cheapest",
+  "flights_filters_earliest": "Earliest Departure",
+  "flights_filters_fareType": "Fare Type",
+  "flights_filters_fastest": "Fastest",
+  "flights_filters_nonStopOnly": "Non-stop only",
+  "flights_filters_provider": "Provider",
+  "flights_filters_refundableHint": "Show only fares that can be cancelled for a refund",
+  "flights_filters_refundableOnly": "Refundable fares only",
+  "flights_filters_stops": "Stops",
+  "flights_filters_upTo1Stop": "Up to 1 stop",
+  "flights_header_fetching": "Fetching providers...",
+  "flights_header_sources": "Sources:",
+  "flights_itinerary_arriveAt": "Arrive at",
+  "flights_itinerary_departFrom": "Depart from",
+  "flights_itinerary_flightDuration": "Flight Duration",
+  "flights_itinerary_layoverLabel": "Layover",
+  "flights_itinerary_layoverValue": "{duration} at {airport}",
+  "@flights_itinerary_layoverValue": {
+    "placeholders": {
+      "duration": {},
+      "airport": {}
+    }
+  },
+  "flights_itinerary_legLabel": "Leg {number}",
+  "@flights_itinerary_legLabel": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "flights_itinerary_nonstop": "Nonstop",
+  "flights_itinerary_outbound": "Outbound",
+  "flights_itinerary_return": "Return",
+  "flights_itinerary_stopCount": "{count, plural, one {# stop} other {# stops}}",
+  "@flights_itinerary_stopCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "flights_itinerary_terminal": "Terminal {terminal}",
+  "@flights_itinerary_terminal": {
+    "placeholders": {
+      "terminal": {}
+    }
+  },
+  "flights_itinerary_terminalUnavailable": "Terminal available closer to departure",
+  "flights_itinerary_totalFlightDuration": "Total Flight Duration",
+  "flights_meta_description": "Compare and book cheap flights worldwide. Find the best deals on {brand}.",
+  "@flights_meta_description": {
+    "placeholders": {
+      "brand": {}
+    }
+  },
+  "flights_meta_descriptionRoute": "Compare and book the cheapest flights from {origin} to {destination}. Find the best deals on {brand}.",
+  "@flights_meta_descriptionRoute": {
+    "placeholders": {
+      "origin": {},
+      "destination": {},
+      "brand": {}
+    }
+  },
+  "flights_meta_title": "Flight Search Results",
+  "flights_meta_titleRoute": "Flights {origin} → {destination}",
+  "@flights_meta_titleRoute": {
+    "placeholders": {
+      "origin": {},
+      "destination": {}
+    }
+  },
+  "flights_passengers_adults": "{count, plural, one {# adult} other {# adults}}",
+  "@flights_passengers_adults": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "flights_passengers_children": "{count, plural, one {# child} other {# children}}",
+  "@flights_passengers_children": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "flights_passengers_infants": "{count, plural, one {# infant} other {# infants}}",
+  "@flights_passengers_infants": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "flights_priceAlert_active": "Price alerts active",
+  "flights_priceAlert_emailMe": "Email me when price drops",
+  "flights_priceAlert_loading": "Loading",
+  "flights_priceAlert_remove": "Remove alert",
+  "flights_priceAlert_signInRequired": "Sign in required",
+  "flights_priceAlert_track": "Track Price",
+  "flights_results_bundleActive": "Flight + Hotel Bundle Active",
+  "flights_results_bundleBody": "Select a flight below — your bundle discount will be applied at checkout.",
+  "flights_results_checkingFare": "Checking the fare is still available…",
+  "flights_results_checkingProviders": "Checking multiple providers",
+  "flights_results_clearFilters": "Clear filters",
+  "flights_results_countFlights": "{count, plural, one {# flight} other {# flights}}",
+  "@flights_results_countFlights": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "flights_results_datePicked": "We picked this date — change it to see other fares.",
+  "flights_results_duration": "Duration",
+  "flights_results_empty": "No flights found for these dates.",
+  "flights_results_filters": "Filters",
+  "flights_results_filtersTitle": "Flight Filters",
+  "flights_results_findingFares": "Finding the best fares…",
+  "flights_results_flightsFound": "{count, plural, one {# flight} other {# flights}} found",
+  "@flights_results_flightsFound": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "flights_results_flightsTo": "Flights to {city}",
+  "@flights_results_flightsTo": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "flights_results_loading": "Finding the best fares…",
+  "flights_results_missingRoute": "Tell us where you are flying from and to, and we will find the fares.",
+  "flights_results_newSearch": "New Search",
+  "flights_results_noFlights": "No flights found",
+  "flights_results_noFlightsBody": "Try adjusting your search dates or nearby airports.",
+  "flights_results_noMatch": "No flights match your filters",
+  "flights_results_noMatchHint": "Try adjusting your filter criteria.",
+  "flights_results_price": "Price",
+  "flights_results_saveUpTo": "Save up to 8%",
+  "flights_results_searchError": "Search Error",
+  "flights_results_slowBody": "Flight providers are responding slowly. Please try again.",
+  "flights_results_slowHint": "Providers are responding slowly. Hang tight.",
+  "flights_results_slowTitle": "Search is taking longer than usual",
+  "flights_results_sortBy": "Sort by",
+  "flights_results_stops_any": "Any",
+  "flights_results_stops_direct": "Direct",
+  "flights_results_stops_oneStop": "1 stop",
+  "flights_results_stops_twoPlus": "2+ stops",
+  "flights_results_tryAgain": "Try Again",
+  "flights_results_tryAnother": "Try another search",
+  "flights_topBar_cabin": "Cabin",
+  "flights_topBar_changeTrip": "Change dates and travellers",
+  "flights_topBar_swap": "Swap origin and destination",
+  "footer_aboutUs": "About Us",
+  "footer_cars": "Cars",
+  "footer_company": "Company",
+  "footer_contact": "Contact",
+  "footer_contactMinimal": "Contact us",
+  "footer_cookies": "Cookies",
+  "footer_cookiesMinimal": "Cookie preferences",
+  "footer_copyright": "© 2026 FORHU Inc. All rights reserved.",
+  "footer_copyrightMinimal": "CheapestGo © 2026",
+  "footer_enterprise": "Enterprise",
+  "footer_flights": "Flights",
+  "footer_flightsApi": "Flights API",
+  "footer_hotels": "Hotels",
+  "footer_manageBooking": "Manage booking",
+  "footer_module": "Module",
+  "footer_network": "Network",
+  "footer_paymentGateway": "Payment Gateway",
+  "footer_poweredBy": "Powered by Duffel & TravelgateX.",
+  "footer_privacy": "Privacy",
+  "footer_privacyMinimal": "Privacy Policy",
+  "footer_reportBug": "Report a Bug",
+  "footer_support": "Support",
+  "footer_tagline": "Engineered for the discerning traveler.",
+  "footer_taglinePrecision": "Precision data. Zero compromise.",
+  "footer_terms": "Terms",
+  "footer_termsMinimal": "Terms & Conditions",
+  "golf_aboutTitle": "About the course",
+  "golf_addressTitle": "Address",
+  "golf_allCountries": "All countries",
+  "golf_amenitiesTitle": "At the course",
+  "golf_amenities_caddie": "Caddies",
+  "golf_amenities_cart": "Golf carts",
+  "golf_amenities_club_rental": "Club rental",
+  "golf_amenities_clubhouse": "Clubhouse",
+  "golf_amenities_driving_range": "Driving range",
+  "golf_amenities_lessons": "Lessons",
+  "golf_amenities_night_golf": "Night golf",
+  "golf_amenities_pro_shop": "Pro shop",
+  "golf_amenities_putting_green": "Putting green",
+  "golf_amenities_restaurant": "Restaurant",
+  "golf_askHint": "Our team replies in the support chat.",
+  "golf_askSignIn": "Sign in to chat with our team about tee times.",
+  "golf_askTeeTimes": "Ask about tee times",
+  "golf_back": "Back",
+  "golf_booking_backToCourse": "Back to the course",
+  "golf_booking_cancelBooking": "Cancel booking",
+  "golf_booking_cancelFailed": "We couldn’t cancel this just now, and nothing has changed. Please try again.",
+  "golf_booking_cancelRequest": "Cancel this request",
+  "golf_booking_cancelRequestNote": "Nothing has been charged. Cancelling releases the hold on your card and gives up these spots.",
+  "golf_booking_cancelling": "Cancelling…",
+  "golf_booking_confirmCancel": "Yes, cancel it",
+  "golf_booking_contactSupport": "Contact support",
+  "golf_booking_continue": "Continue to payment",
+  "golf_booking_date": "Date",
+  "golf_booking_email": "Email",
+  "golf_booking_extraAdd": "Add one: {name}",
+  "@golf_booking_extraAdd": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "golf_booking_extraEach": "{price} each",
+  "@golf_booking_extraEach": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "golf_booking_extraLine": "{name} × {count}",
+  "@golf_booking_extraLine": {
+    "placeholders": {
+      "name": {},
+      "count": {}
+    }
+  },
+  "golf_booking_extraNames_caddie": "Caddie",
+  "golf_booking_extraNames_cart": "Golf cart",
+  "golf_booking_extraNames_club_rental": "Club rental",
+  "golf_booking_extraNames_lessons": "Golf lesson",
+  "golf_booking_extraNames_range_balls": "Bucket of range balls",
+  "golf_booking_extraRemove": "Remove one: {name}",
+  "@golf_booking_extraRemove": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "golf_booking_extrasHeading": "Extras",
+  "golf_booking_extrasHint": "Optional. Our team arranges them with the course when confirming your tee time.",
+  "golf_booking_extrasUnavailable": "The extras on offer have changed. Please review them and try again.",
+  "golf_booking_finishPaying": "Finish paying",
+  "golf_booking_freeCancelEnded": "Free cancellation ended on {date}. To change this booking, please talk to us.",
+  "@golf_booking_freeCancelEnded": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "golf_booking_freeCancelUntil": "Free cancellation until {date}.",
+  "@golf_booking_freeCancelUntil": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "golf_booking_greenFee": "Green fees",
+  "golf_booking_holdRanOutBody": "We released your spots after 15 minutes. Nothing was charged.",
+  "golf_booking_holdRanOutTitle": "Your hold ran out",
+  "golf_booking_holdTimer": "Your spots are held for {time}.",
+  "@golf_booking_holdTimer": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "golf_booking_howItWorks": "Your card is authorised now and charged only once the course confirms your tee time, within 48 hours at most. If the course can’t take you, the hold is released and you’re not charged.",
+  "golf_booking_keepBooking": "Keep my booking",
+  "golf_booking_leadName": "Lead player",
+  "golf_booking_leadNameHint": "The name the course will have on its sheet.",
+  "golf_booking_leadNameRequired": "Please enter the lead player’s name.",
+  "golf_booking_metaTitle": "Book your tee time",
+  "golf_booking_missingBody": "It may belong to another account. Check you’re signed in with the email you booked with.",
+  "golf_booking_missingTitle": "We can’t find this booking",
+  "golf_booking_noFreeCancel": "Free cancellation has already passed for this tee time, so once it’s confirmed it can’t be cancelled online.",
+  "golf_booking_payButton": "Request this tee time · {amount}",
+  "@golf_booking_payButton": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "golf_booking_payFailed": "Your card couldn’t be authorised. Please try again.",
+  "golf_booking_paying": "Authorising your card…",
+  "golf_booking_pickAnother": "Pick another time",
+  "golf_booking_players": "Players",
+  "golf_booking_priceChanged": "The price of this tee time has just changed. Please check the new total before you continue.",
+  "golf_booking_reference": "Reference",
+  "golf_booking_refundNote": "You’ll get {amount} back, the whole amount including the service fee.",
+  "@golf_booking_refundNote": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "golf_booking_refunded": "We’ve refunded {amount}. It can take 5–10 business days to appear on your statement.",
+  "@golf_booking_refunded": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "golf_booking_serviceFee": "Service fee",
+  "golf_booking_startError": "We couldn’t start the payment. Please try again.",
+  "golf_booking_starting": "Holding your spots…",
+  "golf_booking_status_cancelledByTeam_body": "You weren’t charged, and the hold on your card has been released.",
+  "golf_booking_status_cancelledByTeam_title": "The course had to cancel this tee time",
+  "golf_booking_status_cancelled_body": "You weren’t charged, and the hold on your card has been released.",
+  "golf_booking_status_cancelled_title": "This booking is cancelled",
+  "golf_booking_status_confirmed_body": "The course has confirmed your tee time and your card has been charged.",
+  "golf_booking_status_confirmed_title": "You’re booked",
+  "golf_booking_status_declined_body": "Your card wasn’t charged, and the hold on it has been released. Please pick another time.",
+  "golf_booking_status_declined_title": "The course couldn’t take this tee time",
+  "golf_booking_status_expired_body": "It wasn’t paid for in time, so nothing was charged and the spots were released.",
+  "golf_booking_status_expired_title": "This booking ran out",
+  "golf_booking_status_held_body": "Your spots are held until {holdEnds}. Finish paying to send your request to the course.",
+  "@golf_booking_status_held_body": {
+    "placeholders": {
+      "holdEnds": {}
+    }
+  },
+  "golf_booking_status_held_title": "Waiting for your payment",
+  "golf_booking_status_notAnswered_body": "Your card wasn’t charged, and the hold on it has been released. We’re sorry. Please pick another time.",
+  "golf_booking_status_notAnswered_title": "We couldn’t confirm this in time",
+  "golf_booking_status_requested_body": "Your card is authorised, not charged. We’ll have an answer by {deadline}. If the course can’t take you, the hold is released and you pay nothing.",
+  "@golf_booking_status_requested_body": {
+    "placeholders": {
+      "deadline": {}
+    }
+  },
+  "golf_booking_status_requested_title": "We’re checking with the course",
+  "golf_booking_supportDraft": "Hi! I’d like to ask about changing my golf booking {reference}.",
+  "@golf_booking_supportDraft": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "golf_booking_time": "Tee time",
+  "golf_booking_title": "Book your tee time",
+  "golf_booking_tooFewSpots": "Only {count, plural, one {# spot is} other {# spots are}} left on this tee time. Nothing was charged.",
+  "@golf_booking_tooFewSpots": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "golf_booking_tooMany": "Too many attempts. Please wait a moment and try again.",
+  "golf_booking_total": "Total",
+  "golf_booking_unavailableBody": "It has been taken or closed since you picked it. Nothing was charged.",
+  "golf_booking_unavailableTitle": "This tee time is no longer available",
+  "golf_booking_yourBooking": "Your golf booking",
+  "golf_breadcrumb": "Golf",
+  "golf_count": "{count, plural, one {# course} other {# courses}}",
+  "@golf_count": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "golf_countIn": "{count, plural, one {# course} other {# courses}} in {country}",
+  "@golf_countIn": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "country": {}
+    }
+  },
+  "golf_courseMetaTitle": "{name} — golf",
+  "@golf_courseMetaTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "golf_emptyBody": "We're adding golf courses. Check back soon.",
+  "golf_emptyCountryBody": "Try another country, or see every course.",
+  "golf_emptyCountryTitle": "No courses in {country}",
+  "@golf_emptyCountryTitle": {
+    "placeholders": {
+      "country": {}
+    }
+  },
+  "golf_emptyTitle": "No courses yet",
+  "golf_errorBody": "Something went wrong on our side. Please try again.",
+  "golf_errorTitle": "Golf courses didn't load",
+  "golf_eyebrow": "Golf",
+  "golf_filterLabel": "Filter by country",
+  "golf_fromLabel": "Green fees from",
+  "golf_greenFeesFrom": "Green fees from {price}",
+  "@golf_greenFeesFrom": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "golf_guidePrice": "A guide price per player. We confirm the exact fee when you ask about a tee time.",
+  "golf_holes": "{holes} holes",
+  "@golf_holes": {
+    "placeholders": {
+      "holes": {}
+    }
+  },
+  "golf_metaDescription": "Golf courses our team can arrange play at, with a guide green fee and tee times on request.",
+  "golf_metaTitle": "Golf courses",
+  "golf_missingBody": "It may have been removed. See the courses we can arrange.",
+  "golf_missingTitle": "This course isn't available",
+  "golf_par": "Par {par}",
+  "@golf_par": {
+    "placeholders": {
+      "par": {}
+    }
+  },
+  "golf_photo": "Photo {n}",
+  "@golf_photo": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "golf_retry": "Try again",
+  "golf_seeAll": "See all courses",
+  "golf_subtitle": "Courses our team can arrange play at. Pick one and ask us about tee times.",
+  "golf_teeTimes_askThis": "Ask about this tee time",
+  "golf_teeTimes_book": "Book",
+  "golf_teeTimes_chargedAfter": "Your card is only charged once the course confirms.",
+  "golf_teeTimes_date": "Date",
+  "golf_teeTimes_draft": "Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available?",
+  "@golf_teeTimes_draft": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "course": {},
+      "date": {},
+      "time": {},
+      "city": {}
+    }
+  },
+  "golf_teeTimes_earlierDays": "Earlier days",
+  "golf_teeTimes_earlierTimes": "Earlier times",
+  "golf_teeTimes_justGone": "That time has just gone. Please pick another.",
+  "golf_teeTimes_laterDays": "Later days",
+  "golf_teeTimes_laterTimes": "Later times",
+  "golf_teeTimes_loadError": "Tee times didn't load.",
+  "golf_teeTimes_nextMonth": "Next month",
+  "golf_teeTimes_none": "No tee times left on this day. Try another date.",
+  "golf_teeTimes_pickHint": "Pick a time to book it.",
+  "golf_teeTimes_playerCount": "{count, plural, one {# player} other {# players}}",
+  "@golf_teeTimes_playerCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "golf_teeTimes_players": "Players",
+  "golf_teeTimes_prevMonth": "Previous month",
+  "golf_teeTimes_priceNote": "All-in price per player for {count, plural, one {# player} other {# players}}, service fee included. It changes with the size of the party.",
+  "@golf_teeTimes_priceNote": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "golf_teeTimes_priceOnRequest": "Price on request",
+  "golf_teeTimes_spotsLeft": "{count} left",
+  "@golf_teeTimes_spotsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "golf_teeTimes_summary": "{date} · {time} · {count, plural, one {# player} other {# players}}",
+  "@golf_teeTimes_summary": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "date": {},
+      "time": {}
+    }
+  },
+  "golf_teeTimes_title": "Book a tee time",
+  "golf_teeTimes_total": "Total",
+  "golf_title": "Golf courses",
+  "guestFavorites_allFavoritesCount": "All {count} favorites",
+  "@guestFavorites_allFavoritesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "guestFavorites_collapse": "Collapse ↑",
+  "guestFavorites_headerHighlight": "Favorites",
+  "guestFavorites_headerMain": "Guest",
+  "guestFavorites_subtitle": "Top-rated hotels loved by travellers · updated daily",
+  "help_chatCta": "Chat with us",
+  "help_chatNote": "Support is answered inside your account, so your conversation is waiting for you whenever you come back. Sign in to start one.",
+  "help_contactHeading": "Prefer email?",
+  "help_description": "Answers about bookings, refunds and payments, and how to reach our team.",
+  "help_pageSubtitle": "Answers to the things people ask most, and a way to reach a person.",
+  "help_pageTitle": "Help",
+  "help_sections_changes_body": "Cancellation is done from Trips, and what it costs depends on the rate: some are free until a deadline, some are not refundable at any point. The deadline is on the booking. Changing dates or names is not something we can do directly — cancel and rebook if the rate allows it, and message us first if you are unsure.",
+  "help_sections_changes_title": "Can I change or cancel a booking?",
+  "help_sections_confirmation_body": "Check Trips while signed in with the account you booked on — a booking appears there as soon as the supplier confirms it, usually within a minute. If your card was charged and nothing is in Trips, tell us: that is the one case we want to hear about immediately, because it means a booking exists somewhere we cannot see.",
+  "help_sections_confirmation_title": "I booked, but I have no confirmation",
+  "help_sections_payment_body": "That charge is an authorisation that was never completed, and your bank releases it on its own, usually within a few days. If it has not cleared, or if you were charged and a booking does exist that you did not intend, message us with the reference and we will trace it.",
+  "help_sections_payment_title": "My card was charged but the booking failed",
+  "help_sections_priceGap_body": "A search result shows the supplier price converted to your currency. Our fee is added at checkout, so the total is higher than the figure you first saw, and it is shown in full before you pay. Nothing is added after that.",
+  "help_sections_priceGap_title": "Why is the total higher than the price I searched?",
+  "help_sections_refunds_body": "A refund goes back to the card that paid, and how long it takes is decided by your bank rather than by us — commonly five to ten working days after we send it. Whether a booking can be refunded at all depends on the rate you chose, which is shown before you pay and again on the booking itself.",
+  "help_sections_refunds_link": "Read the refund policy",
+  "help_sections_refunds_title": "When do I get my refund?",
+  "help_title": "Help",
+  "hotels_allHotelsCount": "All {count} hotels",
+  "@hotels_allHotelsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "hotels_bookNow": "Book Now",
+  "hotels_collapse": "Collapse ↑",
+  "hotels_description_checkIn": "CHECK-IN",
+  "hotels_description_checkOut": "OUT",
+  "hotels_description_rating": "rating",
+  "hotels_filters_adjustPrice": "Adjust Price",
+  "hotels_filters_clear": "Clear filters",
+  "hotels_filters_close": "Close filters",
+  "hotels_filters_hide": "Hide filters",
+  "hotels_filters_maxPerNight": "Maximum price per night",
+  "hotels_filters_minPerNight": "Minimum price per night",
+  "hotels_filters_reset": "Reset",
+  "hotels_filters_show": "Show filters",
+  "hotels_fromPrice": "From {price}",
+  "@hotels_fromPrice": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "hotels_guestFavorite": "Guest Favorite",
+  "hotels_headerDefault": "Top Hotel Deals",
+  "hotels_headerPersonalized": "Hotel Deals in {country}",
+  "@hotels_headerPersonalized": {
+    "placeholders": {
+      "country": {}
+    }
+  },
+  "hotels_maintenance_description": "Our accommodation supplier isn't returning availability right now. Nothing on your end caused this, and we're working to bring stays back.",
+  "hotels_maintenance_flightsCta": "Search flights",
+  "hotels_maintenance_homeCta": "Back to home",
+  "hotels_maintenance_note": "Flights are unaffected",
+  "hotels_maintenance_title": "Hotel bookings are paused",
+  "hotels_nearby_none": "No places found nearby.",
+  "hotels_perNight": "/night",
+  "hotels_pricesMayVary": "prices may vary",
+  "hotels_ratings_average": "Average",
+  "hotels_ratings_excellent": "Excellent",
+  "hotels_ratings_exceptional": "Exceptional",
+  "hotels_ratings_good": "Good",
+  "hotels_ratings_superb": "Superb",
+  "hotels_ratings_veryGood": "Very Good",
+  "hotels_results_datesPicked": "We picked these dates — change them to see other prices.",
+  "hotels_results_loadingPrices": "Loading prices…",
+  "hotels_results_noMatchHint": "Try adjusting your filters, dates, or searching a nearby city.",
+  "hotels_results_searchFailed": "Search failed.",
+  "hotels_review_placeholder": "Tell others about your stay...",
+  "hotels_review_shareTitle": "Share your experience",
+  "hotels_review_thanks": "Thank you for your review!",
+  "hotels_rooms_nextPage": "Next page",
+  "hotels_rooms_noMatch": "No rooms match that rate. Try another filter.",
+  "hotels_rooms_nonRefundable": "Non-refundable",
+  "hotels_rooms_pages": "Room pages",
+  "hotels_rooms_prevPage": "Previous page",
+  "hotels_rooms_refundable": "Refundable",
+  "hotels_rooms_roomDetails": "Room details",
+  "hotels_subtitleDefault": "Handpicked stays at unbeatable prices",
+  "hotels_subtitlePersonalized": "Top-rated stays in {country} · updated daily",
+  "@hotels_subtitlePersonalized": {
+    "placeholders": {
+      "country": {}
+    }
+  },
+  "invoice_amount": "Amount",
+  "invoice_billedTo": "Billed to",
+  "invoice_bookingDetails": "Booking Details",
+  "invoice_bookingRef": "Booking Ref",
+  "invoice_date": "Date",
+  "invoice_description": "Description",
+  "invoice_flight": "Flight",
+  "invoice_hotel": "Hotel",
+  "invoice_hotelPartner": "Hotel Partner",
+  "invoice_issued": "Issued: {date}",
+  "@invoice_issued": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "invoice_passengers": "Passengers",
+  "invoice_payment": "Payment",
+  "invoice_paymentMethod": "Stripe (Card)",
+  "invoice_provider": "Provider",
+  "invoice_receipt": "RECEIPT",
+  "invoice_route": "Route",
+  "invoice_thankYou": "Thank you for booking with CheapestGo. For support, contact",
+  "invoice_totalPaid": "Total Paid",
+  "invoice_type": "Type",
+  "invoice_yourTravelPartner": "Your Travel Partner",
+  "landing_deals_save": "Save deal",
+  "landing_faq_eyebrow": "Before you book",
+  "landing_flightRowSubtitle": "Round trip, all-in, next 60 days",
+  "landing_hero_blurb": "Every major flight and hotel supplier, compared at once. Taxes and fees included, no booking fee.",
+  "landing_hero_checkIn": "Check in",
+  "landing_hero_checkOut": "Check out",
+  "landing_hero_cta": "Search flights",
+  "landing_hero_flightType": "Flight type",
+  "landing_hero_guests": "Guests",
+  "landing_hero_maxBudget": "Maximum budget",
+  "landing_hero_maxTripBudget": "Maximum trip budget",
+  "landing_hero_monoSubtext": "Ask anything. Book everything.",
+  "landing_hero_searchFlights": "Search flights",
+  "landing_hero_searchHotels": "Search hotels",
+  "landing_hero_searchType": "Search type",
+  "landing_hero_subtitle": "The operating system for the modern voyager.",
+  "landing_hero_tabs_budget": "Where can I go?",
+  "landing_hero_tabs_flights": "Flights",
+  "landing_hero_tabs_hotels": "Hotels",
+  "landing_hero_title": "Flights at the lowest price",
+  "landing_hero_titleBottom": "for less.",
+  "landing_hero_titleLine1": "Precision Travel.",
+  "landing_hero_titleLine2": "Machined for You.",
+  "landing_hero_titleTop": "Fly anywhere",
+  "landing_hero_travelers": "Travelers",
+  "landing_hero_whatAfter": "What are you after?",
+  "landing_hero_where": "Where",
+  "landing_hotelRowSubtitle": "Total price per night, taxes and resort fees included",
+  "landing_hotelRowTitle": "Stays travelers are booking",
+  "landing_howItWorks_steps_book_description": "Secure your trip in minutes with safe, encrypted checkout. Instant confirmation every time.",
+  "landing_howItWorks_steps_book_title": "Book",
+  "landing_howItWorks_steps_compare_description": "Browse real-time prices across airlines and hotels. Filter by price, rating, or amenities.",
+  "landing_howItWorks_steps_compare_title": "Compare",
+  "landing_howItWorks_steps_search_description": "Enter your destination, dates, and traveler count to find the best flights and hotels.",
+  "landing_howItWorks_steps_search_title": "Search",
+  "landing_howItWorks_subtitle": "Book your next trip in three simple steps.",
+  "landing_howItWorks_title": "How It Works",
+  "landing_journey_altitude_label": "Alt",
+  "landing_journey_altitude_unit": "ft",
+  "landing_journey_ask_example1": "Five nights in Seoul under ₱40,000",
+  "landing_journey_ask_example2": "Beach, direct flight, leaving Friday",
+  "landing_journey_ask_example3": "Two cities in Japan, one week",
+  "landing_journey_ask_label": "Describe the trip you want",
+  "landing_journey_ask_placeholder": "Describe the trip you want…",
+  "landing_journey_ask_submit": "Ask",
+  "landing_journey_hero_kicker": "Hotels · Flights · Golf",
+  "landing_journey_hero_scrollCue": "Scroll down to explore",
+  "landing_journey_hero_subtitle": "Skip the surprise fees. Chase the sunsets.",
+  "landing_journey_hero_titleLine1": "One search.",
+  "landing_journey_hero_titleLine2": "Every way to go.",
+  "landing_journey_options_flightsNote": "Every carrier we reach",
+  "landing_journey_options_golf": "Golf",
+  "landing_journey_options_golfNote": "Curated courses, tee times on request",
+  "landing_journey_options_staysNote": "Hotels & homes",
+  "landing_journey_stages_ai_caption": "Tell us the trip. We'll price the stays and routes that fit.",
+  "landing_journey_stages_ai_titleLead": "Or",
+  "landing_journey_stages_ai_titleRest": "just ask.",
+  "landing_journey_stages_flights_caption": "Every airline, every fare class, sorted by what you actually pay.",
+  "landing_journey_stages_flights_titleLead": "Then",
+  "landing_journey_stages_flights_titleRest": "get there.",
+  "landing_journey_stages_golf_caption": "Real tee times at courses we work with, priced per player.",
+  "landing_journey_stages_golf_titleLead": "Or",
+  "landing_journey_stages_golf_titleRest": "tee off.",
+  "landing_journey_stages_options_caption": "Stays, flights and golf, all in one place.",
+  "landing_journey_stages_options_eyebrow": "ARRIVAL",
+  "landing_journey_stages_options_titleLead": "Now",
+  "landing_journey_stages_options_titleRest": "choose.",
+  "landing_journey_stages_stays_caption": "Hotels and homes, priced per night — every fee shown before you tap book.",
+  "landing_journey_stages_stays_titleLead": "Find",
+  "landing_journey_stages_stays_titleRest": "your stay.",
+  "landing_journey_strip_from": "from {price}",
+  "@landing_journey_strip_from": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "landing_perNight": "/ night",
+  "landing_popularDestinations_subtitle": "Explore top spots across Asia-Pacific — search flights and hotels in seconds.",
+  "landing_popularDestinations_title": "Popular Destinations",
+  "landing_quickAccess": "Quick Access",
+  "landing_recentlyViewed_flight": "Flight",
+  "landing_recentlyViewed_from": "from",
+  "landing_recentlyViewed_recentlySearched": "Recently searched",
+  "landing_recentlyViewed_showLess": "Show less",
+  "landing_recentlyViewed_stay": "Stay",
+  "landing_recentlyViewed_subtitle": "Pick up where you left off",
+  "landing_recentlyViewed_title": "Continue Your Search",
+  "landing_recentlyViewed_viewAll": "View all",
+  "landing_search_addGuests": "Add guests",
+  "landing_search_adultAge": "Age 12+",
+  "landing_search_adults": "Adults",
+  "landing_search_aiDevelopment": "AI Search is under development. Stay tuned!",
+  "landing_search_aiGreeting": "How can I help you this morning?",
+  "landing_search_anyWeek": "Any week",
+  "landing_search_anywhere": "Anywhere",
+  "landing_search_askAi": "Ask AI",
+  "landing_search_bundle_hotelBooked": "Hotel booked!",
+  "landing_search_bundle_instructions": "Enter your {from} and {to} airports, pick your dates, then hit Search to bundle and save up to 8%.",
+  "@landing_search_bundle_instructions": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "landing_search_cabinClassLabel": "Cabin Class",
+  "landing_search_cabinClass_business": "Business",
+  "landing_search_cabinClass_economy": "Economy",
+  "landing_search_cabinClass_first": "First",
+  "landing_search_cabinClass_premiumEconomy": "Premium economy",
+  "landing_search_calendar": "Calendar",
+  "landing_search_checkIn": "Check-in",
+  "landing_search_checkOut": "Check-out",
+  "landing_search_childAge": "Age 2-11",
+  "landing_search_childLabel": "Child {index}: {age} yrs",
+  "@landing_search_childLabel": {
+    "placeholders": {
+      "index": {},
+      "age": {}
+    }
+  },
+  "landing_search_children": "Children",
+  "landing_search_childrenAges": "Ages 0 to 17",
+  "landing_search_cities": "Cities",
+  "landing_search_clearAll": "Clear all",
+  "landing_search_comingSoon": "Coming Soon",
+  "landing_search_countries": "Countries",
+  "landing_search_depart": "Depart",
+  "landing_search_done": "Done",
+  "landing_search_findDeals": "Find the best deals",
+  "landing_search_findingFlights": "Finding flights…",
+  "landing_search_flexibleDates": "Flexible dates",
+  "landing_search_from": "From",
+  "landing_search_go": "GO",
+  "landing_search_guest": "{count} Guest",
+  "@landing_search_guest": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "landing_search_guestPlural": "{count} Guests",
+  "@landing_search_guestPlural": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "landing_search_guests": "{count} guest",
+  "@landing_search_guests": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "landing_search_guestsPlural": "{count} guests",
+  "@landing_search_guestsPlural": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "landing_search_guestsRooms": "Guests & Rooms",
+  "landing_search_infantAge": "Under 2 (lap)",
+  "landing_search_infants": "Infants",
+  "landing_search_month": "Month",
+  "landing_search_noAirportsFound": "No airports found for \"{query}\"",
+  "@landing_search_noAirportsFound": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "landing_search_noResults": "No results found",
+  "landing_search_passengers": "Passengers",
+  "landing_search_placeholder_airport": "City or airport",
+  "landing_search_placeholder_date": "Add date",
+  "landing_search_recentSearches": "Recent Searches",
+  "landing_search_results": "Results",
+  "landing_search_return": "Return",
+  "landing_search_rooms": "Rooms",
+  "landing_search_roomsNote": "1 room per booking. Book separately for more.",
+  "landing_search_searchDestination": "Search destination",
+  "landing_search_searchDestinationsPlaceholder": "Search destinations...",
+  "landing_search_searchFlightsHeader": "Search Flights",
+  "landing_search_searchMode_aiSearch": "AI Search",
+  "landing_search_searchMode_flights": "Flights",
+  "landing_search_searchMode_golf": "Golf",
+  "landing_search_searchMode_stays": "Stays",
+  "landing_search_searching": "Searching...",
+  "landing_search_searchingFlights": "Searching flights…",
+  "landing_search_searchingGolf": "Finding tee times…",
+  "landing_search_searchingStays": "Searching hotels…",
+  "landing_search_selectDate": "Select date",
+  "landing_search_submit": "Search",
+  "landing_search_to": "To",
+  "landing_search_travelers": "Travelers",
+  "landing_search_tripType_multiCity": "Multi-city",
+  "landing_search_tripType_oneWay": "One way",
+  "landing_search_tripType_roundTrip": "Round trip",
+  "landing_search_typeToSearch": "Type city name or airport code...",
+  "landing_search_typeToSearchPrompt": "Type a city or airport code to search",
+  "landing_search_whenTravel": "When do you want to travel?",
+  "landing_search_whereTo": "Where to?",
+  "landing_search_whosComing": "Who's coming?",
+  "landing_search_year": "Year",
+  "landing_search_yearsOld": "{age} years old",
+  "@landing_search_yearsOld": {
+    "placeholders": {
+      "age": {}
+    }
+  },
+  "landing_telemetry_confirmed": "CONFIRMED",
+  "landing_telemetry_flight": "Flight",
+  "landing_telemetry_gate": "Gate",
+  "landing_telemetry_humidity": "HUM: 45%",
+  "landing_telemetry_lowDetected": "24h Low detected. Buy advised.",
+  "landing_telemetry_smartPriceTracking": "Smart Price Tracking",
+  "landing_telemetry_systemNominal": "System Nominal",
+  "landing_telemetry_viewBoardingPass": "View Boarding Pass",
+  "landing_telemetry_visibility": "VIS: 10mi",
+  "languagePicker_cn": "中文",
+  "languagePicker_en": "English",
+  "languagePicker_ja": "日本語",
+  "languagePicker_ko": "한국어",
+  "languagePicker_label": "Select language",
+  "legal_content_cookie_changes_body": "We may update this Cookie Policy from time to time to reflect changes in technology, regulation, or our use of cookies. When we make material changes, we will update the \"Last Updated\" date at the top of this page. Continued use of the Platform after changes are posted constitutes your acceptance of the revised policy.",
+  "legal_content_cookie_changes_title": "Changes to This Cookie Policy",
+  "legal_content_cookie_contact_address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA",
+  "legal_content_cookie_contact_email": "📧 support@cheapestgo.com",
+  "legal_content_cookie_contact_intro": "For questions about our use of cookies:",
+  "legal_content_cookie_contact_title": "Contact",
+  "legal_content_cookie_doNotTrack_body": "Some browsers send a \"Do Not Track\" (DNT) signal. CheapestGo does not currently respond to DNT signals, as there is no universal standard for how websites should react to them. We continue to evaluate this area as standards evolve.",
+  "legal_content_cookie_doNotTrack_title": "Do Not Track",
+  "legal_content_cookie_duration_intro": "Cookies on CheapestGo are either:",
+  "legal_content_cookie_duration_title": "Cookie Duration",
+  "legal_content_cookie_managing_intro": "You can control cookies in several ways:",
+  "legal_content_cookie_managing_note": "Adjusting your cookie settings may affect the functionality of the Platform. Essential cookies cannot be disabled without impacting your ability to use CheapestGo.",
+  "legal_content_cookie_managing_title": "Managing Your Cookie Preferences",
+  "legal_content_cookie_thirdParty_intro": "Some cookies are set by third-party services that appear on our pages:",
+  "legal_content_cookie_thirdParty_outro": "We have no control over third-party cookies. Please review the respective privacy policies of these providers for more information.",
+  "legal_content_cookie_thirdParty_stripeBefore": "sets cookies for fraud detection and payment session management. See",
+  "legal_content_cookie_thirdParty_stripeLinkText": "Stripe's Privacy Policy",
+  "legal_content_cookie_thirdParty_supabaseText": "sets authentication cookies to manage your login session on our database infrastructure.",
+  "legal_content_cookie_thirdParty_title": "Third-Party Cookies",
+  "legal_content_cookie_types_title": "Types of Cookies We Use",
+  "legal_content_cookie_whatAreCookies_body": "Cookies are small text files placed on your device when you visit a website. They are widely used to make websites work efficiently, to remember your preferences, and to provide information to website operators. Similar technologies include web beacons, pixels, local storage, and session storage, all of which we refer to collectively as \"cookies\" in this policy.",
+  "legal_content_cookie_whatAreCookies_title": "What Are Cookies?",
+  "legal_content_cookie_whyWeUse_intro": "CheapestGo uses cookies to:",
+  "legal_content_cookie_whyWeUse_title": "Why We Use Cookies",
+  "legal_content_privacy_changes_body": "We may update this Privacy Policy from time to time. When we make material changes, we will notify you by email (if you have an account) or by posting a prominent notice on our website. Your continued use of CheapestGo after the effective date of the revised policy constitutes your acceptance of the changes.",
+  "legal_content_privacy_changes_title": "Changes to This Policy",
+  "legal_content_privacy_childrensPrivacy_body": "CheapestGo is not intended for children under the age of 18. We do not knowingly collect personal information from children. If you believe we have inadvertently collected information from a child, please contact us immediately at support@cheapestgo.com and we will delete such information promptly.",
+  "legal_content_privacy_childrensPrivacy_title": "Children's Privacy",
+  "legal_content_privacy_contact_address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA",
+  "legal_content_privacy_contact_email": "📧 support@cheapestgo.com",
+  "legal_content_privacy_contact_intro": "For privacy-related inquiries, requests, or complaints:",
+  "legal_content_privacy_contact_title": "Contact Us",
+  "legal_content_privacy_cookies_linkText": "Cookie Policy",
+  "legal_content_privacy_cookies_textAfter": "for full details on what cookies we use and how to manage your preferences.",
+  "legal_content_privacy_cookies_textBefore": "We use cookies and similar technologies to operate our platform and improve your experience. Please see our",
+  "legal_content_privacy_cookies_title": "Cookies and Tracking Technologies",
+  "legal_content_privacy_dataRetention_intro": "We retain your personal data for as long as necessary to:",
+  "legal_content_privacy_dataRetention_note": "When you delete your account, we will delete or anonymize your personal data within 90 days, except where retention is required by law.",
+  "legal_content_privacy_dataRetention_title": "Data Retention",
+  "legal_content_privacy_howWeShare_intro": "We do not sell your personal information. We share your data only in the following circumstances:",
+  "legal_content_privacy_howWeShare_title": "How We Share Your Information",
+  "legal_content_privacy_howWeUse_title": "How We Use Your Information",
+  "legal_content_privacy_informationWeCollect_autoLabel": "Information collected automatically:",
+  "legal_content_privacy_informationWeCollect_directLabel": "Information you provide directly:",
+  "legal_content_privacy_informationWeCollect_thirdPartyLabel": "Information from third parties:",
+  "legal_content_privacy_informationWeCollect_title": "Information We Collect",
+  "legal_content_privacy_internationalTransfers_body": "CheapestGo is headquartered in the United States. When you use our services from Southeast Asia or other regions, your data is transferred to and processed in the United States. We ensure appropriate safeguards are in place for international transfers, including standard contractual clauses where required under applicable law (including GDPR and the Philippine Data Privacy Act of 2012, Republic Act No. 10173).",
+  "legal_content_privacy_internationalTransfers_title": "International Data Transfers",
+  "legal_content_privacy_security_body": "We implement industry-standard technical and organizational measures to protect your personal data, including encryption in transit (TLS/HTTPS), encryption at rest, access controls, and regular security reviews. Payment data is handled exclusively by Stripe, which is PCI DSS compliant. However, no method of transmission over the internet is completely secure, and we cannot guarantee absolute security.",
+  "legal_content_privacy_security_title": "Security",
+  "legal_content_privacy_whoWeAre_para1": "CheapestGo (\"we,\" \"us,\" or \"our\") is an online travel agency operated by FORHU Inc., located at 30 Wall Street, 8th Floor, New York, NY 10005, United States. We provide hotel booking, flight package, and travel deal services primarily to travelers in Southeast Asia through our website and mobile platform.",
+  "legal_content_privacy_whoWeAre_para2After": ".",
+  "legal_content_privacy_whoWeAre_para2Before": "For questions regarding this Privacy Policy, contact us at",
+  "legal_content_privacy_whoWeAre_title": "Who We Are",
+  "legal_content_privacy_yourRights_emailAfter": ". We will respond within 30 days.",
+  "legal_content_privacy_yourRights_emailBefore": "To exercise any of these rights, email us at",
+  "legal_content_privacy_yourRights_intro": "Depending on your jurisdiction, you may have the following rights:",
+  "legal_content_privacy_yourRights_title": "Your Rights and Choices",
+  "legal_content_refund_amendments_intro": "Date changes, room type changes, and guest name corrections are subject to hotel availability and supplier policies. To request an amendment:",
+  "legal_content_refund_amendments_noteLabel": "Note:",
+  "legal_content_refund_amendments_noteText": "Amendments may result in a price difference (additional charge or credit) and may not always be possible without cancelling and rebooking. We cannot guarantee that amendment requests will be accommodated.",
+  "legal_content_refund_amendments_title": "Booking Amendments",
+  "legal_content_refund_cancellationTypes_free_body": "You may cancel at no charge before the deadline specified at booking. The exact deadline (e.g., \"Free cancellation until 48 hours before check-in\") is shown on the booking page and in your confirmation email.",
+  "legal_content_refund_cancellationTypes_free_heading": "Free Cancellation",
+  "legal_content_refund_cancellationTypes_intro": "When you book a hotel through CheapestGo, you will see one of the following rate types:",
+  "legal_content_refund_cancellationTypes_nonRefundable_body": "No refund is provided if you cancel. These rates are typically lower in price and are clearly labeled \"Non-refundable\" before checkout.",
+  "legal_content_refund_cancellationTypes_nonRefundable_heading": "Non-Refundable",
+  "legal_content_refund_cancellationTypes_partial_body": "A partial refund applies depending on when you cancel relative to the check-in date. The penalty amount and cutoff dates are displayed before you confirm payment.",
+  "legal_content_refund_cancellationTypes_partial_heading": "Partially Refundable",
+  "legal_content_refund_cancellationTypes_title": "Hotel Cancellation Types",
+  "legal_content_refund_contact_address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA",
+  "legal_content_refund_contact_email": "📧 support@cheapestgo.com",
+  "legal_content_refund_contact_intro": "For all refund and cancellation queries, please have your booking reference number ready and reach us at:",
+  "legal_content_refund_contact_outro": "We aim to respond to all refund requests within 1–2 business days.",
+  "legal_content_refund_contact_title": "Contact for Refund Requests",
+  "legal_content_refund_disputes_body": "If you have a concern about a charge, please contact us at support@cheapestgo.com before initiating a chargeback with your bank. Most issues can be resolved quickly. Chargebacks initiated without first contacting CheapestGo may result in account suspension. CheapestGo reserves the right to contest chargebacks that are made in bad faith or that do not comply with our cancellation policy.",
+  "legal_content_refund_disputes_title": "Disputes and Chargebacks",
+  "legal_content_refund_flightPackages_body": "For all-inclusive flight + hotel packages, cancellation terms depend on both the hotel and airline components. Airline tickets are generally non-refundable or carry significant cancellation fees. The specific terms for your package will be shown during checkout and in your confirmation email. If you need to cancel a package, contact us immediately at support@cheapestgo.com for guidance.",
+  "legal_content_refund_flightPackages_title": "Flight Packages",
+  "legal_content_refund_howToCancel_emailAfter": "with your booking reference number and we will process the cancellation within 1 business day.",
+  "legal_content_refund_howToCancel_emailBefore": "Alternatively, contact us at",
+  "legal_content_refund_howToCancel_intro": "To cancel a booking:",
+  "legal_content_refund_howToCancel_title": "How to Cancel a Booking",
+  "legal_content_refund_noShows_body": "If you fail to check in on the scheduled arrival date without cancelling in advance, the booking will be treated as a no-show. No-show policies vary by hotel — most hotels will charge the full booking amount. CheapestGo cannot override hotel no-show policies. We strongly recommend cancelling ahead of time if your plans change.",
+  "legal_content_refund_noShows_title": "No-Shows",
+  "legal_content_refund_overview_body": "CheapestGo acts as an intermediary between you and travel suppliers (hotels, airlines, and package providers). Cancellation and refund rights are primarily governed by the individual supplier's policies, which vary by property, rate type, and booking dates. This policy explains how we facilitate cancellations and refunds on your behalf.",
+  "legal_content_refund_overview_title": "Overview",
+  "legal_content_refund_processing_title": "Refund Processing",
+  "legal_content_refund_supplierCancellations_intro": "In rare cases, a hotel or travel supplier may cancel your booking due to overbooking, closure, natural disaster, or force majeure events. If this occurs:",
+  "legal_content_refund_supplierCancellations_note": "CheapestGo is not liable for losses arising from supplier cancellations, including transportation costs, additional hotel nights booked elsewhere, or consequential losses. We recommend purchasing travel insurance to cover such events.",
+  "legal_content_refund_supplierCancellations_title": "Supplier Cancellations and Force Majeure",
+  "legal_content_terms_acceptance_body": "By accessing or using the CheapestGo website and services (the \"Platform\"), you agree to be bound by these Terms of Service (\"Terms\") and all applicable laws and regulations. If you do not agree to these Terms, you may not use the Platform. CheapestGo is operated by FORHU Inc., 30 Wall Street, 8th Floor, New York, NY 10005, United States. These Terms constitute a legally binding agreement between you and CheapestGo.",
+  "legal_content_terms_acceptance_title": "Acceptance of Terms",
+  "legal_content_terms_accountRegistration_intro": "To access certain features of the Platform, you may need to create an account. You agree to:",
+  "legal_content_terms_accountRegistration_note": "CheapestGo reserves the right to suspend or terminate accounts that violate these Terms or that are inactive for an extended period.",
+  "legal_content_terms_accountRegistration_title": "Account Registration",
+  "legal_content_terms_bookingProcess_intro": "When you make a booking through CheapestGo, you are entering into a contract with the travel supplier (hotel, airline, or package provider), not with CheapestGo. CheapestGo acts as an intermediary facilitating the booking.",
+  "legal_content_terms_bookingProcess_title": "Booking Process and Confirmation",
+  "legal_content_terms_cancellations_refundLinkText": "Refund & Cancellation Policy",
+  "legal_content_terms_cancellations_textAfter": ", which is incorporated into these Terms by reference. Please review it carefully before making a booking, as policies vary by hotel and rate type.",
+  "legal_content_terms_cancellations_textBefore": "Cancellations and refunds are governed by our",
+  "legal_content_terms_cancellations_title": "Cancellations and Refunds",
+  "legal_content_terms_changes_body": "CheapestGo reserves the right to modify these Terms at any time. We will notify registered users of material changes via email and by posting an updated version on the Platform with a revised \"Last Updated\" date. Your continued use of the Platform after changes take effect constitutes your acceptance of the revised Terms.",
+  "legal_content_terms_changes_title": "Changes to These Terms",
+  "legal_content_terms_contact_address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA",
+  "legal_content_terms_contact_email": "📧 support@cheapestgo.com",
+  "legal_content_terms_contact_intro": "For questions about these Terms:",
+  "legal_content_terms_contact_title": "Contact",
+  "legal_content_terms_disclaimers_intro": "CheapestGo provides its services on an \"as is\" and \"as available\" basis. We do not guarantee that:",
+  "legal_content_terms_disclaimers_note": "CheapestGo is not responsible for the acts, errors, omissions, representations, warranties, or negligence of any travel supplier.",
+  "legal_content_terms_disclaimers_title": "Disclaimers",
+  "legal_content_terms_eligibility_intro": "To use CheapestGo, you must:",
+  "legal_content_terms_eligibility_title": "Eligibility",
+  "legal_content_terms_governingLaw_para1": "These Terms are governed by the laws of the State of New York, United States, without regard to its conflict of law provisions.",
+  "legal_content_terms_governingLaw_para2": "Any dispute arising from or relating to these Terms or your use of CheapestGo shall first be attempted to be resolved through good-faith negotiation. If unresolved within 30 days, disputes shall be submitted to binding arbitration in New York City, New York, under the rules of the American Arbitration Association (AAA). You waive any right to participate in a class action lawsuit or class-wide arbitration.",
+  "legal_content_terms_governingLaw_title": "Governing Law and Dispute Resolution",
+  "legal_content_terms_indemnification_body": "You agree to indemnify, defend, and hold harmless CheapestGo and FORHU Inc. from and against any claims, liabilities, damages, losses, and expenses (including legal fees) arising out of or in any way connected with your use of the Platform, your violation of these Terms, or your violation of any rights of another person.",
+  "legal_content_terms_indemnification_title": "Indemnification",
+  "legal_content_terms_intellectualProperty_body": "All content on the CheapestGo Platform — including logos, text, graphics, software, and design — is the property of CheapestGo or its licensors and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from our content without prior written consent. Hotel and flight images and descriptions are provided by our partners (Duffel, TravelgateX) and respective suppliers under license.",
+  "legal_content_terms_intellectualProperty_title": "Intellectual Property",
+  "legal_content_terms_liability_body": "To the maximum extent permitted by applicable law, CheapestGo, its officers, directors, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or goodwill, arising out of or in connection with your use of the Platform or any booking made through it. Our total aggregate liability to you for any claim arising out of these Terms shall not exceed the total amount paid by you for the booking giving rise to the claim.",
+  "legal_content_terms_liability_title": "Limitation of Liability",
+  "legal_content_terms_pricing_title": "Pricing and Payments",
+  "legal_content_terms_prohibitedConduct_intro": "You agree not to:",
+  "legal_content_terms_prohibitedConduct_title": "Prohibited Conduct",
+  "legal_cookiePolicy_description": "How CheapestGo uses cookies and similar tracking technologies.",
+  "legal_cookiePolicy_pageSubtitle": "How we use cookies and similar technologies on CheapestGo.",
+  "legal_cookiePolicy_pageTitle": "Cookie Policy",
+  "legal_cookiePolicy_title": "Cookie Policy — CheapestGo",
+  "legal_layout_breadcrumb": "CheapestGo · Legal",
+  "legal_layout_contact_address": "FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · United States",
+  "legal_layout_contact_contactLine": "Contact us at",
+  "legal_layout_contact_heading": "Questions about this document?",
+  "legal_layout_contents": "Contents",
+  "legal_layout_disclaimer_body": "This document is provided for informational purposes. CheapestGo recommends consulting a qualified attorney to review these terms for your specific jurisdiction before publishing to production.",
+  "legal_layout_disclaimer_label": "Note:",
+  "legal_layout_effective": "Effective:",
+  "legal_layout_lastUpdated": "Last updated:",
+  "legal_privacyPolicy_description": "How CheapestGo collects, uses, and protects your personal information.",
+  "legal_privacyPolicy_pageSubtitle": "How we collect, use, and protect your personal information.",
+  "legal_privacyPolicy_pageTitle": "Privacy Policy",
+  "legal_privacyPolicy_title": "Privacy Policy — CheapestGo",
+  "legal_refundPolicy_description": "Understand how cancellations, refunds, and amendments work on CheapestGo.",
+  "legal_refundPolicy_pageSubtitle": "Everything you need to know about cancellations, refunds, and booking changes.",
+  "legal_refundPolicy_pageTitle": "Refund & Cancellation Policy",
+  "legal_refundPolicy_title": "Refund & Cancellation Policy — CheapestGo",
+  "legal_scrollToContinue": "Scroll to the bottom to continue",
+  "legal_termsGate_acceptButton": "Accept and continue",
+  "legal_termsGate_checkboxAriaLabel": "I agree to the Terms & Conditions and Privacy Policy",
+  "legal_termsGate_checkboxConnector": " and ",
+  "legal_termsGate_checkboxLabel": "I have read and agree to the Terms of Service and Privacy Policy.",
+  "legal_termsGate_checkboxPrefix": "I agree to the ",
+  "legal_termsGate_checkboxPrivacy": "Privacy Policy",
+  "legal_termsGate_checkboxSuffix": ".",
+  "legal_termsGate_checkboxTerms": "Terms & Conditions",
+  "legal_termsGate_opensInNewTab": "Opens in a new tab — you won't lose your place.",
+  "legal_termsGate_privacyLink": "Privacy Policy",
+  "legal_termsGate_subtitle": "Please review and accept our terms to continue using CheapestGo.",
+  "legal_termsGate_termsLink": "Terms of Service",
+  "legal_termsGate_title": "Before you start",
+  "legal_termsOfService_description": "The terms and conditions governing your use of CheapestGo.",
+  "legal_termsOfService_pageSubtitle": "Please read these terms carefully before using CheapestGo.",
+  "legal_termsOfService_pageTitle": "Terms of Service",
+  "legal_termsOfService_title": "Terms of Service — CheapestGo",
+  "map_details": "Map Details",
+  "map_fromProperty": "{distance} from property",
+  "@map_fromProperty": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "map_labels": "Labels",
+  "map_mapType": "Map Type",
+  "map_noPlacesInArea": "No places found in this area",
+  "map_searchOnMap": "Search on map…",
+  "map_viewDeal": "View Deal",
+  "map_viewOnGoogleMaps": "View on Google Maps →",
+  "nav_account": "Account",
+  "nav_accountSettings": "Account Settings",
+  "nav_accountWorks": "Your account works across CheapestGo and all partner sites",
+  "nav_bookings": "Bookings",
+  "nav_createAccount": "Create an account",
+  "nav_membersSave": "Members save 10% or more",
+  "nav_membersSaveSubtitle": "on select stays when signed in",
+  "nav_menu": "Menu",
+  "nav_myTrips": "My trips",
+  "nav_openApp": "Open app",
+  "nav_signIn": "Sign in",
+  "nav_signOut": "Sign out",
+  "nav_support": "Support",
+  "nav_trips": "Trips",
+  "propertyGallery_alt_galleryView": "Gallery view {number}",
+  "@propertyGallery_alt_galleryView": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "propertyGallery_alt_mainPropertyView": "Main property view",
+  "propertyGallery_alt_propertyView": "Property view",
+  "propertyGallery_alt_propertyViewNumbered": "Property view {number}",
+  "@propertyGallery_alt_propertyViewNumbered": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "propertyGallery_alt_thumbnail": "Thumbnail {number}",
+  "@propertyGallery_alt_thumbnail": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "propertyGallery_alt_view": "View {number}",
+  "@propertyGallery_alt_view": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "propertyGallery_moreInfo": "More Info",
+  "propertyGallery_morePhotos": "+{count} photos",
+  "@propertyGallery_morePhotos": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "propertyGallery_noImages": "No images available",
+  "propertyGallery_showAllPhotos": "Show all photos",
+  "propertyGallery_viewPhoto": "View photo",
+  "propertyNav_amenities": "Amenities",
+  "propertyNav_location": "Location",
+  "propertyNav_overview": "Overview",
+  "propertyNav_policies": "Policies",
+  "propertyNav_reviews": "Reviews",
+  "propertyNav_rooms": "Rooms",
+  "propertyOverview_aboutProperty": "About this property",
+  "propertyOverview_amenityLabels_24_7_Reception": "24/7 Reception",
+  "propertyOverview_amenityLabels_ATM_on_Site": "ATM on Site",
+  "propertyOverview_amenityLabels_Air_Conditioning": "Air Conditioning",
+  "propertyOverview_amenityLabels_Airport_Transfer": "Airport Transfer",
+  "propertyOverview_amenityLabels_BBQ_Facilities": "BBQ Facilities",
+  "propertyOverview_amenityLabels_Balcony": "Balcony",
+  "propertyOverview_amenityLabels_Bar": "Bar",
+  "propertyOverview_amenityLabels_Beach_Access": "Beach Access",
+  "propertyOverview_amenityLabels_Breakfast_Available": "Breakfast Available",
+  "propertyOverview_amenityLabels_Breakfast_Included": "Breakfast Included",
+  "propertyOverview_amenityLabels_Buffet_Breakfast": "Buffet Breakfast",
+  "propertyOverview_amenityLabels_Business_Center": "Business Center",
+  "propertyOverview_amenityLabels_City_View": "City View",
+  "propertyOverview_amenityLabels_Coffee_Maker": "Coffee Maker",
+  "propertyOverview_amenityLabels_Concierge": "Concierge",
+  "propertyOverview_amenityLabels_Conference_Facilities": "Conference Facilities",
+  "propertyOverview_amenityLabels_Daily_Housekeeping": "Daily Housekeeping",
+  "propertyOverview_amenityLabels_Disabled_Facilities": "Disabled Facilities",
+  "propertyOverview_amenityLabels_Dry_Cleaning": "Dry Cleaning",
+  "propertyOverview_amenityLabels_Early_Check_in": "Early Check-in",
+  "propertyOverview_amenityLabels_Elevator": "Elevator",
+  "propertyOverview_amenityLabels_Express_Check_in": "Express Check-in",
+  "propertyOverview_amenityLabels_Family_Rooms": "Family Rooms",
+  "propertyOverview_amenityLabels_Fitness_Center": "Fitness Center",
+  "propertyOverview_amenityLabels_Flat_Screen_TV": "Flat-Screen TV",
+  "propertyOverview_amenityLabels_Free_Parking": "Free Parking",
+  "propertyOverview_amenityLabels_Free_WiFi": "Free WiFi",
+  "propertyOverview_amenityLabels_Garden": "Garden",
+  "propertyOverview_amenityLabels_Garden_View": "Garden View",
+  "propertyOverview_amenityLabels_Gift_Shop": "Gift Shop",
+  "propertyOverview_amenityLabels_Heated_Pool": "Heated Pool",
+  "propertyOverview_amenityLabels_Heating": "Heating",
+  "propertyOverview_amenityLabels_High_Speed_Internet": "High-Speed Internet",
+  "propertyOverview_amenityLabels_Hot_Tub": "Hot Tub",
+  "propertyOverview_amenityLabels_In_Room_Safe": "In-Room Safe",
+  "propertyOverview_amenityLabels_Indoor_Pool": "Indoor Pool",
+  "propertyOverview_amenityLabels_Internet": "Internet",
+  "propertyOverview_amenityLabels_Jacuzzi": "Jacuzzi",
+  "propertyOverview_amenityLabels_Kitchen": "Kitchen",
+  "propertyOverview_amenityLabels_Kitchenette": "Kitchenette",
+  "propertyOverview_amenityLabels_Late_Check_out": "Late Check-out",
+  "propertyOverview_amenityLabels_Laundry_Service": "Laundry Service",
+  "propertyOverview_amenityLabels_Lobby_TV": "Lobby TV",
+  "propertyOverview_amenityLabels_Lockers": "Lockers",
+  "propertyOverview_amenityLabels_Luggage_Storage": "Luggage Storage",
+  "propertyOverview_amenityLabels_Meeting_Rooms": "Meeting Rooms",
+  "propertyOverview_amenityLabels_Minibar": "Minibar",
+  "propertyOverview_amenityLabels_Multilingual_Staff": "Multilingual Staff",
+  "propertyOverview_amenityLabels_Newsstand": "Newsstand",
+  "propertyOverview_amenityLabels_Non_Smoking_Rooms": "Non-Smoking Rooms",
+  "propertyOverview_amenityLabels_Outdoor_Pool": "Outdoor Pool",
+  "propertyOverview_amenityLabels_Parking": "Parking",
+  "propertyOverview_amenityLabels_Pet_Friendly": "Pet Friendly",
+  "propertyOverview_amenityLabels_Private_Beach": "Private Beach",
+  "propertyOverview_amenityLabels_Restaurant": "Restaurant",
+  "propertyOverview_amenityLabels_Rooftop_Pool": "Rooftop Pool",
+  "propertyOverview_amenityLabels_Room_Service": "Room Service",
+  "propertyOverview_amenityLabels_Sauna": "Sauna",
+  "propertyOverview_amenityLabels_Sea_View": "Sea View",
+  "propertyOverview_amenityLabels_Secure_Parking": "Secure Parking",
+  "propertyOverview_amenityLabels_Security_Guard": "Security Guard",
+  "propertyOverview_amenityLabels_Shuttle_Service": "Shuttle Service",
+  "propertyOverview_amenityLabels_Smoke_Free_Property": "Smoke-Free Property",
+  "propertyOverview_amenityLabels_Smoking_Areas": "Smoking Areas",
+  "propertyOverview_amenityLabels_Snack_Bar": "Snack Bar",
+  "propertyOverview_amenityLabels_Spa": "Spa",
+  "propertyOverview_amenityLabels_Steam_Room": "Steam Room",
+  "propertyOverview_amenityLabels_Sun_Terrace": "Sun Terrace",
+  "propertyOverview_amenityLabels_Swimming_Pool": "Swimming Pool",
+  "propertyOverview_amenityLabels_TV": "TV",
+  "propertyOverview_amenityLabels_Terrace": "Terrace",
+  "propertyOverview_amenityLabels_Tour_Desk": "Tour Desk",
+  "propertyOverview_amenityLabels_Underground_Parking": "Underground Parking",
+  "propertyOverview_amenityLabels_Valet_Parking": "Valet Parking",
+  "propertyOverview_amenityLabels_Wheelchair_Accessible": "Wheelchair Accessible",
+  "propertyOverview_amenityLabels_WiFi": "WiFi",
+  "propertyOverview_checkIn": "Check-in",
+  "propertyOverview_checkOut": "Check-out",
+  "propertyOverview_cleaningSafety_description": "This property has extensive hygiene measures in place, including contactless check-in and enhanced cleaning protocols.",
+  "propertyOverview_cleaningSafety_title": "Cleaning and safety practices",
+  "propertyOverview_contactInfo": "Contact",
+  "propertyOverview_importantInfo": "Important information",
+  "propertyOverview_noReviewsYet": "No reviews yet",
+  "propertyOverview_popularAmenities": "Popular amenities",
+  "propertyOverview_readMore": "Read more",
+  "propertyOverview_seeAllAmenities": "See all {count} amenities",
+  "@propertyOverview_seeAllAmenities": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "propertyOverview_showLess": "Show less",
+  "propertyOverview_showLessAmenities": "Show less amenities",
+  "propertyOverview_verifiedReview": "{count} verified review",
+  "@propertyOverview_verifiedReview": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "propertyOverview_verifiedReviewCount": "{count, plural, one {# verified review} other {# verified reviews}}",
+  "@propertyOverview_verifiedReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "propertyOverview_verifiedReviews": "{count} verified reviews",
+  "@propertyOverview_verifiedReviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "property_addressNotAvailable": "Address not available",
+  "property_bookingWidget_amenities": "Amenities",
+  "property_bookingWidget_bookThisRoom": "Book This Room",
+  "property_bookingWidget_description": "Description",
+  "property_bookingWidget_guests": "{count} guests",
+  "@property_bookingWidget_guests": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "property_bookingWidget_roomDetails": "Room Details",
+  "property_bookingWidget_selectedRoom": "Selected Room",
+  "property_breadcrumbHome": "Home",
+  "property_breadcrumbStaysIn": "Stays in {city}",
+  "@property_breadcrumbStaysIn": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "property_bundleActive": "Bundle Discount Active",
+  "property_bundleApplied": "Bundle discount applied — you're saving {percent}% on this hotel",
+  "@property_bundleApplied": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "property_faq_checkInAnswer": "Check-in time is {time}",
+  "@property_faq_checkInAnswer": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "property_faq_checkInQuestion": "What time is check-in at this property?",
+  "property_faq_checkOutAnswer": "Check-out time is {time}",
+  "@property_faq_checkOutAnswer": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "property_faq_checkOutQuestion": "What are the check-out times?",
+  "property_faq_fallbackCancellationAnswer": "Cancellation policies vary by rate. Please check the room options above for specific cancellation terms before booking.",
+  "property_faq_fallbackCancellationQuestion": "What is the cancellation policy at {name}?",
+  "@property_faq_fallbackCancellationQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_faq_fallbackModificationAnswer": "You can manage your booking through the confirmation email you receive after booking. For urgent changes, contact the property directly.",
+  "property_faq_fallbackModificationQuestion": "How do I modify or cancel my reservation?",
+  "property_faq_fallbackPaymentAnswer": "Most major credit and debit cards are accepted. Contact the property directly to confirm accepted payment methods.",
+  "property_faq_fallbackPaymentQuestion": "Does {name} accept credit cards?",
+  "@property_faq_fallbackPaymentQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_faq_importantQuestion": "Is there anything important I should know before booking?",
+  "property_faq_parkingAnswer": "Yes, the property offers {facility}.",
+  "@property_faq_parkingAnswer": {
+    "placeholders": {
+      "facility": {}
+    }
+  },
+  "property_faq_parkingQuestion": "Does {name} have parking?",
+  "@property_faq_parkingQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_faq_poolAnswer": "Yes, the property has {facility}.",
+  "@property_faq_poolAnswer": {
+    "placeholders": {
+      "facility": {}
+    }
+  },
+  "property_faq_poolQuestion": "Does {name} have a pool?",
+  "@property_faq_poolQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_faq_restaurantAnswer": "Yes, the property has an on-site restaurant.",
+  "property_faq_restaurantQuestion": "Is there a restaurant at {name}?",
+  "@property_faq_restaurantQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_faq_title": "Frequently asked questions",
+  "property_faq_wifiAnswer": "Yes, WiFi is available at the property.",
+  "property_faq_wifiQuestion": "Is WiFi available at {name}?",
+  "@property_faq_wifiQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_locationLabel": "Location",
+  "property_locationTitle": "Where you'll be",
+  "property_mapOverlay_details": "Details",
+  "property_mapOverlay_exitFullscreen": "Exit fullscreen",
+  "property_mapOverlay_fullscreen": "Fullscreen",
+  "property_mapOverlay_getDirections": "Get directions...",
+  "property_mapOverlay_kmAway": "{distance} km away",
+  "@property_mapOverlay_kmAway": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "property_mapOverlay_layers": "Layers",
+  "property_mapOverlay_recenterMap": "Recenter Map",
+  "property_mapOverlay_selectMode": "Select Mode",
+  "property_mapOverlay_viewOnMaps": "View on Maps",
+  "property_mapOverlay_whereFrom": "Where from?",
+  "property_metaDescription": "Rates, rooms and photos for {name}. Compare prices and book with free cancellation where available.",
+  "@property_metaDescription": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_meta_closing": "Best deals on hotels with free cancellation options.",
+  "property_meta_description": "Book {name} at the cheapest price.",
+  "@property_meta_description": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_meta_descriptionIn": "Book {name} in {location} at the cheapest price.",
+  "@property_meta_descriptionIn": {
+    "placeholders": {
+      "name": {},
+      "location": {}
+    }
+  },
+  "property_meta_rated": "Rated {rating}/10.",
+  "@property_meta_rated": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  "property_meta_title": "{name} – Cheapest Rates | CheapestGo",
+  "@property_meta_title": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "property_mobileCta_checkRoomRates": "Check room rates",
+  "property_mobileCta_from": "From",
+  "property_mobileCta_perNight": "/night",
+  "property_mobileCta_viewRooms": "View Rooms",
+  "property_nearby_addToTrip": "Add to trip",
+  "property_nearby_away": "{distance} away",
+  "@property_nearby_away": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "property_nearby_bike": "Bike",
+  "property_nearby_call": "Call",
+  "property_nearby_categories_all": "All",
+  "property_nearby_categories_attraction": "Attractions & Parks",
+  "property_nearby_categories_cafe": "Cafés",
+  "property_nearby_categories_grocery": "Groceries",
+  "property_nearby_categories_medical": "Hospitals & Health",
+  "property_nearby_categories_restaurant": "Dining",
+  "property_nearby_categories_transit": "Transit",
+  "property_nearby_categoryLabel": "Place type",
+  "property_nearby_close": "Close",
+  "property_nearby_details": "Details",
+  "property_nearby_directions_close": "Hide directions",
+  "property_nearby_directions_locateMe": "Use my location",
+  "property_nearby_directions_locating": "Locating…",
+  "property_nearby_directions_locationDenied": "Couldn't get your location. Type a starting point instead.",
+  "property_nearby_directions_open": "Get directions",
+  "property_nearby_directions_searchFailed": "Couldn't search places. Try again.",
+  "property_nearby_directions_toHotel": "{minutes} min to the hotel",
+  "@property_nearby_directions_toHotel": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "property_nearby_directions_whereFrom": "Where from?",
+  "property_nearby_drive": "Drive",
+  "property_nearby_fromHotel": "{distance} from the hotel",
+  "@property_nearby_fromHotel": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "property_nearby_googleMaps": "Google Maps",
+  "property_nearby_hotel": "Hotel",
+  "property_nearby_loadFailed": "Couldn't load nearby places.",
+  "property_nearby_loadingRoute": "Finding a route…",
+  "property_nearby_minutes": "{count} min",
+  "@property_nearby_minutes": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "property_nearby_radiusLabel": "Search radius",
+  "property_nearby_ratingOutOf5": "{rating} out of 5 stars",
+  "@property_nearby_ratingOutOf5": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  "property_nearby_removeFromTrip": "Remove from trip",
+  "property_nearby_retry": "Try again",
+  "property_nearby_reviewsCount": "{count, plural, one {# review} other {# reviews}}",
+  "@property_nearby_reviewsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "property_nearby_routeUnavailable": "Route unavailable",
+  "property_nearby_scrollLeft": "Scroll left",
+  "property_nearby_scrollRight": "Scroll right",
+  "property_nearby_traffic": "Live traffic",
+  "property_nearby_travelMode": "Travel mode",
+  "property_nearby_trip_clear": "Clear",
+  "property_nearby_trip_failed": "Couldn't optimize this route.",
+  "property_nearby_trip_max": "You can plan up to {max} stops.",
+  "@property_nearby_trip_max": {
+    "placeholders": {
+      "max": {}
+    }
+  },
+  "property_nearby_trip_optimize": "Optimize route",
+  "property_nearby_trip_optimizing": "Optimizing…",
+  "property_nearby_trip_summary": "{minutes} min round trip from the hotel",
+  "@property_nearby_trip_summary": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "property_nearby_trip_title": "Your trip · {count}/{max}",
+  "@property_nearby_trip_title": {
+    "placeholders": {
+      "count": {},
+      "max": {}
+    }
+  },
+  "property_nearby_unitLabel": "Distance unit",
+  "property_nearby_walk": "Walk",
+  "property_nearby_weather_feelsLike": "Feels like {temp}",
+  "@property_nearby_weather_feelsLike": {
+    "placeholders": {
+      "temp": {}
+    }
+  },
+  "property_nearby_weather_highLow": "{high} / {low}",
+  "@property_nearby_weather_highLow": {
+    "placeholders": {
+      "high": {},
+      "low": {}
+    }
+  },
+  "property_nearby_website": "Website",
+  "property_poiDetails_addPhoto": "Add Photo",
+  "property_poiDetails_brandReviews": "Cheapest Go Reviews",
+  "property_poiDetails_closed": "Closed",
+  "property_poiDetails_commentPlaceholder": "Share your experience...",
+  "property_poiDetails_communityPhotos": "Community Photos",
+  "property_poiDetails_foursquareRecommendations": "Foursquare Recommendations",
+  "property_poiDetails_googleFoursquareReviews": "Google & Foursquare Reviews",
+  "property_poiDetails_googleReviews": "Google Reviews",
+  "property_poiDetails_justNow": "Just now",
+  "property_poiDetails_noReviews": "No direct reviews available for this place yet.",
+  "property_poiDetails_openNow": "Open Now",
+  "property_poiDetails_openingHours": "Opening Hours",
+  "property_poiDetails_postReview": "Post Review",
+  "property_poiDetails_you": "You",
+  "property_poiDetails_yourRating": "Your Rating",
+  "property_policies_cancellationPolicy": "Cancellation Policy",
+  "property_policies_checkIn": "Check-in",
+  "property_policies_checkInOut": "Check-in & Check-out",
+  "property_policies_checkOut": "Check-out",
+  "property_policies_contactProperty": "Contact property",
+  "property_policies_earlyDepartureBody": "{amount} if you check out before your scheduled date.",
+  "@property_policies_earlyDepartureBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "property_policies_earlyDepartureFee": "Early Departure Fee:",
+  "property_policies_importantInformation": "Important Information",
+  "property_policies_noShowBody": "{amount} if you don't check in without cancelling.",
+  "@property_policies_noShowBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "property_policies_noShowPenalty": "No-Show Penalty:",
+  "property_policies_nonRefundable": "Non-refundable",
+  "property_policies_refundable": "Refundable",
+  "property_policies_title": "Policies",
+  "property_propertyNotFound": "Property not found. (ID: {id})",
+  "@property_propertyNotFound": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "property_rooms_availableRooms": "Available Rooms ({count})",
+  "@property_rooms_availableRooms": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "property_rooms_changeDates": "Change dates",
+  "property_rooms_checkAtCheckout": "Check at checkout",
+  "property_rooms_choose": "Choose",
+  "property_rooms_chooseRoom": "Choose room",
+  "property_rooms_etgNotice_description": "This property is managed by our partner booking system. Indicative prices are shown below. Please contact us to confirm availability and complete your reservation.",
+  "property_rooms_etgNotice_title": "Online booking not yet available",
+  "property_rooms_filterAll": "All",
+  "property_rooms_filterNonRefundable": "Non-refundable",
+  "property_rooms_filterRefundable": "Refundable",
+  "property_rooms_freeCancellation": "Free cancellation",
+  "property_rooms_freeCancellationTick": "✓ Free cancellation",
+  "property_rooms_hotelPhotoLabel": "Hotel photo",
+  "property_rooms_includesTaxes": "({nights, plural, one {1 night} other {# nights}}, 1 Room incl. taxes)",
+  "@property_rooms_includesTaxes": {
+    "placeholders": {
+      "nights": {
+        "type": "num"
+      }
+    }
+  },
+  "property_rooms_noMeals": "No meals included",
+  "property_rooms_noNonRefundableRooms": "No non-refundable rooms available.",
+  "property_rooms_noRefundableRooms": "No refundable rooms available.",
+  "property_rooms_noRooms": "No rooms available for the selected dates.",
+  "property_rooms_nonRefundable": "Non-refundable",
+  "property_rooms_nonRefundablePill": "Non-Refundable",
+  "property_rooms_pageOf": "Page {current} of {total}",
+  "@property_rooms_pageOf": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
+  "property_rooms_perNight": "/night",
+  "property_rooms_rateOptions": "{count} rate options",
+  "@property_rooms_rateOptions": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "property_rooms_reserve": "Reserve",
+  "property_rooms_room": "Room",
+  "property_rooms_roomOnly": "Room only",
+  "property_rooms_select": "Select",
+  "property_rooms_showLess": "Show less",
+  "property_rooms_showingRooms": "Showing {start}–{end} of {total} rooms",
+  "@property_rooms_showingRooms": {
+    "placeholders": {
+      "start": {},
+      "end": {},
+      "total": {}
+    }
+  },
+  "property_rooms_sleeps": "Sleeps {count}",
+  "@property_rooms_sleeps": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "property_rooms_standardRoom": "Standard Room",
+  "property_rooms_total": "total",
+  "property_rooms_viewHotelPhotos": "View hotel photos",
+  "property_rooms_viewRoomPhotos": "View room photos",
+  "property_savePercent": "SAVE {percent}%",
+  "@property_savePercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "property_v2_additionalInfo": "Additional information",
+  "property_v2_availableRooms": "Available Rooms",
+  "property_v2_cancellationPolicy": "Cancellation policy",
+  "property_v2_darkMode": "Dark mode",
+  "property_v2_goBack": "Go back",
+  "property_v2_greatStay": "Great stay",
+  "property_v2_lightMode": "Light mode",
+  "property_v2_loadFailed": "Failed to load property",
+  "property_v2_loadingNearby": "Loading nearby places…",
+  "property_v2_mealPlan": "Meal plan",
+  "property_v2_nearbyPlaces": "Nearby Places",
+  "property_v2_nextPhoto": "Next photo",
+  "property_v2_notFound": "Property not found.",
+  "property_v2_photoOfProperty": "Photo of the property",
+  "property_v2_previousPhoto": "Previous photo",
+  "property_v2_price": "Price",
+  "property_v2_rateOptionsFor": "Rates for {room}",
+  "@property_v2_rateOptionsFor": {
+    "placeholders": {
+      "room": {}
+    }
+  },
+  "property_v2_roomPhotoCount": "{count, plural, one {# photo} other {# photos}}",
+  "@property_v2_roomPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "property_v2_switchToDark": "Switch to dark mode",
+  "property_v2_switchToLight": "Switch to light mode",
+  "property_v2_whatGuestsSay": "What guests say",
+  "property_weather_feelsLike": "Feels like",
+  "property_weather_forecast": "Forecast",
+  "property_weather_humidity": "Humidity",
+  "property_weather_nextHours": "Next hours",
+  "property_weather_poweredBy": "Powered by Google Weather",
+  "property_weather_today": "Today",
+  "property_weather_tomorrow": "Tomorrow",
+  "property_weather_uv_extreme": "Extreme",
+  "property_weather_uv_high": "High",
+  "property_weather_uv_low": "Low",
+  "property_weather_uv_moderate": "Moderate",
+  "property_weather_uv_veryHigh": "Very High",
+  "property_weather_wind": "Wind",
+  "pwa_addToHomeScreen": "Add to Home Screen",
+  "pwa_closeGuide": "Close guide",
+  "pwa_installPrompt_body": "Add to your home screen for faster access.",
+  "pwa_installPrompt_dismiss": "Not now",
+  "pwa_installPrompt_install": "Install",
+  "pwa_installPrompt_title": "Get the CheapestGo app",
+  "reviewsSection_aggregatedNote": "Guest score is based on aggregated ratings.",
+  "reviewsSection_aggregatedScore": "Aggregated guest score",
+  "reviewsSection_anonymous": "Anonymous",
+  "reviewsSection_basedOnReview": "Based on {count} review",
+  "@reviewsSection_basedOnReview": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "reviewsSection_basedOnReviews": "Based on {count} reviews",
+  "@reviewsSection_basedOnReviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "reviewsSection_guestReviews": "Guest reviews",
+  "reviewsSection_loadMore": "Load more reviews",
+  "reviewsSection_noReviews": "No individual reviews available.",
+  "reviewsSection_noReviewsAvailable": "No reviews available",
+  "reviewsSection_showAllReviews": "Show all {count} reviews",
+  "@reviewsSection_showAllReviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "reviewsSection_showLess": "Show Less",
+  "reviewsSection_showMore": "Show More",
+  "reviewsSection_showingCount": "Showing {shown} of {total} reviews",
+  "@reviewsSection_showingCount": {
+    "placeholders": {
+      "shown": {},
+      "total": {}
+    }
+  },
+  "reviewsSection_sort_highestRated": "Highest rated",
+  "reviewsSection_sort_lowestRated": "Lowest rated",
+  "reviewsSection_sort_newestFirst": "Newest first",
+  "reviewsSection_travelerTypes_business": "Business",
+  "reviewsSection_travelerTypes_couple": "Couple",
+  "reviewsSection_travelerTypes_family": "Family",
+  "reviewsSection_travelerTypes_friendsGroup": "Friends/Group",
+  "reviewsSection_travelerTypes_solo": "Solo",
+  "reviewsSection_verifiedReviewCount": "{count, plural, one {# verified review} other {# verified reviews}}",
+  "@reviewsSection_verifiedReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "reviewsSection_whoStaysHere": "Who stays here",
+  "search_chatPlaceholder": "Ask anything — flights, hotels, trip planning...",
+  "search_chatWithCheap": "Chat with Cheap",
+  "search_cityAirportPlaceholder": "Search cities, airports…",
+  "search_clear": "Clear",
+  "search_destination": "Destination",
+  "search_freeCancel": "Free cancel",
+  "search_golf_allCourses": "All courses →",
+  "search_golf_anyDayNote": "Leave it open and the course shows its first day with a tee time.",
+  "search_golf_courses": "Courses",
+  "search_golf_fewer": "Fewer players",
+  "search_golf_findCourse": "Search courses, cities, countries…",
+  "search_golf_howMany": "How many players?",
+  "search_golf_loading": "Loading courses…",
+  "search_golf_more": "More players",
+  "search_golf_noMatch": "No course matches “{query}”.",
+  "@search_golf_noMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "search_golf_none": "No courses are open for booking yet.",
+  "search_golf_whenPlay": "When do you want to play?",
+  "search_hotels": "Hotels",
+  "search_hotelsPlaceholder": "Search for hotels",
+  "search_imFlexible": "I'm flexible",
+  "search_listView": "List View",
+  "search_mapView": "Map View",
+  "search_metaTitle": "Search hotels and stays",
+  "search_nights": "{count, plural, one {# night} other {# nights}}",
+  "@search_nights": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "search_noAirportsMatch": "No airports match “{query}”",
+  "@search_noAirportsMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "search_oneWay": "One-way",
+  "search_pickDates": "Pick your dates",
+  "search_popularAirports": "Popular airports",
+  "search_prose_aDate": "a date",
+  "search_prose_anywhere": "somewhere amazing",
+  "search_prose_firstOpenDay": "the first open day",
+  "search_prose_flexibleTrip": "a flexible trip",
+  "search_prose_flyFrom": "Fly me from ",
+  "search_prose_forPlayers": ", for ",
+  "search_prose_fromDates": ", from ",
+  "search_prose_justMe": "just me",
+  "search_prose_ofUs": "{count} of us",
+  "@search_prose_ofUs": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "search_prose_onDates": ", on ",
+  "search_prose_onDay": ", on ",
+  "search_prose_origin": "wherever you are",
+  "search_prose_players": "{count, plural, one {# player} other {# players}}",
+  "@search_prose_players": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "search_prose_sometime": "sometime soon",
+  "search_prose_stayIn": "Find me a stay in",
+  "search_prose_teeOffAt": "Tee off at",
+  "search_prose_theCourse": "the course",
+  "search_prose_to": " to",
+  "search_prose_withTravelers": ", with ",
+  "search_prose_yourDates": "your dates",
+  "search_recent": "Recent",
+  "search_results_activeFilters": "Active Filters:",
+  "search_results_amenitiesSuffix": "{count} amenities",
+  "@search_results_amenitiesSuffix": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "search_results_anyWeek": "Any week",
+  "search_results_anywhere": "Anywhere",
+  "search_results_boardTypes_AI": "All Inclusive",
+  "search_results_boardTypes_BB": "Breakfast",
+  "search_results_boardTypes_FB": "Full Board",
+  "search_results_boardTypes_HB": "Half Board",
+  "search_results_boardTypes_RO": "Room Only",
+  "search_results_freeCancellation": "Free cancellation",
+  "search_results_guestCount": "{count} {count, plural, one {guest} other {guests}}",
+  "@search_results_guestCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "guest": {},
+      "guests": {}
+    }
+  },
+  "search_results_namePrefix": "Name: {name}",
+  "@search_results_namePrefix": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "search_results_otherCities": "Other cities:",
+  "search_results_ratingPrefix": "Rating {rating}+",
+  "@search_results_ratingPrefix": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  "search_results_reviewsSuffix": "{count}+ reviews",
+  "@search_results_reviewsSuffix": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "search_results_showingHotelsIn": "Showing hotels in",
+  "search_results_starSuffix": "{stars} stars",
+  "@search_results_starSuffix": {
+    "placeholders": {
+      "stars": {}
+    }
+  },
+  "search_results_whereTo": "Where to?",
+  "search_roundTrip": "Round-trip",
+  "search_trending": "Trending right now",
+  "search_trendingCities": "Popular cities",
+  "search_v2_checkingCount": "Checking {count}…",
+  "@search_v2_checkingCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "search_v2_clusterChecking": "checking {count}…",
+  "@search_v2_clusterChecking": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "search_v2_clusterFrom": "from {price}",
+  "@search_v2_clusterFrom": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "search_v2_clusterHotels": "{count} hotels",
+  "@search_v2_clusterHotels": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "search_v2_hideCards": "Hide cards",
+  "search_v2_hideStayCards": "Hide stay cards",
+  "search_v2_mapLoading": "Loading map…",
+  "search_v2_noAccommodations": "No accommodations found",
+  "search_v2_staysCount": "{count} Stays",
+  "@search_v2_staysCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "search_validation_allHotelFieldsRequired": "All fields are required to search for hotels",
+  "search_validation_fieldList": "{fields} and {last}",
+  "@search_validation_fieldList": {
+    "placeholders": {
+      "fields": {},
+      "last": {}
+    }
+  },
+  "search_validation_fields_checkInDate": "check-in date",
+  "search_validation_fields_checkOutDate": "check-out date",
+  "search_validation_fields_destination": "destination",
+  "search_validation_listSeparator": ", ",
+  "search_validation_selectField": "Please select {field}",
+  "@search_validation_selectField": {
+    "placeholders": {
+      "field": {}
+    }
+  },
+  "search_viewStay": "View Stay",
+  "search_whenFlying": "When are you flying?",
+  "seo_faq_a1": "CheapestGo searches across multiple airlines and global distribution systems to surface the lowest available fares in real time, letting you compare and book in one place.",
+  "seo_faq_a2": "Yes. CheapestGo supports booking flights, hotels, apartments, and unique stays — all from a single platform.",
+  "seo_faq_a3": "Yes, searching and comparing prices on CheapestGo is completely free. You only pay when you book.",
+  "seo_faq_a4": "CheapestGo supports multiple currencies and automatically converts prices based on your preference so you can always see costs in your local currency.",
+  "seo_faq_q1": "How does CheapestGo find cheap flights?",
+  "seo_faq_q2": "Can I book both flights and hotels on CheapestGo?",
+  "seo_faq_q3": "Is CheapestGo free to use?",
+  "seo_faq_q4": "What currencies does CheapestGo support?",
+  "seo_homeDescription": "Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world.",
+  "seo_homeTitle": "Discover and Book Your Next Global Journey",
+  "seo_orgDescription": "CheapestGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
+  "support_attach": "Attach a file",
+  "support_automated": "Help Centre · automated",
+  "support_close": "Close support chat",
+  "support_empty": "Send us a message and someone will answer.",
+  "support_fileExpired": "no longer stored",
+  "support_notTranslated": "Shown as written — this could not be translated.",
+  "support_open": "Open support chat",
+  "support_placeholder": "Type your message",
+  "support_quickHeading": "Common questions",
+  "support_quick_changes": "Cancel or change a booking",
+  "support_quick_confirmation": "Where's my confirmation?",
+  "support_quick_payment": "A payment problem",
+  "support_quick_priceGap": "The price changed at checkout",
+  "support_quick_refunds": "When do I get my refund?",
+  "support_reference": "Chat {reference}",
+  "@support_reference": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "support_removeFile": "Remove",
+  "support_reopens": "Nobody is at the desk right now. We reply from {when}.",
+  "@support_reopens": {
+    "placeholders": {
+      "when": {}
+    }
+  },
+  "support_reopensToday": "Nobody is at the desk right now. We reply from {when} today.",
+  "@support_reopensToday": {
+    "placeholders": {
+      "when": {}
+    }
+  },
+  "support_send": "Send",
+  "support_sendFailed": "That message did not send. Try again.",
+  "support_showOriginal": "Show original",
+  "support_showTranslation": "Show translation",
+  "support_solvedNote": "Glad that helped. Write to us any time if something else comes up.",
+  "support_talkToAPerson": "Talk to a person",
+  "support_thatAnsweredIt": "That answered it",
+  "support_title": "Support",
+  "support_translating": "Translating…",
+  "theme_switchToDark": "Switch to dark mode",
+  "theme_switchToLight": "Switch to light mode",
+  "topCities_exploreHotels": "Explore Hotels",
+  "topCities_headerHighlight": "Worldwide",
+  "topCities_headerMain": "Top Cities",
+  "topCities_subtitle": "Most visited destinations · find hotels instantly",
+  "topDestinations_findHotels": "Find Hotels",
+  "topDestinations_headerHighlight": "Worldwide",
+  "topDestinations_headerMain": "Top Destinations",
+  "topDestinations_subtitle": "Iconic experiences from every corner of the globe",
+  "trips_bookingCard_actions_cancel": "Cancel",
+  "trips_bookingCard_actions_details": "Details",
+  "trips_bookingCard_actions_map": "Map",
+  "trips_bookingCard_actions_modify": "Modify",
+  "trips_bookingCard_actions_receipt": "Download receipt",
+  "trips_bookingCard_actions_retryRefund": "Retry refund",
+  "trips_bookingCard_adult": "{count} adult",
+  "@trips_bookingCard_adult": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_bookingCard_adults": "{count} adults",
+  "@trips_bookingCard_adults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_bookingCard_cancelled": "Cancelled",
+  "trips_bookingCard_child": "{count} child",
+  "@trips_bookingCard_child": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_bookingCard_children": "{count} children",
+  "@trips_bookingCard_children": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_bookingCard_night": "{count} night",
+  "@trips_bookingCard_night": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_bookingCard_nights": "{count} nights",
+  "@trips_bookingCard_nights": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_bookingCard_policyBadges_freeCancellation": "Free cancellation",
+  "trips_bookingCard_policyBadges_nonRefundable": "Non-refundable",
+  "trips_bookingCard_policyBadges_partialRefund": "Partial refund",
+  "trips_bookingCard_ratings_excellent": "Excellent",
+  "trips_bookingCard_ratings_exceptional": "Exceptional",
+  "trips_bookingCard_ratings_good": "Good",
+  "trips_bookingCard_ratings_pleasant": "Pleasant",
+  "trips_bookingCard_ratings_veryGood": "Very Good",
+  "trips_bookingCard_reviews": "{count} reviews",
+  "@trips_bookingCard_reviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_bookingCard_stayDates": "{from} to {to}",
+  "@trips_bookingCard_stayDates": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "trips_bookingCard_total": "total",
+  "trips_bookingCard_totalPaid": "Total Paid",
+  "trips_bookingCard_tripCompleted": "Trip completed",
+  "trips_bookingDetails": "Booking Details",
+  "trips_cancellationFeeCard_fee": "Cancellation Fee",
+  "trips_cancellationFeeCard_ifYouCancelNow": "If you cancel now:",
+  "trips_cancellationFeeCard_youllReceive": "You'll Receive",
+  "trips_cancellationModal_bookingId": "Booking ID: {id}",
+  "@trips_cancellationModal_bookingId": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "trips_cancellationModal_cancelBooking": "Cancel Booking",
+  "trips_cancellationModal_cancelling": "Cancelling...",
+  "trips_cancellationModal_close": "Close",
+  "trips_cancellationModal_confirm": "Confirm Cancellation",
+  "trips_cancellationModal_confirmQuestion": "Are you absolutely sure you want to cancel this booking?",
+  "trips_cancellationModal_important": "Important:",
+  "trips_cancellationModal_keepBooking": "Keep Booking",
+  "trips_cancellationModal_loadingPolicy": "Loading cancellation policy...",
+  "trips_cancellationModal_policyTimeline": "Cancellation Policy Timeline",
+  "trips_cancellationModal_retryRefund": "Retry Refund",
+  "trips_cancellationModal_retryRefundTitle": "Retry Refund",
+  "trips_cancellationModal_retrying": "Retrying...",
+  "trips_cancellationModal_title": "Cancel Booking",
+  "trips_cancellationModal_tryAgain": "Try again",
+  "trips_cancellationModal_unableTitle": "Unable to Proceed",
+  "trips_cancellationModal_unableToLoadPolicy": "Unable to load policy",
+  "trips_cancellationPolicies_before": "Before: ",
+  "trips_cancellationPolicies_cancellationFee": "Cancellation fee: {amount}",
+  "@trips_cancellationPolicies_cancellationFee": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_cancellationPolicies_earlyDepartureDescription": "{amount} fee applies if you check out before your scheduled date.",
+  "@trips_cancellationPolicies_earlyDepartureDescription": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_cancellationPolicies_earlyDepartureFee": "Early Departure Fee",
+  "trips_cancellationPolicies_importantNotes": "Important Notes",
+  "trips_cancellationPolicies_noPolicy": "No specific cancellation policy available. Standard terms apply.",
+  "trips_cancellationPolicies_noShowDescription": "{amount} will be charged if you don't check in without cancelling.",
+  "@trips_cancellationPolicies_noShowDescription": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_cancellationPolicies_noShowPenalty": "No-Show Penalty",
+  "trips_cancellationPolicies_passed": "Passed: ",
+  "trips_eTicket": "E-Ticket",
+  "trips_emptyHint": "Ready to explore? Find flights and hotels at the best prices.",
+  "trips_emptyState_allTitle": "No trips yet",
+  "trips_emptyState_otherDesc": "Start exploring and book your first trip",
+  "trips_emptyState_pastTitle": "No past trips",
+  "trips_emptyState_upcomingDesc": "Time to plan your next adventure!",
+  "trips_emptyState_upcomingTitle": "No upcoming trips",
+  "trips_exploreDestinations": "Explore destinations",
+  "trips_flightBookingCard_addBookingNote": "Add Booking Note",
+  "trips_flightBookingCard_airlineBookingDetails": "Airline booking details",
+  "trips_flightBookingCard_airlineDetails": "Airline details",
+  "trips_flightBookingCard_amErrors_cancelFailed": "Cancellation failed. Please contact support.",
+  "trips_flightBookingCard_amErrors_duffelCannotCancel": "This booking cannot be cancelled online. Please contact us at crm@cheapestgo.com to request a manual cancellation.",
+  "trips_flightBookingCard_amErrors_mystiflyCannotCancel": "This ticketed booking cannot be cancelled via API. Please email crm@myfarebox.com to request cancellation.",
+  "trips_flightBookingCard_amErrors_networkError": "Network error. Please try again.",
+  "trips_flightBookingCard_arriveAt": "Arrive at",
+  "trips_flightBookingCard_assignedSeats": "Assigned Seats",
+  "trips_flightBookingCard_bookingNotes": "Booking Notes",
+  "trips_flightBookingCard_cancel": "Cancel",
+  "trips_flightBookingCard_cancelBooking": "Cancel Booking",
+  "trips_flightBookingCard_cancelModal_baseFareNonRefundable": "The base fare is non-refundable — only taxes and fees are returned.",
+  "trips_flightBookingCard_cancelModal_cancelling": "Cancelling…",
+  "trips_flightBookingCard_cancelModal_cannotCancelOnline": "This booking cannot be cancelled online. Please contact support.",
+  "trips_flightBookingCard_cancelModal_cannotUndo": "This action cannot be undone.",
+  "trips_flightBookingCard_cancelModal_checkingRefund": "Checking with airline for live refund amount…",
+  "trips_flightBookingCard_cancelModal_confirmCancel": "Yes, Cancel Booking",
+  "trips_flightBookingCard_cancelModal_estimatedPenalty": "Estimated airline penalty: {amount}",
+  "@trips_flightBookingCard_cancelModal_estimatedPenalty": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_flightBookingCard_cancelModal_fareRulesNonRefundable": "The fare rules indicate this ticket is non-refundable.",
+  "trips_flightBookingCard_cancelModal_keepBooking": "Keep Booking",
+  "trips_flightBookingCard_cancelModal_loading": "Loading…",
+  "trips_flightBookingCard_cancelModal_networkError": "Network error fetching cancellation quote.",
+  "trips_flightBookingCard_cancelModal_noQuote": "Could not fetch cancellation quote from airline.",
+  "trips_flightBookingCard_cancelModal_noRefund": "No refund — this fare is non-refundable per airline policy.",
+  "trips_flightBookingCard_cancelModal_penaltiesDeducted": "Cancellation penalties set by the airline will be deducted.",
+  "trips_flightBookingCard_cancelModal_pnr": "PNR: {pnr}",
+  "@trips_flightBookingCard_cancelModal_pnr": {
+    "placeholders": {
+      "pnr": {}
+    }
+  },
+  "trips_flightBookingCard_cancelModal_refundEligibility": "Refund eligibility and amounts are strictly determined by the airline's fare rules.",
+  "trips_flightBookingCard_cancelModal_refundPolicy": "Refund Policy:",
+  "trips_flightBookingCard_cancelModal_refundTiming": "If a refund is issued, it typically takes 5–10 business days.",
+  "trips_flightBookingCard_cancelModal_taxesRefund": "Taxes & fees refund: {amount}",
+  "@trips_flightBookingCard_cancelModal_taxesRefund": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_flightBookingCard_cancelModal_title": "Cancel Booking?",
+  "trips_flightBookingCard_cancelModal_willReceive": "You will receive {amount} back.",
+  "@trips_flightBookingCard_cancelModal_willReceive": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_flightBookingCard_cancelModal_zeroRefund": "You will receive $0 back if you cancel.",
+  "trips_flightBookingCard_cancellationFailed": "Cancellation failed",
+  "trips_flightBookingCard_changeFlight": "Change flight",
+  "trips_flightBookingCard_couldNotLoadTripDetails": "Could not load trip details",
+  "trips_flightBookingCard_departFrom": "Depart from",
+  "trips_flightBookingCard_details": "Details",
+  "trips_flightBookingCard_eTicket": "E-TKT",
+  "trips_flightBookingCard_fareBadges_changeable": "Changeable",
+  "trips_flightBookingCard_fareBadges_checkingFarePolicy": "Checking fare policy…",
+  "trips_flightBookingCard_fareBadges_fareRulesNonRefundable": "Fare rules: Non-refundable",
+  "trips_flightBookingCard_fareBadges_freeCancellation": "Free cancellation",
+  "trips_flightBookingCard_fareBadges_nonRefundable": "Non-refundable after 24 hours",
+  "trips_flightBookingCard_fareBadges_refundable": "Refundable",
+  "trips_flightBookingCard_flight": "Flight",
+  "trips_flightBookingCard_flightBooking": "Flight Booking",
+  "trips_flightBookingCard_flightItinerary": "Show flight itinerary",
+  "trips_flightBookingCard_hideChangeFlight": "Hide change flight",
+  "trips_flightBookingCard_hideDetails": "Hide details",
+  "trips_flightBookingCard_hideFlightItinerary": "Hide flight itinerary",
+  "trips_flightBookingCard_hideRefundQuote": "Hide refund quote",
+  "trips_flightBookingCard_hideVoidQuote": "Hide void quote",
+  "trips_flightBookingCard_issuedTickets": "Issued Tickets",
+  "trips_flightBookingCard_layover": "{duration} layover in {airport}",
+  "@trips_flightBookingCard_layover": {
+    "placeholders": {
+      "duration": {},
+      "airport": {}
+    }
+  },
+  "trips_flightBookingCard_loadingTripDetails": "Loading airline details…",
+  "trips_flightBookingCard_networkError": "Network error. Please try again.",
+  "trips_flightBookingCard_noRefund": "No refund issued",
+  "trips_flightBookingCard_nonstop": "Nonstop",
+  "trips_flightBookingCard_noteAdded": "Note added successfully.",
+  "trips_flightBookingCard_notePlaceholder": "Enter a note for this booking…",
+  "trips_flightBookingCard_originTo": "{origin} to {destination}",
+  "@trips_flightBookingCard_originTo": {
+    "placeholders": {
+      "origin": {},
+      "destination": {}
+    }
+  },
+  "trips_flightBookingCard_passenger": "{count} passenger",
+  "@trips_flightBookingCard_passenger": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_flightBookingCard_passengers": "{count} passengers",
+  "@trips_flightBookingCard_passengers": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_flightBookingCard_pax": "{count} pax",
+  "@trips_flightBookingCard_pax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_flightBookingCard_penaltyApplied": "Penalty applied: {amount}",
+  "@trips_flightBookingCard_penaltyApplied": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_flightBookingCard_pnr": "PNR",
+  "trips_flightBookingCard_receipt": "Download receipt",
+  "trips_flightBookingCard_refundFailed": "Refund failed",
+  "trips_flightBookingCard_refundNotAvailable": "Refund not available",
+  "trips_flightBookingCard_refundNotAvailablePolicy": "Refund not available (airline policy)",
+  "trips_flightBookingCard_refundQuote": "Refund quote",
+  "trips_flightBookingCard_retry": "Retry",
+  "trips_flightBookingCard_save": "Save",
+  "trips_flightBookingCard_seat": "SEAT",
+  "trips_flightBookingCard_stateChips_awaitingConfirmation": "Awaiting Confirmation",
+  "trips_flightBookingCard_stateChips_booked": "Booked",
+  "trips_flightBookingCard_stateChips_bookingFailed": "Booking failed",
+  "trips_flightBookingCard_stateChips_cancelFailed": "Cancel failed — retry below",
+  "trips_flightBookingCard_stateChips_cancelStuck": "Cancellation stuck — retry below",
+  "trips_flightBookingCard_stateChips_cancelled": "Cancelled",
+  "trips_flightBookingCard_stateChips_contactSupport": "Contact support to cancel",
+  "trips_flightBookingCard_stateChips_emailToCancel": "Email crm@myfarebox.com to cancel",
+  "trips_flightBookingCard_stateChips_flightCompleted": "Flight completed",
+  "trips_flightBookingCard_stateChips_flightInProgress": "Flight in progress",
+  "trips_flightBookingCard_stateChips_processing": "Processing",
+  "trips_flightBookingCard_stateChips_refundFailed": "Refund Failed",
+  "trips_flightBookingCard_stateChips_refundProcessing": "Refund processing",
+  "trips_flightBookingCard_stateChips_refunded": "Refunded",
+  "trips_flightBookingCard_stateChips_reissued": "Reissued",
+  "trips_flightBookingCard_stateChips_supplierNotFound": "Supplier record not found",
+  "trips_flightBookingCard_stateChips_unknown": "Unknown",
+  "trips_flightBookingCard_stateChips_upcomingFlight": "Upcoming Flight",
+  "trips_flightBookingCard_stop": "{count} stop",
+  "@trips_flightBookingCard_stop": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_flightBookingCard_stops": "{count} stops",
+  "@trips_flightBookingCard_stops": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_flightBookingCard_successBanners_cancelled": "Booking cancelled successfully.",
+  "trips_flightBookingCard_successBanners_refundProcessed": "Booking cancelled. Refund has been processed.",
+  "trips_flightBookingCard_successBanners_refundProcessing": "Booking cancelled. Refund is being processed — check back shortly.",
+  "trips_flightBookingCard_totalFlightDuration": "Total Flight Duration",
+  "trips_flightBookingCard_totalPaid": "Total Paid",
+  "trips_flightBookingCard_totalRefund": "Total Refund",
+  "trips_flightBookingCard_tripLegs_leg": "Leg {number}",
+  "@trips_flightBookingCard_tripLegs_leg": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "trips_flightBookingCard_tripLegs_outbound": "Outbound",
+  "trips_flightBookingCard_tripLegs_return": "Return",
+  "trips_flightBookingCard_tripTypes_multiCity": "Multi-city",
+  "trips_flightBookingCard_tripTypes_oneWay": "One-way",
+  "trips_flightBookingCard_tripTypes_roundTrip": "Round-trip",
+  "trips_flightBookingCard_voidNotAvailable": "Void not available",
+  "trips_flightBookingCard_voidNotAvailablePolicy": "Void not available (airline policy)",
+  "trips_flightBookingCard_voidQuote": "Void quote",
+  "trips_golfCard_chargedOnConfirmation": "Charged once the course confirms",
+  "trips_golfCard_date": "Date",
+  "trips_golfCard_empty": "No golf bookings yet",
+  "trips_golfCard_notCharged": "Not charged",
+  "trips_golfCard_refunded": "Refunded {amount}",
+  "@trips_golfCard_refunded": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_golfCard_status_cancelled": "Cancelled",
+  "trips_golfCard_status_confirmed": "Confirmed",
+  "trips_golfCard_status_declined": "Declined",
+  "trips_golfCard_status_expired": "Expired",
+  "trips_golfCard_status_held": "Awaiting payment",
+  "trips_golfCard_status_requested": "Waiting for the course",
+  "trips_golfCard_teeTime": "Tee time",
+  "trips_golfCard_totalPaid": "Total paid",
+  "trips_golfCard_view": "View booking",
+  "trips_hotelCancel_alreadyCancelled": "This booking has already been cancelled.",
+  "trips_hotelCancel_changedBody": "Time has passed since you opened this, and what you'd get back is different. Nothing has been cancelled. Please look again.",
+  "trips_hotelCancel_changedTitle": "The amount has changed",
+  "trips_hotelCancel_close": "Close",
+  "trips_hotelCancel_confirm": "Cancel booking",
+  "trips_hotelCancel_confirmNoRefund": "Cancel anyway — no refund",
+  "trips_hotelCancel_confirmRefund": "Cancel and get {amount} back",
+  "@trips_hotelCancel_confirmRefund": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "trips_hotelCancel_doneNoRefund": "Your booking is cancelled. Nothing was refunded, as the rate was non-refundable.",
+  "trips_hotelCancel_doneRefundFailed": "Your booking is cancelled, but the refund didn't go through. Contact support and we'll sort it out.",
+  "trips_hotelCancel_doneRefunded": "Your booking is cancelled and your refund is on its way. It can take 3–5 business days to appear on your statement.",
+  "trips_hotelCancel_failed": "We couldn't cancel this booking. Please try again, or contact support.",
+  "trips_hotelCancel_feeRisesOn": "The fee goes up on {date}",
+  "@trips_hotelCancel_feeRisesOn": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "trips_hotelCancel_freeUntil": "Free to cancel until {date}",
+  "@trips_hotelCancel_freeUntil": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "trips_hotelCancel_fullRefund": "You'll be refunded in full.",
+  "trips_hotelCancel_keep": "Keep my booking",
+  "trips_hotelCancel_loadError": "We couldn't check the cancellation terms. Please try again.",
+  "trips_hotelCancel_loading": "Checking what you'd get back…",
+  "trips_hotelCancel_noRefund": "You won't get anything back — this rate isn't refundable at this point.",
+  "trips_hotelCancel_notCancellable": "This booking can't be cancelled here. Please contact support.",
+  "trips_hotelCancel_paid": "You paid",
+  "trips_hotelCancel_partialRefund": "You'll get part of your payment back.",
+  "trips_hotelCancel_penalty": "Cancellation fee",
+  "trips_hotelCancel_refund": "You'll get back",
+  "trips_hotelCancel_refundRetry": "This booking is already cancelled, but the refund didn't go through. We'll try it again now.",
+  "trips_hotelCancel_title": "Cancel this booking?",
+  "trips_hotelCancel_working": "Cancelling…",
+  "trips_hotelConfirmed_confirming": "Confirming your booking…",
+  "trips_hotelConfirmed_loading": "Loading your booking…",
+  "trips_invoice_downloadPdf": "Download PDF",
+  "trips_invoice_generating": "Generating…",
+  "trips_invoice_loadError": "Unable to load invoice",
+  "trips_invoice_pdfError": "Could not build the PDF. You can still print this page.",
+  "trips_invoice_print": "Print",
+  "trips_labels_afterDatePenalty": "After {date}: penalty of {amount}",
+  "@trips_labels_afterDatePenalty": {
+    "placeholders": {
+      "date": {},
+      "amount": {}
+    }
+  },
+  "trips_labels_bookedOn": "Booked On",
+  "trips_labels_checkIn": "Check-in",
+  "trips_labels_checkOut": "Check-out",
+  "trips_labels_duration": "Duration",
+  "trips_labels_email": "Email",
+  "trips_labels_freeCancelUntil": "Free cancellation until",
+  "trips_labels_freeCancellation": "Free cancellation available",
+  "trips_labels_guests": "Guests",
+  "trips_labels_name": "Name",
+  "trips_labels_nonRefundable": "Non-refundable",
+  "trips_labels_paymentMethod": "Payment Method",
+  "trips_labels_policyNotAvailable": "Cancellation policy details not available.",
+  "trips_labels_provider": "Provider",
+  "trips_labels_room": "Room",
+  "trips_labels_specialRequests": "Special Requests",
+  "trips_labels_totalPaid": "Total Paid",
+  "trips_loadFailed_retry": "Try again",
+  "trips_loadFailed_title": "We couldn't load your trips",
+  "trips_modificationModal_discard": "Discard",
+  "trips_modificationModal_email": "Email",
+  "trips_modificationModal_emailPlaceholder": "email@example.com",
+  "trips_modificationModal_firstName": "First Name",
+  "trips_modificationModal_firstNamePlaceholder": "First name",
+  "trips_modificationModal_infoBanner": "You can update the booking holder's name, email, and special requests.",
+  "trips_modificationModal_lastName": "Last Name",
+  "trips_modificationModal_lastNamePlaceholder": "Last name",
+  "trips_modificationModal_optional": "(optional)",
+  "trips_modificationModal_remarksPlaceholder": "e.g., Late check-in, extra pillows...",
+  "trips_modificationModal_saveChanges": "Save Changes",
+  "trips_modificationModal_saving": "Saving...",
+  "trips_modificationModal_specialRequests": "Special Requests",
+  "trips_modificationModal_title": "Modify Booking",
+  "trips_myTrips": "My Bookings",
+  "trips_noSegmentDetails": "No segment details available.",
+  "trips_pageSubtitle": "View and manage all your bookings.",
+  "trips_pages_backToBooking": "Back to booking",
+  "trips_pages_ref": "Ref:",
+  "trips_pnr": "PNR:",
+  "trips_refund_full": "Full Refund",
+  "trips_refund_nonRefundable": "Non-Refundable",
+  "trips_refund_paid": "Paid",
+  "trips_refund_penalty": "Penalty",
+  "trips_refund_refund": "Refund",
+  "trips_refund_summary": "Refund Summary",
+  "trips_requestsForm_label": "Message to the property",
+  "trips_requestsForm_placeholder": "e.g. Late check-in after 10 PM, extra bed, high floor…",
+  "trips_requestsForm_saveError": "Failed to save your request. Please try again.",
+  "trips_requestsForm_saved": "Saved — the property has been notified.",
+  "trips_requestsForm_submit": "Save request",
+  "trips_requestsForm_title": "Special requests",
+  "trips_requestsPage_cancelled": "This booking is cancelled, so special requests can no longer be updated.",
+  "trips_requestsPage_note": "Requests are passed to the property but aren't guaranteed — availability depends on the hotel.",
+  "trips_requestsPage_title": "Special requests",
+  "trips_sections_cancellationPolicy": "Cancellation Policy",
+  "trips_sections_guestInformation": "Guest Information",
+  "trips_sections_itinerary": "Itinerary",
+  "trips_sections_passengers": "Passengers",
+  "trips_sections_payment": "Payment",
+  "trips_sections_stayDetails": "Stay Details",
+  "trips_shareForm_blurb": "Send the confirmation to whoever is travelling with you.",
+  "trips_shareForm_sendError": "Failed to send. Please try again.",
+  "trips_shareForm_sendTo": "Send to",
+  "trips_shareForm_sent": "Sent to {email}",
+  "@trips_shareForm_sent": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "trips_shareForm_sentTo": "Sent to {email}.",
+  "@trips_shareForm_sentTo": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "trips_shareForm_submit": "Send confirmation",
+  "trips_shareForm_title": "Share this booking",
+  "trips_sharePage_note": "Resend the confirmation email to yourself or anyone else — useful for a travel companion or your own records.",
+  "trips_sharePage_title": "Share booking confirmation",
+  "trips_status_booked": "Booked",
+  "trips_status_cancelFailed": "Cancel Failed",
+  "trips_status_cancelPending": "Cancellation Pending",
+  "trips_status_cancellationStuck": "Cancellation Stuck",
+  "trips_status_cancelled": "Cancelled",
+  "trips_status_cancelledProviderMissing": "Cancelled",
+  "trips_status_completed": "Completed",
+  "trips_status_confirmed": "Confirmed",
+  "trips_status_failed": "Failed",
+  "trips_status_pending": "Pending",
+  "trips_status_processing": "Processing",
+  "trips_status_refundFailed": "Refund Failed",
+  "trips_status_refundPending": "Refund Pending",
+  "trips_status_refunded": "Refunded",
+  "trips_status_ticketed": "Confirmed",
+  "trips_status_ticketing": "Ticketing",
+  "trips_status_unknown": "Unknown",
+  "trips_subtitle": "View and manage your bookings",
+  "trips_tabs_all": "All",
+  "trips_tabs_past": "Past",
+  "trips_tabs_upcoming": "Upcoming",
+  "trips_tabs_wishlist": "Wishlist",
+  "trips_title": "My Trips | CheapestGo",
+  "trips_tripMap_away": "{distance} away",
+  "@trips_tripMap_away": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "trips_tripMap_calculatingDistance": "Calculating distance…",
+  "trips_tripMap_centerOnHotel": "Center on hotel",
+  "trips_tripMap_close": "Close map",
+  "trips_tripMap_determiningLocation": "Determining your location…",
+  "trips_tripMap_driving": "Driving",
+  "trips_tripMap_findingHotel": "Finding hotel…",
+  "trips_tripMap_flyingIn": "Flying in",
+  "trips_tripMap_gettingLocation": "Getting your location…",
+  "trips_tripMap_locating": "Locating…",
+  "trips_tripMap_navigate": "Navigate",
+  "trips_tripMap_navigationReady": "Navigation ready when you land nearby",
+  "trips_tripMap_navigationStarts": "Navigation starts when you're within 50 km",
+  "trips_tripMap_openInMaps": "Open in Maps",
+  "trips_tripMap_saveInMaps": "Save in Maps",
+  "trips_tripMap_toggleTraffic": "Toggle traffic",
+  "trips_tripMap_tooFar": "Too far to drive directly",
+  "trips_tripMap_walking": "Walking",
+  "trips_v2_backToMyTrips": "Back to My Bookings",
+  "trips_v2_downloadETicket": "Download E-Ticket",
+  "trips_v2_refundNotice": "Refund eligibility is subject to airline fare rules.",
+  "trips_viewDetails": "View Details",
+  "trips_viewMore": "View more ({count} remaining)",
+  "@trips_viewMore": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "trips_viewReceipt": "View Receipt",
+  "trips_wishlist_emptyDesc": "Tap the heart icon on any flight or hotel to save it here.",
+  "trips_wishlist_emptyTitle": "No saved trips yet",
+  "trips_wishlist_perPerson": "per person",
+  "trips_wishlist_removeError": "Couldn't remove that item. Please try again.",
+  "trips_wishlist_removeFromWishlist": "Remove from wishlist",
+  "trips_wishlist_saveToWishlist": "Save to wishlist",
+  "trips_wishlist_savedOn": "Saved {date}",
+  "@trips_wishlist_savedOn": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "trips_wishlist_searchAgain": "Search again"
+}

@@ -1,0 +1,8 @@
+{
+  "_": "The Design Pin: the exact V2 commit this app's tokens and copy are mirrored from. See docs/adr/0002. Bump it in the same pull request that regenerates, never on its own.",
+  "repo": "FORHU/cheapestgo-app-v2",
+  "commit": "78c0c1026710e11a419b2df69c71219c7bdb0a9e",
+  "branch": "staging",
+  "tailwind": "^4.1.18",
+  "path": "../cheapestgo-app-v2"
+}

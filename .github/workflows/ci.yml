@@ -9,6 +9,10 @@ jobs:
   validate:
     name: Validate
     runs-on: ubuntu-latest
+    env:
+      # Job level so the steps below can test it in an `if`: a secret cannot be read there
+      # directly, and a step's own env is not in scope for its own condition.
+      V2_READ_TOKEN: ${{ secrets.V2_READ_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -18,8 +22,41 @@ jobs:
           channel: 'stable'
           cache: true
 
+      # The tokens and copy under lib/shared/theme/tokens/generated and lib/l10n are mirrored
+      # from V2 at the commit in design_pin.json, not written here. Checking out that exact
+      # commit — not a branch — is what makes the check below deterministic. See docs/adr/0002.
+      #
+      # Needs a token that can read the private V2 repository. Without the secret the step is
+      # skipped rather than failed: a fork cannot have it, and a red build that nobody can fix
+      # teaches people to ignore red builds.
+      - name: Read the Design Pin
+        id: pin
+        run: |
+          echo "commit=$(jq -r .commit design_pin.json)" >> "$GITHUB_OUTPUT"
+          echo "repo=$(jq -r .repo design_pin.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Check out V2 at the pinned commit
+        id: v2
+        if: ${{ env.V2_READ_TOKEN != '' }}
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ steps.pin.outputs.repo }}
+          ref: ${{ steps.pin.outputs.commit }}
+          token: ${{ secrets.V2_READ_TOKEN }}
+          path: .v2
+          # globals.css and the locale files are all the generator reads.
+          sparse-checkout: |
+            src/app/globals.css
+            src/locales
+            package.json
+          sparse-checkout-cone-mode: false
+
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Design tokens and copy match the pin
+        if: ${{ steps.v2.outcome == 'success' }}
+        run: dart run tools/sync_design.dart --check --v2 .v2
 
       - name: Validate FAOS Architecture
         run: dart run tools/validate_architecture.dart
