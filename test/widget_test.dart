@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
+import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
 import 'package:cheapest_go_mobile/shared/auth/permissions.dart';
@@ -79,16 +80,28 @@ void main() {
     });
   });
 
-  testWidgets('CheapestGoApp renders Home and the globe navigation', (tester) async {
+  testWidgets('CheapestGoApp renders Home and V2\'s three-slot bar', (tester) async {
     usePhoneViewport(tester);
     await tester.pumpWidget(const CheapestGoApp());
     await tester.pumpAndSettle();
 
     expect(find.textContaining('flying into'), findsOneWidget);
+
+    // Icons only, as V2 draws them: the names are on the slots for screen readers, not on
+    // screen. Four labelled tabs and the centre globe went with #36.
     for (final label in ['Home', 'Stay & Play', 'Flights', 'Trips']) {
-      expect(find.text(label), findsOneWidget);
+      expect(find.text(label), findsNothing, reason: 'the bar shows no labels');
     }
-    expect(find.text('Profile'), findsNothing); // opens from the Home header
-    expect(find.byIcon(Icons.public_rounded), findsOneWidget); // Globe dome
+    expect(find.byIcon(Icons.public_rounded), findsNothing, reason: 'the globe is gone');
+
+    final bar = find.byType(V2BottomNav);
+    expect(bar, findsOneWidget);
+    for (final label in ['Home', 'Trips', 'Settings']) {
+      expect(
+        find.descendant(of: bar, matching: find.bySemanticsLabel(label)),
+        findsOneWidget,
+        reason: 'the $label slot is named for screen readers',
+      );
+    }
   });
 }

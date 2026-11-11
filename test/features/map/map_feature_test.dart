@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
@@ -390,11 +391,23 @@ void main() {
       await tester.pump();
       expect(find.byType(FlightTelemetryHud), findsOneWidget);
 
-      await tester.tap(find.text('Trips'));
+      // Icons only in the bar since #36, so the slot is found by its screen-reader name.
+      await tester.tap(find.descendant(
+        of: find.byType(V2BottomNav),
+        matching: find.bySemanticsLabel('Trips'),
+      ));
       await tester.pumpAndSettle();
       expect(find.byType(FlightTelemetryHud), findsNothing);
 
-      await tester.tap(find.byIcon(Icons.public_rounded).first);
+      // Back via this booking's own Track button. The centre globe went with the old bar; the
+      // map is still reached from here and from the airport hub — see ADR-0001. It has to be
+      // *this* flight's button: the first one on the list belongs to somebody else's trip.
+      final card = find.ancestor(of: find.text(b.reference), matching: find.byType(AppCard));
+      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
+      final track = find.descendant(of: card, matching: find.text('Track'));
+      await tester.drag(find.byType(Scrollable).first, Offset(0, 300 - tester.getCenter(track).dy));
+      await tester.pumpAndSettle();
+      await tester.tap(track);
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
       final hud = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud));
