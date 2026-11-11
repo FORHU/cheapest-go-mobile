@@ -9,7 +9,9 @@ class UiSettingsStore extends ChangeNotifier {
   static const String _mapTierKey = 'cheapestgo_map_tier';
 
   String _displayCurrency = 'USD';
-  ThemeMode _themeMode = ThemeMode.system;
+
+  /// Light, and not the handset's setting. See [setThemeMode].
+  ThemeMode _themeMode = ThemeMode.light;
   MapTier _mapTier = MapTier.lite;
   DeviceCapabilities? _deviceCapabilities;
   No3dReason? _no3dReason;
@@ -38,6 +40,8 @@ class UiSettingsStore extends ChangeNotifier {
       if (savedCcy != null && savedCcy.isNotEmpty) {
         _displayCurrency = savedCcy;
       }
+      // Only the two V2 offers. Anyone carrying `system` from an older build lands on light,
+      // which is what V2 shows a visitor who has never chosen — no migration step needed.
       final savedTheme = prefs.getString(_themeModeKey);
       if (savedTheme == 'dark') _themeMode = ThemeMode.dark;
       if (savedTheme == 'light') _themeMode = ThemeMode.light;
@@ -68,7 +72,20 @@ class UiSettingsStore extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Light or dark, chosen in the app and remembered. Never the handset's setting.
+  ///
+  /// V2 defaults to light and changes only through its own toggle — its `layout.tsx` applies
+  /// `localStorage.theme` before first paint and falls back to light, and nothing in that path
+  /// reads `prefers-color-scheme`. A visitor whose browser is dark still gets a light site.
+  /// Mobile matches, which is the deliberate part: on Android, following the system setting is
+  /// the convention, so a later reader will think this is a bug. It is **Design Parity**
+  /// (CONTEXT.md), and `test/shared/theme_default_test.dart` fails if someone restores the
+  /// platform behaviour.
+  ///
+  /// [ThemeMode.system] is ignored rather than honoured. Not asserted: an assert would crash a
+  /// debug build and do nothing in release, so the same call would behave two different ways.
   Future<void> setThemeMode(ThemeMode mode) async {
+    if (mode == ThemeMode.system) return;
     if (_themeMode == mode) return;
     _themeMode = mode;
     notifyListeners();
