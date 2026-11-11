@@ -34,6 +34,9 @@ flutter:
     - assets/images/rooms/
     - assets/images/golf/
     - assets/images/places/
+    # V2's own destination photography, copied from its public/images/destinations so the
+    # landing shows the same places it does. See #38.
+    - assets/images/destinations/
 
   # Bundled rather than fetched at runtime. V2 asks for these two by name in its --font-sans
   # and --font-mono stacks; an app that tracks a flight offline cannot wait on Google to find

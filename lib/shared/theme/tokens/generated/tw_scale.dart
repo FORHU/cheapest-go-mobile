@@ -1,7 +1,7 @@
 // GENERATED — do not edit by hand.
 //
 // Tailwind's type, radius and spacing scales.
-// Mirrored from FORHU/cheapestgo-app-v2 at 78c0c1026710e11a419b2df69c71219c7bdb0a9e
+// Mirrored from FORHU/cheapestgo-app-v2 at ee3be49ec91ded7807e10228e4e1f3844d6059f6
 // Regenerate with: dart run tools/sync_design.dart
 // See docs/adr/0002-tokens-and-copy-are-generated-from-a-pinned-v2-commit.md
 

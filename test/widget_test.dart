@@ -73,9 +73,9 @@ void main() {
 
     testWidgets('Home renders in dark mode without layout errors', (tester) async {
       usePhoneViewport(tester);
-      await tester.pumpWidget(MaterialApp(theme: AppTheme.dark, home: const Scaffold(body: HomeView())));
+      await pumpScreen(tester, const HomeView(), theme: AppTheme.dark);
       await tester.pumpAndSettle();
-      expect(find.textContaining('flying into'), findsOneWidget);
+      expect(find.text('One search.'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   });
@@ -85,17 +85,22 @@ void main() {
     await tester.pumpWidget(const CheapestGoApp());
     await tester.pumpAndSettle();
 
-    expect(find.textContaining('flying into'), findsOneWidget);
-
-    // Icons only, as V2 draws them: the names are on the slots for screen readers, not on
-    // screen. Four labelled tabs and the centre globe went with #36.
-    for (final label in ['Home', 'Stay & Play', 'Flights', 'Trips']) {
-      expect(find.text(label), findsNothing, reason: 'the bar shows no labels');
-    }
-    expect(find.byIcon(Icons.public_rounded), findsNothing, reason: 'the globe is gone');
+    expect(find.text('One search.'), findsOneWidget);
 
     final bar = find.byType(V2BottomNav);
     expect(bar, findsOneWidget);
+
+    // Icons only, as V2 draws them: the names are on the slots for screen readers, not on
+    // screen. Scoped to the bar, because Home itself legitimately shows a "Flights" tab now
+    // (#38) — that is the entry point #36 took away and this screen gives back.
+    for (final label in ['Home', 'Stay & Play', 'Flights', 'Trips']) {
+      expect(
+        find.descendant(of: bar, matching: find.text(label)),
+        findsNothing,
+        reason: 'the bar shows no labels',
+      );
+    }
+    expect(find.byIcon(Icons.public_rounded), findsNothing, reason: 'the globe is gone');
     for (final label in ['Home', 'Trips', 'Settings']) {
       expect(
         find.descendant(of: bar, matching: find.bySemanticsLabel(label)),

@@ -143,9 +143,7 @@
   "checkout_agreePrefix": "By continuing you agree to our",
   "checkout_alert_close": "Close",
   "checkout_alert_fareChangedTitle": "The fare changed",
-  "checkout_alert_fareGoneTitle": "This fare is no longer available",
   "checkout_alert_paymentTitle": "Your payment didn't go through",
-  "checkout_alert_searchAgain": "Search again",
   "checkout_allSet": "You're all set!",
   "checkout_back": "Back",
   "checkout_backToBookingDetails": "Back to booking details",
@@ -262,7 +260,6 @@
   "checkout_flight_nameHint": "Enter names exactly as they appear on the passport.",
   "checkout_flight_needsReview_description": "Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed.",
   "checkout_flight_needsReview_title": "We're confirming this with the airline",
-  "checkout_flight_offerExpired": "This fare sold out before the airline could confirm it. You have not been charged — the hold on your card has been released. Please search again.",
   "checkout_flight_passportPlaceholder": "e.g. P1234567A",
   "checkout_flight_passportTitle": "Passport details",
   "checkout_flight_priceChanged": "The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare.",
@@ -272,6 +269,7 @@
       "now": {}
     }
   },
+  "checkout_flight_receipt_airlinePnr": "Airline PNR",
   "checkout_flight_receipt_allSet": "You’re all set",
   "checkout_flight_receipt_approxTotal": "Approx. in {currency}",
   "@checkout_flight_receipt_approxTotal": {
@@ -279,7 +277,9 @@
       "currency": {}
     }
   },
+  "checkout_flight_receipt_arrivalTerminal": "Arrival terminal",
   "checkout_flight_receipt_arriveAt": "Arrive At",
+  "checkout_flight_receipt_bagsLabel": "Bags",
   "checkout_flight_receipt_carryOnBag": "1 carry-on bag",
   "checkout_flight_receipt_checkedBagsCount": "{count, plural, one {# checked bag} other {# checked bags}}",
   "@checkout_flight_receipt_checkedBagsCount": {
@@ -290,13 +290,6 @@
     }
   },
   "checkout_flight_receipt_confirmedBadge": "Confirmed",
-  "checkout_flight_receipt_confirmedSentTo": "Your flight to {destination} is confirmed, flight details and receipt has been sent to {email}",
-  "@checkout_flight_receipt_confirmedSentTo": {
-    "placeholders": {
-      "destination": {},
-      "email": {}
-    }
-  },
   "checkout_flight_receipt_confirmedToDestination": "Your flight to {destination} is confirmed.",
   "@checkout_flight_receipt_confirmedToDestination": {
     "placeholders": {
@@ -307,6 +300,7 @@
   "checkout_flight_receipt_copyReference": "Copy",
   "checkout_flight_receipt_copyReferenceDone": "Copied",
   "checkout_flight_receipt_departFrom": "Depart From",
+  "checkout_flight_receipt_departureTerminal": "Departure terminal",
   "checkout_flight_receipt_fareLine": "Fare · {count, plural, one {# passenger} other {# passengers}}",
   "@checkout_flight_receipt_fareLine": {
     "placeholders": {
@@ -347,6 +341,13 @@
   },
   "checkout_flight_receipt_paymentProcessedSecurely": "Payment processed securely by Stripe.",
   "checkout_flight_receipt_paymentSummary": "Payment Summary",
+  "checkout_flight_receipt_pnrHint": "use this at check-in",
+  "checkout_flight_receipt_receiptSentTo": "Receipt sent to {email}",
+  "@checkout_flight_receipt_receiptSentTo": {
+    "placeholders": {
+      "email": {}
+    }
+  },
   "checkout_flight_receipt_refundable": "Refundable (fees may apply)",
   "checkout_flight_receipt_return": "Return",
   "checkout_flight_receipt_taxesAndFees": "Taxes & fees",
@@ -375,6 +376,7 @@
     }
   },
   "checkout_keepExistingBooking": "Keep existing booking",
+  "checkout_loadingCheckout": "Loading checkout…",
   "checkout_loadingPaymentForm": "Loading payment form...",
   "checkout_modifyBooking": "Modify booking",
   "checkout_multiRoom_description": "Booking several rooms at once isn't available yet — this checkout is for a single room for your whole party. Please book rooms separately for now.",
@@ -614,6 +616,7 @@
   "checkout_summary_taxes": "Taxes",
   "checkout_summary_termsNotProvided": "Cancellation terms not provided by supplier — confirm with property before booking",
   "checkout_summary_total": "Total",
+  "checkout_summary_tripSummary": "Trip summary",
   "checkout_summary_updateDates": "Update dates",
   "checkout_summary_youSave": "You save {amount} with this promo",
   "@checkout_summary_youSave": {
@@ -720,6 +723,7 @@
   "common_freeCancel": "Free cancel",
   "common_goBack": "Go back",
   "common_language": "Language",
+  "common_loadingPage": "Loading page",
   "common_openInMaps": "Open in Maps",
   "common_primary": "Primary",
   "common_retry": "Retry",
@@ -727,6 +731,9 @@
   "common_scrollRight": "Scroll right",
   "common_settings": "Settings",
   "common_share": "Share",
+  "common_theme": "Theme",
+  "common_themeDark": "Dark",
+  "common_themeLight": "Light",
   "currencyPicker_label": "Select currency",
   "deals_all": "All",
   "deals_allDealsCount": "All {count} deals",
@@ -866,10 +873,12 @@
   "flights_card_currentlySelected": "Currently Selected",
   "flights_card_direct": "Direct",
   "flights_card_fareOptions": "Available Fare Options",
+  "flights_card_flightDetails": "Flight details",
   "flights_card_freeCancellation": "Free Cancellation",
   "flights_card_includesTaxes": "includes taxes & fees",
   "flights_card_nonRefundable": "Non-refundable",
   "flights_card_perPerson": "per person",
+  "flights_card_select": "Select",
   "flights_card_stop": "stop",
   "flights_card_stops": "stops",
   "flights_card_viewDeal": "View deal",
@@ -1039,6 +1048,8 @@
   "flights_results_datePicked": "We picked this date — change it to see other fares.",
   "flights_results_duration": "Duration",
   "flights_results_empty": "No flights found for these dates.",
+  "flights_results_fareGoneBody": "The airline has stopped selling it. You have not been charged — these are the fares on sale now.",
+  "flights_results_fareGoneTitle": "That fare is no longer available",
   "flights_results_filters": "Filters",
   "flights_results_filtersTitle": "Flight Filters",
   "flights_results_findingFares": "Finding the best fares…",
@@ -1576,10 +1587,6 @@
   "landing_journey_hero_subtitle": "Skip the surprise fees. Chase the sunsets.",
   "landing_journey_hero_titleLine1": "One search.",
   "landing_journey_hero_titleLine2": "Every way to go.",
-  "landing_journey_options_flightsNote": "Every carrier we reach",
-  "landing_journey_options_golf": "Golf",
-  "landing_journey_options_golfNote": "Curated courses, tee times on request",
-  "landing_journey_options_staysNote": "Hotels & homes",
   "landing_journey_stages_ai_caption": "Tell us the trip. We'll price the stays and routes that fit.",
   "landing_journey_stages_ai_titleLead": "Or",
   "landing_journey_stages_ai_titleRest": "just ask.",
@@ -1589,10 +1596,6 @@
   "landing_journey_stages_golf_caption": "Real tee times at courses we work with, priced per player.",
   "landing_journey_stages_golf_titleLead": "Or",
   "landing_journey_stages_golf_titleRest": "tee off.",
-  "landing_journey_stages_options_caption": "Stays, flights and golf, all in one place.",
-  "landing_journey_stages_options_eyebrow": "ARRIVAL",
-  "landing_journey_stages_options_titleLead": "Now",
-  "landing_journey_stages_options_titleRest": "choose.",
   "landing_journey_stages_stays_caption": "Hotels and homes, priced per night — every fee shown before you tap book.",
   "landing_journey_stages_stays_titleLead": "Find",
   "landing_journey_stages_stays_titleRest": "your stay.",
@@ -1930,7 +1933,6 @@
   "nav_createAccount": "Create an account",
   "nav_membersSave": "Members save 10% or more",
   "nav_membersSaveSubtitle": "on select stays when signed in",
-  "nav_menu": "Menu",
   "nav_myTrips": "My trips",
   "nav_openApp": "Open app",
   "nav_signIn": "Sign in",
@@ -2598,7 +2600,6 @@
   "search_golf_whenPlay": "When do you want to play?",
   "search_hotels": "Hotels",
   "search_hotelsPlaceholder": "Search for hotels",
-  "search_imFlexible": "I'm flexible",
   "search_listView": "List View",
   "search_mapView": "Map View",
   "search_metaTitle": "Search hotels and stays",
@@ -2617,25 +2618,10 @@
     }
   },
   "search_oneWay": "One-way",
-  "search_pickDates": "Pick your dates",
   "search_popularAirports": "Popular airports",
-  "search_prose_aDate": "a date",
-  "search_prose_anywhere": "somewhere amazing",
   "search_prose_firstOpenDay": "the first open day",
-  "search_prose_flexibleTrip": "a flexible trip",
-  "search_prose_flyFrom": "Fly me from ",
   "search_prose_forPlayers": ", for ",
-  "search_prose_fromDates": ", from ",
-  "search_prose_justMe": "just me",
-  "search_prose_ofUs": "{count} of us",
-  "@search_prose_ofUs": {
-    "placeholders": {
-      "count": {}
-    }
-  },
-  "search_prose_onDates": ", on ",
   "search_prose_onDay": ", on ",
-  "search_prose_origin": "wherever you are",
   "search_prose_players": "{count, plural, one {# player} other {# players}}",
   "@search_prose_players": {
     "placeholders": {
@@ -2644,13 +2630,8 @@
       }
     }
   },
-  "search_prose_sometime": "sometime soon",
-  "search_prose_stayIn": "Find me a stay in",
   "search_prose_teeOffAt": "Tee off at",
   "search_prose_theCourse": "the course",
-  "search_prose_to": " to",
-  "search_prose_withTravelers": ", with ",
-  "search_prose_yourDates": "your dates",
   "search_recent": "Recent",
   "search_results_activeFilters": "Active Filters:",
   "search_results_amenitiesSuffix": "{count} amenities",
@@ -2705,8 +2686,57 @@
   },
   "search_results_whereTo": "Where to?",
   "search_roundTrip": "Round-trip",
+  "search_steps_askFrom": "Where are you flying from?",
+  "search_steps_askStay": "Where do you want to stay?",
+  "search_steps_askStayDates": "When are you staying?",
+  "search_steps_askTo": "Where are you flying to?",
+  "search_steps_askTrip": "What kind of trip is it?",
+  "search_steps_back": "Back",
+  "search_steps_change": "Change",
+  "search_steps_datesOptional": "Optional — skip it and we'll pick dates for you.",
+  "search_steps_enterHintAirport": "Press Enter to pick the highlighted airport",
+  "search_steps_enterHintPlace": "Press Enter to pick the highlighted place",
+  "search_steps_fewerAdults": "Fewer adults",
+  "search_steps_fewerChildren": "Fewer children",
+  "search_steps_from": "From",
+  "search_steps_fromOrigin": "From {city}",
+  "@search_steps_fromOrigin": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "search_steps_moreAdults": "More adults",
+  "search_steps_moreChildren": "More children",
+  "search_steps_navLabel": "Search steps",
+  "search_steps_nextDates": "Next: dates",
+  "search_steps_nextDestination": "Next: destination",
+  "search_steps_nextGuests": "Next: guests",
+  "search_steps_nextOrigin": "Next: departure",
+  "search_steps_nextTravellers": "Next: travellers",
+  "search_steps_noPlaceMatch": "No places match “{query}”",
+  "@search_steps_noPlaceMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "search_steps_oneWayNote": "Just the flight there",
+  "search_steps_orPickOne": "Or pick one",
+  "search_steps_placePlaceholder": "City, area, or hotel name",
+  "search_steps_roundTripNote": "There and back, with a return date",
+  "search_steps_searchFlights": "Search flights",
+  "search_steps_searchStays": "Search stays",
+  "search_steps_selected": "{name} selected",
+  "@search_steps_selected": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "search_steps_to": "To",
+  "search_steps_trip": "Trip",
+  "search_steps_when": "When",
+  "search_steps_where": "Where",
+  "search_steps_who": "Who",
   "search_trending": "Trending right now",
-  "search_trendingCities": "Popular cities",
   "search_v2_checkingCount": "Checking {count}…",
   "@search_v2_checkingCount": {
     "placeholders": {
@@ -3254,6 +3284,24 @@
   "trips_requestsPage_cancelled": "This booking is cancelled, so special requests can no longer be updated.",
   "trips_requestsPage_note": "Requests are passed to the property but aren't guaranteed — availability depends on the hotel.",
   "trips_requestsPage_title": "Special requests",
+  "trips_search_clear": "Clear search",
+  "trips_search_label": "Search your bookings",
+  "trips_search_noMatch": "No bookings match “{query}”",
+  "@trips_search_noMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "trips_search_noMatchHint": "Try a hotel or course name, an airport code like MNL, or a booking reference.",
+  "trips_search_placeholder": "Search by name, route or reference",
+  "trips_search_results": "{count, plural, one {# booking found} other {# bookings found}}",
+  "@trips_search_results": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "trips_sections_cancellationPolicy": "Cancellation Policy",
   "trips_sections_guestInformation": "Guest Information",
   "trips_sections_itinerary": "Itinerary",

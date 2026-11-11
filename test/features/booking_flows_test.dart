@@ -16,12 +16,12 @@ void main() {
       ..setMode(SearchMode.stays);
   });
 
-  testWidgets('search → airport hub → hotel → checkout → trips', (tester) async {
+  // Opened at the hub rather than reached from Home. V2 has no airport hub, so #38's landing
+  // does not link to one and the surface is dormant — kept, with its tests, per ADR-0001.
+  testWidgets('airport hub → hotel → checkout → trips', (tester) async {
     final before = bookingsStore.all.length;
-    await pumpApp(tester);
+    await pumpApp(tester, location: '/airport/MNL');
 
-    await tester.tap(find.text('Search near MNL'));
-    await tester.pumpAndSettle();
     expect(find.text('MNL'), findsWidgets);
     expect(find.text('Stays nearby · 10'), findsOneWidget);
 

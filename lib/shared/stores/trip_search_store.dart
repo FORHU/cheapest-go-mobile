@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 /// What the traveler is looking for on arrival.
@@ -15,6 +16,17 @@ class TripSearchStore extends ChangeNotifier {
 
   String _airportCode = 'MNL';
   String _originCode = 'SIN';
+
+  /// Where a stay is being looked for, as a place rather than an airport.
+  ///
+  /// V2 asks "where are you going?" and answers it from the destination autocomplete, so a
+  /// stay search is scoped to a city or a country (#38). Mobile asked for an arrival airport,
+  /// which is a different question: it is where you land, not where you are going.
+  ///
+  /// [airportCode] stays beside it rather than being replaced. Flights genuinely need an
+  /// airport, and the surfaces built on arrival airports — the hub and the map — still read it
+  /// while they remain in the tree (ADR-0001). Null until someone has chosen.
+  DestinationSuggestion? _destination;
   late DateTime _checkIn;
   late DateTime _checkOut;
   int _adults = 2;
@@ -38,6 +50,22 @@ class TripSearchStore extends ChangeNotifier {
   /// The days of the stay a round can be played on.
   List<DateTime> get playDays =>
       List.generate(nights + 1, (i) => _checkIn.add(Duration(days: i)));
+
+  /// Where the stay search is pointed, once someone has said.
+  DestinationSuggestion? get destination => _destination;
+
+  /// What to call the place in a heading or a button — the chosen destination if there is
+  /// one, and the arrival airport's code until then.
+  String get destinationLabel => _destination?.name ?? _airportCode;
+
+  void setDestination(DestinationSuggestion place) {
+    if (_destination?.id == place.id) return;
+    _destination = place;
+    // An airport chosen as a destination is still an airport, and the screens that read one
+    // should follow rather than stay pointed somewhere the traveller has moved on from.
+    if (place.iata != null) _airportCode = place.iata!;
+    notifyListeners();
+  }
 
   void setAirport(String code) {
     if (_airportCode == code) return;
