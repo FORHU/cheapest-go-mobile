@@ -15,6 +15,7 @@ import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_checkout_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_detail_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_results_view.dart';
+import 'package:cheapest_go_mobile/features/about/views/about_view.dart';
 import 'package:cheapest_go_mobile/features/map/views/map_view.dart';
 import 'package:cheapest_go_mobile/features/profile/views/profile_view.dart';
 import 'package:cheapest_go_mobile/features/trips/views/trips_view.dart';
@@ -22,7 +23,10 @@ import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 
 /// FAOS `app/` layer: routes and the tab shell.
 GoRouter createAppRouter() => GoRouter(
-      initialLocation: '/',
+      // `--dart-define=START_AT=/about` opens straight onto a screen, which is how a screen
+      // under construction gets looked at before anything links to it. Defaults to the home
+      // tab, so a release build behaves exactly as it always did.
+      initialLocation: const String.fromEnvironment('START_AT', defaultValue: '/'),
       routes: [
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => MainScaffoldShell(navigationShell: navigationShell),
@@ -92,6 +96,9 @@ GoRouter createAppRouter() => GoRouter(
         GoRoute(path: '/login', builder: (_, _) => const LoginView()),
         GoRoute(path: '/register', builder: (_, _) => const RegisterView()),
         GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordView()),
+        // Nothing links here yet: the account screen that carries V2's footer links is a later
+        // slice. Reachable by deep link and by test until then.
+        GoRoute(path: '/about', builder: (_, _) => const AboutView()),
       ],
     );
 

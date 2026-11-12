@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_radius.dart';
 
@@ -49,11 +49,15 @@ class AppTheme {
     );
 
     final base = ThemeData(useMaterial3: true, brightness: brightness);
-    final body = GoogleFonts.plusJakartaSansTextTheme(base.textTheme).apply(
+    // Bundled, not fetched. google_fonts pulls the file from Google on first use, so an app
+    // opened on a plane draws itself in whatever fallback the handset has — see docs/adr/0002.
+    final body = base.textTheme.apply(
+      fontFamily: TwFonts.sans,
       bodyColor: c.textPrimary,
       displayColor: c.textPrimary,
     );
-    TextStyle display(double size) => GoogleFonts.plusJakartaSans(
+    TextStyle display(double size) => TextStyle(
+          fontFamily: TwFonts.sans,
           fontSize: size,
           fontWeight: FontWeight.w700,
           letterSpacing: -0.02 * size,

@@ -1,0 +1,12 @@
+# This repo is cloned on Windows with core.autocrlf=true, which rewrites LF to CRLF on
+# checkout. That is fine for files people edit, and wrong for files a tool writes and then
+# compares byte for byte: tools/sync_design.dart emits LF, so after a checkout the drift check
+# would report every generated file as stale on a perfectly correct tree — while passing on
+# Linux CI, which is the worst kind of disagreement to debug.
+#
+# Pinning these to LF everywhere keeps what is on disk identical to what the generator writes.
+lib/shared/theme/tokens/generated/*.dart text eol=lf
+lib/l10n/*.arb                           text eol=lf
+
+# Same reasoning: the pin is read by jq in CI and written by hand here.
+design_pin.json text eol=lf

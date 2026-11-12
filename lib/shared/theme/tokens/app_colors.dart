@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
-/// Design tokens — colors for CheapestGo Mobile.
+/// Hand-written colour roles, kept for the screens that still use them.
 ///
-/// Paired with the v2 web palette (`cheapestgo-app-v2/src/shared/lib/palette.ts`):
-/// slate neutrals on an alabaster ground, obsidian + slate-900 in dark, and the
-/// blue family (600 light, 500 / 400 dark) for everything interactive.
+/// This file once said it was "paired with the v2 web palette (`palette.ts`)". It was not, and
+/// could not have been: `palette.ts` holds fourteen brand constants for the places CSS cannot
+/// reach, while V2's screens are painted by Tailwind's ramp — `text-slate-400` alone appears
+/// 536 times. Mirroring those fourteen meant inventing everything else here.
+///
+/// The real mirror is generated: `generated/tw_palette.dart` for the ramp and
+/// `generated/v2_roles.dart` for V2's semantic roles, both from the commit in
+/// `design_pin.json`. New screens use those. This stays until the screens that depend on it
+/// have been ported, and should shrink to nothing. See docs/adr/0002.
 @immutable
 class AppColors extends ThemeExtension<AppColors> {
   const AppColors({

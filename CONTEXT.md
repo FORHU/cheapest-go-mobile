@@ -2,12 +2,61 @@
 
 A shared vocabulary for this codebase. Definitions only — no implementation details.
 
+## Design
+
+- **Design Source** — V2 (`cheapestgo-app-v2`) at its mobile breakpoint. Mobile does not own
+  its appearance; it follows V2's. This is the deliberate opposite of **Design Independence**
+  in V2's own glossary, which frees V2 from V1 — that freedom is V2's alone and does not pass
+  down to mobile by analogy.
+  _Avoid_: V1 (`cheapest-go-app`) as a reference; it is neither the source nor a tiebreaker.
+
+- **Design Parity** — a mobile screen carries the same sections in the same order, the same
+  components and literally the same strings — V2's own `en`/`ja`/`ko`/`zh` translations, not a
+  second set that happens to agree — as its Design Source screen. Judged by whether a person
+  recognises it as the same screen, never by pixel comparison: fonts rasterise differently and
+  scroll physics are the platform's, not ours.
+  Governs behaviour as well as appearance: an affordance V2 does not offer — pull-to-refresh,
+  haptics, long-press, native share — is not added here either.
+  _Avoid_: "pixel-perfect", "clone" — both promise an identity no native app can hold.
+
+- **Platform Obligation** — the narrow set of behaviours Android delivers whether or not the
+  design asks for them; the back gesture is the whole of it today. Not an exception to
+  **Design Parity** but a question it has to answer: back does what the browser's back does,
+  which is return to the previous screen.
+  _Avoid_: treating it as licence for other native affordances — it covers what the OS sends
+  us unbidden, nothing we choose to add.
+
+- **Design Pin** — the exact V2 commit this repo's mirrored material was taken from: tokens and
+  the shared copy alike. It is what "the APK matches V2" means at any moment, and it moves only
+  when a pull request deliberately bumps it.
+  _Avoid_: "latest V2" — there is no such thing here; mirroring is against a commit, never a branch.
+
+- **Token Authority** — where a **Design Source** screen contradicts V2's own tokens, the token
+  is what mobile implements and the screen is what gets reported. A one-off literal on a V2
+  screen is a defect in V2, not a specification for mobile.
+  _Avoid_: treating a rendered colour as a token because it shipped.
+
+- **Journey** — the landing page's opening sequence: a descent through everything CheapestGo
+  sells, ending where the visitor chooses. Composed of **Stages**. The term is V2's and keeps
+  V2's meaning here.
+
+- **Stage** — one step of the **Journey**, putting a single real product surface in front of
+  the visitor. A place in the descent, not a section of a document.
+
+- **Plain Journey** — the Journey rendered without choreography: every Stage's heading stated
+  outright, nothing driven by scroll position. V2 shows this to visitors who ask for reduced
+  motion; on mobile it is the default rendering, not a fallback.
+  _Avoid_: calling it "the reduced-motion version" here — on mobile it is simply the Journey.
+
 ## Hotel domain
 
-- **Favorite** (synonym: **Saved hotel**) — a hotel a user has marked with the heart
-  icon to revisit later. Device-local, not tied to the account. The "Saved" tab and a
-  "favorite" are the same concept; prefer **Favorite** for the action, **Saved hotel**
-  for the stored item.
+- **Saved Trip** — a hotel or flight a user has marked with the heart icon to revisit later.
+  Held against the account on the server, so it survives a reinstall and appears on the web as
+  well. **Favorite** is the act of marking one; the stored item is a Saved Trip.
+  _Avoid_: "Saved hotel" — a Saved Trip can be a flight. _Avoid_: describing these as
+  device-local; they were until 2026-11-10 and are not now.
+  Note that V2's landing carries a separate, device-local save button. That is V2's own
+  inconsistency, not a second concept to reproduce here.
 
 - **Offer / Rate** — a specific bookable price for a room on given dates, identified by an
   `offerId`. A room can carry several rates (e.g. refundable vs non-refundable, with/without

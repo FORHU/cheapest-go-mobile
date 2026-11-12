@@ -1,0 +1,11 @@
+# The `render` tag marks tests that write PNGs of a screen so a person can look at them beside
+# V2. They compare against a stored image, which is a golden test in all but name — and Design
+# Parity is judged by recognition, not pixels, so they are not a gate.
+#
+# Excluded from `flutter test`. Run them deliberately:
+#
+#   flutter test --tags render                     # compare against the stored renders
+#   flutter test --tags render --update-goldens    # refresh them after an intended change
+tags:
+  render:
+    skip: "opt in with --tags render"

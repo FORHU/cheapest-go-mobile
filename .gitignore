@@ -46,3 +46,9 @@ app.*.map.json
 
 /android/build/
 .gradle/
+node_modules
+
+# Generated from the ARB by gen-l10n on `flutter pub get`; the ARB itself is committed,
+# because that is what the drift check compares against V2. See docs/adr/0002.
+lib/l10n/generated/
+lib/l10n/untranslated.json
