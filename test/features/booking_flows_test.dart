@@ -113,24 +113,38 @@ void main() {
     expect(find.text('Bayshore Links'), findsOneWidget);
   });
 
-  testWidgets('hotel results filter by free shuttle', (tester) async {
+  testWidgets('hotel results narrow by star rating', (tester) async {
     await pumpApp(tester, location: '/hotels');
-    // Nearest first: the pod hotel (no shuttle) leads the MNL list.
-    expect(find.text('Transit Pods NAIA'), findsOneWidget);
+    // The count stands over the rail, so it says what is showing without depending on how
+    // many cards the strip has built.
+    expect(find.text('10 Stays'), findsOneWidget);
 
-    await tester.ensureVisible(find.text('Free shuttle'));
-    await tester.tap(find.text('Free shuttle'));
+    // What this replaced: a "Free shuttle" pill. V2 offers no such filter — its set is the
+    // sort, the star categories and the price — so #39 narrows by stars instead. Of the ten
+    // stays near MNL two score below eight, which is four stars to the others' five.
+    await tester.tap(find.byTooltip('Filters'));
     await tester.pumpAndSettle();
-    expect(find.text('Transit Pods NAIA'), findsNothing);
-    expect(find.text('Terminal 3 Garden Hotel'), findsOneWidget);
+    await tester.tap(find.text('4 stars'));
+    await tester.pumpAndSettle();
+    // The sheet's button names what the choice leaves, and recounts as it changes.
+    await tester.tap(find.text('2 Stays'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2 Stays'), findsOneWidget);
+    expect(find.text('Transit Pods NAIA'), findsOneWidget);
   });
 
   testWidgets('saving a hotel lists it under Trips › Saved, in dark mode', (tester) async {
     await pumpApp(tester, location: '/hotels', theme: AppTheme.dark);
-    await tester.tap(find.byTooltip('Save hotel').first);
+    // The bookmark is on the list card, where V2 puts it: the map's rail card carries the
+    // picture, the price and View, and nothing else.
+    await tester.tap(find.byTooltip('List View'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('Save this stay').first);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Back'));
+    // V2's own label for it, from the mirrored copy — not v1's bare "Back".
+    await tester.tap(find.byTooltip('Go back'));
     await tester.pumpAndSettle();
     // The bar shows icons only now, so the slot is found by the name it carries for screen
     // readers rather than by a visible label.

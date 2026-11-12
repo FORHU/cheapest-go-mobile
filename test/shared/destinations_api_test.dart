@@ -33,6 +33,49 @@ void main() {
         expect(flights.lastPath, contains('/airports/search'));
     });
 
+    test('each endpoint is asked by the name it reads', () async {
+        // api-v2 names the parameter differently on the two routes, and getting it wrong is
+        // silent: `/hotels/destinations` answers 422 to `q`, the error is swallowed, and a
+        // real city comes back as "No places match". Typing Manila did exactly that.
+        final stays = _FakeClient({'data': []});
+        await DestinationsApi(client: stays).search('manila');
+        expect(stays.lastPath, contains('query=manila'));
+        expect(stays.lastPath, isNot(contains('?q=')));
+
+        final flights = _FakeClient({'data': []});
+        await DestinationsApi(client: flights).search('manila', forFlights: true);
+        expect(flights.lastPath, contains('q=manila'));
+    });
+
+    test('reads a destination row as the endpoint sends it', () async {
+        // The shape api-v2 answers with: title is the place, subtitle says which one it is.
+        final client = _FakeClient({
+            'success': true,
+            'data': [
+                {
+                    'type': 'city',
+                    'rung': 'city',
+                    'title': 'Manila',
+                    'subtitle': 'Manila, Philippines',
+                    'countryCode': 'PH',
+                    'id': 'place.1057971',
+                    'lat': 14.590449,
+                    'lng': 120.980362,
+                },
+            ],
+        });
+
+        final found = await DestinationsApi(client: client).search('manila');
+
+        expect(found, hasLength(1));
+        expect(found.single.name, 'Manila', reason: 'not the Mapbox id');
+        expect(found.single.city, 'Manila, Philippines');
+        expect(found.single.kind, DestinationKind.city);
+        // Carried so the search can be pointed at the place rather than at its name.
+        expect(found.single.latitude, closeTo(14.590449, 0.000001));
+        expect(found.single.longitude, closeTo(120.980362, 0.000001));
+    });
+
     test('says nothing on one letter, so a keystroke is not a supplier lookup', () async {
         final client = _FakeClient({'data': []});
         expect(await DestinationsApi(client: client).search('s'), isEmpty);
