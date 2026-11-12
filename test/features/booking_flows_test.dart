@@ -27,7 +27,14 @@ void main() {
 
     await tester.tap(find.text('Terminal 3 Garden Hotel'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('CHOOSE A ROOM'), findsOneWidget);
+    // V2's own heading, from the mirrored copy — the old screen shouted "CHOOSE A ROOM".
+    expect(find.textContaining('Available Rooms'), findsOneWidget);
+    // The checkout bar floats over the foot of the page, so the card is scrolled clear of it
+    // before it is tapped — on a handset a thumb does the same thing.
+    await tester.ensureVisible(find.text('Twin Room'));
+    await tester.pumpAndSettle();
+    // A room is a card and its offers are the rows inside it, so this picks the room by
+    // name and then takes the terms it is headlined with. ADR-0007 in the web repo.
     await tester.tap(find.text('Twin Room'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Reserve'));
@@ -111,6 +118,18 @@ void main() {
     await tester.tap(find.text('Golf'));
     await tester.pumpAndSettle();
     expect(find.text('Bayshore Links'), findsOneWidget);
+  });
+
+  testWidgets('a result card opens that property', (tester) async {
+    // The link was `/hotels/<id>` while the route is `/hotel/:id`, so every card on the
+    // results screen landed on the router's not-found page. Nothing caught it: the tests
+    // reached the property from the airport hub and from Trips, never from a search result.
+    await pumpApp(tester, location: '/hotels');
+    await tester.tap(find.text('View').first);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Page not found'), findsNothing);
+    expect(find.textContaining('Available Rooms'), findsOneWidget);
   });
 
   testWidgets('hotel results narrow by star rating', (tester) async {

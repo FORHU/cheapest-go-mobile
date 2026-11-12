@@ -288,7 +288,10 @@ class _HotelResultsViewState extends State<HotelResultsView> {
         );
     }
 
-    void _openStay(Hotel hotel) => context.push('/hotels/${hotel.id}');
+    /// The property page is `/hotel/:id` — singular, as every other caller has it. Pushing
+    /// `/hotels/<id>` landed on the router's not-found page, and nothing caught it because
+    /// no test followed a result card through to the property.
+    void _openStay(Hotel hotel) => context.push('/hotel/${hotel.id}');
 }
 
 /// The count, the handle that puts the cards away, and the cards themselves.
