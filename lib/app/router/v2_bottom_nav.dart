@@ -63,7 +63,12 @@ class V2BottomNav extends StatelessWidget {
                 ],
             ),
             // The bar's own colour runs down under the home indicator.
-            padding: EdgeInsets.only(bottom: MediaQuery.viewPaddingOf(context).bottom),
+            // From the view, not the inherited MediaQuery: the Scaffold has already consumed
+            // the inset by the time it builds this, so asking the context gives zero and the
+            // bar's own colour stops short of the home indicator.
+            padding: EdgeInsets.only(
+                bottom: MediaQueryData.fromView(View.of(context)).viewPadding.bottom,
+            ),
             child: SafeArea(
                 top: false,
                 bottom: false,

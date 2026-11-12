@@ -150,6 +150,8 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
 
   /// V2 shows the gear lit while its sheet is open, and falls back to Home for any route that
   /// is not one of the three. The branches reachable only by deep link do the same here.
+  bool get _onHome => widget.navigationShell.currentIndex == _homeBranch;
+
   int get _activeIndex {
     if (_settingsOpen) return 2;
     return widget.navigationShell.currentIndex == _tripsBranch ? 1 : 0;
@@ -172,18 +174,37 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          const AppHeader(),
-          Expanded(
-            child: MediaQuery.removePadding(
-              context: context,
-              removeTop: true,
-              child: widget.navigationShell,
+      // On the landing only: the showcase runs under the bar as well as under the header, or
+      // the photo stops short and leaves a strip of scaffold below it. Everywhere else the
+      // body stays above the bar, which is what those screens were laid out against.
+      extendBody: _onHome,
+      // On the landing the header floats over the stage's photograph, so the picture runs to
+      // the top of the screen as it does on V2. Everywhere else it sits on a bar above the
+      // content, which is why the two arrangements differ rather than one serving both.
+      body: _onHome
+          ? Stack(
+              children: [
+                widget.navigationShell,
+                const Positioned(
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  child: AppHeader(onShowcase: true),
+                ),
+              ],
+            )
+          : Column(
+              children: [
+                const AppHeader(),
+                Expanded(
+                  child: MediaQuery.removePadding(
+                    context: context,
+                    removeTop: true,
+                    child: widget.navigationShell,
+                  ),
+                ),
+              ],
             ),
-          ),
-        ],
-      ),
       bottomNavigationBar: V2BottomNav(
         activeIndex: _activeIndex,
         settingsOpen: _settingsOpen,

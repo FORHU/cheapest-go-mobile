@@ -14,7 +14,15 @@ void main() {
       testWidgets('shows on $label', (tester) async {
         await pumpApp(tester, location: location);
         expect(find.byType(AppHeader), findsOneWidget);
-        expect(find.byTooltip('Profile and account'), findsOneWidget);
+
+        // On the landing the header floats over the showcase and offers Sign in, as V2's
+        // does; everywhere else it is the bar with the profile button (#38).
+        if (location == '/') {
+          expect(find.text('Sign in'), findsOneWidget);
+          expect(find.byTooltip('Profile and account'), findsNothing);
+        } else {
+          expect(find.byTooltip('Profile and account'), findsOneWidget);
+        }
       });
     }
 
