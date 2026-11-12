@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
+import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/lib/http.dart';
 
 /// Live API-backed catalogue for hotels and flights, talking to `cheapestgo-api-v2`.
@@ -118,16 +120,22 @@ class ApiTravelCatalog implements TravelCatalog {
     DateTime? checkIn,
     DateTime? checkOut,
     int? adults,
+    DestinationSuggestion? at,
   }) async {
     final ap = airport(airportCode);
     if (ap == null) return const [];
+
+    // What was searched, and where results are filed. A destination is its own bucket: two
+    // cities reached through the same airport are two different searches, and keying both on
+    // the airport would have the second overwrite the first.
+    final key = at?.id ?? airportCode;
 
     final now = DateTime.now();
     final inDate = checkIn ?? now.add(const Duration(days: 14));
     final outDate = checkOut ?? inDate.add(const Duration(days: 3));
 
     final body = {
-      'destination': ap.city,
+      'destination': at?.name ?? ap.city,
       'checkIn': _formatDate(inDate),
       'checkOut': _formatDate(outDate),
       'adults': adults ?? 2,
@@ -159,13 +167,13 @@ class ApiTravelCatalog implements TravelCatalog {
 
       if (list.isNotEmpty) {
         list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
-        _hotelsByAirport[airportCode] = list;
-        _offlineKeys.remove(airportCode);
+        _hotelsByAirport[key] = list;
+        _offlineKeys.remove(key);
 
         // Persist to local disk cache for offline access
         final prefs = await _getPrefs();
         final raw = jsonEncode(list.map((h) => h.toJson()).toList());
-        await prefs.setString('cheapestgo_cache_hotels_$airportCode', raw);
+        await prefs.setString('cheapestgo_cache_hotels_$key', raw);
         return list;
       }
     } catch (_) {
@@ -174,26 +182,26 @@ class ApiTravelCatalog implements TravelCatalog {
 
     // Attempt loading from SharedPreferences
     final prefs = await _getPrefs();
-    final cachedJson = prefs.getString('cheapestgo_cache_hotels_$airportCode');
+    final cachedJson = prefs.getString('cheapestgo_cache_hotels_$key');
     if (cachedJson != null && cachedJson.isNotEmpty) {
       try {
         final decoded = jsonDecode(cachedJson) as List;
         final cachedHotels = decoded
             .map((e) => Hotel.fromJson(e as Map<String, dynamic>))
             .toList();
-        _hotelsByAirport[airportCode] = cachedHotels;
+        _hotelsByAirport[key] = cachedHotels;
         for (final h in cachedHotels) {
           _hotelById[h.id] = h;
         }
-        _offlineKeys.add(airportCode);
+        _offlineKeys.add(key);
         return cachedHotels;
       } catch (_) {}
     }
 
     // Final fallback to mock catalog when neither network nor cache is available
     final mockHotels = _mock.hotelsNear(airportCode);
-    _hotelsByAirport[airportCode] = mockHotels;
-    _offlineKeys.add(airportCode);
+    _hotelsByAirport[key] = mockHotels;
+    _offlineKeys.add(key);
     return mockHotels;
   }
 
@@ -481,6 +489,11 @@ class ApiTravelCatalog implements TravelCatalog {
       reviews: reviews,
       tags: tags,
       rooms: rooms,
+      // The supplier's own, not the one the search asked for: the QA catalog answers in USD
+      // whatever `currency` the request carried, and a price is only a price with its symbol.
+      currency: item['currency']?.toString().toUpperCase() ?? catalogCurrency,
+      // Only when it arrives: the card prints this and nothing it worked out itself.
+      anchorDistanceKm: (item['distanceKm'] as num?)?.toDouble(),
       badge: badge,
       images: images,
       latitude: lat,

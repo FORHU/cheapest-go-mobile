@@ -17,6 +17,8 @@ class DestinationSuggestion {
         this.city,
         this.countryCode = '',
         this.iata,
+        this.latitude,
+        this.longitude,
     });
 
     /// What the search is pointed at afterwards. For an airport this is its IATA code.
@@ -30,6 +32,11 @@ class DestinationSuggestion {
 
     /// Present on airports only.
     final String? iata;
+
+    /// Where it is, when the endpoint says. A stay search is pointed at a place on the map,
+    /// not at a name — V2 carries the same pair through its search URL.
+    final double? latitude;
+    final double? longitude;
 
     /// A city has no IATA code and an airport always does, which is how a caller tells a
     /// stays destination from a flight endpoint without inspecting [kind].
@@ -66,9 +73,13 @@ class DestinationsApi {
         // supplier lookup on the hotels side.
         if (q.length < 2) return const [];
 
+        // The two endpoints name their parameter differently, and the mismatch is not
+        // cosmetic: `/hotels/destinations` answers 422 to `q`, which this method catches and
+        // reports as "no places match" — a typed destination looked like an empty index
+        // rather than a request the server rejected. Airports do take `q`.
         final path = forFlights
             ? '/api/v2/airports/search?q=${Uri.encodeQueryComponent(q)}&limit=$limit'
-            : '/api/v2/hotels/destinations?q=${Uri.encodeQueryComponent(q)}&limit=$limit';
+            : '/api/v2/hotels/destinations?query=${Uri.encodeQueryComponent(q)}&limit=$limit&locale=en';
 
         try {
             final res = await _client.get(path, options: _options);
@@ -105,15 +116,24 @@ class DestinationsApi {
         );
     }
 
+    /// A row from `/hotels/destinations`.
+    ///
+    /// The endpoint answers `{type, rung, title, subtitle, countryCode, id, lat, lng, bbox}` —
+    /// `title` is the place and `subtitle` is where it is, so "Manila" and "Manila,
+    /// Philippines" tell a person which of the three Manilas they mean. Reading `name` and
+    /// `city` instead, as this did, left every suggestion labelled with its Mapbox id.
     DestinationSuggestion? _destination(Map<String, dynamic> r) {
-        final id = (r['id'] ?? r['code'] ?? r['name'])?.toString();
-        if (id == null || id.isEmpty) return null;
+        final id = (r['id'] ?? r['code'] ?? r['title'])?.toString();
+        final name = (r['title'] ?? r['name'])?.toString();
+        if (id == null || id.isEmpty || name == null || name.isEmpty) return null;
         return DestinationSuggestion(
             id: id,
-            kind: _kindOf(r['type']?.toString()),
-            name: (r['name'] ?? id).toString(),
-            city: r['city']?.toString(),
+            kind: _kindOf((r['rung'] ?? r['type'])?.toString()),
+            name: name,
+            city: (r['subtitle'] ?? r['city'])?.toString(),
             countryCode: (r['countryCode'] ?? '').toString(),
+            latitude: (r['lat'] as num?)?.toDouble(),
+            longitude: (r['lng'] as num?)?.toDouble(),
         );
     }
 }

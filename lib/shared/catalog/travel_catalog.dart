@@ -7,6 +7,8 @@ library;
 
 import 'dart:math';
 import 'package:cheapest_go_mobile/shared/catalog/api_travel_catalog.dart';
+import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
+import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 class Airport {
@@ -99,6 +101,8 @@ class Hotel {
     required this.reviews,
     required this.tags,
     required this.rooms,
+    this.currency = catalogCurrency,
+    this.anchorDistanceKm,
     this.badge,
     this.images = const [],
     this.latitude,
@@ -119,6 +123,21 @@ class Hotel {
   final int reviews;
   final List<String> tags;
   final List<Room> rooms;
+
+  /// What this stay's rates are quoted in.
+  ///
+  /// The bundled fixtures are in pesos, but a supplier answers in its own currency — the QA
+  /// catalog answers in US dollars even when the search asks for PHP — so this is read off the
+  /// result rather than assumed. A price under the wrong symbol is not a rounding error, it is
+  /// a different number: $121 printed as ₱121 is off by a factor of fifty-seven.
+  final String currency;
+
+  /// How far this stay is from what was searched, when the API says so.
+  ///
+  /// Not [distanceKm], which is this app's own measurement to an airport terminal. api-v2
+  /// sends this one only when a stay is far for the rung a person searched, so its absence
+  /// means central rather than unknown — see ADR-0051 in the web repo.
+  final double? anchorDistanceKm;
   final String? badge;
   final List<String> images;
   final double? latitude;
@@ -167,6 +186,8 @@ class Hotel {
         'reviews': reviews,
         'tags': tags,
         'rooms': rooms.map((r) => r.toJson()).toList(),
+        'currency': currency,
+        'anchorDistanceKm': anchorDistanceKm,
         'badge': badge,
         'images': images,
         'latitude': latitude,
@@ -186,6 +207,9 @@ class Hotel {
         reviews: (json['reviews'] as num).toInt(),
         tags: (json['tags'] as List).map((e) => e.toString()).toList(),
         rooms: (json['rooms'] as List).map((r) => Room.fromJson(r as Map<String, dynamic>)).toList(),
+        // Older cache entries predate this field and were all pesos.
+        currency: (json['currency'] as String?) ?? catalogCurrency,
+        anchorDistanceKm: (json['anchorDistanceKm'] as num?)?.toDouble(),
         badge: json['badge'] as String?,
         images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? const [],
         latitude: (json['latitude'] as num?)?.toDouble(),
@@ -347,12 +371,18 @@ abstract class TravelCatalog {
   /// Reloads the catalogue (pull to refresh).
   Future<void> refresh();
 
-  /// Asynchronously fetches hotels for [airportCode] from the live API or cache.
+  /// Stays for a search, from the live API or cache.
+  ///
+  /// [at] is the destination a person chose, when they chose one, and it is what the search is
+  /// pointed at. Without it the search is pointed at [airportCode] — v1's question — and
+  /// answering that for a traveller who asked about Seoul returns stays in Manila, because a
+  /// city suggestion carries no IATA code and the airport never moved.
   Future<List<Hotel>> fetchHotels(
     String airportCode, {
     DateTime? checkIn,
     DateTime? checkOut,
     int? adults,
+    DestinationSuggestion? at,
   });
 
   /// Asynchronously fetches detailed property information for [id].
@@ -388,6 +418,9 @@ class MockTravelCatalog implements TravelCatalog {
     DateTime? checkIn,
     DateTime? checkOut,
     int? adults,
+    DestinationSuggestion? at,
+    // The fixtures are filed by airport, so a destination search falls back to the airport's
+    // stays rather than answering nothing.
   }) async =>
       hotelsNear(airportCode);
 
@@ -550,8 +583,15 @@ class DefaultTravelCatalog implements TravelCatalog {
     DateTime? checkIn,
     DateTime? checkOut,
     int? adults,
+    DestinationSuggestion? at,
   }) =>
-      delegate.fetchHotels(airportCode, checkIn: checkIn, checkOut: checkOut, adults: adults);
+      delegate.fetchHotels(
+        airportCode,
+        checkIn: checkIn,
+        checkOut: checkOut,
+        adults: adults,
+        at: at,
+      );
 
   @override
   Future<Hotel?> fetchHotel(

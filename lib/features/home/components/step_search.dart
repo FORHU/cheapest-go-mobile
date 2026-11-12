@@ -78,6 +78,10 @@ class _StepSearchState extends State<StepSearch> {
     bool _looking = false;
     bool _searched = false;
 
+    /// Which ask is the current one. Incremented by every keystroke and by a pick, so a reply
+    /// to an older ask is dropped instead of overwriting a newer state.
+    int _ask = 0;
+
     List<_StepId> get _flow => _steps[widget.mode]!;
     _StepId get _step => _flow[_index];
 
@@ -89,12 +93,19 @@ class _StepSearchState extends State<StepSearch> {
     }
 
     /// Typing does not ask on every keystroke: the destinations endpoint reaches a supplier.
+    ///
+    /// Each lookup carries the number of the ask that started it, and only the newest may
+    /// land. Without that, the request in flight when a suggestion is tapped comes back
+    /// afterwards and writes its own answer over the choice — which is how a picked Manila
+    /// ended up captioned "No places match Manila".
     void _onTyped(String value, {required bool airports}) {
         _debounce?.cancel();
+        final ask = ++_ask;
         _debounce = Timer(const Duration(milliseconds: 250), () async {
+            if (!mounted || ask != _ask) return;
             setState(() => _looking = true);
             final found = await destinationsApi.search(value, forFlights: airports);
-            if (!mounted) return;
+            if (!mounted || ask != _ask) return;
             setState(() {
                 _options = found.take(_maxOptions).toList();
                 _looking = false;
@@ -167,6 +178,10 @@ class _StepSearchState extends State<StepSearch> {
     }
 
     void _pick(DestinationSuggestion option) {
+        // The question is answered, so nothing may still be asking it: the timer is dropped
+        // and the counter moved on, which makes any reply already on its way stale.
+        _debounce?.cancel();
+        _ask++;
         setState(() {
             switch (_step) {
                 case _StepId.where:
@@ -178,6 +193,8 @@ class _StepSearchState extends State<StepSearch> {
             }
             _query.text = option.name;
             _options = const [];
+            _searched = false;
+            _looking = false;
         });
     }
 
@@ -410,18 +427,11 @@ class _StepSearchState extends State<StepSearch> {
                                 // it instead made a promoted place depend on the destinations
                                 // endpoint answering, and when it did not the tile a person had
                                 // just tapped came back as "No places match Seoul".
-                                onPick: (city) => setState(() {
-                                    _place = DestinationSuggestion(
-                                        id: city,
-                                        kind: DestinationKind.city,
-                                        name: city,
-                                    );
-                                    _query.text = city;
-                                    _options = const [];
-                                    _searched = false;
-                                    _looking = false;
-                                    _debounce?.cancel();
-                                }),
+                                onPick: (city) => _pick(DestinationSuggestion(
+                                    id: city,
+                                    kind: DestinationKind.city,
+                                    name: city,
+                                )),
                             ),
                         ],
                     ],
