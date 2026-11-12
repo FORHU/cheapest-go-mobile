@@ -365,11 +365,10 @@ class ProfileView extends StatelessWidget {
               value: uiSettingsStore.themeMode,
               underline: const SizedBox.shrink(),
               borderRadius: BorderRadius.circular(12),
+              // Two options, as V2 offers. "System" is deliberately absent: V2 never reads the
+              // browser's preference, so mobile does not read the handset's. See
+              // UiSettingsStore.setThemeMode.
               items: const [
-                DropdownMenuItem(
-                  value: ThemeMode.system,
-                  child: Text('System'),
-                ),
                 DropdownMenuItem(
                   value: ThemeMode.light,
                   child: Text('Light'),
