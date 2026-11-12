@@ -19,7 +19,18 @@ class ProfileView extends StatelessWidget {
     this.onSignInTap,
     this.onRegisterTap,
     this.onSignOutTap,
+    this.embedded = false,
   });
+
+  /// True when this is shown inside the nav bar's settings sheet rather than as a screen.
+  ///
+  /// V2 opens that sheet onto its account surface rather than linking to a settings page, and
+  /// the sheet brings its own grab handle, title and close button. Rendering the Scaffold and
+  /// AppBar as well would put two headers on top of each other.
+  ///
+  /// A flag rather than a split widget on purpose: #46 replaces this screen with V2's account
+  /// layout, and moving 450 lines now only to move them again would be churn for its own sake.
+  final bool embedded;
 
   final bool isAuthenticated;
   final String? userName;
@@ -32,6 +43,8 @@ class ProfileView extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+
+    if (embedded) return _body(context, theme);
 
     return Scaffold(
       backgroundColor: colorScheme.surface,
@@ -53,7 +66,13 @@ class ProfileView extends StatelessWidget {
               )
             : null,
       ),
-      body: ListenableBuilder(
+      body: _body(context, theme),
+    );
+  }
+
+  Widget _body(BuildContext context, ThemeData theme) {
+    final colorScheme = theme.colorScheme;
+    return ListenableBuilder(
         listenable: uiSettingsStore,
         builder: (context, _) {
           return ListView(
@@ -100,8 +119,7 @@ class ProfileView extends StatelessWidget {
             ],
           );
         },
-      ),
-    );
+      );
   }
 
   Widget _buildSectionHeader(String title, ThemeData theme) {

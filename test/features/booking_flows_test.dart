@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
@@ -71,11 +72,12 @@ void main() {
     expect(booking.when, endsWith('6:40 AM'));
   });
 
-  testWidgets('flights tab: SIN → MNL, pick the cheapest non-stop, pay', (tester) async {
+  // Opened directly rather than through the bar: #36 adopted V2's three slots, and V2 reaches
+  // flight search from its landing page, not from a tab. Mobile's landing gains that entry
+  // point with #38 — until then this journey starts at the route.
+  testWidgets('flights: SIN → MNL, pick the cheapest non-stop, pay', (tester) async {
     final before = bookingsStore.all.length;
-    await pumpApp(tester);
-
-    await tester.tap(find.text('Flights'));
+    await pumpApp(tester, location: '/flights');
     await tester.pumpAndSettle();
     expect(find.text('FROM'), findsOneWidget);
     expect(find.text('SIN'), findsWidgets);
@@ -99,9 +101,9 @@ void main() {
     expect(find.text(booking.reference), findsOneWidget);
   });
 
-  testWidgets('Stay & Play tab switches between hotels and golf', (tester) async {
-    await pumpApp(tester);
-    await tester.tap(find.text('Stay & Play'));
+  // Reached from Home rather than a tab since #36; Home still links here.
+  testWidgets('Stay & Play switches between hotels and golf', (tester) async {
+    await pumpApp(tester, location: '/stay');
     await tester.pumpAndSettle();
     expect(find.text('Terminal 3 Garden Hotel'), findsOneWidget);
     expect(find.byTooltip('Back'), findsNothing);
@@ -130,7 +132,12 @@ void main() {
 
     await tester.tap(find.byTooltip('Back'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Trips'));
+    // The bar shows icons only now, so the slot is found by the name it carries for screen
+    // readers rather than by a visible label.
+    await tester.tap(find.descendant(
+      of: find.byType(V2BottomNav),
+      matching: find.bySemanticsLabel('Trips'),
+    ));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Saved'));
     await tester.pumpAndSettle();
