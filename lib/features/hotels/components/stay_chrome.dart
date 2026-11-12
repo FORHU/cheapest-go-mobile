@@ -87,3 +87,13 @@ enum StaySort {
 
     final String label;
 }
+
+/// The words V2 puts to an **aggregate score** or a review's own, so one number is not called
+/// "excellent" in the summary and "very good" in the list under it.
+String scoreBand(double score) {
+    if (score >= 9) return 'Exceptional';
+    if (score >= 8) return 'Excellent';
+    if (score >= 7) return 'Very good';
+    if (score >= 6) return 'Good';
+    return 'Rated';
+}
