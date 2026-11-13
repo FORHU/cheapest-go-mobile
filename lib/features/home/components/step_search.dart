@@ -227,6 +227,9 @@ class _StepSearchState extends State<StepSearch> {
                 // "Back" beside "Next: travellers" is four pixels too wide for a phone, and a
                 // Row answers that with the striped overflow bar rather than a second line.
                 Wrap(
+                    // Centred with the trail and the heading above it. Back and Next stay a
+                    // pair; it is the pair that sits in the middle.
+                    alignment: WrapAlignment.center,
                     spacing: TwSpace.of(3),
                     runSpacing: TwSpace.of(3),
                     crossAxisAlignment: WrapCrossAlignment.center,
@@ -502,12 +505,15 @@ class _StepTrail extends StatelessWidget {
         return Semantics(
             label: t.search_steps_navLabel,
             child: Row(
+                // Centred with the stage heading above it. The trail still hugs its own
+                // steps rather than stretching; it is the group that is centred.
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                     for (var i = 0; i < flow.length; i++) ...[
                         if (i > 0)
                             Container(
                                 // V2: `width: clamp(12px, 4vw, 40px)`, and it does not stretch — the trail
-                                // hugs its steps at the left rather than spanning the screen.
+                                // hugs its steps rather than spanning the screen.
                                 width: (MediaQuery.sizeOf(context).width * 0.04).clamp(12.0, 40.0),
                                 height: 1,
                                 margin: EdgeInsets.symmetric(horizontal: TwSpace.of(2.5)),

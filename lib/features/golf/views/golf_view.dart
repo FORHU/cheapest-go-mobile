@@ -35,7 +35,7 @@ class _GolfViewState extends State<GolfView> {
       builder: (_) => _TeeTimeSheet(course: course, day: day, time: time, initialPlayers: tripSearchStore.players),
     );
     if (players == null || !mounted) return;
-    final booking = bookingsStore.addTeeTime(
+    bookingsStore.addTeeTime(
       airportCode: course.airportCode,
       courseName: course.name,
       courseMeta: course.meta,
@@ -44,10 +44,11 @@ class _GolfViewState extends State<GolfView> {
       players: players,
       total: course.pricePerPlayer * players,
     );
+    // Not '/trips', and no reference quoted — see the same change in flight checkout and
+    // ADR-0003. Nothing here reaches a course, and Trips now shows only confirmed bookings.
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Tee time booked · ref ${booking.reference}')),
+      const SnackBar(content: Text('Demo booking — tee times are not bookable yet')),
     );
-    context.go('/trips');
   }
 
   @override

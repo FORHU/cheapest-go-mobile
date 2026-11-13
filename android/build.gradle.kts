@@ -23,6 +23,21 @@ subprojects {
     }
 }
 
+// Why a release build cannot lint `stripe_android`.
+//
+// Stripe's SDK depends on `stripe-android-issuing-push-provisioning`, which pulls
+// `play-services-tapandpay` — an artifact Google publishes only to partners in its wallet
+// programme. Compilation is fine, because the classes come from the push-provisioning jar
+// itself; it is lint's own classpath that cannot be resolved, and `lintVitalAnalyzeRelease`
+// fails the build before the APK is assembled. The dependency cannot simply be excluded: the
+// SDK's own Kotlin references it.
+//
+// So lintVital is off — in a dependency's code, which we do not write and would not fix.
+// `flutter analyze` and `:app`'s own lint still cover this repo.
+subprojects {
+    tasks.matching { it.name.startsWith("lintVital") }.configureEach { enabled = false }
+}
+
 val newBuildDir: Directory =
     rootProject.layout.buildDirectory
         .dir("../../build")

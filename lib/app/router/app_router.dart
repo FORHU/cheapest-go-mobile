@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cheapest_go_mobile/app/router/app_header.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -24,6 +23,7 @@ import 'package:cheapest_go_mobile/features/hotels/views/hotel_results_view.dart
 import 'package:cheapest_go_mobile/features/about/views/about_view.dart';
 import 'package:cheapest_go_mobile/features/map/views/map_view.dart';
 import 'package:cheapest_go_mobile/features/profile/views/profile_view.dart';
+import 'package:cheapest_go_mobile/features/trips/views/booking_detail_view.dart';
 import 'package:cheapest_go_mobile/features/trips/views/trips_view.dart';
 
 /// FAOS `app/` layer: routes and the tab shell.
@@ -80,12 +80,25 @@ GoRouter createAppRouter() => GoRouter(
         ),
         GoRoute(
           path: '/checkout',
-          builder: (_, state) => HotelCheckoutView(
+          builder: (context, state) => HotelCheckoutView(
             hotelId: state.uri.queryParameters['hotel'] ?? '',
+            // The Offer, not the room: a prebook is made against one set of terms.
             roomId: state.uri.queryParameters['room'] ?? '',
-            leadName: authStore.user?.fullName,
-            leadEmail: authStore.user?.email,
-            simulatedPriceShift: int.tryParse(state.uri.queryParameters['shift'] ?? ''),
+            // The checkout needs to know who is booking, and the hotels feature may not reach
+            // into the auth feature to find out. The two are composed here, which is the app
+            // layer's job — the screen is handed an answer, not a store.
+            guest: () {
+              final user = authStore.user;
+              return user == null
+                  ? const CheckoutGuest()
+                  : CheckoutGuest(
+                      signedIn: true,
+                      email: user.email,
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                    );
+            },
+            onSignIn: () => context.push('/login'),
           ),
         ),
         GoRoute(
@@ -97,7 +110,15 @@ GoRouter createAppRouter() => GoRouter(
             simulatedPriceShift: int.tryParse(state.uri.queryParameters['shift'] ?? ''),
           ),
         ),
-        GoRoute(path: '/saved', redirect: (_, _) => '/trips'),
+        // Outside the shell, as V2's booking detail is outside its list: a full screen with
+        // its own way back, not a tab.
+        GoRoute(
+          path: '/trips/:id',
+          builder: (_, state) => BookingDetailView(bookingId: state.pathParameters['id']!),
+        ),
+        // Saved stays moved to Profile with #42 — V2 keeps them in Account, never among
+        // bookings. The old path still lands somewhere sensible.
+        GoRoute(path: '/saved', redirect: (_, _) => '/profile'),
         GoRoute(path: '/login', builder: (_, _) => const LoginView()),
         GoRoute(path: '/register', builder: (_, _) => const RegisterView()),
         GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordView()),
@@ -178,33 +199,15 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
       // the photo stops short and leaves a strip of scaffold below it. Everywhere else the
       // body stays above the bar, which is what those screens were laid out against.
       extendBody: _onHome,
-      // On the landing the header floats over the stage's photograph, so the picture runs to
-      // the top of the screen as it does on V2. Everywhere else it sits on a bar above the
-      // content, which is why the two arrangements differ rather than one serving both.
-      body: _onHome
-          ? Stack(
-              children: [
-                widget.navigationShell,
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: AppHeader(onShowcase: true),
-                ),
-              ],
-            )
-          : Column(
-              children: [
-                const AppHeader(),
-                Expanded(
-                  child: MediaQuery.removePadding(
-                    context: context,
-                    removeTop: true,
-                    child: widget.navigationShell,
-                  ),
-                ),
-              ],
-            ),
+      // No header on any screen. The wordmark repeated what opening the app already said,
+      // and Sign in and the profile button both led where the bar's Settings slot leads —
+      // see **Already Here** in CONTEXT.md. On the landing it also covered the top of the
+      // photograph the stage is built around.
+      //
+      // The page keeps its own top inset. That inset used to be spent on the header and
+      // stripped from the page below it, so with the header gone a heading sat under the
+      // status bar — the overlap #61 reports.
+      body: widget.navigationShell,
       bottomNavigationBar: V2BottomNav(
         activeIndex: _activeIndex,
         settingsOpen: _settingsOpen,

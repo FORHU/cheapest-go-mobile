@@ -35,6 +35,28 @@ class AuthApi {
     throw StateError('Unexpected login response');
   }
 
+  /// Signs in with the ID token Google handed the app. See #45.
+  ///
+  /// api-v2 answers exactly as `/auth/login` does — the same cookies, the same `{user}` — so
+  /// this reads the response the same way. The token is Google's, not ours, and is never
+  /// stored: it is spent on this one call and the session cookie takes over.
+  Future<AuthUser> signInWithGoogle(String idToken) async {
+    final data = await http.post(
+      '/api/v2/auth/google/native',
+      body: {'idToken': idToken},
+      options: const HttpRequestOptions(requiresAuth: false),
+    );
+    if (data is Map<String, dynamic>) {
+      final accessToken = data['accessToken']?.toString();
+      if (accessToken != null && accessToken.isNotEmpty) {
+        await tokenStorage.setTokens(accessToken, data['refreshToken']?.toString());
+      }
+      final rawUser = (data['user'] as Map<String, dynamic>?) ?? data;
+      return AuthUser.fromJson(rawUser);
+    }
+    throw StateError('Unexpected Google sign-in response');
+  }
+
   Future<AuthUser> register(RegisterInput input) async {
     input.validate();
     final data = await http.post(

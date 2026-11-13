@@ -1,41 +1,58 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cheapest_go_mobile/app/router/app_header.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
+import 'package:cheapest_go_mobile/features/trips/api/bookings_source.dart';
+import 'package:cheapest_go_mobile/features/trips/api/mock_bookings_source.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import '../test_helpers.dart';
 
 void main() {
-  group('Shared header', () {
-    for (final (location, label) in [('/', 'Home'), ('/stay', 'Stay & Play'), ('/flights', 'Flights'), ('/trips', 'Trips')]) {
-      testWidgets('shows on $label', (tester) async {
+  // Was "Shared header", asserting one on every tab. There is no header now, on any screen:
+  // the wordmark told somebody who had already opened the app whose app it was, and Sign in
+  // and the profile button both led where the bar's Settings slot leads. The landing's also
+  // covered the top of the photograph its stage is built around. See **Already Here** in
+  // CONTEXT.md.
+  group('No app header', () {
+    for (final (location, label) in [('/', 'the landing'), ('/stay', 'Stay & Play'), ('/flights', 'Flights'), ('/trips', 'Trips'), ('/map', 'the map')]) {
+      testWidgets('none on $label', (tester) async {
         await pumpApp(tester, location: location);
-        expect(find.byType(AppHeader), findsOneWidget);
-
-        // On the landing the header floats over the showcase and offers Sign in, as V2's
-        // does; everywhere else it is the bar with the profile button (#38).
-        if (location == '/') {
-          expect(find.text('Sign in'), findsOneWidget);
-          expect(find.byTooltip('Profile and account'), findsNothing);
-        } else {
-          expect(find.byTooltip('Profile and account'), findsOneWidget);
-        }
+        expect(find.byTooltip('Profile and account'), findsNothing);
+        expect(find.text('Sign in'), findsNothing);
       });
     }
 
-    testWidgets('shows on the map too', (tester) async {
-      await pumpApp(tester, location: '/map');
-      expect(find.byType(AppHeader), findsOneWidget);
+    // The inset used to be spent on the header and stripped from the page below it. With no
+    // header, the page has to keep it — otherwise the heading sits under the status bar,
+    // which is the overlap #61 reports.
+    testWidgets('a page heading clears the status bar', (tester) async {
+      // `pumpApp` runs the phone viewport at a device pixel ratio of 3, so the inset is
+      // given in physical pixels and read back in logical ones.
+      const inset = 40.0;
+      tester.view.padding = const FakeViewPadding(top: inset * 3);
+      addTearDown(tester.view.reset);
+
+      await pumpApp(tester, location: '/trips');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getTopLeft(find.text('My Bookings')).dy,
+        greaterThanOrEqualTo(inset),
+        reason: 'the heading is below the status bar, not under it',
+      );
     });
 
-    testWidgets('profile button opens the profile', (tester) async {
+    // Was "profile button opens the profile", through a button in the header. That button is
+    // gone: it went to the same screen the bar's Settings slot opens, so the account is now
+    // reached one way instead of two.
+    testWidgets('the bar’s Settings slot opens the account', (tester) async {
       await pumpApp(tester, location: '/trips');
-      await tester.tap(find.byTooltip('Profile and account'));
+      await tester.tap(find.descendant(
+        of: find.byType(V2BottomNav),
+        matching: find.bySemanticsLabel('Settings'),
+      ));
       await tester.pumpAndSettle();
-      expect(find.byType(AppHeader), findsNothing);
       expect(find.text('App Theme'), findsOneWidget);
       expect(find.text('Display Currency'), findsNothing, reason: 'prices are always in pesos');
     });
@@ -67,33 +84,26 @@ void main() {
   ///
   /// V2 has no pull gesture and does not refetch on focus; a screen reloads when you navigate
   /// to it and its data is over a minute old. Mobile matches that, so this drives the same
-  /// journey a traveller would: leave Trips, come back a while later, see the new booking.
-  testWidgets('arriving back on Trips reloads bookings saved on the device', (tester) async {
+  /// journey a traveller would: leave Trips, come back a while later, see it asked again.
+  ///
+  /// Was "reloads bookings saved on the device", which wrote a row into SharedPreferences
+  /// because that is what the screen read. #42 pointed My Bookings at api-v2 (ADR-0003), so
+  /// the policy is now proved against the source the screen actually uses.
+  testWidgets('arriving back on Trips refetches once the data has gone stale', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    await pumpApp(tester, location: '/trips');
+    final source = _CountingBookingsSource();
+    bookingsSource = source;
+    addTearDown(() => bookingsSource = const MockBookingsSource());
 
-    // Another session saved a booking this one hasn't loaded yet.
-    final saved = Booking(
-      reference: 'CG-PULL1',
-      kind: BookingKind.stay,
-      airportCode: 'CEB',
-      title: 'Refreshed Bay Hotel',
-      start: DateTime(2099),
-      when: 'Later',
-      detail: 'Deluxe King · 2 adults',
-      total: 9000,
-    );
-    SharedPreferences.setMockInitialValues({
-      'cheapestgo_bookings_v1': jsonEncode([...bookingsStore.all.map((b) => b.toJson()), saved.toJson()]),
-    });
-    expect(find.text('Refreshed Bay Hotel'), findsNothing);
+    await pumpApp(tester, location: '/trips');
+    await tester.pumpAndSettle();
+    expect(source.calls, 1);
 
     // The pull gesture is gone, and within the stale window nothing reloads — that is the
     // policy, not an oversight.
     await tester.fling(find.byType(Scrollable).first, const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
-    expect(find.text('Refreshed Bay Hotel'), findsNothing,
-        reason: 'no pull to refresh, and the data is still fresh');
+    expect(source.calls, 1, reason: 'no pull to refresh, and the data is still fresh');
 
     // An hour later, leave and come back the way the bar does it.
     final realClock = refreshClock;
@@ -106,7 +116,18 @@ void main() {
     await tester.tap(find.descendant(of: bar, matching: find.bySemanticsLabel('Trips')));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Refreshed Bay Hotel'), 300, scrollable: find.byType(Scrollable).first);
-    expect(find.text('Refreshed Bay Hotel'), findsOneWidget);
+    expect(source.calls, greaterThan(1));
   });
+}
+
+/// Counts how many times the screen asked. The answer never changes; whether it asks again
+/// is the whole subject.
+class _CountingBookingsSource implements BookingsSource {
+  int calls = 0;
+
+  @override
+  Future<BookingsPage> myBookings() async {
+    calls++;
+    return const MockBookingsSource().myBookings();
+  }
 }
