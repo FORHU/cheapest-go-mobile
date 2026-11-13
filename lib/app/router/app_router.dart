@@ -82,10 +82,8 @@ GoRouter createAppRouter() => GoRouter(
           path: '/checkout',
           builder: (_, state) => HotelCheckoutView(
             hotelId: state.uri.queryParameters['hotel'] ?? '',
+            // The Offer, not the room: a prebook is made against one set of terms.
             roomId: state.uri.queryParameters['room'] ?? '',
-            leadName: authStore.user?.fullName,
-            leadEmail: authStore.user?.email,
-            simulatedPriceShift: int.tryParse(state.uri.queryParameters['shift'] ?? ''),
           ),
         ),
         GoRoute(

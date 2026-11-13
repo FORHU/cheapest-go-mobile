@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:cheapest_go_mobile/features/hotels/views/hotel_checkout_view.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
@@ -208,8 +207,10 @@ void main() {
       expect(store.past.map((b) => b.kind).toSet(), {BookingKind.flight, BookingKind.stay, BookingKind.teeTime});
     });
 
-    test('stay taxes are 12% of the room total', () {
-      expect(stayTaxes(14550), 1746);
-    });
+    // What was here: "stay taxes are 12% of the room total", against a helper the old mock
+    // checkout used to add tax on the device. #41 removed it. The amount a guest is charged
+    // is the prebook price api-v2 answers with — the supplier's own figure, tax included —
+    // and a number this app works out for itself is the kind of second opinion the ticket
+    // exists to remove.
   });
 }

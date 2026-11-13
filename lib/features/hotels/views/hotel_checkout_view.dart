@@ -1,506 +1,1307 @@
-import 'dart:async';
-import 'dart:io' show Platform;
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+
+import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
+import 'package:cheapest_go_mobile/features/hotels/api/payment_gateway.dart';
+import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
+import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
-import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
-import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
+import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
-import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
+import 'package:cheapest_go_mobile/shared/utils/money.dart';
 
-/// Taxes and fees on a stay, as a share of the room total (mock rate).
-const double kStayTaxRate = 0.12;
-
-int stayTaxes(int subtotal) => (subtotal * kStayTaxRate).round();
-
-/// Review and pay for a stay. Payment is mocked: nothing is charged.
+/// Paying for a stay, as V2's `/checkout` does it. See #41.
+///
+/// Three steps — details, payment, verification — and the bottom bar is absent throughout: a
+/// form someone is paying through keeps the screen to itself, with its own way back and its
+/// own action at the foot.
+///
+/// **The charged amount is the prebook price.** api-v2 locks a rate and answers with what the
+/// supplier will honour, in the supplier's currency, and that figure goes to Stripe untouched.
+/// The display currency converts prices everywhere else in this app; it stops here, because a
+/// converted number is an estimate and a charge is not.
+///
+/// What this replaced: a form that waited 600 milliseconds, wrote a booking into a local
+/// store and congratulated the guest. Nothing was reserved and no money moved.
 class HotelCheckoutView extends StatefulWidget {
-  const HotelCheckoutView({
-    required this.hotelId,
-    required this.roomId,
-    this.leadName,
-    this.leadEmail,
-    this.catalog = travelCatalog,
-    this.initialHoldSeconds = 900,
-    this.autoStartTimer,
-    this.simulatedPriceShift,
-    super.key,
-  });
+    const HotelCheckoutView({
+        required this.hotelId,
+        required this.roomId,
+        this.catalog = travelCatalog,
+        super.key,
+    });
 
-  final String hotelId;
-  final String roomId;
+    final String hotelId;
 
-  /// Pre-fills the lead guest from the signed-in traveler.
-  final String? leadName;
-  final String? leadEmail;
-  final TravelCatalog catalog;
+    /// The **Offer** chosen on the property page — what a prebook is made against.
+    final String roomId;
+    final TravelCatalog catalog;
 
-  /// Initial duration for rate hold countdown (default 15 minutes = 900s).
-  final int initialHoldSeconds;
-
-  /// Controls whether the periodic timer ticks automatically.
-  /// Defaults to false in FLUTTER_TEST to avoid pumpAndSettle timeouts,
-  /// and true in regular execution.
-  final bool? autoStartTimer;
-
-  /// Optional price shift to simulate supplier rate updates (ADR-0020).
-  final int? simulatedPriceShift;
-
-  @override
-  State<HotelCheckoutView> createState() => _HotelCheckoutViewState();
+    @override
+    State<HotelCheckoutView> createState() => _HotelCheckoutViewState();
 }
 
+enum _Step { details, payment, confirmed }
+
+/// V2's checkout accent, `BRAND.primary` (blue-500).
+const _accent = Color(0xFF3B82F6);
+
+/// V2's `GREEN`: the one colour on the confirmation that means "this happened".
+const _green = Color(0xFF2FB67F);
+
 class _HotelCheckoutViewState extends State<HotelCheckoutView> {
-  final _formKey = GlobalKey<FormState>();
-  late final _name = TextEditingController(text: widget.leadName);
-  late final _email = TextEditingController(text: widget.leadEmail);
-  bool _paying = false;
+    final _form = GlobalKey<FormState>();
+    final _firstName = TextEditingController();
+    final _lastName = TextEditingController();
+    final _email = TextEditingController();
+    final _phone = TextEditingController();
+    final _requests = TextEditingController();
 
-  late int _secondsRemaining = widget.initialHoldSeconds;
-  Timer? _countdownTimer;
-  int? _activePriceShift;
-  bool _priceShiftAccepted = false;
+    _Step _step = _Step.details;
+    PrebookQuote? _quote;
+    ConfirmOutcome? _outcome;
 
-  bool get _isExpired => _secondsRemaining <= 0;
+    /// What Stripe actually took, from the intent rather than from the quote.
+    num? _charged;
 
-  @override
-  void initState() {
-    super.initState();
-    _activePriceShift = widget.simulatedPriceShift;
-    final isTest = Platform.environment.containsKey('FLUTTER_TEST');
-    final shouldStart = widget.autoStartTimer ?? !isTest;
-    if (shouldStart && _secondsRemaining > 0) {
-      _startTimer();
-    }
-  }
+    /// The booking row's id, once api-v2 has one. Null means no receipt to offer yet.
+    String? _receiptId;
+    bool _busy = false;
+    String? _failure;
 
-  void _startTimer() {
-    _countdownTimer?.cancel();
-    if (_secondsRemaining <= 0) return;
-    _countdownTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted) {
-        timer.cancel();
-        return;
-      }
-      if (_secondsRemaining > 1) {
-        setState(() => _secondsRemaining--);
-      } else {
-        timer.cancel();
-        setState(() => _secondsRemaining = 0);
-      }
-    });
-  }
-
-  void _refreshLock() {
-    setState(() {
-      _secondsRemaining = widget.initialHoldSeconds > 0 ? widget.initialHoldSeconds : 900;
-      _activePriceShift = null;
-      _priceShiftAccepted = false;
-    });
-    _startTimer();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Rate lock refreshed for 15 minutes')),
-    );
-  }
-
-  String _formatTimer(int seconds) {
-    if (seconds <= 0) return '00:00';
-    final m = seconds ~/ 60;
-    final s = seconds % 60;
-    return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
-  }
-
-  void _fillDemoTraveler() {
-    setState(() {
-      _name.text = 'Juan Dela Cruz';
-      _email.text = 'juan.delacruz@cheapestgo.dev';
-    });
-  }
-
-  Future<void> _promptPriceShift(int originalTotal, int shiftedTotal, int shift, Hotel hotel, Room room) async {
-    final accepted = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Rate changed by supplier'),
-        content: Text(
-          'The hotel updated the total price for your stay from '
-          '${formatPeso(originalTotal)} to ${formatPeso(shiftedTotal)} '
-          '(${shift > 0 ? '+' : ''}${formatPeso(shift)}).\n\n'
-          'Would you like to accept the new price and proceed?',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(ctx).pop(false),
-            child: const Text('Review details'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.of(ctx).pop(true),
-            child: const Text('Accept new rate'),
-          ),
-        ],
-      ),
-    );
-
-    if (accepted == true && mounted) {
-      setState(() => _priceShiftAccepted = true);
-      await _pay(hotel, room, shiftedTotal);
-    }
-  }
-
-  Future<void> _pay(Hotel hotel, Room room, int total) async {
-    if (_isExpired) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Rate hold expired. Refreshing rate lock...'),
-          action: SnackBarAction(label: 'Refresh', onPressed: _refreshLock),
-        ),
-      );
-      _refreshLock();
-      return;
+    @override
+    void initState() {
+        super.initState();
+        final user = authStore.user;
+        if (user != null) {
+            // Prefilled from the account, as V2 does: a guest who has signed in has already
+            // told us this once.
+            _email.text = user.email;
+            _firstName.text = user.firstName;
+            _lastName.text = user.lastName;
+        }
     }
 
-    if (!_formKey.currentState!.validate()) return;
-    setState(() => _paying = true);
-    await Future<void>.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-    final s = tripSearchStore;
-    final booking = bookingsStore.addStay(
-      airportCode: hotel.airportCode,
-      hotelName: hotel.name,
-      roomName: room.name,
-      checkIn: s.checkIn,
-      checkOut: s.checkOut,
-      adults: s.adults,
-      total: total,
-    );
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Booked ${hotel.name} · ref ${booking.reference}')),
-    );
-    context.go('/trips');
-  }
-
-  @override
-  void dispose() {
-    _countdownTimer?.cancel();
-    _name.dispose();
-    _email.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    final hotel = widget.catalog.hotel(widget.hotelId);
-    final room = hotel?.rooms.where((r) => r.id == widget.roomId).firstOrNull;
-    if (hotel == null || room == null) {
-      return Scaffold(
-        appBar: AppBar(),
-        body: const EmptyState(
-          icon: Icons.hotel_outlined,
-          title: 'Nothing to check out',
-          message: 'Pick a hotel and room first.',
-        ),
-      );
+    @override
+    void dispose() {
+        for (final controller in [_firstName, _lastName, _email, _phone, _requests]) {
+            controller.dispose();
+        }
+        super.dispose();
     }
-    final s = tripSearchStore;
-    final subtotal = room.nightlyRate * s.nights;
-    final taxes = stayTaxes(subtotal);
-    final baseTotal = subtotal + taxes;
-    final shift = _activePriceShift ?? 0;
-    final shiftedTotal = baseTotal + shift;
-    final effectiveTotal = _priceShiftAccepted ? shiftedTotal : baseTotal;
-    final course = widget.catalog.coursesNear(hotel.airportCode).firstOrNull;
 
-    return Scaffold(
-      appBar: AppBar(title: const Text('Review and pay')),
-      body: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
-          children: [
-            // Rate hold timer banner
-            AppCard(
-              color: _isExpired ? c.surfaceMuted : c.surface,
-              borderColor: _isExpired ? c.border : c.accent.withValues(alpha: 0.3),
-              child: Row(
-                children: [
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: _isExpired ? c.border : c.accent.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(8),
+    Hotel? get _hotel => widget.catalog.hotel(widget.hotelId);
+
+    /// The Offer being bought, found by the id the property page handed over.
+    Offer? get _offer {
+        for (final room in _hotel?.rooms ?? const <Room>[]) {
+            for (final offer in room.buyableOffers) {
+                if (offer.offerId == widget.roomId) return offer;
+            }
+        }
+        return null;
+    }
+
+    Room? get _room {
+        for (final room in _hotel?.rooms ?? const <Room>[]) {
+            if (room.buyableOffers.any((o) => o.offerId == widget.roomId)) return room;
+        }
+        return null;
+    }
+
+    /// Locks the rate and moves to payment. The quote's own figure is what is shown from here
+    /// on, including when the supplier has moved it.
+    Future<void> _toPayment() async {
+        if (!(_form.currentState?.validate() ?? false)) return;
+
+        // api-v2 ties a booking to an account, so create-payment and confirm both require one.
+        // Stopped here rather than at the moment someone taps Pay: a 401 after filling in a
+        // form and reaching for a card is the worst place to learn you need to sign in.
+        if (!authStore.isAuthenticated) {
+            if (mounted) context.push('/login');
+            return;
+        }
+
+        setState(() {
+            _busy = true;
+            _failure = null;
+        });
+
+        try {
+            final offer = _offer;
+            if (offer == null) throw StateError('That rate is no longer on sale.');
+
+            // The currency the traveller is shopping in, not the supplier's: api-v2 converts
+            // and prices in it, and the figure it answers with is the one that gets charged.
+            final quote = await checkoutApi.prebook(
+                offerId: offer.offerId,
+                currency: uiSettingsStore.displayCurrency,
+                roomName: _room?.name,
+                adults: tripSearchStore.adults,
+                expectedTotal: offer.stayTotal,
+            );
+
+            if (!mounted) return;
+            setState(() {
+                _quote = quote;
+                _step = _Step.payment;
+                _busy = false;
+            });
+        } catch (error) {
+            if (!mounted) return;
+            setState(() {
+                _busy = false;
+                _failure = _readable(error);
+            });
+        }
+    }
+
+    /// Takes the card, then books.
+    ///
+    /// The sheet is Stripe's own: it carries 3-D Secure, which is where a hand-rolled card
+    /// form fails, and it never hands the number to this app.
+    Future<void> _pay() async {
+        final quote = _quote;
+        final hotel = _hotel;
+        if (quote == null || hotel == null) return;
+
+        // Whether payments are configured is the gateway's own business, so it says so and
+        // this reports what it said. The view asking about a Stripe key would also mean no
+        // test could ever reach the half of this screen that matters.
+        setState(() {
+            _busy = true;
+            _failure = null;
+        });
+
+        try {
+            // Who is staying goes with this call as well as with confirm, so api-v2 can
+            // finish the booking from Stripe's own event if this app dies in between.
+            final intent = await checkoutApi.createPayment(
+                quote: quote,
+                firstName: _firstName.text.trim(),
+                lastName: _lastName.text.trim(),
+                email: _email.text.trim(),
+                checkIn: tripSearchStore.checkIn,
+                checkOut: tripSearchStore.checkOut,
+                holderPhone: _phone.text.trim(),
+                propertyName: hotel.name,
+                propertyImage: hotel.photos.isEmpty ? null : hotel.photos.first,
+                roomName: _room?.name,
+                adults: tripSearchStore.adults,
+                specialRequests: _requests.text.trim(),
+            );
+
+            await paymentGateway.payFor(
+                clientSecret: intent.clientSecret,
+                email: _email.text.trim(),
+                name: '${_firstName.text.trim()} ${_lastName.text.trim()}'.trim(),
+                phone: _phone.text.trim().isEmpty ? null : _phone.text.trim(),
+            );
+
+            // Paid. The booking is made from here — api-v2 reserves with the supplier and
+            // sends the confirmation email with the receipt, so nothing on this side has to.
+            final outcome = await checkoutApi.confirm(
+                paymentIntentId: intent.paymentIntentId,
+                quote: quote,
+                firstName: _firstName.text.trim(),
+                lastName: _lastName.text.trim(),
+                email: _email.text.trim(),
+                checkIn: tripSearchStore.checkIn,
+                checkOut: tripSearchStore.checkOut,
+                holderPhone: _phone.text.trim(),
+                propertyName: hotel.name,
+                propertyImage: hotel.photos.isEmpty ? null : hotel.photos.first,
+                roomName: _room?.name,
+                adults: tripSearchStore.adults,
+                specialRequests: _requests.text.trim(),
+            );
+
+            if (outcome.isConfirmed) {
+                // Trips reads the local store, not the server, until #42. Without this row a
+                // stay that was really paid for and really reserved would be missing from
+                // Trips. api-v2's reference is carried over so the two name one booking.
+                bookingsStore.addStay(
+                    airportCode: hotel.airportCode,
+                    hotelName: hotel.name,
+                    roomName: _room?.name ?? '',
+                    checkIn: tripSearchStore.checkIn,
+                    checkOut: tripSearchStore.checkOut,
+                    adults: tripSearchStore.adults,
+                    total: (intent.chargedTotal ?? quote.display?.chargedTotal ?? 0).round(),
+                    reference: outcome.reference,
+                );
+
+                // The receipt is addressed by the row's own id, not by the reference, so it
+                // has to be looked up. After the screen has already been given its answer:
+                // a booking is confirmed whether or not a PDF can be fetched for it.
+                checkoutApi.findBookingId(outcome.reference).then((id) {
+                    if (mounted && id != null) setState(() => _receiptId = id);
+                });
+            }
+
+            if (!mounted) return;
+            setState(() {
+                _charged = intent.chargedTotal;
+                _outcome = outcome;
+                // Pending and needs-review are shown on the same screen as a confirmation,
+                // not as an error: the card has been charged and a room may be held, so the
+                // one thing this must never do is invite a second attempt.
+                _step = outcome.state == ConfirmState.failed ? _Step.payment : _Step.confirmed;
+                _failure = outcome.state == ConfirmState.failed ? outcome.message : null;
+                _busy = false;
+            });
+        } on PaymentCancelled {
+            // Not a failure: the traveller shut the sheet, and the checkout stays where it
+            // was with nothing charged and nothing said.
+            if (mounted) setState(() => _busy = false);
+        } catch (error) {
+            if (!mounted) return;
+            setState(() {
+                _busy = false;
+                _failure = _readable(error);
+            });
+        }
+    }
+
+    /// Opens the receipt api-v2 generates — the same PDF the confirmation email carries.
+    ///
+    /// Handed to the browser rather than fetched: possession of the booking's id is the
+    /// authorisation (ADR-0027), so no session travels with it, and the download, the share
+    /// sheet and the print dialog are all the phone's own and better than anything here.
+    Future<void> _openReceipt() async {
+        final id = _receiptId;
+        if (id == null) return;
+        final url = Uri.parse('${env.webApiUrl}${CheckoutApi.receiptUrl(id)}');
+        if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
+            if (mounted) setState(() => _failure = 'Could not open the receipt.');
+        }
+    }
+
+    static String _readable(Object error) {
+        final text = error.toString();
+        return text.startsWith('Exception: ') ? text.substring(11) : text;
+    }
+
+    @override
+    Widget build(BuildContext context) {
+        final t = AppLocalizations.of(context)!;
+        final skin = StaySkin.of(context);
+        final hotel = _hotel;
+
+        return Scaffold(
+            backgroundColor: skin.surface,
+            appBar: AppBar(
+                backgroundColor: skin.surface,
+                surfaceTintColor: Colors.transparent,
+                leading: _step == _Step.confirmed
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.arrow_back_rounded),
+                        tooltip: _step == _Step.payment
+                            ? t.checkout_backToBookingDetails
+                            : t.common_goBack,
+                        onPressed: () {
+                            if (_step == _Step.payment) {
+                                setState(() => _step = _Step.details);
+                            } else if (context.canPop()) {
+                                context.pop();
+                            } else {
+                                context.go('/');
+                            }
+                        },
                     ),
-                    child: Icon(
-                      _isExpired ? Icons.timer_off_outlined : Icons.timer_outlined,
-                      color: _isExpired ? c.textMuted : c.accent,
-                      size: 20,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _isExpired ? 'Rate hold expired' : 'Rate locked for ${_formatTimer(_secondsRemaining)}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w700,
-                            color: _isExpired ? c.textSecondary : c.accent,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _isExpired
-                              ? 'Tap refresh to re-lock current rates'
-                              : 'Price and room guaranteed while you finish checkout',
-                          style: TextStyle(fontSize: 11, color: c.textMuted),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (_isExpired)
-                    TextButton(
-                      onPressed: _refreshLock,
-                      child: const Text('Refresh'),
-                    ),
-                ],
-              ),
             ),
-            if (_activePriceShift != null && _activePriceShift != 0 && !_priceShiftAccepted) ...[
-              const SizedBox(height: 12),
-              AppCard(
-                color: c.surface,
-                borderColor: Colors.amber.shade700,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.warning_amber_rounded, color: Colors.amber.shade800, size: 20),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            'Rate updated by supplier',
-                          style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Colors.amber.shade900),
-                          ),
-                        ),
-                      ],
+            body: hotel == null
+                ? const Center(child: CircularProgressIndicator())
+                : ListView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    children: [
+                        _Progress(step: _step, skin: skin, t: t),
+                        const SizedBox(height: 24),
+                        if (_failure != null) ...[
+                            _Failure(message: _failure!, skin: skin),
+                            const SizedBox(height: 16),
+                        ],
+                        switch (_step) {
+                            _Step.details => _details(t, skin),
+                            _Step.payment => _payment(t, skin, hotel),
+                            _Step.confirmed => _confirmed(t, skin),
+                        },
+                    ],
+                ),
+            bottomNavigationBar: hotel == null || _step == _Step.confirmed
+                ? null
+                : _Action(
+                    // api-v2's figure, fee included — nothing is billed above it. Without one
+                    // there is no price to name and nothing to press: the notice above says
+                    // why, and the bar does not offer to charge a number nobody has.
+                    label: _step == _Step.details
+                        ? t.checkout_continueToPayment
+                        : _quote?.display == null
+                            ? t.checkout_confirmingFinalPrice
+                            : t.checkout_payNow(formatMoney(
+                                _quote!.display!.chargedTotal,
+                                _quote!.display!.currency,
+                            )),
+                    busy: _busy,
+                    onPressed: _step == _Step.details
+                        ? _toPayment
+                        : _quote?.display == null
+                            ? null
+                            : _pay,
+                ),
+        );
+    }
+
+    Widget _details(AppLocalizations t, StaySkin skin) {
+        return Form(
+            key: _form,
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                    Text(
+                        t.checkout_completeYourBooking,
+                        style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: skin.title),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'The hotel adjusted this rate. Original: ${formatPeso(baseTotal)} → New: ${formatPeso(shiftedTotal)} (${shift > 0 ? '+' : ''}${formatPeso(shift)}).',
-                      style: TextStyle(fontSize: 12, color: c.textSecondary),
+                        t.checkout_whosCheckingInYou,
+                        style: TextStyle(fontSize: 16, color: skin.muted),
+                    ),
+                    const SizedBox(height: 20),
+
+                    // Signed out, the booking cannot be made: api-v2 ties it to an account.
+                    // Said here rather than at the moment someone taps Pay.
+                    if (!authStore.isAuthenticated) ...[
+                        _SignInBanner(t: t, skin: skin, onSignIn: () => context.push('/login')),
+                        const SizedBox(height: 20),
+                    ],
+
+                    Text(
+                        t.checkout_userDetails_guest1,
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: skin.muted,
+                        ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                        children: [
+                            Expanded(
+                                child: _Field(
+                                    controller: _firstName,
+                                    label: t.checkout_userDetails_firstName,
+                                    hint: 'e.g. John',
+                                    required: true,
+                                ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                                child: _Field(
+                                    controller: _lastName,
+                                    label: t.checkout_userDetails_lastName,
+                                    hint: 'e.g. Doe',
+                                    required: true,
+                                ),
+                            ),
+                        ],
+                    ),
+                    const SizedBox(height: 14),
+                    _Field(
+                        controller: _email,
+                        label: t.checkout_userDetails_email,
+                        hint: 'e.g. johndoe@gmail.com',
+                        required: true,
+                        keyboard: TextInputType.emailAddress,
+                        validator: (value) {
+                            final text = value?.trim() ?? '';
+                            if (text.isEmpty) return '${t.checkout_userDetails_email} *';
+                            // The confirmation and the receipt both go here, so a typo costs
+                            // the guest the only record they have of the booking.
+                            return RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(text)
+                                ? null
+                                : t.checkout_validation_emailInvalid;
+                        },
+                    ),
+                    const SizedBox(height: 14),
+                    _Field(
+                        controller: _phone,
+                        label: t.checkout_userDetails_phoneNumber,
+                        hint: 'e.g. 912 345 6789',
+                        keyboard: TextInputType.phone,
+                    ),
+                    const SizedBox(height: 22),
+                    Text(
+                        t.checkout_specialRequests_title.toUpperCase(),
+                        style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.2,
+                            color: skin.muted,
+                        ),
                     ),
                     const SizedBox(height: 10),
-                    Wrap(
-                      alignment: WrapAlignment.end,
-                      spacing: 8,
-                      children: [
-                        TextButton(
-                          onPressed: () => context.pop(),
-                          child: const Text('Cancel'),
-                        ),
-                        const SizedBox(width: 8),
-                        FilledButton(
-                          onPressed: () {
-                            setState(() => _priceShiftAccepted = true);
-                          },
-                          child: const Text('Accept new rate'),
-                        ),
-                      ],
+                    _Field(
+                        controller: _requests,
+                        label: '',
+                        hint: 'The property will do its best to arrange it.',
+                        maxLines: 3,
                     ),
-                  ],
-                ),
-              ),
-            ],
-            const SizedBox(height: 14),
-            AppCard(
-              child: Row(
-                children: [
-                  PhotoPlaceholder(image: hotel.cover, label: hotel.name, width: 64, height: 64, radius: 10),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(hotel.name, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
-                        const SizedBox(height: 3),
-                        Text('${room.name} · ${plural(s.adults, 'adult')}', style: TextStyle(fontSize: 12, color: c.textMuted)),
-                        Text(
-                          '${formatDayDate(s.checkIn)} → ${formatDayDate(s.checkOut)} · ${plural(s.nights, 'night')}',
-                          style: TextStyle(fontSize: 12, color: c.textMuted),
-                        ),
-                        if (room.cancellation != null) ...[
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              Icon(Icons.check_circle_outline, size: 13, color: c.success),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  room.cancellation!,
-                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: c.success),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
                 ],
-              ),
             ),
-            if (course != null) ...[
-              const SizedBox(height: 14),
-              AppCard(
-                color: c.secondary,
-                borderColor: c.secondaryBorder,
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(10)),
-                      child: Icon(Icons.golf_course_rounded, color: c.accent, size: 20),
+        );
+    }
+
+    Widget _payment(AppLocalizations t, StaySkin skin, Hotel hotel) {
+        final quote = _quote!;
+        final price = quote.display;
+        final change = quote.priceChange;
+
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                Text(
+                    t.checkout_paymentDetailsTitle,
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: skin.title),
+                ),
+                const SizedBox(height: 20),
+
+                Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                        color: skin.imageBg,
+                        borderRadius: BorderRadius.circular(16),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
+                    child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Add a tee time near ${hotel.airportCode}',
-                              style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: c.onSecondary)),
-                          Text('${course.name} · from ${formatPeso(course.pricePerPlayer)}',
-                              style: TextStyle(fontSize: 12, color: c.onSecondary)),
+                            Row(
+                                children: [
+                                    Expanded(
+                                        child: Text(
+                                            hotel.name,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                                fontSize: 15,
+                                                fontWeight: FontWeight.w700,
+                                                color: skin.title,
+                                            ),
+                                        ),
+                                    ),
+                                    Text(
+                                        // api-v2's figure in the traveller's currency. The
+                                        // conversion is the server's; this screen never does
+                                        // arithmetic on a price it is about to charge.
+                                        price == null
+                                            ? '—'
+                                            : formatMoney(price.chargedTotal, price.currency),
+                                        style: TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.w700,
+                                            color: skin.title,
+                                        ),
+                                    ),
+                                ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                                '${formatDateRange(tripSearchStore.checkIn, tripSearchStore.checkOut)}'
+                                ' · ${plural(tripSearchStore.nights, 'night')}'
+                                '${_room == null ? '' : ' · ${_room!.name}'}',
+                                style: TextStyle(fontSize: 12.5, color: skin.muted),
+                            ),
                         ],
-                      ),
                     ),
-                    TextButton(onPressed: () => context.push('/golf'), child: const Text('Add')),
-                  ],
                 ),
-              ),
-            ],
-            const SizedBox(height: 18),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const UiLabel('Lead guest'),
-                TextButton.icon(
-                  onPressed: _fillDemoTraveler,
-                  icon: const Icon(Icons.person_outline, size: 14),
-                  label: const Text('Fill demo', style: TextStyle(fontSize: 12)),
-                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            TextFormField(
-              controller: _name,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(labelText: 'Full name'),
-              validator: (v) => (v ?? '').trim().length < 2 ? 'Enter the lead guest’s name' : null,
-            ),
-            const SizedBox(height: 10),
-            TextFormField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(labelText: 'Email for confirmation'),
-              validator: (v) => RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch((v ?? '').trim()) ? null : 'Enter a valid email',
-            ),
-            const SizedBox(height: 18),
-            AppCard(
-              child: Column(
-                children: [
-                  _Line('${formatPeso(room.nightlyRate)} × ${plural(s.nights, 'night')}', formatPeso(subtotal)),
-                  const SizedBox(height: 8),
-                  _Line('Taxes and fees', formatPeso(taxes)),
-                  if (_priceShiftAccepted && shift != 0) ...[
-                    const SizedBox(height: 8),
-                    _Line('Supplier adjustment', '${shift > 0 ? '+' : ''}${formatPeso(shift)}'),
-                  ],
-                  const SizedBox(height: 8),
-                  const Divider(),
-                  const SizedBox(height: 8),
-                  _Line('Total', formatPeso(effectiveTotal), bold: true),
+
+                if (price == null) ...[
+                    const SizedBox(height: 14),
+                    _Notice(
+                        icon: Icons.info_outline_rounded,
+                        message: t.checkout_confirmingFinalPrice,
+                        skin: skin,
+                    ),
                 ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomActionBar(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (_isExpired)
-              AppGradientButton(
-                onPressed: _refreshLock,
-                icon: Icons.refresh_rounded,
-                label: 'Rate hold expired · Tap to refresh',
-              )
-            else if (_activePriceShift != null && _activePriceShift != 0 && !_priceShiftAccepted)
-              AppGradientButton(
-                onPressed: () => _promptPriceShift(baseTotal, shiftedTotal, shift, hotel, room),
-                icon: Icons.warning_amber_rounded,
-                label: 'Review updated rate · ${formatPeso(shiftedTotal)}',
-              )
-            else
-              AppGradientButton(
-                onPressed: () => _pay(hotel, room, effectiveTotal),
-                isLoading: _paying,
-                icon: Icons.lock_outline_rounded,
-                label: 'Pay ${formatPeso(effectiveTotal)}',
-              ),
-            const SizedBox(height: 6),
-            Text(
-              'Test mode: no card is charged in this build.',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 11, color: c.textMuted),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
+
+                if (change != null) ...[
+                    const SizedBox(height: 14),
+                    // Said out loud, never charged quietly: the supplier answered with a
+                    // different figure from the one on the property page.
+                    _Notice(
+                        icon: change.up ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                        message: 'The price ${change.up ? 'went up' : 'came down'} from '
+                            '${formatMoney(change.previous, change.currency)} to '
+                            '${formatMoney(change.current, change.currency)}.',
+                        skin: skin,
+                    ),
+                ],
+
+                if (quote.substitutedRoomName != null) ...[
+                    const SizedBox(height: 14),
+                    // A different room from the one that was picked. Before paying, not after.
+                    _Notice(
+                        icon: Icons.swap_horiz_rounded,
+                        message: 'The hotel offered ${quote.substitutedRoomName} instead of the '
+                            'room you chose.',
+                        skin: skin,
+                    ),
+                ],
+
+                if (price != null && price.serviceFee > 0) ...[
+                    const SizedBox(height: 14),
+                    _Notice(
+                        icon: Icons.receipt_long_rounded,
+                        message: '${formatMoney(price.total, price.currency)} for the stay, plus '
+                            '${formatMoney(price.serviceFee, price.currency)} service fee.',
+                        skin: skin,
+                    ),
+                ],
+
+                const SizedBox(height: 18),
+                Text(
+                    t.checkout_paymentInfo,
+                    style: TextStyle(fontSize: 13, color: skin.muted),
+                ),
+            ],
+        );
+    }
+
+    /// Booked, or paid for and not settled yet. Never an invitation to pay again.
+    ///
+    /// V2's confirmation page, element for element: the stamped badge, the reference in the
+    /// accent, the receipt card with the stay in it, and the three actions. The one departure
+    /// is the receipt — V2 prints the page, which a phone cannot do, so this opens the PDF
+    /// api-v2 generates, the same document that was emailed.
+    Widget _confirmed(AppLocalizations t, StaySkin skin) {
+        final outcome = _outcome!;
+        final booked = outcome.isConfirmed;
+        final hotel = _hotel;
+        final price = _quote?.display;
+        final nights = tripSearchStore.nights;
+        final paid = _charged ?? price?.chargedTotal;
+
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+                // ── The stamp ──
+                Center(
+                    child: Column(
+                        children: [
+                            Container(
+                                width: 100,
+                                height: 100,
+                                decoration: BoxDecoration(
+                                    // Not the brand blue: green is the one colour on this
+                                    // screen that means "this happened", and V2 stamps it.
+                                    color: booked ? _green : const Color(0xFFF59E0B),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.6), width: 3),
+                                ),
+                                child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                        Icon(
+                                            booked ? Icons.check_rounded : Icons.schedule_rounded,
+                                            size: 24,
+                                            color: Colors.white,
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                            booked ? t.checkout_booked : 'PAID',
+                                            style: const TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w800,
+                                                letterSpacing: 0.72,
+                                                color: Colors.white,
+                                            ),
+                                        ),
+                                    ],
+                                ),
+                            ),
+                            const SizedBox(height: 20),
+                            Text(
+                                booked ? t.checkout_allSet : 'Your payment went through',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                    fontSize: 28,
+                                    fontWeight: FontWeight.w600,
+                                    color: skin.title,
+                                ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                                booked
+                                    // api-v2 sends it, receipt attached; this only says where.
+                                    ? t.checkout_receiptSent(_email.text.trim())
+                                    : '${outcome.message} Do not pay again — we will email '
+                                        '${_email.text.trim()} as soon as the hotel confirms.',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(fontSize: 13, height: 1.5, color: skin.muted),
+                            ),
+                        ],
+                    ),
+                ),
+                const SizedBox(height: 28),
+
+                // ── The reference ──
+                if (outcome.reference.isNotEmpty) ...[
+                    Text(
+                        t.checkout_bookingReference,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.0,
+                            color: skin.muted,
+                        ),
+                    ),
+                    const SizedBox(height: 4),
+                    // Selectable: it is the one thing on this screen somebody needs to copy.
+                    SelectableText(
+                        outcome.reference,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.76,
+                            color: _accent,
+                        ),
+                    ),
+                    const SizedBox(height: 28),
+                ],
+
+                // ── The receipt card ──
+                if (hotel != null)
+                    Container(
+                        decoration: BoxDecoration(
+                            color: skin.imageBg,
+                            border: Border.all(color: skin.hairline),
+                            borderRadius: BorderRadius.circular(24),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                                if (hotel.photos.isNotEmpty)
+                                    SizedBox(
+                                        height: 180,
+                                        width: double.infinity,
+                                        child: Image.network(
+                                            hotel.photos.first,
+                                            fit: BoxFit.cover,
+                                            errorBuilder: (_, _, _) => ColoredBox(
+                                                color: skin.imageBg,
+                                                child: Icon(
+                                                    Icons.apartment_rounded,
+                                                    size: 40,
+                                                    color: skin.muted,
+                                                ),
+                                            ),
+                                        ),
+                                    ),
+                                Padding(
+                                    padding: const EdgeInsets.all(24),
+                                    child: Column(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                            Text(
+                                                hotel.name,
+                                                style: TextStyle(
+                                                    fontSize: 20,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: skin.title,
+                                                ),
+                                            ),
+                                            if ((hotel.address ?? '').isNotEmpty) ...[
+                                                const SizedBox(height: 4),
+                                                Row(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                        Icon(Icons.place_outlined, size: 12, color: skin.muted),
+                                                        const SizedBox(width: 5),
+                                                        Expanded(
+                                                            child: Text(
+                                                                hotel.address!,
+                                                                style: TextStyle(fontSize: 12, color: skin.muted),
+                                                            ),
+                                                        ),
+                                                    ],
+                                                ),
+                                            ],
+                                            const SizedBox(height: 20),
+                                            Divider(height: 1, color: skin.hairline),
+                                            const SizedBox(height: 20),
+
+                                            // The stay, two by two, as V2 lays it out.
+                                            Row(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Expanded(
+                                                        child: _Fact(
+                                                            label: t.checkout_checkIn,
+                                                            value: formatShortDate(tripSearchStore.checkIn),
+                                                            note: formatDayDate(tripSearchStore.checkIn),
+                                                            icon: Icons.calendar_today_rounded,
+                                                            skin: skin,
+                                                        ),
+                                                    ),
+                                                    const SizedBox(width: 24),
+                                                    Expanded(
+                                                        child: _Fact(
+                                                            label: t.checkout_checkOut,
+                                                            value: formatShortDate(tripSearchStore.checkOut),
+                                                            note: formatDayDate(tripSearchStore.checkOut),
+                                                            icon: Icons.calendar_today_rounded,
+                                                            skin: skin,
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                            const SizedBox(height: 16),
+                                            Row(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                    Expanded(
+                                                        child: _Fact(
+                                                            label: t.checkout_guestLabel,
+                                                            value: '${_firstName.text.trim()} '
+                                                                '${_lastName.text.trim()}'.trim(),
+                                                            note: t.checkout_guestsCount(tripSearchStore.adults),
+                                                            icon: Icons.person_outline_rounded,
+                                                            skin: skin,
+                                                        ),
+                                                    ),
+                                                    const SizedBox(width: 24),
+                                                    Expanded(
+                                                        child: _Fact(
+                                                            label: t.checkout_success_room,
+                                                            value: _room?.name ?? t.checkout_roomFallback,
+                                                            note: t.checkout_nightsCount(nights),
+                                                            skin: skin,
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                            const SizedBox(height: 20),
+                                            Divider(height: 1, color: skin.hairline),
+                                            const SizedBox(height: 20),
+
+                                            // ── What was paid ──
+                                            Text(
+                                                t.checkout_priceBreakdown,
+                                                style: TextStyle(
+                                                    fontSize: 11,
+                                                    fontWeight: FontWeight.w700,
+                                                    letterSpacing: 0.88,
+                                                    color: skin.muted,
+                                                ),
+                                            ),
+                                            const SizedBox(height: 12),
+                                            if (price != null && nights > 0 && price.total > 0)
+                                                _Line(
+                                                    label: '${formatMoney(price.total / nights, price.currency)}'
+                                                        ' × ${t.checkout_nightsCount(nights)}',
+                                                    value: formatMoney(price.total, price.currency),
+                                                    skin: skin,
+                                                ),
+                                            if (price != null && price.serviceFee > 0)
+                                                _Line(
+                                                    label: t.checkout_serviceFee,
+                                                    value: formatMoney(price.serviceFee, price.currency),
+                                                    skin: skin,
+                                                ),
+                                            const SizedBox(height: 12),
+                                            Divider(height: 1, color: skin.hairline),
+                                            const SizedBox(height: 12),
+                                            Row(
+                                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                children: [
+                                                    Flexible(
+                                                        child: Text(
+                                                            t.checkout_totalPaid,
+                                                            maxLines: 1,
+                                                            overflow: TextOverflow.ellipsis,
+                                                            style: TextStyle(
+                                                                fontSize: 18,
+                                                                fontWeight: FontWeight.w800,
+                                                                color: skin.title,
+                                                            ),
+                                                        ),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Text(
+                                                        paid == null
+                                                            ? '—'
+                                                            : formatMoney(paid, price?.currency ?? 'USD'),
+                                                        style: const TextStyle(
+                                                            fontSize: 18,
+                                                            fontWeight: FontWeight.w800,
+                                                            color: _green,
+                                                        ),
+                                                    ),
+                                                ],
+                                            ),
+                                        ],
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                const SizedBox(height: 28),
+
+                // ── The three actions ──
+                // The receipt is offered only once api-v2 has a row to address it to; until
+                // then the emailed copy is the one that exists, and a button that 404s is
+                // worse than no button.
+                if (_receiptId != null)
+                    Center(
+                        child: OutlinedButton.icon(
+                            onPressed: _openReceipt,
+                            icon: const Icon(Icons.download_rounded, size: 15),
+                            style: OutlinedButton.styleFrom(
+                                foregroundColor: skin.title,
+                                side: BorderSide(color: skin.hairline, width: 1.5),
+                                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                                shape: const StadiumBorder(),
+                            ),
+                            label: Text(
+                                t.checkout_success_downloadReceipt,
+                                style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                            ),
+                        ),
+                    ),
+                const SizedBox(height: 12),
+                Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                        Flexible(
+                            child: _Pill(
+                                label: t.checkout_planAnotherTrip,
+                                filled: true,
+                                skin: skin,
+                                onPressed: () => context.go('/'),
+                            ),
+                        ),
+                        const SizedBox(width: 12),
+                        Flexible(
+                            child: _Pill(
+                                label: t.checkout_success_viewMyTrips,
+                                filled: false,
+                                skin: skin,
+                                onPressed: () => context.go('/trips'),
+                            ),
+                        ),
+                    ],
+                ),
+            ],
+        );
+    }
 }
 
+/// One labelled fact in the receipt card: a small caps label, the fact, and a quieter note.
+class _Fact extends StatelessWidget {
+    const _Fact({
+        required this.label,
+        required this.value,
+        required this.note,
+        required this.skin,
+        this.icon,
+    });
+
+    final String label;
+    final String value;
+    final String note;
+    final StaySkin skin;
+    final IconData? icon;
+
+    @override
+    Widget build(BuildContext context) {
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                Text(
+                    label,
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.8,
+                        color: skin.muted,
+                    ),
+                ),
+                const SizedBox(height: 4),
+                Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        if (icon != null) ...[
+                            Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: Icon(icon, size: 13, color: _accent),
+                            ),
+                            const SizedBox(width: 6),
+                        ],
+                        Expanded(
+                            child: Text(
+                                value,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    height: 1.3,
+                                    fontWeight: FontWeight.w700,
+                                    color: skin.title,
+                                ),
+                            ),
+                        ),
+                    ],
+                ),
+                const SizedBox(height: 2),
+                Text(note, style: TextStyle(fontSize: 11, color: skin.muted)),
+            ],
+        );
+    }
+}
+
+/// A line of the price breakdown.
 class _Line extends StatelessWidget {
-  const _Line(this.label, this.value, {this.bold = false});
+    const _Line({required this.label, required this.value, required this.skin});
 
-  final String label;
-  final String value;
-  final bool bold;
+    final String label;
+    final String value;
+    final StaySkin skin;
 
-  @override
-  Widget build(BuildContext context) {
-    final c = context.colors;
-    return Row(
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              fontSize: bold ? 15 : 13,
-              fontWeight: bold ? FontWeight.w700 : FontWeight.w400,
-              color: bold ? c.textPrimary : c.textSecondary,
+    @override
+    Widget build(BuildContext context) {
+        return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                    Flexible(child: Text(label, style: TextStyle(fontSize: 13, color: skin.muted))),
+                    Text(
+                        value,
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: skin.muted),
+                    ),
+                ],
             ),
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: bold ? 15 : 13,
-            fontWeight: bold ? FontWeight.w700 : FontWeight.w500,
-            color: bold ? c.accent : c.textPrimary,
-          ),
-        ),
-      ],
-    );
-  }
+        );
+    }
+}
+
+/// One of the two rounded actions under the receipt: the brand gradient, or an outline.
+class _Pill extends StatelessWidget {
+    const _Pill({
+        required this.label,
+        required this.filled,
+        required this.skin,
+        required this.onPressed,
+    });
+
+    final String label;
+    final bool filled;
+    final StaySkin skin;
+    final VoidCallback onPressed;
+
+    @override
+    Widget build(BuildContext context) {
+        final text = Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: filled ? skin.chipText : skin.title,
+            ),
+        );
+
+        if (!filled) {
+            return OutlinedButton(
+                onPressed: onPressed,
+                style: OutlinedButton.styleFrom(
+                    side: BorderSide(color: skin.hairline, width: 1.5),
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                    shape: const StadiumBorder(),
+                ),
+                child: text,
+            );
+        }
+
+        return Material(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(999),
+            child: InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(999),
+                child: Ink(
+                    decoration: BoxDecoration(
+                        gradient: StaySkin.chipGradient,
+                        borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 15),
+                        alignment: Alignment.center,
+                        child: text,
+                    ),
+                ),
+            ),
+        );
+    }
+}
+
+/// Details, Payment, Verification — numbered, with the one in hand filled.
+class _Progress extends StatelessWidget {
+    const _Progress({required this.step, required this.skin, required this.t});
+
+    final _Step step;
+    final StaySkin skin;
+    final AppLocalizations t;
+
+    @override
+    Widget build(BuildContext context) {
+        final labels = [t.checkout_steps_details, t.checkout_steps_payment, t.checkout_steps_verification];
+
+        return Row(
+            children: [
+                for (var i = 0; i < labels.length; i++) ...[
+                    if (i > 0)
+                        Expanded(
+                            child: Container(
+                                height: 1,
+                                margin: const EdgeInsets.symmetric(horizontal: 8),
+                                color: skin.hairline,
+                            ),
+                        ),
+                    Column(
+                        children: [
+                            Container(
+                                width: 28,
+                                height: 28,
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                    color: i <= step.index ? const Color(0xFF2563EB) : null,
+                                    shape: BoxShape.circle,
+                                    border: i <= step.index ? null : Border.all(color: skin.hairline),
+                                ),
+                                child: Text(
+                                    '${i + 1}',
+                                    style: TextStyle(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                        color: i <= step.index ? Colors.white : skin.muted,
+                                    ),
+                                ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                                labels[i],
+                                style: TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: i == step.index ? FontWeight.w700 : FontWeight.w500,
+                                    color: i == step.index ? skin.title : skin.muted,
+                                ),
+                            ),
+                        ],
+                    ),
+                ],
+            ],
+        );
+    }
+}
+
+class _Field extends StatelessWidget {
+    const _Field({
+        required this.controller,
+        required this.label,
+        required this.hint,
+        this.required = false,
+        this.keyboard,
+        this.maxLines = 1,
+        this.validator,
+    });
+
+    final TextEditingController controller;
+    final String label;
+    final String hint;
+    final bool required;
+    final TextInputType? keyboard;
+    final int maxLines;
+    final String? Function(String?)? validator;
+
+    @override
+    Widget build(BuildContext context) {
+        final skin = StaySkin.of(context);
+
+        return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                if (label.isNotEmpty) ...[
+                    Text.rich(
+                        TextSpan(
+                            text: label,
+                            children: required
+                                ? [const TextSpan(text: ' *', style: TextStyle(color: Color(0xFFDC2626)))]
+                                : null,
+                        ),
+                        style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: skin.title),
+                    ),
+                    const SizedBox(height: 6),
+                ],
+                TextFormField(
+                    controller: controller,
+                    keyboardType: keyboard,
+                    maxLines: maxLines,
+                    decoration: InputDecoration(hintText: hint),
+                    validator: validator ??
+                        (required
+                            ? (value) => (value?.trim().isEmpty ?? true) ? '$label *' : null
+                            : null),
+                ),
+            ],
+        );
+    }
+}
+
+class _SignInBanner extends StatelessWidget {
+    const _SignInBanner({required this.t, required this.skin, required this.onSignIn});
+
+    final AppLocalizations t;
+    final StaySkin skin;
+    final VoidCallback onSignIn;
+
+    @override
+    Widget build(BuildContext context) {
+        return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+                color: skin.imageBg,
+                borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+                children: [
+                    Expanded(
+                        child: Text(
+                            t.checkout_signInToComplete,
+                            style: TextStyle(fontSize: 13.5, color: skin.title),
+                        ),
+                    ),
+                    const SizedBox(width: 10),
+                    OutlinedButton(onPressed: onSignIn, child: Text(t.checkout_signInArrow)),
+                ],
+            ),
+        );
+    }
+}
+
+class _Notice extends StatelessWidget {
+    const _Notice({required this.icon, required this.message, required this.skin});
+
+    final IconData icon;
+    final String message;
+    final StaySkin skin;
+
+    @override
+    Widget build(BuildContext context) {
+        return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+                Icon(icon, size: 16, color: skin.muted),
+                const SizedBox(width: 10),
+                Expanded(
+                    child: Text(message, style: TextStyle(fontSize: 12.5, height: 1.45, color: skin.muted)),
+                ),
+            ],
+        );
+    }
+}
+
+class _Failure extends StatelessWidget {
+    const _Failure({required this.message, required this.skin});
+
+    final String message;
+    final StaySkin skin;
+
+    @override
+    Widget build(BuildContext context) {
+        return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+                color: const Color(0x14DC2626),
+                borderRadius: BorderRadius.circular(14),
+            ),
+            child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                    const Icon(Icons.error_outline_rounded, size: 18, color: Color(0xFFDC2626)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: Text(
+                            message,
+                            style: const TextStyle(fontSize: 13, height: 1.4, color: Color(0xFFDC2626)),
+                        ),
+                    ),
+                ],
+            ),
+        );
+    }
+}
+
+/// The one action, pinned to the foot — and the only thing down there, since the bottom bar
+/// is absent on this screen.
+class _Action extends StatelessWidget {
+    const _Action({required this.label, required this.busy, required this.onPressed});
+
+    final String label;
+    final bool busy;
+
+    /// Null when there is nothing to press: a quote api-v2 could not price has no figure to
+    /// charge, and offering to charge it anyway is the one thing this screen must not do.
+    final VoidCallback? onPressed;
+
+    @override
+    Widget build(BuildContext context) {
+        final skin = StaySkin.of(context);
+
+        return Padding(
+            padding: EdgeInsets.fromLTRB(20, 10, 20, 12 + MediaQuery.viewPaddingOf(context).bottom),
+            child: Material(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(999),
+                child: InkWell(
+                    onTap: busy ? null : onPressed,
+                    borderRadius: BorderRadius.circular(999),
+                    child: Ink(
+                        decoration: BoxDecoration(
+                            gradient: StaySkin.chipGradient,
+                            borderRadius: BorderRadius.circular(999),
+                        ),
+                        child: Container(
+                            height: 54,
+                            alignment: Alignment.center,
+                            child: busy
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
+                                : Text(
+                                    label,
+                                    style: TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w700,
+                                        color: skin.chipText,
+                                    ),
+                                ),
+                        ),
+                    ),
+                ),
+            ),
+        );
+    }
 }
