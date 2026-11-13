@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/features/auth/api/auth_api.dart';
+import 'package:cheapest_go_mobile/features/auth/api/google_identity.dart';
 import 'package:cheapest_go_mobile/features/auth/contracts/auth_contract.dart';
 import 'package:cheapest_go_mobile/shared/auth/permissions.dart';
 import 'package:cheapest_go_mobile/shared/auth/rbac.dart';
@@ -198,11 +199,50 @@ class AuthStore extends ChangeNotifier {
     }
   }
 
+  /// Signs in with Google. See #45.
+  ///
+  /// Returns false when the traveller backed out of the account picker — their decision, so
+  /// no error is set and nothing is said. A genuine failure sets [errorMessage] as the
+  /// password path does.
+  ///
+  /// Available in a mock build too: unlike a password, there is no fake Google to stand in
+  /// for, so this always goes to api-v2. A build without a client id has no button at all.
+  Future<bool> signInWithGoogle() async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    try {
+      final idToken = await googleIdentity.idToken();
+      if (idToken == null || idToken.isEmpty) return false;
+
+      final user = await authApi.signInWithGoogle(idToken);
+      _user = user;
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_cachedUserKey, jsonEncode(user.toJson()));
+        await prefs.remove(_signedOutKey);
+      } catch (_) {}
+      return true;
+    } on GoogleNotConfigured {
+      _errorMessage = 'Google sign-in is not configured in this build.';
+      return false;
+    } catch (err) {
+      _errorMessage = routeError(err).toast ?? err.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   Future<void> logout() async {
     _isLoading = true;
     notifyListeners();
     try {
       if (!mock) await authApi.logout();
+      // Also let go of the Google account, or the next sign-in silently picks the same one
+      // with no chance to choose another.
+      await googleIdentity.forget();
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_cachedUserKey);
       if (mock) await prefs.setBool(_signedOutKey, true);
