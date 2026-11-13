@@ -433,10 +433,15 @@ class _SignInPrompt extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) => EmptyState(
-        icon: Icons.lock_outline_rounded,
-        title: t.checkout_signInToComplete,
-        message: t.trips_emptyHint,
-        action: AppGradientButton(label: t.nav_signIn, height: 46, onPressed: onSignIn),
+        icon: Icons.luggage_outlined,
+        // "Sign in required" and "Sign in" are V2's own words. The line between them is not:
+        // V2 never shows this state — it redirects to /login on a 401 — so there is no
+        // mirrored string to take. Pushing a login screen at somebody who only tapped a tab
+        // is harsher on a phone than on the web, where a redirect is the usual answer.
+        title: t.flights_priceAlert_signInRequired,
+        message: 'Your bookings are kept with your account, so they are on every device you '
+            'sign in to.',
+        action: AppGradientButton(label: t.nav_signIn, compact: true, onPressed: onSignIn),
     );
 }
 
