@@ -93,18 +93,21 @@ class MockBookingsSource implements BookingsSource {
                     departure: DateTime(2026, 11, 26, 19, 21),
                     arrival: DateTime(2026, 11, 27, 0, 24),
                     cabinClass: 'economy',
+                    originTerminal: '3',
                 ),
                 FlightSegment(
                     airline: 'ZZ', flightNumber: '2037', origin: 'ICN', destination: 'MNL',
                     departure: DateTime(2026, 11, 28, 20, 54),
                     arrival: DateTime(2026, 11, 28, 23, 57),
                     cabinClass: 'economy', itineraryIndex: 1,
+                    // Left unnamed on purpose: the screen has to say "not yet" differently
+                    // from naming a terminal.
                 ),
             ],
             passengers: const [
                 FlightPassenger(
                     firstName: 'Billy Dhen Clir', lastName: 'Busilan',
-                    ticketNumber: '0812345678901',
+                    ticketNumber: '0812345678901', seatNumber: '14A',
                 ),
             ],
             searchText: searchTextOf([

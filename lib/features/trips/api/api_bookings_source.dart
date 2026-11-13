@@ -142,7 +142,9 @@ class ApiBookingsSource implements BookingsSource {
                     FlightPassenger(
                         firstName: _text(raw['first_name']),
                         lastName: _text(raw['last_name']),
+                        type: _text(raw['type'], 'ADT').toUpperCase(),
                         ticketNumber: _textOrNull(raw['ticket_number']),
+                        seatNumber: _textOrNull(raw['seat_number']),
                     ),
         ];
 

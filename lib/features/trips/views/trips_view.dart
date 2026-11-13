@@ -6,6 +6,7 @@ import 'package:cheapest_go_mobile/features/trips/components/booking_card.dart';
 import 'package:cheapest_go_mobile/features/trips/lib/booking_search.dart';
 import 'package:cheapest_go_mobile/features/trips/models/trip_booking.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -167,6 +168,10 @@ class _Tabs extends StatelessWidget {
     Widget build(BuildContext context) {
         return SingleChildScrollView(
             scrollDirection: Axis.horizontal,
+            // The list's own gutter, repeated inside the scroller, so the last tab clears
+            // the edge of the screen instead of being sliced by it.
+            padding: const EdgeInsets.only(right: 16),
+            clipBehavior: Clip.none,
             child: Row(
                 children: [
                     for (final tab in BookingTab.values) ...[
@@ -341,6 +346,9 @@ class _Results extends StatelessWidget {
                         child: BookingCard(
                             booking: booking,
                             onOpen: () => context.push('/trips/${booking.id}'),
+                            // The e-ticket lives on the detail screen, beside the passenger
+                            // and the ticket number it belongs to.
+                            onETicket: () => context.push('/trips/${booking.id}'),
                         ),
                     ),
             ],
@@ -378,9 +386,10 @@ class _Empty extends StatelessWidget {
         icon: Icons.luggage_outlined,
         title: tab == BookingTab.golf ? t.trips_golfCard_empty : t.trips_emptyState_allTitle,
         message: t.trips_emptyHint,
-        action: FilledButton(
+        action: AppGradientButton(
+            label: t.trips_emptyState_otherDesc,
+            height: 46,
             onPressed: () => context.go('/'),
-            child: Text(t.trips_emptyState_otherDesc),
         ),
     );
 }
@@ -410,7 +419,7 @@ class _LoadFailed extends StatelessWidget {
         icon: Icons.cloud_off_rounded,
         title: t.trips_loadFailed_title,
         message: '',
-        action: FilledButton(onPressed: onRetry, child: Text(t.trips_loadFailed_retry)),
+        action: AppGradientButton(label: t.trips_loadFailed_retry, height: 46, onPressed: onRetry),
     );
 }
 
@@ -427,7 +436,7 @@ class _SignInPrompt extends StatelessWidget {
         icon: Icons.lock_outline_rounded,
         title: t.checkout_signInToComplete,
         message: t.trips_emptyHint,
-        action: FilledButton(onPressed: onSignIn, child: Text(t.nav_signIn)),
+        action: AppGradientButton(label: t.nav_signIn, height: 46, onPressed: onSignIn),
     );
 }
 

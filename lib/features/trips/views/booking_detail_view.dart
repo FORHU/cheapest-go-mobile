@@ -8,6 +8,7 @@ import 'package:cheapest_go_mobile/features/trips/components/booking_card.dart';
 import 'package:cheapest_go_mobile/features/trips/lib/travel_documents.dart';
 import 'package:cheapest_go_mobile/features/trips/models/trip_booking.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
@@ -98,6 +99,9 @@ class _BookingDetailViewState extends State<BookingDetailView> {
     }
 }
 
+/// Where the ticket numbers are, so the card's E-Ticket button can reach them.
+final _passengersKey = GlobalKey();
+
 class _Body extends StatelessWidget {
     const _Body({required this.booking, required this.t, required this.onChanged});
 
@@ -131,7 +135,23 @@ class _Body extends StatelessWidget {
                 const SizedBox(height: 14),
 
                 // The same card the list drew, without a link to the page it is already on.
-                BookingCard(booking: booking, onOpen: () {}, detail: true),
+                // E-Ticket stays, as V2 keeps it here: the ticket numbers are further down
+                // this page, so it takes you to them rather than opening anything.
+                BookingCard(
+                    booking: booking,
+                    onOpen: () {},
+                    detail: true,
+                    onETicket: () {
+                        final target = _passengersKey.currentContext;
+                        if (target != null) {
+                            Scrollable.ensureVisible(
+                                target,
+                                duration: const Duration(milliseconds: 300),
+                                alignment: 0.1,
+                            );
+                        }
+                    },
+                ),
                 const SizedBox(height: 16),
 
                 ...switch (booking) {
@@ -195,11 +215,12 @@ class _Body extends StatelessWidget {
                 title: t.trips_sections_itinerary,
                 icon: Icons.flight_takeoff_rounded,
                 children: [
-                    for (final leg in b.segments) _Leg(segment: leg),
+                    for (final leg in b.segments) _Leg(segment: leg, t: t),
                 ],
             ),
         if (b.passengers.isNotEmpty)
             _Panel(
+                key: _passengersKey,
                 title: t.trips_sections_passengers,
                 icon: Icons.person_outline_rounded,
                 children: [
@@ -209,11 +230,36 @@ class _Body extends StatelessWidget {
                             child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                    Text(p.name, style: const TextStyle(fontWeight: FontWeight.w600)),
+                                    Row(
+                                        children: [
+                                            Flexible(
+                                                child: Text(
+                                                    p.name,
+                                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                                ),
+                                            ),
+                                            const SizedBox(width: 6),
+                                            // The airline's own word for who this is.
+                                            Text(
+                                                '(${p.type})',
+                                                style: TextStyle(fontSize: 12, color: context.colors.textMuted),
+                                            ),
+                                        ],
+                                    ),
+                                    // Green, because a ticket number is the thing that means
+                                    // the airline has actually issued — see `isTicketed`.
                                     if (p.ticketNumber != null)
                                         Text(
                                             'E-Ticket: ${p.ticketNumber}',
                                             style: const TextStyle(fontSize: 12, color: Color(0xFF15803D)),
+                                        ),
+                                    // Usually assigned at check-in, so absent more often than
+                                    // not. Shown only when the airline has given one, rather
+                                    // than an empty row implying none was asked for.
+                                    if (p.seatNumber != null && p.seatNumber!.isNotEmpty)
+                                        Text(
+                                            'Seat ${p.seatNumber}',
+                                            style: TextStyle(fontSize: 12, color: context.colors.textMuted),
                                         ),
                                 ],
                             ),
@@ -281,6 +327,7 @@ class _Panel extends StatelessWidget {
         required this.icon,
         this.rows = const [],
         this.children = const [],
+        super.key,
     });
 
     final String title;
@@ -351,71 +398,6 @@ class _Panel extends StatelessWidget {
     }
 }
 
-class _Leg extends StatelessWidget {
-    const _Leg({required this.segment});
-
-    final FlightSegment segment;
-
-    @override
-    Widget build(BuildContext context) {
-        final c = context.colors;
-        String clock(DateTime d) {
-            final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
-            return '$h:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'AM' : 'PM'}';
-        }
-
-        return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 8),
-            child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                    Text(
-                        segment.itineraryIndex == 0 ? 'OUTBOUND' : 'RETURN',
-                        style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.8,
-                            color: c.textMuted,
-                        ),
-                    ),
-                    const SizedBox(height: 6),
-                    Row(
-                        children: [
-                            Expanded(
-                                child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                        Text(clock(segment.departure),
-                                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                                        Text(segment.origin, style: TextStyle(fontSize: 12, color: c.textMuted)),
-                                    ],
-                                ),
-                            ),
-                            Expanded(
-                                child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.end,
-                                    children: [
-                                        Text(clock(segment.arrival),
-                                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700)),
-                                        Text(segment.destination,
-                                            style: TextStyle(fontSize: 12, color: c.textMuted)),
-                                    ],
-                                ),
-                            ),
-                        ],
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                        '${formatDayDate(segment.departure)}, ${segment.departure.year} · '
-                        '${segment.airline}${segment.flightNumber}'
-                        '${segment.cabinClass.isEmpty ? '' : ' · ${segment.cabinClass}'}',
-                        style: TextStyle(fontSize: 11.5, color: c.textMuted),
-                    ),
-                ],
-            ),
-        );
-    }
-}
 
 /// The policy as it was agreed — shown, never acted on. #42 has no Cancel button.
 class _CancellationPanel extends StatelessWidget {
@@ -552,8 +534,17 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                 TextField(
                     controller: _text,
                     maxLines: 3,
-                    decoration: const InputDecoration(
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
                         hintText: 'e.g. Late check-in after 10 PM, extra bed, high floor…',
+                        hintStyle: TextStyle(fontSize: 14, color: c.textSubtle),
+                        filled: true,
+                        fillColor: c.surfaceMuted,
+                        contentPadding: const EdgeInsets.all(12),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                        ),
                     ),
                 ),
                 const SizedBox(height: 8),
@@ -566,11 +557,15 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                     Text(_error!, style: const TextStyle(fontSize: 12, color: Color(0xFFDC2626))),
                 ],
                 const SizedBox(height: 10),
+                // The brand gradient, as V2's panel buttons carry it — a flat theme blue is
+                // not the same control.
                 Align(
                     alignment: Alignment.centerLeft,
-                    child: FilledButton(
+                    child: AppGradientButton(
+                        label: 'Save request',
+                        compact: true,
+                        isLoading: _busy,
                         onPressed: _busy ? null : _save,
-                        child: Text(_busy ? '…' : 'Save request'),
                     ),
                 ),
             ],
@@ -638,7 +633,18 @@ class _SharePanelState extends State<_SharePanel> {
                 TextField(
                     controller: _email,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(labelText: widget.t.trips_shareForm_sendTo),
+                    style: const TextStyle(fontSize: 14),
+                    decoration: InputDecoration(
+                        hintText: widget.t.trips_shareForm_sendTo,
+                        hintStyle: TextStyle(fontSize: 14, color: c.textSubtle),
+                        filled: true,
+                        fillColor: c.surfaceMuted,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: BorderSide.none,
+                        ),
+                    ),
                 ),
                 if (_message != null) ...[
                     const SizedBox(height: 8),
@@ -653,9 +659,11 @@ class _SharePanelState extends State<_SharePanel> {
                 const SizedBox(height: 10),
                 Align(
                     alignment: Alignment.centerLeft,
-                    child: FilledButton(
+                    child: AppGradientButton(
+                        label: widget.t.trips_shareForm_submit,
+                        compact: true,
+                        isLoading: _busy,
                         onPressed: _busy ? null : _send,
-                        child: Text(_busy ? '…' : widget.t.trips_shareForm_submit),
                     ),
                 ),
             ],
@@ -755,10 +763,219 @@ class _DocButton extends StatelessWidget {
         alignment: Alignment.centerLeft,
         child: Padding(
             padding: const EdgeInsets.only(top: 4),
-            child: OutlinedButton.icon(
-                onPressed: onTap,
-                icon: Icon(icon, size: 16),
-                label: Text(label),
+            // Neutral, not the theme's blue: a document is something you fetch, and the
+            // blue tint made it compete with the panel's own action.
+            child: Material(
+                color: context.colors.surfaceMuted,
+                borderRadius: BorderRadius.circular(999),
+                child: InkWell(
+                    onTap: onTap,
+                    borderRadius: BorderRadius.circular(999),
+                    child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                                Icon(icon, size: 15, color: context.colors.textPrimary),
+                                const SizedBox(width: 8),
+                                Text(
+                                    label,
+                                    style: TextStyle(
+                                        fontSize: 13.5,
+                                        fontWeight: FontWeight.w600,
+                                        color: context.colors.textPrimary,
+                                    ),
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    );
+}
+/// One flight, as V2's itinerary draws it: the two ends side by side, each with its own
+/// time, airport, and the facts a traveller actually needs at the airport — the full date,
+/// the terminal, and the cabin with the flight number.
+class _Leg extends StatelessWidget {
+    const _Leg({required this.segment, required this.t});
+
+    final FlightSegment segment;
+    final AppLocalizations t;
+
+    @override
+    Widget build(BuildContext context) {
+        final c = context.colors;
+        // A flight that lands on a later day says so, or a 12:24 AM arrival reads as the
+        // same evening.
+        final days = DateTime(segment.arrival.year, segment.arrival.month, segment.arrival.day)
+            .difference(DateTime(
+                segment.departure.year,
+                segment.departure.month,
+                segment.departure.day,
+            ))
+            .inDays;
+
+        return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 10),
+            child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                    Expanded(
+                        child: _End(
+                            time: _clock(segment.departure),
+                            dayOffset: 0,
+                            code: segment.origin,
+                            label: t.flights_itinerary_departFrom,
+                            at: segment.departure,
+                            terminal: segment.originTerminal,
+                            segment: segment,
+                            alignEnd: false,
+                            t: t,
+                        ),
+                    ),
+                    Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 8),
+                        child: Container(width: 28, height: 1, color: c.border),
+                    ),
+                    Expanded(
+                        child: _End(
+                            time: _clock(segment.arrival),
+                            dayOffset: days,
+                            code: segment.destination,
+                            label: t.flights_itinerary_arriveAt,
+                            at: segment.arrival,
+                            terminal: segment.destinationTerminal,
+                            segment: segment,
+                            alignEnd: true,
+                            t: t,
+                        ),
+                    ),
+                ],
+            ),
+        );
+    }
+
+    static String _clock(DateTime d) {
+        final h = d.hour % 12 == 0 ? 12 : d.hour % 12;
+        return '$h:${d.minute.toString().padLeft(2, '0')} ${d.hour < 12 ? 'AM' : 'PM'}';
+    }
+}
+
+/// One end of a leg: the time, the airport, which end it is, and the facts under it.
+class _End extends StatelessWidget {
+    const _End({
+        required this.time,
+        required this.dayOffset,
+        required this.code,
+        required this.label,
+        required this.at,
+        required this.terminal,
+        required this.segment,
+        required this.alignEnd,
+        required this.t,
+    });
+
+    final String time;
+    final int dayOffset;
+    final String code;
+    final String label;
+    final DateTime at;
+    final String? terminal;
+    final FlightSegment segment;
+    final bool alignEnd;
+    final AppLocalizations t;
+
+    @override
+    Widget build(BuildContext context) {
+        final c = context.colors;
+        final align = alignEnd ? CrossAxisAlignment.end : CrossAxisAlignment.start;
+        final textAlign = alignEnd ? TextAlign.right : TextAlign.left;
+
+        final facts = <Widget>[
+            // The full date, so a boarding pass can be checked against it.
+            _Fact('${formatDayDate(at)}, ${at.year}, ${_Leg._clock(at)}', textAlign, c),
+            // Italic when the airline has not named one: "we do not know yet" has to read
+            // differently from a confirmed terminal.
+            terminal == null || terminal!.isEmpty
+                ? _Fact(t.flights_itinerary_terminalUnavailable, textAlign, c, italic: true)
+                : _Fact(t.flights_itinerary_terminal(terminal!), textAlign, c),
+            _Fact(
+                '${_cabin(segment.cabinClass)} ${segment.airline}${segment.flightNumber}'.trim(),
+                textAlign,
+                c,
+            ),
+        ];
+
+        return Column(
+            crossAxisAlignment: align,
+            children: [
+                Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                        Text(
+                            time,
+                            style: TextStyle(
+                                fontSize: 20,
+                                height: 1.1,
+                                fontWeight: FontWeight.w700,
+                                color: c.textPrimary,
+                            ),
+                        ),
+                        if (dayOffset > 0)
+                            Text(
+                                '+$dayOffset',
+                                textScaler: TextScaler.noScaling,
+                                style: TextStyle(fontSize: 11, color: c.textMuted),
+                            ),
+                    ],
+                ),
+                const SizedBox(height: 4),
+                Text(code, style: TextStyle(fontSize: 12.5, color: c.textSecondary)),
+                const SizedBox(height: 10),
+                Text(
+                    label.toUpperCase(),
+                    style: TextStyle(
+                        fontSize: 10.5,
+                        letterSpacing: 1.3,
+                        fontWeight: FontWeight.w600,
+                        color: c.textMuted,
+                    ),
+                ),
+                const SizedBox(height: 4),
+                ...facts,
+            ],
+        );
+    }
+
+    /// `economy` is how the column stores it; a traveller reads "Economy".
+    static String _cabin(String raw) {
+        if (raw.isEmpty) return '';
+        final spaced = raw.replaceAll('_', ' ');
+        return spaced[0].toUpperCase() + spaced.substring(1);
+    }
+}
+
+class _Fact extends StatelessWidget {
+    const _Fact(this.text, this.align, this.colors, {this.italic = false});
+
+    final String text;
+    final TextAlign align;
+    final AppColors colors;
+    final bool italic;
+
+    @override
+    Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.only(top: 3),
+        child: Text(
+            text,
+            textAlign: align,
+            style: TextStyle(
+                fontSize: 11.5,
+                height: 1.35,
+                color: colors.textMuted,
+                fontStyle: italic ? FontStyle.italic : FontStyle.normal,
             ),
         ),
     );

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:cheapest_go_mobile/features/trips/lib/travel_documents.dart';
+import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/features/trips/models/trip_booking.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -16,12 +18,21 @@ import 'package:cheapest_go_mobile/shared/utils/money.dart';
 /// The headline figure is what was **paid**, in the currency it was paid in. Never converted:
 /// a charge is not an estimate.
 class BookingCard extends StatelessWidget {
-    const BookingCard({required this.booking, required this.onOpen, this.detail = false, super.key});
+    const BookingCard({
+        required this.booking,
+        required this.onOpen,
+        this.onETicket,
+        this.detail = false,
+        super.key,
+    });
 
     final TripBooking booking;
 
     /// Null action in [detail]: the card is the head of the page it would link to.
     final VoidCallback onOpen;
+
+    /// Fetching the e-ticket. Offered only once the airline has issued one.
+    final VoidCallback? onETicket;
     final bool detail;
 
     @override
@@ -89,11 +100,26 @@ class BookingCard extends StatelessWidget {
                     toValue: _clock(arrive.arrival),
                     toLabel: arrive.destination,
                     above: b.stops == 0 ? 'Nonstop' : '${b.stops} stop',
-                    below: 'PNR ${b.pnr}',
+                    below: '',
                 ),
+            // Trip type and PNR, under the span as V2 has them. The PNR in mono, because it
+            // is read out at a counter.
+            facts: _Facts(
+                tripType: switch (b.tripType) {
+                    'round-trip' => t.trips_flightBookingCard_tripTypes_roundTrip,
+                    'multi-city' => t.trips_flightBookingCard_tripTypes_multiCity,
+                    _ => t.trips_flightBookingCard_tripTypes_oneWay,
+                },
+                pnrLabel: t.trips_pnr,
+                pnr: b.pnr,
+            ),
             price: formatMoney(b.totalPaid, b.currency),
             priceLabel: t.trips_bookingCard_totalPaid,
             action: detail ? null : t.trips_viewDetails,
+            // The second action, and plain rather than the brand gradient: the e-ticket is
+            // something you fetch, not the thing the card is for. V2 draws it the same way.
+            secondary: isTicketed(b) ? t.trips_eTicket : null,
+            onSecondary: onETicket,
             onOpen: onOpen,
         );
     }
@@ -279,6 +305,9 @@ class _Shell extends StatelessWidget {
         required this.onOpen,
         this.image,
         this.imageFallback,
+        this.facts,
+        this.secondary,
+        this.onSecondary,
     });
 
     final Widget status;
@@ -290,9 +319,16 @@ class _Shell extends StatelessWidget {
     final String price;
     final String priceLabel;
 
+    /// Trip type and PNR, under the span. Flights only — a stay has no equivalent.
+    final Widget? facts;
+
     /// Null on the detail page, where the card is already the thing it would open.
     final String? action;
     final VoidCallback onOpen;
+
+    /// A second, quieter action beside the first. Plain, never the brand gradient.
+    final String? secondary;
+    final VoidCallback? onSecondary;
 
     @override
     Widget build(BuildContext context) {
@@ -308,16 +344,13 @@ class _Shell extends StatelessWidget {
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                    if (imageFallback != null)
+                    // Only when there is a picture. An empty 160dp plate with an icon in the
+                    // middle of it is a hole in the card, not a placeholder.
+                    if (imageFallback != null && image != null)
                         SizedBox(
                             height: 160,
                             width: double.infinity,
-                            child: image == null
-                                ? ColoredBox(
-                                    color: c.surfaceMuted,
-                                    child: Icon(imageFallback, size: 30, color: c.textSubtle),
-                                )
-                                : Image.network(
+                            child: Image.network(
                                     image!,
                                     fit: BoxFit.cover,
                                     errorBuilder: (_, _, _) => ColoredBox(
@@ -357,35 +390,53 @@ class _Shell extends StatelessWidget {
                                     const SizedBox(height: 16),
                                     span!,
                                 ],
+                                if (facts != null) ...[
+                                    const SizedBox(height: 16),
+                                    facts!,
+                                ],
                             ],
                         ),
                     ),
                     Divider(height: 1, color: c.border),
                     Padding(
                         padding: const EdgeInsets.fromLTRB(18, 14, 18, 14),
-                        child: Row(
+                        // A Wrap, not a Row: a flight card carries two actions beside the
+                        // price and they do not fit a narrow handset on one line. They drop
+                        // under the price rather than overflowing, which is what the Row did.
+                        child: Wrap(
+                            alignment: WrapAlignment.spaceBetween,
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            spacing: 8,
+                            runSpacing: 12,
                             children: [
-                                Expanded(
-                                    child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                            Text(
-                                                price,
-                                                style: TextStyle(
-                                                    fontSize: 22,
-                                                    fontWeight: FontWeight.w700,
-                                                    color: c.textPrimary,
-                                                ),
+                                Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                        Text(
+                                            price,
+                                            style: TextStyle(
+                                                fontSize: 22,
+                                                fontWeight: FontWeight.w700,
+                                                color: c.textPrimary,
                                             ),
-                                            Text(
-                                                priceLabel,
-                                                style: TextStyle(fontSize: 11.5, color: c.textMuted),
-                                            ),
-                                        ],
-                                    ),
+                                        ),
+                                        Text(
+                                            priceLabel,
+                                            style: TextStyle(fontSize: 11.5, color: c.textMuted),
+                                        ),
+                                    ],
                                 ),
-                                if (action != null)
-                                    _GradientButton(label: action!, onPressed: onOpen),
+                                Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    crossAxisAlignment: WrapCrossAlignment.center,
+                                    children: [
+                                        if (secondary != null && onSecondary != null)
+                                            _PlainButton(label: secondary!, onPressed: onSecondary!),
+                                        if (action != null)
+                                            AppGradientButton(label: action!, compact: true, onPressed: onOpen),
+                                    ],
+                                ),
                             ],
                         ),
                     ),
@@ -395,36 +446,93 @@ class _Shell extends StatelessWidget {
     }
 }
 
-class _GradientButton extends StatelessWidget {
-    const _GradientButton({required this.label, required this.onPressed});
+/// Trip type and PNR, under the span on a flight card.
+class _Facts extends StatelessWidget {
+    const _Facts({required this.tripType, required this.pnrLabel, required this.pnr});
+
+    final String tripType;
+    final String pnrLabel;
+    final String pnr;
+
+    @override
+    Widget build(BuildContext context) {
+        final c = context.colors;
+        final muted = TextStyle(fontSize: 13, color: c.textMuted);
+
+        return Wrap(
+            spacing: 18,
+            runSpacing: 6,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+                Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                        Icon(Icons.arrow_forward_rounded, size: 15, color: c.textMuted),
+                        const SizedBox(width: 6),
+                        Text(tripType, style: muted),
+                    ],
+                ),
+                if (pnr.isNotEmpty)
+                    Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                            Icon(Icons.confirmation_number_outlined, size: 15, color: c.textMuted),
+                            const SizedBox(width: 6),
+                            Text('$pnrLabel ', style: muted),
+                            // Mono: a PNR is read aloud at a counter, character by character.
+                            Text(
+                                pnr,
+                                style: TextStyle(
+                                    fontFamily: 'monospace',
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w700,
+                                    letterSpacing: 1.1,
+                                    color: c.textPrimary,
+                                ),
+                            ),
+                        ],
+                    ),
+            ],
+        );
+    }
+}
+
+/// The quieter of two actions: a filled grey pill with an icon, as V2 draws E-Ticket. Never
+/// the brand gradient — that belongs to the one thing the card is for.
+class _PlainButton extends StatelessWidget {
+    const _PlainButton({required this.label, required this.onPressed});
 
     final String label;
     final VoidCallback onPressed;
 
     @override
-    Widget build(BuildContext context) => Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
-        child: InkWell(
-            onTap: onPressed,
+    Widget build(BuildContext context) {
+        final c = context.colors;
+        return Material(
+            color: c.surfaceMuted,
             borderRadius: BorderRadius.circular(999),
-            child: Ink(
-                decoration: BoxDecoration(
-                    gradient: const LinearGradient(colors: [Color(0xFF2563EB), Color(0xFF06B6D4)]),
-                    borderRadius: BorderRadius.circular(999),
-                ),
-                child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                    child: Text(
-                        label,
-                        style: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w700,
-                            color: Colors.white,
-                        ),
+            child: InkWell(
+                onTap: onPressed,
+                borderRadius: BorderRadius.circular(999),
+                child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                            Icon(Icons.download_rounded, size: 15, color: c.textPrimary),
+                            const SizedBox(width: 6),
+                            Text(
+                                label,
+                                style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: c.textPrimary,
+                                ),
+                            ),
+                        ],
                     ),
                 ),
             ),
-        ),
-    );
+        );
+    }
 }

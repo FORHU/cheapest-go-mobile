@@ -137,11 +137,24 @@ class FlightSegment {
 }
 
 class FlightPassenger {
-    const FlightPassenger({required this.firstName, required this.lastName, this.ticketNumber});
+    const FlightPassenger({
+        required this.firstName,
+        required this.lastName,
+        this.type = 'ADT',
+        this.ticketNumber,
+        this.seatNumber,
+    });
 
     final String firstName;
     final String lastName;
+
+    /// ADT, CHD or INF — the airline's own word, shown beside the name as V2 does.
+    final String type;
     final String? ticketNumber;
+
+    /// Usually assigned at check-in rather than at booking, so absent more often than not.
+    /// Shown only when the airline has actually given one.
+    final String? seatNumber;
 
     String get name => '$firstName $lastName'.trim();
 }
