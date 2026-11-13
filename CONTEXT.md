@@ -19,6 +19,16 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   haptics, long-press, native share — is not added here either.
   _Avoid_: "pixel-perfect", "clone" — both promise an identity no native app can hold.
 
+- **Already Here** — what an installed app may drop because opening it already said it. V2
+  carries its wordmark on every page, and a second route to the account beside the one in the
+  bar, because a website must identify itself on any page somebody might land on cold and
+  cannot assume a persistent bar. Neither holds for an app nobody reaches by accident. A
+  narrow exception to **Design Parity**, claimed only where the removed thing is repeating
+  something the app's own frame states — never for a section, a control or a fact that V2's
+  screen is actually there to show.
+  _Avoid_: stretching it to anything merely redundant-looking; two ways to the same screen is
+  the test, not two things that resemble each other.
+
 - **Platform Obligation** — the narrow set of behaviours Android delivers whether or not the
   design asks for them; the back gesture is the whole of it today. Not an exception to
   **Design Parity** but a question it has to answer: back does what the browser's back does,

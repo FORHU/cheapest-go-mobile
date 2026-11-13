@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:cheapest_go_mobile/app/router/app_header.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -200,33 +199,15 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
       // the photo stops short and leaves a strip of scaffold below it. Everywhere else the
       // body stays above the bar, which is what those screens were laid out against.
       extendBody: _onHome,
-      // On the landing the header floats over the stage's photograph, so the picture runs to
-      // the top of the screen as it does on V2. Everywhere else it sits on a bar above the
-      // content, which is why the two arrangements differ rather than one serving both.
-      body: _onHome
-          ? Stack(
-              children: [
-                widget.navigationShell,
-                const Positioned(
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  child: AppHeader(onShowcase: true),
-                ),
-              ],
-            )
-          : Column(
-              children: [
-                const AppHeader(),
-                Expanded(
-                  child: MediaQuery.removePadding(
-                    context: context,
-                    removeTop: true,
-                    child: widget.navigationShell,
-                  ),
-                ),
-              ],
-            ),
+      // No header on any screen. The wordmark repeated what opening the app already said,
+      // and Sign in and the profile button both led where the bar's Settings slot leads —
+      // see **Already Here** in CONTEXT.md. On the landing it also covered the top of the
+      // photograph the stage is built around.
+      //
+      // The page keeps its own top inset. That inset used to be spent on the header and
+      // stripped from the page below it, so with the header gone a heading sat under the
+      // status bar — the overlap #61 reports.
+      body: widget.navigationShell,
       bottomNavigationBar: V2BottomNav(
         activeIndex: _activeIndex,
         settingsOpen: _settingsOpen,

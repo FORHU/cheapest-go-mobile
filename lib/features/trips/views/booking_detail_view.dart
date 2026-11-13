@@ -64,8 +64,17 @@ class _BookingDetailViewState extends State<BookingDetailView> {
         return Scaffold(
             backgroundColor: c.background,
             appBar: AppBar(
+                // Opaque, and separated once anything passes beneath it. See #61: with the
+                // tint suppressed and no elevation, a panel heading scrolling under the bar
+                // met the title with nothing between them and the two read as one smear.
                 backgroundColor: c.background,
                 surfaceTintColor: Colors.transparent,
+                scrolledUnderElevation: 0,
+                shadowColor: Colors.transparent,
+                bottom: PreferredSize(
+                    preferredSize: const Size.fromHeight(1),
+                    child: Container(height: 1, color: c.border),
+                ),
                 leading: IconButton(
                     icon: const Icon(Icons.arrow_back_rounded),
                     tooltip: t.common_goBack,

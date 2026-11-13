@@ -166,25 +166,23 @@ class _Tabs extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
-        return SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            // The list's own gutter, repeated inside the scroller, so the last tab clears
-            // the edge of the screen instead of being sliced by it.
-            padding: const EdgeInsets.only(right: 16),
-            clipBehavior: Clip.none,
-            child: Row(
-                children: [
-                    for (final tab in BookingTab.values) ...[
-                        _TabPill(
-                            label: _tabLabels[tab]!,
-                            count: counts?[tab],
-                            selected: tab == selected,
-                            onTap: () => onChanged(tab),
-                        ),
-                        if (tab != BookingTab.values.last) const SizedBox(width: 8),
-                    ],
-                ],
-            ),
+        // Centred as a group, and a Wrap rather than a scroller: four pills fit a handset in
+        // English, and where a translation makes them wider they drop to a second row instead
+        // of running off the edge. The scroller clipped "Golf" against the screen edge and
+        // could not be centred without measuring the viewport first.
+        return Wrap(
+            alignment: WrapAlignment.center,
+            spacing: 8,
+            runSpacing: 8,
+            children: [
+                for (final tab in BookingTab.values)
+                    _TabPill(
+                        label: _tabLabels[tab]!,
+                        count: counts?[tab],
+                        selected: tab == selected,
+                        onTap: () => onChanged(tab),
+                    ),
+            ],
         );
     }
 }
@@ -206,24 +204,26 @@ class _TabPill extends StatelessWidget {
     Widget build(BuildContext context) {
         final c = context.colors;
         final content = Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+            // Tight enough that all four fit one row on a 384dp handset. They were wrapping
+            // to a second line, which reads as two groups rather than one set of filters.
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 9),
             child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                     Text(
                         label,
                         style: TextStyle(
-                            fontSize: 14,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w600,
                             color: selected ? Colors.white : c.textPrimary,
                         ),
                     ),
                     if (count != null) ...[
-                        const SizedBox(width: 6),
+                        const SizedBox(width: 5),
                         Text(
                             '$count',
                             style: TextStyle(
-                                fontSize: 12,
+                                fontSize: 11.5,
                                 fontWeight: FontWeight.w600,
                                 color: selected ? Colors.white70 : c.textMuted,
                             ),
