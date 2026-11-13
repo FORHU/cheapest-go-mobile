@@ -12,7 +12,10 @@
          running.
 
          This Theme is only used starting with V2 of Flutter's Android embedding. -->
-    <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
+    <!-- MaterialComponents rather than the platform theme: Stripe's payment sheet inflates
+         Material views and crashes under @android:style/Theme.*. This is the theme the
+         Flutter window runs under, so it is the one the sheet inherits. -->
+    <style name="NormalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
 </resources>

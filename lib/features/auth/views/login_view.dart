@@ -112,8 +112,12 @@ class _LoginViewState extends State<LoginView> {
                         onPressed: _submit,
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      // Wrap, not Row: the prompt and the button together overflow a handset
+                      // at a larger text scale, and the translations are longer than the
+                      // English. Wrapping onto a second line costs nothing and never clips.
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
                             "Don't have an account?",
