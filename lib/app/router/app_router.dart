@@ -80,10 +80,25 @@ GoRouter createAppRouter() => GoRouter(
         ),
         GoRoute(
           path: '/checkout',
-          builder: (_, state) => HotelCheckoutView(
+          builder: (context, state) => HotelCheckoutView(
             hotelId: state.uri.queryParameters['hotel'] ?? '',
             // The Offer, not the room: a prebook is made against one set of terms.
             roomId: state.uri.queryParameters['room'] ?? '',
+            // The checkout needs to know who is booking, and the hotels feature may not reach
+            // into the auth feature to find out. The two are composed here, which is the app
+            // layer's job — the screen is handed an answer, not a store.
+            guest: () {
+              final user = authStore.user;
+              return user == null
+                  ? const CheckoutGuest()
+                  : CheckoutGuest(
+                      signedIn: true,
+                      email: user.email,
+                      firstName: user.firstName,
+                      lastName: user.lastName,
+                    );
+            },
+            onSignIn: () => context.push('/login'),
           ),
         ),
         GoRoute(

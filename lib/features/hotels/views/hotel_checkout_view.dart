@@ -5,10 +5,10 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
 import 'package:cheapest_go_mobile/features/hotels/api/payment_gateway.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
-import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
@@ -33,6 +33,8 @@ class HotelCheckoutView extends StatefulWidget {
         required this.hotelId,
         required this.roomId,
         this.catalog = travelCatalog,
+        this.guest = _noGuest,
+        this.onSignIn,
         super.key,
     });
 
@@ -42,16 +44,52 @@ class HotelCheckoutView extends StatefulWidget {
     final String roomId;
     final TravelCatalog catalog;
 
+    /// Who is booking. Supplied by the app layer; see [CheckoutGuest].
+    final GuestLookup guest;
+
+    /// Where "sign in" goes. Null leaves the prompt as a statement, which is what a screen
+    /// mounted outside the router gets.
+    final VoidCallback? onSignIn;
+
     @override
     State<HotelCheckoutView> createState() => _HotelCheckoutViewState();
 }
 
+/// Who is booking, as far as this screen needs to know.
+///
+/// Not read from the auth store: a feature may not reach into another feature, so the app
+/// layer composes the two and hands the answer down. The checkout's interest in an account is
+/// narrow — a name to prefill and whether api-v2 will accept a booking — and this is the whole
+/// of it.
+class CheckoutGuest {
+    const CheckoutGuest({
+        this.signedIn = false,
+        this.email = '',
+        this.firstName = '',
+        this.lastName = '',
+    });
+
+    final bool signedIn;
+    final String email;
+    final String firstName;
+    final String lastName;
+}
+
+/// Asked again whenever it matters, rather than captured once: someone can sign in partway
+/// through this screen and come back to it.
+typedef GuestLookup = CheckoutGuest Function();
+
+CheckoutGuest _noGuest() => const CheckoutGuest();
+
 enum _Step { details, payment, confirmed }
 
-/// V2's checkout accent, `BRAND.primary` (blue-500).
-const _accent = Color(0xFF3B82F6);
+/// V2's checkout accent: `BRAND.primary`, which is Tailwind's blue-500 — so it comes from
+/// the generated ramp rather than being typed out here again (ADR-0002).
+const _accent = TwPalette.blue500;
 
-/// V2's `GREEN`: the one colour on the confirmation that means "this happened".
+/// V2's `GREEN`: the one colour on the confirmation that means "this happened". Not a
+/// Tailwind stop and not a semantic role, so the generator has nothing to say about it — it
+/// is V2's own constant, written out as the other four places in this app already write it.
 const _green = Color(0xFF2FB67F);
 
 class _HotelCheckoutViewState extends State<HotelCheckoutView> {
@@ -77,13 +115,13 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
     @override
     void initState() {
         super.initState();
-        final user = authStore.user;
-        if (user != null) {
+        final guest = widget.guest();
+        if (guest.signedIn) {
             // Prefilled from the account, as V2 does: a guest who has signed in has already
             // told us this once.
-            _email.text = user.email;
-            _firstName.text = user.firstName;
-            _lastName.text = user.lastName;
+            _email.text = guest.email;
+            _firstName.text = guest.firstName;
+            _lastName.text = guest.lastName;
         }
     }
 
@@ -122,8 +160,8 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
         // api-v2 ties a booking to an account, so create-payment and confirm both require one.
         // Stopped here rather than at the moment someone taps Pay: a 401 after filling in a
         // form and reaching for a card is the worst place to learn you need to sign in.
-        if (!authStore.isAuthenticated) {
-            if (mounted) context.push('/login');
+        if (!widget.guest().signedIn) {
+            widget.onSignIn?.call();
             return;
         }
 
@@ -377,8 +415,8 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
 
                     // Signed out, the booking cannot be made: api-v2 ties it to an account.
                     // Said here rather than at the moment someone taps Pay.
-                    if (!authStore.isAuthenticated) ...[
-                        _SignInBanner(t: t, skin: skin, onSignIn: () => context.push('/login')),
+                    if (!widget.guest().signedIn) ...[
+                        _SignInBanner(t: t, skin: skin, onSignIn: widget.onSignIn),
                         const SizedBox(height: 20),
                     ],
 
@@ -1173,7 +1211,9 @@ class _SignInBanner extends StatelessWidget {
 
     final AppLocalizations t;
     final StaySkin skin;
-    final VoidCallback onSignIn;
+
+    /// Null outside the router: the prompt still explains why, with nowhere to go.
+    final VoidCallback? onSignIn;
 
     @override
     Widget build(BuildContext context) {
