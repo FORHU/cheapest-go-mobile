@@ -57,6 +57,11 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   device-local; they were until 2026-11-10 and are not now.
   Note that V2's landing carries a separate, device-local save button. That is V2's own
   inconsistency, not a second concept to reproduce here.
+  Mobile has the act but not yet the Saved Trip: what the heart marks here is held on the
+  device and goes with the app, so it is not visible on the web and does not survive a
+  reinstall. The definition above is what mobile is owed, not what it currently does.
+  A Saved Trip belongs with the account, never among **Bookings** — the two answer different
+  questions, and a screen that lists reservations is not where a shortlist lives.
 
 - **Offer / Rate** — a specific bookable price for a room on given dates, identified by an
   `offerId`. A room can carry several rates (e.g. refundable vs non-refundable, with/without
@@ -68,9 +73,33 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
 
 - **Booking** — a confirmed reservation, created after payment, saved server-side and tied
   to the user's account. Distinct from a Prebook (which is only a held quote).
+  It exists because the server says so. A reservation this app knows about and the server does
+  not is not a Booking, whatever the screen that produced it claimed.
+
+- **Catalogue** — what CheapestGo has for sale: airports, flights, stays, courses and their
+  prices. Impersonal — the same for everybody, and readable signed out.
+  _Avoid_: filing a traveller's own records here. A **Booking** belongs to a person and needs
+  an account to see; the catalogue knows nothing about either.
 
 - **Lead guest** — the named guest a room is reserved under. Bedbank suppliers
   (TravelgateX) typically require only the lead guest per room, not every occupant.
+
+- **Travel document** — proof a traveller can present to somebody who is not us. Three kinds,
+  evidencing three different things that do not become true at the same moment: a **Payment
+  Receipt** says money was taken, an **E-ticket** says an airline issued a ticket, and a
+  **Hotel Voucher** says a property is holding a room. Each is earned separately, so a booking
+  may have one and not another.
+  _Avoid_: a single "receipt" standing for all three — that is what lets someone reach a desk
+  holding proof of payment and nothing the airline can act on.
+
+- **Ticketed** — an airline has issued a ticket. The gate for an **E-ticket**, and not the same
+  thing as holding a **PNR**: a booking can carry a record locator for hours before a ticket
+  exists, and sometimes none ever is.
+  _Avoid_: treating a PNR, or a successful payment, as evidence of a ticket.
+
+- **Supplier reference** — the reference the property's own system holds, as distinct from the
+  `CG-` reference, which is ours and which a front desk has never seen. The supplier's is what
+  finds the reservation at check-in.
 
 - **Aggregate score vs Review** — the numeric `reviewRating` / `reviewsCount` on a hotel is
   an **aggregate score**. Individual **reviews** are the per-guest text entries. Mobile has

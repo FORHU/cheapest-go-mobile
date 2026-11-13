@@ -24,6 +24,7 @@ import 'package:cheapest_go_mobile/features/hotels/views/hotel_results_view.dart
 import 'package:cheapest_go_mobile/features/about/views/about_view.dart';
 import 'package:cheapest_go_mobile/features/map/views/map_view.dart';
 import 'package:cheapest_go_mobile/features/profile/views/profile_view.dart';
+import 'package:cheapest_go_mobile/features/trips/views/booking_detail_view.dart';
 import 'package:cheapest_go_mobile/features/trips/views/trips_view.dart';
 
 /// FAOS `app/` layer: routes and the tab shell.
@@ -110,7 +111,15 @@ GoRouter createAppRouter() => GoRouter(
             simulatedPriceShift: int.tryParse(state.uri.queryParameters['shift'] ?? ''),
           ),
         ),
-        GoRoute(path: '/saved', redirect: (_, _) => '/trips'),
+        // Outside the shell, as V2's booking detail is outside its list: a full screen with
+        // its own way back, not a tab.
+        GoRoute(
+          path: '/trips/:id',
+          builder: (_, state) => BookingDetailView(bookingId: state.pathParameters['id']!),
+        ),
+        // Saved stays moved to Profile with #42 — V2 keeps them in Account, never among
+        // bookings. The old path still lands somewhere sensible.
+        GoRoute(path: '/saved', redirect: (_, _) => '/profile'),
         GoRoute(path: '/login', builder: (_, _) => const LoginView()),
         GoRoute(path: '/register', builder: (_, _) => const RegisterView()),
         GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordView()),

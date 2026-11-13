@@ -1,6 +1,15 @@
+import 'package:flutter/foundation.dart';
+
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
+
+/// Bumped every time app data was reloaded.
+///
+/// A screen that fetches for itself — My Bookings asks api-v2, not a store — watches this
+/// and goes again. It is a counter rather than a callback because `shared/` may not reach
+/// into a feature to tell it; the feature listens instead.
+final appDataRevision = ValueNotifier<int>(0);
 
 /// Reloads what the tabs show — the catalogue (prices, stays, courses, flights), bookings and
 /// their flight status, and the offline maps for flights leaving soon.
@@ -8,6 +17,7 @@ Future<void> refreshAppData() async {
   await Future.wait([travelCatalog.refresh(), bookingsStore.init()]);
   // Offline maps download in the background; nothing waits on them.
   offlineRouteMaps.refresh(bookingsStore.flights);
+  appDataRevision.value++;
 }
 
 /// How long data is treated as fresh. V2's query client sets `staleTime: 60 * 1000`, and this

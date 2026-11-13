@@ -187,10 +187,12 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     );
     // Save the route's map for the flight now, while there's a connection.
     offlineRouteMaps.download(booking);
+    // Not '/trips', and no reference quoted. This checkout books nothing with an airline,
+    // and Trips now shows only what api-v2 confirms (ADR-0003) — so sending someone there to
+    // look for this would be a worse lie than the demo itself.
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Flight booked · ref ${booking.reference}')),
+      const SnackBar(content: Text('Demo booking — flights are not bookable yet')),
     );
-    context.go('/trips');
   }
 
   @override

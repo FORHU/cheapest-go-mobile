@@ -9,7 +9,6 @@ import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
-import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
@@ -260,19 +259,9 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
             );
 
             if (outcome.isConfirmed) {
-                // Trips reads the local store, not the server, until #42. Without this row a
-                // stay that was really paid for and really reserved would be missing from
-                // Trips. api-v2's reference is carried over so the two name one booking.
-                bookingsStore.addStay(
-                    airportCode: hotel.airportCode,
-                    hotelName: hotel.name,
-                    roomName: _room?.name ?? '',
-                    checkIn: tripSearchStore.checkIn,
-                    checkOut: tripSearchStore.checkOut,
-                    adults: tripSearchStore.adults,
-                    total: (intent.chargedTotal ?? quote.display?.chargedTotal ?? 0).round(),
-                    reference: outcome.reference,
-                );
+                // #41 wrote a local row here so Trips would show the stay. #42 made Trips read
+                // the server, which now has this booking, so that row would only be a
+                // duplicate nobody could tell apart from the real one. See ADR-0003.
 
                 // The receipt is addressed by the row's own id, not by the reference, so it
                 // has to be looked up. After the screen has already been given its answer:

@@ -107,19 +107,17 @@ void main() {
     expect(find.text('₱13,200'), findsWidgets);
     expect(find.text('Plan another trip'), findsOneWidget);
 
-    // Trips reads the local store until #42, so the stay has to land there under api-v2's own
-    // reference — otherwise a booking that was really paid for is missing from the app.
-    expect(bookingsStore.all.length, before + 1);
-    final booking = bookingsStore.all.last;
-    expect(booking.kind, BookingKind.stay);
-    expect(booking.reference, 'CG-ABC12');
-    expect(booking.detail, startsWith('Twin Room'));
+    // #41 wrote the stay into the local store here so Trips would show it. #42 pointed Trips
+    // at api-v2, which already has this booking, so that row would only be a duplicate — see
+    // ADR-0003. Nothing local is written, and that is the assertion.
+    expect(bookingsStore.all.length, before);
 
     await tester.ensureVisible(find.text('View My Trips'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('View My Trips'));
     await tester.pumpAndSettle();
-    expect(find.text('CG-ABC12'), findsOneWidget);
+    // Trips now answers from the source, not from what checkout just did.
+    expect(find.text('My Bookings'), findsOneWidget);
   });
 
   testWidgets('shutting the card sheet charges nothing and keeps the checkout open', (tester) async {
@@ -264,13 +262,21 @@ void main() {
     await tester.enterText(find.widgetWithText(TextFormField, 'Email for e-ticket'), 'juan@example.com');
     await tester.tap(find.textContaining('Pay ₱'));
     await tester.pump(const Duration(milliseconds: 700));
-    await tester.pumpAndSettle();
+    // Not pumpAndSettle: the screen stays put now and its snackbar keeps scheduling frames
+    // for as long as it is up, so settling never comes.
+    await tester.pump(const Duration(milliseconds: 400));
 
     expect(bookingsStore.all.length, before + 1);
     final booking = bookingsStore.all.last;
     expect(booking.kind, BookingKind.flight);
     expect(booking.detail, startsWith('SIN → MNL · Non-stop'));
-    expect(find.text(booking.reference), findsOneWidget);
+
+    // It says it is a demo, and it does not send anybody to Trips. This checkout reaches no
+    // airline, and Trips shows only what api-v2 confirms (ADR-0003) — so a reference quoted
+    // here, on a screen that then hands over to a list it is absent from, would be a lie.
+    expect(find.textContaining('Demo booking'), findsOneWidget);
+    expect(find.text(booking.reference), findsNothing);
+    expect(find.text('My Bookings'), findsNothing);
   });
 
   // Reached from Home rather than a tab since #36; Home still links here.
@@ -318,7 +324,7 @@ void main() {
     expect(find.text('Transit Pods NAIA'), findsOneWidget);
   });
 
-  testWidgets('saving a hotel lists it under Trips › Saved, in dark mode', (tester) async {
+  testWidgets('saving a hotel lists it under Profile › Saved Trips, in dark mode', (tester) async {
     await pumpApp(tester, location: '/hotels', theme: AppTheme.dark);
     // The bookmark is on the list card, where V2 puts it: the map's rail card carries the
     // picture, the price and View, and nothing else.
@@ -332,14 +338,15 @@ void main() {
     await tester.pumpAndSettle();
     // The bar shows icons only now, so the slot is found by the name it carries for screen
     // readers rather than by a visible label.
+    // Saved stays live in Account now, not among bookings — #42 moved them, as V2 has them.
     await tester.tap(find.descendant(
       of: find.byType(V2BottomNav),
-      matching: find.bySemanticsLabel('Trips'),
+      matching: find.bySemanticsLabel('Settings'),
     ));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Saved'));
-    await tester.pumpAndSettle();
-    expect(find.text('Transit Pods NAIA'), findsOneWidget);
+    final saved = find.text('Transit Pods NAIA');
+    await tester.scrollUntilVisible(saved, 200, scrollable: find.byType(Scrollable).first);
+    expect(saved, findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

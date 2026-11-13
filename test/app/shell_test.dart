@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/app/router/app_header.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
+import 'package:cheapest_go_mobile/features/trips/api/bookings_source.dart';
+import 'package:cheapest_go_mobile/features/trips/api/mock_bookings_source.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import '../test_helpers.dart';
@@ -67,33 +68,26 @@ void main() {
   ///
   /// V2 has no pull gesture and does not refetch on focus; a screen reloads when you navigate
   /// to it and its data is over a minute old. Mobile matches that, so this drives the same
-  /// journey a traveller would: leave Trips, come back a while later, see the new booking.
-  testWidgets('arriving back on Trips reloads bookings saved on the device', (tester) async {
+  /// journey a traveller would: leave Trips, come back a while later, see it asked again.
+  ///
+  /// Was "reloads bookings saved on the device", which wrote a row into SharedPreferences
+  /// because that is what the screen read. #42 pointed My Bookings at api-v2 (ADR-0003), so
+  /// the policy is now proved against the source the screen actually uses.
+  testWidgets('arriving back on Trips refetches once the data has gone stale', (tester) async {
     SharedPreferences.setMockInitialValues({});
-    await pumpApp(tester, location: '/trips');
+    final source = _CountingBookingsSource();
+    bookingsSource = source;
+    addTearDown(() => bookingsSource = const MockBookingsSource());
 
-    // Another session saved a booking this one hasn't loaded yet.
-    final saved = Booking(
-      reference: 'CG-PULL1',
-      kind: BookingKind.stay,
-      airportCode: 'CEB',
-      title: 'Refreshed Bay Hotel',
-      start: DateTime(2099),
-      when: 'Later',
-      detail: 'Deluxe King · 2 adults',
-      total: 9000,
-    );
-    SharedPreferences.setMockInitialValues({
-      'cheapestgo_bookings_v1': jsonEncode([...bookingsStore.all.map((b) => b.toJson()), saved.toJson()]),
-    });
-    expect(find.text('Refreshed Bay Hotel'), findsNothing);
+    await pumpApp(tester, location: '/trips');
+    await tester.pumpAndSettle();
+    expect(source.calls, 1);
 
     // The pull gesture is gone, and within the stale window nothing reloads — that is the
     // policy, not an oversight.
     await tester.fling(find.byType(Scrollable).first, const Offset(0, 400), 1000);
     await tester.pumpAndSettle();
-    expect(find.text('Refreshed Bay Hotel'), findsNothing,
-        reason: 'no pull to refresh, and the data is still fresh');
+    expect(source.calls, 1, reason: 'no pull to refresh, and the data is still fresh');
 
     // An hour later, leave and come back the way the bar does it.
     final realClock = refreshClock;
@@ -106,7 +100,18 @@ void main() {
     await tester.tap(find.descendant(of: bar, matching: find.bySemanticsLabel('Trips')));
     await tester.pumpAndSettle();
 
-    await tester.scrollUntilVisible(find.text('Refreshed Bay Hotel'), 300, scrollable: find.byType(Scrollable).first);
-    expect(find.text('Refreshed Bay Hotel'), findsOneWidget);
+    expect(source.calls, greaterThan(1));
   });
+}
+
+/// Counts how many times the screen asked. The answer never changes; whether it asks again
+/// is the whole subject.
+class _CountingBookingsSource implements BookingsSource {
+  int calls = 0;
+
+  @override
+  Future<BookingsPage> myBookings() async {
+    calls++;
+    return const MockBookingsSource().myBookings();
+  }
 }

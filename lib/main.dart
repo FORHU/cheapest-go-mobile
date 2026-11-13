@@ -31,7 +31,9 @@ Future<void> main() async {
   await uiSettingsStore.init();
   await savedStaysStore.init();
   await bookingsStore.init();
-  bookingsStore.seedDemoHistory();
+  // No demo history. It existed so Trips had something to show; Trips now shows what api-v2
+  // confirms, and five invented past trips are not that. See ADR-0003. The store itself still
+  // backs the Map's flight tracking and the two mock checkouts, so it is still initialised.
   // Download offline route maps for flights leaving soon; never blocks start-up.
   offlineRouteMaps.refresh(bookingsStore.flights);
   // Fire-and-forget session validation on startup
