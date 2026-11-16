@@ -8,6 +8,7 @@ import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
 
 import '../../test_helpers.dart';
+import '../checkout_fakes.dart' show FakePaymentGateway;
 import 'fixtures.dart';
 
 /// The booking flow's steps and validation, as V2's flight checkout has them (#47).
@@ -26,6 +27,7 @@ void main() {
   };
 
   late FakeFlightsApi api;
+  late FakePaymentGateway gateway;
   late bool signedIn;
   late int signInAsked;
   late List<String> went;
@@ -40,10 +42,15 @@ void main() {
           builder: (_, _) => FlightCheckoutView(
             params: params,
             api: api,
+            gateway: gateway,
             now: DateTime(2026, 11, 12),
             isSignedIn: () => signedIn,
             onSignIn: () => signInAsked++,
           ),
+        ),
+        GoRoute(
+          path: '/trips',
+          builder: (_, _) => const Scaffold(body: Text('trips page')),
         ),
         GoRoute(
           path: '/flights/search',
@@ -69,6 +76,7 @@ void main() {
 
   setUp(() {
     api = FakeFlightsApi();
+    gateway = FakePaymentGateway();
     signedIn = true;
     signInAsked = 0;
     went = [];
@@ -169,11 +177,15 @@ void main() {
     expect(api.books, isEmpty);
   });
 
-  testWidgets('details → /flights/book → the card\'s details, and it stops there', (tester) async {
+  Future<void> toPayment(WidgetTester tester) async {
     await pump(tester);
     await fillLead(tester);
     await tester.tap(find.text('Continue to payment'));
     await tester.pumpAndSettle();
+  }
+
+  testWidgets("details → /flights/book → Stripe's sheet → /flights/confirm → the PNR", (tester) async {
+    await toPayment(tester);
 
     final booked = api.books.single;
     expect(booked['offerId'], 'off_duffel');
@@ -186,33 +198,81 @@ void main() {
     expect(pax['gender'], 'M');
     expect(pax['type'], 'ADT');
 
+    // The card is typed into Stripe's own sheet: there is no card field in the app.
     expect(find.text('Payment Details'), findsOneWidget);
-    expect(find.text('Card number *'), findsOneWidget);
-    expect(find.text('MM / YY *'), findsOneWidget);
-    expect(find.text('Security code *'), findsOneWidget);
-    expect(find.text('Pay PHP 8,108.79'), findsOneWidget);
+    expect(find.text('Card number *'), findsNothing);
+    expect(gateway.presented, isFalse);
 
-    // No card details: the form says so.
     await tester.tap(find.text('Pay PHP 8,108.79'));
     await tester.pumpAndSettle();
-    expect(find.text('Required'), findsWidgets);
 
-    // With them: the booking stops, and says nothing was charged.
-    await enter(tester, 'Card number *', '4242 4242 4242 4242');
-    await enter(tester, 'MM / YY *', '12 / 30');
-    await enter(tester, 'Security code *', '123');
+    expect(gateway.presented, isTrue);
+    expect(api.confirms.single, {'paymentIntentId': 'pi_1', 'sessionId': 'sess_1'});
+    expect(find.text('You’re all set'), findsOneWidget);
+    expect(find.text('QZX7PA'), findsOneWidget);
+    expect(find.text('PHP 8,108.79'), findsOneWidget);
+
+    // Paid: back leaves for the trips, never to a payment form that could charge again.
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.text('trips page'), findsOneWidget);
+  });
+
+  testWidgets("closing Stripe's sheet is not a failure: nothing is confirmed, the page stays", (tester) async {
+    gateway = FakePaymentGateway(cancel: true);
+    await toPayment(tester);
     await tester.tap(find.text('Pay PHP 8,108.79'));
     await tester.pumpAndSettle();
-    expect(find.textContaining('Nothing has been authorised or charged'), findsOneWidget);
+
+    expect(api.confirms, isEmpty);
+    expect(find.text('Payment Details'), findsOneWidget);
+    expect(find.byType(AlertDialog), findsNothing);
 
     // Android's back gesture — the one Platform Obligation — does what the page's own back does
     // from payment: returns to the details, not out of checkout.
-    await tester.tap(find.text('Close'));
-    await tester.pumpAndSettle();
     await tester.binding.handlePopRoute();
     await tester.pumpAndSettle();
     expect(find.text('Complete your booking'), findsOneWidget);
-    expect(find.text('Back to booking details'), findsNothing);
+  });
+
+  testWidgets("a declined card says so, in Stripe's words, and asks the airline nothing", (tester) async {
+    gateway = FakePaymentGateway(declineWith: 'Your card was declined.');
+    await toPayment(tester);
+    await tester.tap(find.text('Pay PHP 8,108.79'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("Your payment didn't go through"), findsOneWidget);
+    expect(find.text('Your card was declined.'), findsOneWidget);
+    expect(api.confirms, isEmpty);
+  });
+
+  testWidgets('an airline still deciding is an outcome, never "try again"', (tester) async {
+    api.confirmError = ApiError('processing', code: 'BOOKING_PROCESSING', status: 409, body: {'needsReview': false});
+    await toPayment(tester);
+    await tester.tap(find.text('Pay PHP 8,108.79'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Confirming your booking'), findsOneWidget);
+    expect(find.text("Please don't pay again — you won't be charged twice."), findsOneWidget);
+    expect(find.textContaining('Pay PHP'), findsNothing);
+  });
+
+  testWidgets('a fare that rose before the airline confirmed releases the hold and says by how much', (tester) async {
+    api.confirmError = ApiError(
+      'changed',
+      code: 'PRICE_CHANGED',
+      status: 409,
+      body: {'oldPrice': 8108.79, 'newPrice': 9020.5, 'currency': 'PHP'},
+    );
+    await toPayment(tester);
+    await tester.tap(find.text('Pay PHP 8,108.79'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('The fare changed'), findsOneWidget);
+    expect(find.textContaining('PHP 9,020.50'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('Complete your booking'), findsOneWidget);
   });
 
   testWidgets('a fare the airline stopped selling sends the traveller back to a fresh search', (tester) async {

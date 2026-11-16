@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
-import 'package:cheapest_go_mobile/features/hotels/api/payment_gateway.dart';
+import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';

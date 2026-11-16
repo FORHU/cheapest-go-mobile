@@ -108,6 +108,7 @@ class FlightsApi {
     final body = res is Map<String, dynamic> ? res : const <String, dynamic>{};
     final amount = (body['amount'] as num?)?.toDouble();
     return BookingHold(
+      clientSecret: body['clientSecret']?.toString() ?? '',
       sessionId: body['sessionId']?.toString() ?? '',
       paymentIntentId: body['paymentIntentId']?.toString() ?? '',
       amount: amount,
@@ -116,6 +117,99 @@ class FlightsApi {
       serviceFee: (body['serviceFee'] as num?)?.toDouble() ?? 0,
     );
   }
+
+  /// `POST /flights/confirm` — once Stripe has authorised the card: api-v2 places the airline
+  /// order and takes the money only when the airline says yes. A refusal is an [ApiError]; read
+  /// it with [readConfirmFailure].
+  Future<FlightConfirmation> confirm({required String paymentIntentId, required String sessionId}) async {
+    final res = await _client.post(
+      '/api/v2/flights/confirm',
+      body: {'paymentIntentId': paymentIntentId, 'sessionId': sessionId},
+      // The airline can take two minutes to answer.
+      options: const HttpRequestOptions(timeout: Duration(seconds: 150)),
+    );
+    final body = res is Map<String, dynamic> ? res : const <String, dynamic>{};
+    final pnr = body['pnr']?.toString();
+    return FlightConfirmation(
+      bookingId: body['bookingId']?.toString() ?? '',
+      pnr: pnr == null || pnr.isEmpty ? null : pnr,
+      status: body['status']?.toString() ?? '',
+    );
+  }
+}
+
+/// What `/flights/confirm` answered with when the airline said yes.
+class FlightConfirmation {
+  const FlightConfirmation({required this.bookingId, this.pnr, required this.status});
+
+  final String bookingId;
+  final String? pnr;
+  final String status;
+}
+
+/// What a refused `/flights/confirm` means, as V2's `readFlightConfirmError` reads it.
+sealed class ConfirmFailure {
+  const ConfirmFailure();
+}
+
+/// The airline has not settled it yet — or no answer came, and the order may be placed anyway.
+/// Never "failed, try again": the card may be captured.
+class ConfirmProcessing extends ConfirmFailure {
+  const ConfirmProcessing({required this.needsReview});
+  final bool needsReview;
+}
+
+/// The fare rose before the airline confirmed; the hold was released.
+class ConfirmPriceChanged extends ConfirmFailure {
+  const ConfirmPriceChanged({required this.was, required this.now, required this.currency});
+  final double was;
+  final double now;
+  final String currency;
+}
+
+/// The fare sold out before the airline confirmed; the hold was released.
+class ConfirmOfferExpired extends ConfirmFailure {
+  const ConfirmOfferExpired();
+}
+
+/// Any other "no" after which the hold was released, in the server's words.
+class ConfirmRefused extends ConfirmFailure {
+  const ConfirmRefused(this.message);
+  final String message;
+}
+
+/// Anything else: the payment may be exactly where it was.
+class ConfirmError extends ConfirmFailure {
+  const ConfirmError(this.message);
+  final String message;
+}
+
+const _released = {
+  'PRICE_CHANGED',
+  'OFFER_EXPIRED',
+  'DUFFEL_ORDER_FAILED',
+  'INVALID_PHONE',
+  'UPSTREAM_UNAVAILABLE',
+  'BOOKING_EXPIRED',
+};
+
+ConfirmFailure readConfirmFailure(Object error) {
+  if (error is! ApiError) return const ConfirmProcessing(needsReview: false);
+  final body = error.body ?? const <String, dynamic>{};
+  final code = error.code;
+  if (code == 'BOOKING_PROCESSING') return ConfirmProcessing(needsReview: body['needsReview'] == true);
+  if (code == 'OFFER_EXPIRED') return const ConfirmOfferExpired();
+  final was = body['oldPrice'];
+  final now = body['newPrice'];
+  if (code == 'PRICE_CHANGED' && was is num && now is num) {
+    return ConfirmPriceChanged(was: was.toDouble(), now: now.toDouble(), currency: body['currency']?.toString() ?? '');
+  }
+  if (code != null && _released.contains(code)) return ConfirmRefused(error.message);
+  // No answer from the API, or one from something in front of it: the order may well be placed.
+  final status = error.status;
+  final named = code != null && RegExp(r'^[A-Z][A-Z0-9_]+$').hasMatch(code);
+  if (status == null || status == 0 || (!named && status >= 500)) return const ConfirmProcessing(needsReview: false);
+  return ConfirmError(error.message);
 }
 
 class FlightSearchResult {
@@ -138,6 +232,7 @@ class RevalidateResult {
 /// What `/flights/book` says the card is held for.
 class BookingHold {
   const BookingHold({
+    required this.clientSecret,
     required this.sessionId,
     required this.paymentIntentId,
     this.amount,
@@ -146,6 +241,9 @@ class BookingHold {
     this.serviceFee = 0,
   });
 
+  /// The PaymentIntent's secret, which Stripe's sheet pays. Not a key: it can only pay this
+  /// one intent.
+  final String clientSecret;
   final String sessionId;
   final String paymentIntentId;
   final double? amount;
