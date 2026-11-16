@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
-import 'package:cheapest_go_mobile/shared/stores/saved_store.dart';
+import 'package:cheapest_go_mobile/shared/saved/saved_trips_store.dart';
 import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/utils/money.dart';
 
@@ -138,13 +139,13 @@ class StayListCard extends StatelessWidget {
                         top: 20,
                         right: 24,
                         child: ListenableBuilder(
-                            listenable: savedStaysStore,
+                            listenable: savedTripsStore,
                             builder: (context, _) {
-                                final saved = savedStaysStore.isSaved(hotel.id);
+                                final saved = savedTripsStore.isSaved(hotel.id);
                                 return Tooltip(
                                     message: saved ? 'Remove from saved stays' : 'Save this stay',
                                     child: _ChipCircle(
-                                        onTap: () => savedStaysStore.toggle(hotel.id),
+                                        onTap: () => _toggle(context, hotel),
                                         child: Icon(
                                             saved ? Icons.bookmark_rounded : Icons.bookmark_border_rounded,
                                             size: 16,
@@ -156,6 +157,37 @@ class StayListCard extends StatelessWidget {
                         ),
                     ),
                 ],
+            ),
+        );
+    }
+
+    /// Shortlists this stay, or takes it off the list.
+    ///
+    /// The row carries the name, the area, the price and the picture, so the account screen
+    /// can draw the list without looking anything up — ADR-0004 says why a lookup by id does
+    /// not work there.
+    ///
+    /// Signed out, this asks and stops, as V2's does. V2 pushes `/login` and abandons the
+    /// save; finishing it on the way back is a real improvement and a deliberate divergence
+    /// from V2, so it has a ticket of its own rather than appearing only here.
+    Future<void> _toggle(BuildContext context, Hotel hotel) async {
+        final done = await savedTripsStore.toggleHotel(
+            hotelId: hotel.id,
+            title: hotel.name,
+            subtitle: hotel.area,
+            price: hotel.fromRate,
+            currency: hotel.currency,
+            imageUrl: hotel.photos.isEmpty ? null : hotel.photos.first,
+        );
+        if (done || !context.mounted) return;
+
+        ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+                content: const Text('Sign in to save stays to your account.'),
+                action: SnackBarAction(
+                    label: 'Sign in',
+                    onPressed: () => context.push('/login'),
+                ),
             ),
         );
     }

@@ -4,7 +4,6 @@ import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/features/profile/components/saved_stays_card.dart';
-import 'package:cheapest_go_mobile/shared/stores/saved_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
 /// Pure Material 3 Profile & Account View
@@ -506,7 +505,9 @@ class ProfileView extends StatelessWidget {
       ),
     );
     if (ok != true) return;
-    await Future.wait([bookingsStore.resetToDemo(), savedStaysStore.clear()]);
+    // Saved stays are the account's now, not this device's, so resetting demo data on the
+    // phone has no business deleting them. See #43.
+    await bookingsStore.resetToDemo();
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demo data reset')));
     }
