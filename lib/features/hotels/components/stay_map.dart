@@ -1,6 +1,7 @@
 import 'dart:async' show unawaited;
 import 'dart:io' show Platform;
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
@@ -48,9 +49,12 @@ class StayMap extends StatefulWidget {
     State<StayMap> createState() => _StayMapState();
 }
 
-/// How close two pins may come before they are drawn as one, in logical pixels — a little
-/// wider than the pins themselves, so they part before they touch.
-const double _clusterRadius = 86;
+/// How close two pins may come before they are drawn as one, in logical pixels. V2's
+/// `CLUSTER_RADIUS`, which its own note calls a marker-count dial rather than a distance.
+const double _clusterRadius = 80;
+
+/// V2's `CLUSTER_MAX_ZOOM`: past this, every stay stands on its own however close they are.
+const double _clusterMaxZoom = 16;
 
 /// Mapbox's tiles are 512 wide, so this is the ground resolution at the equator for zoom 0.
 const double _metresPerPixelAtZoom0 = 78271.516;
@@ -75,6 +79,10 @@ class _StayMapState extends State<StayMap> {
     /// What the pins on the map stand for. A rebuild hands this widget a freshly built list
     /// every time, so identity says nothing; this says whether anything actually changed.
     String? _drawn;
+
+    /// Painted pins, by what is drawn on them. However far a map of eight stays is zoomed it
+    /// shows a dozen distinct pills at most, so this stays small and saves every repaint.
+    final _pinCache = <String, Uint8List>{};
 
     /// Tests have no Mapbox: no token, no platform view, no camera to ask. The pins are still
     /// drawn, on a plain ground, from a straight projection of the bounds — so a test sees
@@ -118,10 +126,73 @@ class _StayMapState extends State<StayMap> {
         _pins = await map.annotations.createPointAnnotationManager();
         _pins!.tapEvents(onTap: (annotation) {
             final marker = _byAnnotation[annotation.id];
-            if (marker != null) widget.onSelect(marker.hotels.first);
+            if (marker != null) _onMarkerTap(marker);
         });
         await _frameHotels();
         await _redraw();
+    }
+
+    /// Metres to a logical pixel at a given zoom and latitude. Mapbox's tiles are 512 wide,
+    /// which is where the constant comes from.
+    static double _metresPerPixel(num zoom, double latitude) =>
+        _metresPerPixelAtZoom0 * math.cos(latitude * math.pi / 180).abs() / math.pow(2, zoom);
+
+    /// A pin was pressed.
+    ///
+    /// One stay selects it. A cluster opens: the camera eases to the zoom at which that group
+    /// comes apart, and what was one pin becomes several — tap those and it happens again
+    /// until single stays are left. V2 does this with supercluster's
+    /// `getClusterExpansionZoom`; the arithmetic below is the same question asked directly,
+    /// because the grouping here is distance in pixels rather than a tile index.
+    ///
+    /// Stays that share one coordinate are the exception, and V2 names it: zooming can never
+    /// separate them, so the cheapest is selected instead of easing in forever.
+    Future<void> _onMarkerTap(_Marker marker) async {
+        final map = _map;
+        if (marker.hotels.length == 1 || map == null) {
+            widget.onSelect(marker.hotels.first);
+            return;
+        }
+
+        final apart = _closestPairMetres(marker.hotels);
+        if (apart <= 0) {
+            // Every stay in this pin is at the same point. Already sorted cheapest first.
+            widget.onSelect(marker.hotels.first);
+            return;
+        }
+
+        // The zoom at which that closest pair is further apart than the clustering radius,
+        // plus a step — the point where this pin is no longer one pin.
+        final zoom = (math.log(_clusterRadius * _metresPerPixelAtZoom0 *
+                    math.cos(marker.latitude * math.pi / 180).abs() /
+                    apart) /
+                math.ln2) +
+            1;
+
+        await map.flyTo(
+            CameraOptions(
+                center: Point(coordinates: mb.Position(marker.longitude, marker.latitude)),
+                zoom: zoom.clamp(2, _clusterMaxZoom + 1),
+            ),
+            MapAnimationOptions(duration: 500),
+        );
+
+        // Redrawn here rather than left to the idle listener. Waiting for idle meant the
+        // cluster sat whole for the length of the flight and a beat beyond it, so a tap felt
+        // like it had not landed; this has the new pins ready as the camera settles.
+        await _redraw();
+    }
+
+    /// How far apart the two closest stays in a group are, in metres. Zero when they coincide.
+    static double _closestPairMetres(List<Hotel> hotels) {
+        var closest = double.infinity;
+        for (var i = 0; i < hotels.length; i++) {
+            for (var j = i + 1; j < hotels.length; j++) {
+                final apart = _metresBetween(hotels[i], hotels[j]);
+                if (apart < closest) closest = apart;
+            }
+        }
+        return closest.isFinite ? closest : 0;
     }
 
     /// Opens on the stays, not on wherever the camera happens to start.
@@ -186,10 +257,13 @@ class _StayMapState extends State<StayMap> {
             final camera = await map.getCameraState();
             final markers = _cluster(
                 placed,
-                radiusMetres: _clusterRadius *
-                    _metresPerPixelAtZoom0 *
-                    math.cos(camera.center.coordinates.lat * math.pi / 180).abs() /
-                    math.pow(2, camera.zoom),
+                // Past the max zoom nothing is clustered, as V2 has it: at that scale two
+                // pins a few metres apart are two buildings, and drawing them as one hides
+                // the choice between them.
+                radiusMetres: camera.zoom >= _clusterMaxZoom
+                    ? 0
+                    : _metresPerPixel(camera.zoom, camera.center.coordinates.lat.toDouble()) *
+                        _clusterRadius,
             );
 
             // Nothing to do if the map is already showing exactly this. Without the check, a
@@ -206,14 +280,22 @@ class _StayMapState extends State<StayMap> {
 
             final options = <PointAnnotationOptions>[];
             for (final marker in markers) {
-                final drawn = await painter.paint(
-                    badge: marker.hotels.length > 1 ? '${marker.hotels.length}' : '',
-                    lines: _linesFor(marker, t),
-                    selected: marker.hotels.any((h) => h.id == widget.selectedId),
-                );
+                final badge = marker.hotels.length > 1 ? '${marker.hotels.length}' : '';
+                final lines = _linesFor(marker, t);
+                final chosen = marker.hotels.any((h) => h.id == widget.selectedId);
+
+                // Painted once per distinct pin. Expanding a cluster redraws the same pills at
+                // every step — a price does not change because the camera moved — and encoding
+                // each one again is what made a tap take a visible moment to answer.
+                final key = '$badge|${lines.join('~')}|$chosen|$brightness';
+                final drawn = _pinCache[key] ??= (await painter.paint(
+                    badge: badge,
+                    lines: lines,
+                    selected: chosen,
+                )).bytes;
                 options.add(PointAnnotationOptions(
                     geometry: Point(coordinates: mb.Position(marker.longitude, marker.latitude)),
-                    image: drawn.bytes,
+                    image: drawn,
                     // The pin stands on its coordinate rather than over it.
                     iconAnchor: IconAnchor.BOTTOM,
                     iconSize: iconSize,
@@ -257,44 +339,19 @@ class _StayMapState extends State<StayMap> {
     }
 
     /// Stays within [radiusMetres] of one another become one marker, cheapest first.
-    List<_Marker> _cluster(List<Hotel> placed, {required double radiusMetres}) {
-        final taken = List.filled(placed.length, false);
-        final out = <_Marker>[];
-
-        for (var i = 0; i < placed.length; i++) {
-            if (taken[i]) continue;
-            taken[i] = true;
-            final group = <Hotel>[placed[i]];
-
-            for (var j = i + 1; j < placed.length; j++) {
-                if (taken[j]) continue;
-                if (_metresBetween(placed[i], placed[j]) > radiusMetres) continue;
-                taken[j] = true;
-                group.add(placed[j]);
-            }
-
-            group.sort((a, b) => a.fromRate.compareTo(b.fromRate));
-            out.add(_Marker(
+    List<_Marker> _cluster(List<Hotel> placed, {required double radiusMetres}) => [
+        for (final group in groupNearbyStays(placed, radiusMetres: radiusMetres))
+            _Marker(
                 // The cluster sits on the stays it stands for, not on whichever came first.
                 latitude: group.map((h) => h.latitude!).reduce((a, b) => a + b) / group.length,
                 longitude: group.map((h) => h.longitude!).reduce((a, b) => a + b) / group.length,
                 hotels: group,
-            ));
-        }
-
-        return out;
-    }
+            ),
+    ];
 
     /// Flat-earth enough at the distances a cluster cares about, and far cheaper than a
     /// great-circle for a list this size.
-    static double _metresBetween(Hotel a, Hotel b) {
-        const metresPerDegree = 111320.0;
-        final dLat = (a.latitude! - b.latitude!) * metresPerDegree;
-        final dLng = (a.longitude! - b.longitude!) *
-            metresPerDegree *
-            math.cos((a.latitude! + b.latitude!) / 2 * math.pi / 180);
-        return math.sqrt(dLat * dLat + dLng * dLng);
-    }
+    static double _metresBetween(Hotel a, Hotel b) => metresBetweenStays(a, b);
 
     /// The headless grouping: no camera, so the stays are spread over the box as they lie and
     /// grouped at a fixed distance.
@@ -402,4 +459,46 @@ class _Marker {
 
     /// One stay, or several drawn as one. Cheapest first.
     final List<Hotel> hotels;
+}
+
+/// Stays grouped so that none is drawn on top of another, and every stay is in exactly one
+/// group. Public because the counts it produces are what a traveller reads off the map.
+///
+/// Greedy and seeded in list order, which is enough for a few hundred stays and keeps the
+/// grouping stable between redraws at one zoom. Zooming changes [radiusMetres], so a group
+/// that held two stays at one zoom holds one at the next — and its neighbours part at the same
+/// time, which is why expanding a pin marked "2" can leave four pins in view. They are not
+/// that pin's four; they are its two and its neighbour's two, no longer overlapping.
+List<List<Hotel>> groupNearbyStays(List<Hotel> stays, {required double radiusMetres}) {
+    final taken = List.filled(stays.length, false);
+    final groups = <List<Hotel>>[];
+
+    for (var i = 0; i < stays.length; i++) {
+        if (taken[i]) continue;
+        taken[i] = true;
+        final group = <Hotel>[stays[i]];
+
+        for (var j = i + 1; j < stays.length; j++) {
+            if (taken[j]) continue;
+            if (metresBetweenStays(stays[i], stays[j]) > radiusMetres) continue;
+            taken[j] = true;
+            group.add(stays[j]);
+        }
+
+        group.sort((a, b) => a.fromRate.compareTo(b.fromRate));
+        groups.add(group);
+    }
+
+    return groups;
+}
+
+/// Metres between two stays, flat-earth — accurate enough at the distances a cluster cares
+/// about and far cheaper than a great-circle for a list this size.
+double metresBetweenStays(Hotel a, Hotel b) {
+    const metresPerDegree = 111320.0;
+    final dLat = (a.latitude! - b.latitude!) * metresPerDegree;
+    final dLng = (a.longitude! - b.longitude!) *
+        metresPerDegree *
+        math.cos((a.latitude! + b.latitude!) / 2 * math.pi / 180);
+    return math.sqrt(dLat * dLat + dLng * dLng);
 }
