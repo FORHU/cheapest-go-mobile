@@ -70,6 +70,10 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   Mobile has the act but not yet the Saved Trip: what the heart marks here is held on the
   device and goes with the app, so it is not visible on the web and does not survive a
   reinstall. The definition above is what mobile is owed, not what it currently does.
+  What is saved is **the hotel or the flight, never an Offer**. An Offer is a price for given
+  dates and lapses; a shortlist is for coming back to weeks later, so a Saved Trip that
+  expired with its rate would be the wrong thing entirely. This is why a saved hotel is named
+  by its `hotelId` rather than by whatever rate was on screen when the heart was tapped.
   A Saved Trip belongs with the account, never among **Bookings** — the two answer different
   questions, and a screen that lists reservations is not where a shortlist lives.
 

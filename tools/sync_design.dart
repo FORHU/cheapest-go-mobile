@@ -322,14 +322,18 @@ const _templateLocale = 'en';
 
 /// V2's four locale files, as ARB.
 ///
-/// Two kinds of entry are deliberately not carried, and both fail loudly rather than quietly:
+/// One kind of entry is deliberately not carried, and it fails loudly rather than quietly:
 /// a screen referencing one gets a compile error, which is the right moment to find out.
 ///
 ///  * **Rich text.** Seven messages wrap part of themselves in `<strong>` or `<b>`, which
 ///    next-intl renders as React elements. ARB has no equivalent, and flattening them would
 ///    silently drop an emphasis or a link.
-///  * **Arrays.** Twenty-five entries are lists — month names, day initials, flex options.
-///    ARB holds messages, not lists. No screen in this slice needs one.
+/// Arrays used to be a third exclusion, on the grounds that ARB holds messages rather than
+/// lists and no screen then needed one. #44's screens are almost entirely lists — the legal
+/// documents alone carry 21 of them holding 92 entries — so they are carried now, each entry
+/// keyed by its position (`…_items_1_label`). The index keeps the document's own order, and a
+/// screen names the entries it renders, since gen-l10n produces static getters and nothing
+/// can iterate them. The count is still reported, so a list growing in V2 is visible here.
 Map<String, String> _arbFiles(Directory v2) {
     final dir = Directory('${v2.path}/src/locales');
     if (!dir.existsSync()) _fail('No locale files at ${dir.path}');
@@ -366,7 +370,7 @@ Map<String, String> _arbFiles(Directory v2) {
     }
 
     stdout.writeln('  copy: ${out.length} locales, '
-        '$skippedRich rich-text and $skippedLists list entries not carried');
+        '$skippedRich rich-text not carried, $skippedLists lists carried by index');
     return out;
 }
 
@@ -378,7 +382,28 @@ void _flatten(Map<String, dynamic> node, String prefix, Map<String, String> out,
         if (value is Map<String, dynamic>) {
             _flatten(value, path, out, lists, rich);
         } else if (value is List) {
+            // Carried, indexed from 1, because the legal documents are mostly lists: 21 of
+            // them holding 92 entries, which is the substance of Terms and Privacy rather
+            // than decoration. Dropping them left a Terms page whose "Pricing and Payments"
+            // was a heading with nothing under it.
+            //
+            // An entry is a string, or an object with its own fields — `{label, text}` in
+            // the legal content — so each is flattened the same way the tree above it is.
+            // Index is part of the key, so the order the document is written in survives.
             lists.add(path);
+            for (var i = 0; i < value.length; i++) {
+                final entry = value[i];
+                final itemPath = '$path.${i + 1}';
+                if (entry is Map<String, dynamic>) {
+                    _flatten(entry, itemPath, out, lists, rich);
+                } else if (entry is String) {
+                    if (RegExp(r'<[a-zA-Z][^>]*>').hasMatch(entry)) {
+                        rich.add(itemPath);
+                        continue;
+                    }
+                    out[_arbKey(itemPath)] = entry;
+                }
+            }
         } else if (value is String) {
             if (RegExp(r'<[a-zA-Z][^>]*>').hasMatch(value)) {
                 rich.add(path);

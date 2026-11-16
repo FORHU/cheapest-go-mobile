@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
 import 'package:cheapest_go_mobile/features/hotels/api/payment_gateway.dart';
+import 'package:cheapest_go_mobile/shared/lib/http.dart';
+import 'package:cheapest_go_mobile/shared/saved/saved_trips_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 
@@ -287,7 +288,11 @@ void main() {
     expect(find.text('Transit Pods NAIA'), findsOneWidget);
   });
 
-  testWidgets('saving a hotel lists it under Profile › Saved Trips, in dark mode', (tester) async {
+  testWidgets('hearting a stay saves it to the account, in dark mode', (tester) async {
+    final saved = _RecordingSaves();
+    savedTripsStore = SavedTripsStore(client: saved);
+    addTearDown(() => savedTripsStore = SavedTripsStore());
+
     await pumpApp(tester, location: '/hotels', theme: AppTheme.dark);
     // The bookmark is on the list card, where V2 puts it: the map's rail card carries the
     // picture, the price and View, and nothing else.
@@ -296,20 +301,14 @@ void main() {
     await tester.tap(find.byTooltip('Save this stay').first);
     await tester.pumpAndSettle();
 
-    // V2's own label for it, from the mirrored copy — not v1's bare "Back".
-    await tester.tap(find.byTooltip('Go back'));
-    await tester.pumpAndSettle();
-    // The bar shows icons only now, so the slot is found by the name it carries for screen
-    // readers rather than by a visible label.
-    // Saved stays live in Account now, not among bookings — #42 moved them, as V2 has them.
-    await tester.tap(find.descendant(
-      of: find.byType(V2BottomNav),
-      matching: find.bySemanticsLabel('Settings'),
-    ));
-    await tester.pumpAndSettle();
-    final saved = find.text('Transit Pods NAIA');
-    await tester.scrollUntilVisible(saved, 200, scrollable: find.byType(Scrollable).first);
-    expect(saved, findsOneWidget);
+    // The heart now writes to the account (#43), so what it sent is what this checks —
+    // the row the web's account page will draw, carrying the stay's own details.
+    final sent = saved.posted.single;
+    expect(sent['type'], 'hotel');
+    expect(sent['title'], 'Transit Pods NAIA');
+    expect(sent['snapshot'], isA<Map>().having((s) => s['hotelId'], 'hotelId', isNotEmpty));
+    // V2's path, not mobile's: the account page on the web links through this field.
+    expect(sent['deepLink'], startsWith('/property/'));
     expect(tester.takeException(), isNull);
   });
 }
@@ -326,4 +325,35 @@ Future<void> _fillGuest(WidgetTester tester) async {
   );
   await tester.tap(find.text('Continue to payment'));
   await tester.pumpAndSettle();
+}
+
+/// api-v2's saved-trips endpoint, remembering what the heart sent it.
+class _RecordingSaves implements HttpClientAdapter {
+  final posted = <Map<String, dynamic>>[];
+
+  @override
+  Future<dynamic> get(String url, {HttpRequestOptions? options}) async => {'trips': <dynamic>[]};
+
+  @override
+  Future<dynamic> post(String url, {Object? body, HttpRequestOptions? options}) async {
+    final sent = (body as Map).cast<String, dynamic>();
+    posted.add(sent);
+    return {
+      'success': true,
+      'data': {
+        'id': 'row-1',
+        'type': sent['type'],
+        'title': sent['title'],
+        'deep_link': sent['deepLink'],
+        'snapshot': sent['snapshot'],
+      },
+    };
+  }
+
+  @override
+  Future<dynamic> delete(String url, {Object? body, HttpRequestOptions? options}) async =>
+      {'success': true};
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

@@ -10,6 +10,9 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cheapest_go_mobile/app/router/stay_play_view.dart';
 import 'package:cheapest_go_mobile/features/airports/views/airport_hub_view.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
+import 'package:cheapest_go_mobile/features/legal/lib/legal_documents.dart';
+import 'package:cheapest_go_mobile/features/legal/views/help_view.dart';
+import 'package:cheapest_go_mobile/features/legal/views/legal_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/forgot_password_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/login_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/register_view.dart';
@@ -145,6 +148,14 @@ GoRouter createAppRouter() => GoRouter(
         // Nothing links here yet: the account screen that carries V2's footer links is a later
         // slice. Reachable by deep link and by test until then.
         GoRoute(path: '/about', builder: (_, _) => const AboutView()),
+        // The four legal documents and Help, each against its V2 counterpart (#44). Reached
+        // by deep link and from within each other for now: V2 links them from its footer,
+        // and mobile's account screen gains those links in a later slice.
+        GoRoute(path: '/terms', builder: (_, _) => const LegalView(document: LegalDocument.terms)),
+        GoRoute(path: '/privacy', builder: (_, _) => const LegalView(document: LegalDocument.privacy)),
+        GoRoute(path: '/cookies', builder: (_, _) => const LegalView(document: LegalDocument.cookie)),
+        GoRoute(path: '/refund', builder: (_, _) => const LegalView(document: LegalDocument.refund)),
+        GoRoute(path: '/help', builder: (_, _) => const HelpView()),
       ],
     );
 

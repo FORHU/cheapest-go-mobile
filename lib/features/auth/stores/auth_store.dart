@@ -5,6 +5,7 @@ import 'package:cheapest_go_mobile/features/auth/api/auth_api.dart';
 import 'package:cheapest_go_mobile/features/auth/api/google_identity.dart';
 import 'package:cheapest_go_mobile/features/auth/contracts/auth_contract.dart';
 import 'package:cheapest_go_mobile/shared/auth/permissions.dart';
+import 'package:cheapest_go_mobile/shared/saved/saved_trips_store.dart';
 import 'package:cheapest_go_mobile/shared/auth/rbac.dart';
 import 'package:cheapest_go_mobile/shared/auth/roles.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
@@ -243,6 +244,9 @@ class AuthStore extends ChangeNotifier {
       // Also let go of the Google account, or the next sign-in silently picks the same one
       // with no chance to choose another.
       await googleIdentity.forget();
+      // And the shortlist, which belongs to the account that is leaving. Holding it would
+      // show one person's saved stays to whoever signs in next on this phone.
+      savedTripsStore.forget();
       final prefs = await SharedPreferences.getInstance();
       await prefs.remove(_cachedUserKey);
       if (mock) await prefs.setBool(_signedOutKey, true);
