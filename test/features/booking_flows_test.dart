@@ -242,43 +242,6 @@ void main() {
     expect(booking.when, endsWith('6:40 AM'));
   });
 
-  // Opened directly rather than through the bar: #36 adopted V2's three slots, and V2 reaches
-  // flight search from its landing page, not from a tab. Mobile's landing gains that entry
-  // point with #38 — until then this journey starts at the route.
-  testWidgets('flights: SIN → MNL, pick the cheapest non-stop, pay', (tester) async {
-    final before = bookingsStore.all.length;
-    await pumpApp(tester, location: '/flights');
-    await tester.pumpAndSettle();
-    expect(find.text('FROM'), findsOneWidget);
-    expect(find.text('SIN'), findsWidgets);
-
-    await tester.tap(find.text('Non-stop').first);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('1 stop'), findsNothing);
-
-    await tester.tap(find.text('Cheapest').last);
-    await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'Full name (as on passport)'), 'Juan Dela Cruz');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Email for e-ticket'), 'juan@example.com');
-    await tester.tap(find.textContaining('Pay ₱'));
-    await tester.pump(const Duration(milliseconds: 700));
-    // Not pumpAndSettle: the screen stays put now and its snackbar keeps scheduling frames
-    // for as long as it is up, so settling never comes.
-    await tester.pump(const Duration(milliseconds: 400));
-
-    expect(bookingsStore.all.length, before + 1);
-    final booking = bookingsStore.all.last;
-    expect(booking.kind, BookingKind.flight);
-    expect(booking.detail, startsWith('SIN → MNL · Non-stop'));
-
-    // It says it is a demo, and it does not send anybody to Trips. This checkout reaches no
-    // airline, and Trips shows only what api-v2 confirms (ADR-0003) — so a reference quoted
-    // here, on a screen that then hands over to a list it is absent from, would be a lie.
-    expect(find.textContaining('Demo booking'), findsOneWidget);
-    expect(find.text(booking.reference), findsNothing);
-    expect(find.text('My Bookings'), findsNothing);
-  });
-
   // Reached from Home rather than a tab since #36; Home still links here.
   testWidgets('Stay & Play switches between hotels and golf', (tester) async {
     await pumpApp(tester, location: '/stay');

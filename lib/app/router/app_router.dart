@@ -13,8 +13,10 @@ import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/auth/views/forgot_password_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/login_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/register_view.dart';
+import 'package:cheapest_go_mobile/features/flights/lib/flight_search_query.dart';
 import 'package:cheapest_go_mobile/features/flights/views/flight_checkout_view.dart';
-import 'package:cheapest_go_mobile/features/flights/views/flight_results_view.dart';
+import 'package:cheapest_go_mobile/features/flights/views/flight_search_view.dart';
+import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/features/golf/views/golf_view.dart';
 import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_checkout_view.dart';
@@ -48,7 +50,11 @@ GoRouter createAppRouter() => GoRouter(
             StatefulShellBranch(
               routes: [GoRoute(path: '/map', builder: (_, _) => const MapView())],
             ),
-            StatefulShellBranch(routes: [GoRoute(path: '/flights', builder: (_, _) => const FlightResultsView(asTab: true))]),
+            // Kept as a branch so the shell's indexes do not move, but `/flights` is no longer a
+            // screen of its own: it opens V2's search for the trip being planned (#47).
+            StatefulShellBranch(
+              routes: [GoRoute(path: '/flights', redirect: (_, _) => _flightSearchFromStore(), builder: (_, _) => const SizedBox.shrink())],
+            ),
             StatefulShellBranch(routes: [GoRoute(path: '/trips', builder: (_, _) => const TripsView())]),
           ],
         ),
@@ -101,13 +107,27 @@ GoRouter createAppRouter() => GoRouter(
             onSignIn: () => context.push('/login'),
           ),
         ),
+        // V2's flight search and booking (#47). Every fare is api-v2's, from Duffel.
+        GoRoute(
+          path: '/flights/search',
+          builder: (_, state) => FlightSearchView(params: state.uri.queryParameters),
+        ),
+        // V2 keeps `/flights/book` for links that still point at it and hands them to checkout.
+        GoRoute(
+          path: '/flights/book',
+          redirect: (_, state) => state.uri.queryParameters['offerId'] == null
+              ? '/'
+              : Uri(path: '/flight-checkout', queryParameters: state.uri.queryParameters).toString(),
+        ),
         GoRoute(
           path: '/flight-checkout',
-          builder: (_, state) => FlightCheckoutView(
-            offerId: state.uri.queryParameters['offer'] ?? '',
-            leadName: authStore.user?.fullName,
-            leadEmail: authStore.user?.email,
-            simulatedPriceShift: int.tryParse(state.uri.queryParameters['shift'] ?? ''),
+          builder: (context, state) => ListenableBuilder(
+            listenable: authStore,
+            builder: (context, _) => FlightCheckoutView(
+              params: state.uri.queryParameters,
+              isSignedIn: () => authStore.isAuthenticated,
+              onSignIn: () => context.push('/login'),
+            ),
           ),
         ),
         // Outside the shell, as V2's booking detail is outside its list: a full screen with
@@ -129,6 +149,18 @@ GoRouter createAppRouter() => GoRouter(
     );
 
 final GoRouter appRouter = createAppRouter();
+
+/// The flight search for the trip being planned — where it flies from and to, the first night,
+/// and the party — as V2's search link names it.
+String _flightSearchFromStore() {
+  final s = tripSearchStore;
+  return FlightSearchQuery(
+    origin: s.originCode,
+    destination: s.airportCode,
+    departure: isoDate(s.checkIn),
+    adults: s.adults < 1 ? 1 : s.adults,
+  ).toLocation();
+}
 
 /// The app shell: a shared header, the current branch, and V2's bottom bar.
 ///

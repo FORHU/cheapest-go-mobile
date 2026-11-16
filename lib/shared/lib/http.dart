@@ -147,10 +147,18 @@ class HttpClientAdapter {
       final isSuccessFlagFalse = payloadMap != null && payloadMap['success'] == false;
       if (res.statusCode < 200 || res.statusCode >= 300 || isSuccessFlagFalse) {
         final category = _classify(res.statusCode);
-        final message = (payloadMap?['error'] ??
+        // api-v2's AppError answers `{ error: 'OFFER_EXPIRED', message: '…' }`: the code in
+        // `error` and the sentence in `message`. Read as a message, `error` put the code on
+        // screen and left `code` null, so no caller could tell a fare that had gone from any
+        // other failure. Older routes send `{ error: '<sentence>' }`, which still reads as text.
+        final rawError = payloadMap?['error']?.toString();
+        final errorIsCode = rawError != null && RegExp(r'^[A-Z][A-Z0-9_]+$').hasMatch(rawError);
+        final message = ((errorIsCode ? null : rawError) ??
                 payloadMap?['message'] ??
+                rawError ??
                 'Request failed (HTTP ${res.statusCode})')
             .toString();
+        final code = payloadMap?['code']?.toString() ?? (errorIsCode ? rawError : null);
 
         Map<String, List<String>>? details;
         final rawDetails = payloadMap?['details'];
@@ -169,7 +177,8 @@ class HttpClientAdapter {
           message,
           category: category,
           status: res.statusCode,
-          code: payloadMap?['code']?.toString(),
+          code: code,
+          body: payloadMap,
           details: details,
           priceChanged: payloadMap?['priceChanged'] as bool?,
           newPrice: (payloadMap?['newPrice'] as num?)?.toDouble(),
