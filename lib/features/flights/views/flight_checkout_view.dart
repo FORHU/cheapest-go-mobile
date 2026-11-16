@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
@@ -13,9 +12,11 @@ import 'package:cheapest_go_mobile/features/flights/lib/passengers.dart';
 import 'package:cheapest_go_mobile/features/flights/models/flight_fare.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
+import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 
-enum _Step { details, payment }
+enum _Step { details, payment, confirmed }
 
 /// Booking a flight, as V2's checkout does it for one: Details → Payment → Verification. (#47)
 ///
@@ -23,18 +24,22 @@ enum _Step { details, payment }
 /// as on the passport, a birthday inside the passenger's age band on the day they fly, a gender,
 /// and the passport's number, expiry and issuing country; the lead traveller's email and phone.
 /// Continuing needs a signed-in traveller, then calls api-v2's `/flights/book` against the real
-/// Duffel offer: it re-reads the fare, refuses one that has risen, and says what the card would
-/// be held for.
+/// Duffel offer: it re-reads the fare, refuses one that has risen, and opens a Stripe
+/// PaymentIntent for what the card will be held for.
 ///
-/// **Payment** lists the card's details and stops there. The app has no card processor yet, so
-/// nothing is authorised or charged, no airline order is placed, and the screen says so rather
-/// than pretending otherwise. The step after it — the airline's confirmation — needs that card.
+/// **Payment** hands that intent to Stripe's own sheet. The card number is typed into Stripe's
+/// form, never into this app, and on a `pk_test_` key Stripe accepts only its test cards. Once
+/// the card is authorised, `/flights/confirm` places the airline order.
+///
+/// **Verification** is the airline's answer: the PNR, or — when the airline is still deciding —
+/// a page that says so and never invites a second payment.
 class FlightCheckoutView extends StatefulWidget {
   const FlightCheckoutView({
     required this.params,
     required this.isSignedIn,
     required this.onSignIn,
     this.api,
+    this.gateway,
     this.now,
     super.key,
   });
@@ -50,6 +55,9 @@ class FlightCheckoutView extends StatefulWidget {
   /// Sends the traveller to sign in, to come back here afterwards.
   final VoidCallback onSignIn;
   final FlightsApi? api;
+
+  /// Takes the card. Stripe's sheet unless a test replaces it.
+  final PaymentGateway? gateway;
   final DateTime? now;
 
   @override
@@ -68,14 +76,14 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
   String _phoneCode = '+63';
   Map<String, String> _errors = const {};
 
-  // The card's details, listed on the payment step.
-  final _card = TextEditingController();
-  final _expiry = TextEditingController();
-  final _cvc = TextEditingController();
-  String _cardCountry = 'PH';
-  Map<String, String> _cardErrors = const {};
+  /// The airline's yes, once the card is paid.
+  FlightConfirmation? _confirmed;
+
+  /// Paid, and the airline has not answered yet.
+  ConfirmProcessing? _settling;
 
   FlightsApi get _api => widget.api ?? flightsApi;
+  PaymentGateway get _gateway => widget.gateway ?? paymentGateway;
   Map<String, String> get _p => widget.params;
 
   String get _offerId => _p['offerId'] ?? '';
@@ -120,9 +128,6 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
   @override
   void dispose() {
     _scroll.dispose();
-    _card.dispose();
-    _expiry.dispose();
-    _cvc.dispose();
     super.dispose();
   }
 
@@ -198,7 +203,6 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
       setState(() {
         _held = hold;
         _submitting = false;
-        _cardCountry = _passengers.first.country.isNotEmpty ? _passengers.first.country : 'PH';
       });
       _goTo(_Step.payment);
     } on ApiError catch (e) {
@@ -230,21 +234,71 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     if (_scroll.hasClients) _scroll.jumpTo(0);
   }
 
-  void _pay() {
+  /// Stripe's sheet takes the card for the intent `/flights/book` opened; then the airline is
+  /// asked. The card is authorised, not charged: api-v2 captures it only on the airline's yes.
+  Future<void> _pay() async {
+    final held = _held;
+    if (held == null || _submitting) return;
     final t = AppLocalizations.of(context)!;
-    final errors = <String, String>{};
-    final digits = _card.text.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < 12 || digits.length > 19) errors['card'] = 'Required';
-    if (!RegExp(r'^(0[1-9]|1[0-2])\s*/\s*\d{2}$').hasMatch(_expiry.text.trim())) errors['expiry'] = 'Required';
-    if (!RegExp(r'^\d{3,4}$').hasMatch(_cvc.text.trim())) errors['cvc'] = 'Required';
-    setState(() => _cardErrors = errors);
-    if (errors.isNotEmpty) return;
-    // The flow stops here by design: there is no card processor in the app yet.
-    _alert(
-      t.checkout_paymentDetailsTitle,
-      'Card payment is not connected in the app yet, so this booking stops here. '
-      'Nothing has been authorised or charged, and no ticket has been ordered.',
-    );
+    final lead = _passengers.first;
+    setState(() => _submitting = true);
+
+    try {
+      await _gateway.payFor(
+        clientSecret: held.clientSecret,
+        email: lead.email.trim(),
+        name: '${lead.firstName.trim()} ${lead.lastName.trim()}'.trim(),
+        phone: lead.phone.trim().isEmpty ? null : '$_phoneCode${lead.phone.trim()}',
+      );
+    } on PaymentCancelled {
+      // Their own decision: nothing charged, nothing said, the page stays where it was.
+      if (mounted) setState(() => _submitting = false);
+      return;
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      await _alert(t.checkout_alert_paymentTitle, error.toString().replaceFirst('Exception: ', ''));
+      return;
+    }
+
+    try {
+      final done = await _api.confirm(paymentIntentId: held.paymentIntentId, sessionId: held.sessionId);
+      if (!mounted) return;
+      setState(() {
+        _confirmed = done;
+        _submitting = false;
+      });
+      _goTo(_Step.confirmed);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _submitting = false);
+      // The hold is gone after any of these: the payment step has nothing left to pay with.
+      void backToDetails() {
+        setState(() => _held = null);
+        _goTo(_Step.details);
+      }
+
+      switch (readConfirmFailure(error)) {
+        case ConfirmProcessing settling:
+          // Paid and possibly ordered: shown as an outcome, never as "try again".
+          setState(() => _settling = settling);
+          _goTo(_Step.confirmed);
+        case ConfirmPriceChanged(:final was, :final now, :final currency):
+          backToDetails();
+          await _alert(
+            t.checkout_alert_fareChangedTitle,
+            t.checkout_flight_priceChanged(checkoutMoney(was, currency), checkoutMoney(now, currency)),
+          );
+        case ConfirmOfferExpired():
+          backToDetails();
+          context.go(_fareGoneHref);
+        case ConfirmRefused(:final message):
+          backToDetails();
+          await _alert(t.checkout_failed_title, message.isNotEmpty ? message : t.checkout_failed_released);
+        case ConfirmError(:final message):
+          await _alert(t.checkout_failed_title, message.isNotEmpty ? message : t.checkout_failed_unknown);
+      }
+    }
   }
 
   Future<void> _alert(String title, String message) => showDialog<void>(
@@ -280,7 +334,10 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
   );
 
   void _back() {
-    if (_step == _Step.payment) {
+    if (_step == _Step.confirmed) {
+      // Paid: nothing behind this page can be done again.
+      context.go('/trips');
+    } else if (_step == _Step.payment) {
       _goTo(_Step.details);
     } else if (context.canPop()) {
       context.pop();
@@ -294,6 +351,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     final t = AppLocalizations.of(context)!;
     final c = _Colors.of(context);
     final payment = _step == _Step.payment;
+    if (_step == _Step.confirmed) return _verification(t, c);
 
     return PopScope(
       canPop: !payment,
@@ -384,6 +442,142 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Step 3: the airline's answer ──
+
+  Widget _verification(AppLocalizations t, _Colors c) {
+    final done = _confirmed;
+    final settling = _settling;
+    final lead = _passengers.first;
+    final price = _price;
+    final title = done != null
+        ? t.checkout_flight_receipt_allSet
+        : (settling?.needsReview ?? false)
+        ? t.checkout_flight_needsReview_title
+        : t.checkout_settling_title;
+    final body = done != null
+        ? t.checkout_flight_receipt_confirmedToDestination(_destination)
+        : (settling?.needsReview ?? false)
+        ? t.checkout_flight_needsReview_description
+        : t.checkout_flight_settling_description;
+    final row = TextStyle(fontSize: 14, color: c.text);
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go('/trips');
+      },
+      child: Scaffold(
+        backgroundColor: c.bg,
+        body: SafeArea(
+          child: ListView(
+            controller: _scroll,
+            padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+            children: [
+              const SizedBox(height: 12),
+              const Center(child: _Steps(active: 2)),
+              const SizedBox(height: 32),
+              Icon(
+                done != null ? LucideIcons.circleCheck : LucideIcons.clock,
+                size: 44,
+                color: done != null ? const Color(0xFF16A34A) : c.muted,
+              ),
+              const SizedBox(height: 14),
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 26, fontWeight: FontWeight.w700, letterSpacing: -0.3, color: c.title),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                body,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 15, height: 1.45, color: c.soft),
+              ),
+              if (done == null) ...[
+                const SizedBox(height: 8),
+                Text(
+                  t.checkout_settling_doNotPayAgain,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.title),
+                ),
+              ],
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(color: c.surface, borderRadius: BorderRadius.circular(12)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    if (done?.pnr != null) ...[
+                      Text(
+                        t.checkout_flight_receipt_airlinePnr.toUpperCase(),
+                        style: TextStyle(fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 0.9, color: c.faint),
+                      ),
+                      const SizedBox(height: 4),
+                      SelectableText(
+                        done!.pnr!,
+                        style: TextStyle(fontSize: 24, fontWeight: FontWeight.w700, letterSpacing: 2, color: c.title),
+                      ),
+                      Text(t.checkout_flight_receipt_pnrHint, style: TextStyle(fontSize: 12, color: c.muted)),
+                      const SizedBox(height: 14),
+                    ],
+                    Text(
+                      '$_origin → $_destination',
+                      style: row.copyWith(fontWeight: FontWeight.w700, color: c.title),
+                    ),
+                    if (done != null && done.bookingId.isNotEmpty) ...[
+                      const SizedBox(height: 6),
+                      Text(
+                        '${t.checkout_success_bookingId}: ${done.bookingId}',
+                        style: TextStyle(fontSize: 12, color: c.muted),
+                      ),
+                    ],
+                    if (price != null) ...[
+                      Container(height: 1, margin: const EdgeInsets.symmetric(vertical: 12), color: c.cardLine),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(t.checkout_success_total, style: row.copyWith(fontWeight: FontWeight.w700)),
+                          ),
+                          Text(
+                            checkoutMoney(price.total, price.currency),
+                            style: row.copyWith(fontWeight: FontWeight.w700, color: c.title),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (done != null && lead.email.trim().isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Text(
+                        t.checkout_flight_receipt_receiptSentTo(lead.email.trim()),
+                        style: TextStyle(fontSize: 12, color: c.muted),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              GradientPill(
+                label: t.checkout_success_viewMyTrips,
+                onTap: () => context.go('/trips'),
+                expand: true,
+                height: 52,
+                radius: 999,
+                fontSize: 16,
+              ),
+              const SizedBox(height: 10),
+              Text(
+                t.checkout_flight_receipt_paymentProcessedSecurely,
+                textAlign: TextAlign.center,
+                style: TextStyle(fontSize: 12, color: c.faint),
               ),
             ],
           ),
@@ -548,7 +742,12 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
           if (_quoting) ...[
             Row(
               children: [
-                Expanded(child: Text(withCount(t.checkout_flight_receipt_fareLine(_passengers.length), _passengers.length), style: row)),
+                Expanded(
+                  child: Text(
+                    withCount(t.checkout_flight_receipt_fareLine(_passengers.length), _passengers.length),
+                    style: row,
+                  ),
+                ),
                 _Skeleton(width: 84, height: 14, color: c.cardLine),
               ],
             ),
@@ -569,7 +768,12 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
             // the traveller is shown being added.
             Row(
               children: [
-                Expanded(child: Text(withCount(t.checkout_flight_receipt_fareLine(_passengers.length), _passengers.length), style: row)),
+                Expanded(
+                  child: Text(
+                    withCount(t.checkout_flight_receipt_fareLine(_passengers.length), _passengers.length),
+                    style: row,
+                  ),
+                ),
                 Text(checkoutMoney(((price.fare + price.serviceFee) * 100).round() / 100, price.currency), style: row),
               ],
             ),
@@ -839,52 +1043,10 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
               ),
             ],
           ),
+          const SizedBox(height: 12),
+          // The number is typed into Stripe's own form when Pay is tapped; this app never sees it.
+          Text(t.checkout_securedByStripe, style: TextStyle(fontSize: 13, height: 1.45, color: c.soft)),
           const SizedBox(height: 16),
-          _TextField(
-            label: t.checkout_payment_cardNumber,
-            hint: '1234 1234 1234 1234',
-            value: _card.text,
-            controller: _card,
-            error: _cardErrors['card'],
-            keyboard: TextInputType.number,
-            autofill: AutofillHints.creditCardNumber,
-            formatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d ]')), LengthLimitingTextInputFormatter(23)],
-            onChanged: (_) => setState(() => _cardErrors = Map.of(_cardErrors)..remove('card')),
-          ),
-          const SizedBox(height: 16),
-          _pair(
-            _TextField(
-              label: t.checkout_payment_mmYY,
-              hint: t.checkout_payment_mmYY,
-              value: _expiry.text,
-              controller: _expiry,
-              error: _cardErrors['expiry'],
-              keyboard: TextInputType.datetime,
-              autofill: AutofillHints.creditCardExpirationDate,
-              formatters: [FilteringTextInputFormatter.allow(RegExp(r'[\d /]')), LengthLimitingTextInputFormatter(7)],
-              onChanged: (_) => setState(() => _cardErrors = Map.of(_cardErrors)..remove('expiry')),
-            ),
-            _TextField(
-              label: t.checkout_payment_securityCode,
-              hint: 'CVC',
-              value: _cvc.text,
-              controller: _cvc,
-              error: _cardErrors['cvc'],
-              keyboard: TextInputType.number,
-              autofill: AutofillHints.creditCardSecurityCode,
-              formatters: [FilteringTextInputFormatter.digitsOnly, LengthLimitingTextInputFormatter(4)],
-              onChanged: (_) => setState(() => _cardErrors = Map.of(_cardErrors)..remove('cvc')),
-            ),
-          ),
-          const SizedBox(height: 16),
-          _CountryField(
-            label: t.checkout_payment_country,
-            placeholder: t.checkout_flight_countryPlaceholder,
-            noResults: t.checkout_flight_countryNoResults,
-            value: _cardCountry,
-            onChanged: (v) => setState(() => _cardCountry = v),
-          ),
-          const SizedBox(height: 20),
           Row(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [
@@ -898,21 +1060,24 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
         ],
       ),
     ),
-    const SizedBox(height: 16),
-    // Said plainly, because the button below would otherwise read as one that charges.
-    Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: c.dark ? TwPalette.amber950.withValues(alpha: 0.3) : TwPalette.amber50,
-        border: Border.all(color: c.dark ? TwPalette.amber800 : TwPalette.amber200),
-        borderRadius: BorderRadius.circular(12),
+    // A test key takes only Stripe's test cards — a real card is declined — so the build says
+    // which card to use. Never shown on a live key.
+    if (env.stripePublishableKey.startsWith('pk_test_')) ...[
+      const SizedBox(height: 16),
+      Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: c.dark ? TwPalette.amber950.withValues(alpha: 0.3) : TwPalette.amber50,
+          border: Border.all(color: c.dark ? TwPalette.amber800 : TwPalette.amber200),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          'Stripe test mode: no real money moves. Pay with the test card 4242 4242 4242 4242, '
+          'any future expiry and any CVC. Real cards are declined.',
+          style: TextStyle(fontSize: 12, height: 1.45, color: c.dark ? TwPalette.amber300 : TwPalette.amber800),
+        ),
       ),
-      child: Text(
-        'Test build: card payment is not connected in the app, so the booking stops at this step. '
-        'Nothing is authorised or charged.',
-        style: TextStyle(fontSize: 12, height: 1.45, color: c.dark ? TwPalette.amber300 : TwPalette.amber800),
-      ),
-    ),
+    ],
   ];
 }
 
@@ -1125,8 +1290,6 @@ class _TextField extends StatefulWidget {
     this.error,
     this.keyboard,
     this.autofill,
-    this.controller,
-    this.formatters,
   });
 
   final String label;
@@ -1136,21 +1299,17 @@ class _TextField extends StatefulWidget {
   final String? error;
   final TextInputType? keyboard;
   final String? autofill;
-  final TextEditingController? controller;
-  final List<TextInputFormatter>? formatters;
 
   @override
   State<_TextField> createState() => _TextFieldState();
 }
 
 class _TextFieldState extends State<_TextField> {
-  late final TextEditingController _own = TextEditingController(text: widget.value);
-
-  TextEditingController get _controller => widget.controller ?? _own;
+  late final TextEditingController _controller = TextEditingController(text: widget.value);
 
   @override
   void dispose() {
-    _own.dispose();
+    _controller.dispose();
     super.dispose();
   }
 
@@ -1165,7 +1324,6 @@ class _TextFieldState extends State<_TextField> {
           controller: _controller,
           onChanged: widget.onChanged,
           keyboardType: widget.keyboard,
-          inputFormatters: widget.formatters,
           autofillHints: widget.autofill == null ? null : [widget.autofill!],
           style: TextStyle(fontSize: 15, color: c.title),
           decoration: _decoration(c, hint: widget.hint, error: widget.error),

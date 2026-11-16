@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
-import 'package:cheapest_go_mobile/features/hotels/api/payment_gateway.dart';
+import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 import 'package:cheapest_go_mobile/shared/lib/http.dart';
 import 'package:cheapest_go_mobile/shared/saved/saved_trips_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';

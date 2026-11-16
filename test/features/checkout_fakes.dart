@@ -1,5 +1,5 @@
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
-import 'package:cheapest_go_mobile/features/hotels/api/payment_gateway.dart';
+import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 
 /// api-v2 and Stripe, stood in for. See #41.
 ///

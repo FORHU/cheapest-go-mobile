@@ -106,6 +106,7 @@ class FakeFlightsApi extends FlightsApi {
     this.revalidateResult = const RevalidateResult(priceChanged: false, offerExpired: false),
     this.bookError,
     this.offerGone = false,
+    this.confirmError,
   }) : offers = offers ?? sampleOffers();
 
   List<FlightFare> offers;
@@ -113,10 +114,12 @@ class FakeFlightsApi extends FlightsApi {
   RevalidateResult revalidateResult;
   ApiError? bookError;
   bool offerGone;
+  ApiError? confirmError;
 
   final searches = <Map<String, Object?>>[];
   final revalidated = <String>[];
   final books = <Map<String, Object?>>[];
+  final confirms = <Map<String, String>>[];
 
   @override
   Future<FlightSearchResult> search({
@@ -178,6 +181,7 @@ class FakeFlightsApi extends FlightsApi {
     });
     if (bookError != null) throw bookError!;
     return const BookingHold(
+      clientSecret: 'pi_1_secret_test',
       sessionId: 'sess_1',
       paymentIntentId: 'pi_1',
       amount: 8108.79,
@@ -185,5 +189,12 @@ class FakeFlightsApi extends FlightsApi {
       fare: 7304.18,
       serviceFee: 804.61,
     );
+  }
+
+  @override
+  Future<FlightConfirmation> confirm({required String paymentIntentId, required String sessionId}) async {
+    confirms.add({'paymentIntentId': paymentIntentId, 'sessionId': sessionId});
+    if (confirmError != null) throw confirmError!;
+    return const FlightConfirmation(bookingId: 'bk_1', pnr: 'QZX7PA', status: 'ticketed');
   }
 }
