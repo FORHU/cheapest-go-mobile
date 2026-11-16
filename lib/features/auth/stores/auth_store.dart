@@ -200,6 +200,29 @@ class AuthStore extends ChangeNotifier {
     }
   }
 
+  /// Sets a new password from an emailed token. See #45.
+  Future<bool> confirmPasswordReset(String token, String password) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+    if (mock) {
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    }
+    try {
+      await authApi.confirmPasswordReset(token, password);
+      return true;
+    } catch (err) {
+      final routed = routeError(err);
+      _errorMessage = routed.toast ?? err.toString();
+      return false;
+    } finally {
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
   /// Signs in with Google. See #45.
   ///
   /// Returns false when the traveller backed out of the account picker — their decision, so

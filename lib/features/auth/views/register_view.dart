@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/features/auth/components/auth_form_widgets.dart';
 import 'package:cheapest_go_mobile/features/auth/contracts/auth_contract.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
@@ -12,8 +13,6 @@ class RegisterView extends StatefulWidget {
 }
 
 class _RegisterViewState extends State<RegisterView> {
-  static const int _minPasswordLength = 8;
-
   final _formKey = GlobalKey<FormState>();
   final _firstNameController = TextEditingController();
   final _lastNameController = TextEditingController();
@@ -24,6 +23,8 @@ class _RegisterViewState extends State<RegisterView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) => authStore.clearError());
+    // The password checklist redraws as the password changes.
+    _passwordController.addListener(() => setState(() {}));
   }
 
   @override
@@ -33,15 +34,6 @@ class _RegisterViewState extends State<RegisterView> {
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
-  }
-
-  String? _validatePassword(String? value) {
-    final v = value ?? '';
-    if (v.isEmpty) return 'Enter a password';
-    if (v.length < _minPasswordLength) {
-      return 'Use at least $_minPasswordLength characters';
-    }
-    return null;
   }
 
   Future<void> _submit() async {
@@ -62,8 +54,9 @@ class _RegisterViewState extends State<RegisterView> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Create Account')),
+      appBar: AppBar(title: Text(t.auth_createAccount)),
       body: ListenableBuilder(
         listenable: authStore,
         builder: (context, _) {
@@ -77,7 +70,10 @@ class _RegisterViewState extends State<RegisterView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AuthHeader(title: 'Join CheapestGo'),
+                      AuthHeader(
+                        title: t.auth_createYourAccount,
+                        subtitle: t.auth_registerSubtitle,
+                      ),
                       const SizedBox(height: 20),
                       if (authStore.errorMessage != null) ...[
                         AuthErrorBanner(message: authStore.errorMessage!),
@@ -89,10 +85,10 @@ class _RegisterViewState extends State<RegisterView> {
                           Expanded(
                             child: AuthTextField(
                               controller: _firstNameController,
-                              label: 'First Name',
+                              label: t.auth_firstName,
                               textCapitalization: TextCapitalization.words,
                               autofillHints: const [AutofillHints.givenName],
-                              validator: requiredField('first name'),
+                              validator: requiredField(t.auth_firstNameRequired),
                               enabled: !loading,
                             ),
                           ),
@@ -100,10 +96,12 @@ class _RegisterViewState extends State<RegisterView> {
                           Expanded(
                             child: AuthTextField(
                               controller: _lastNameController,
-                              label: 'Last Name',
+                              label: t.auth_lastName,
                               textCapitalization: TextCapitalization.words,
                               autofillHints: const [AutofillHints.familyName],
-                              validator: requiredField('last name'),
+                              // V2 asks only for a first name; a last name is optional
+                              // there, which is why no required message exists for it.
+                              validator: null,
                               enabled: !loading,
                             ),
                           ),
@@ -112,26 +110,29 @@ class _RegisterViewState extends State<RegisterView> {
                       const SizedBox(height: 16),
                       AuthTextField(
                         controller: _emailController,
-                        label: 'Email',
+                        label: t.auth_signIn_emailLabel,
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
-                        validator: validateEmail,
+                        validator: (v) => validateEmail(t, v),
                         enabled: !loading,
                       ),
                       const SizedBox(height: 16),
                       AuthPasswordField(
                         controller: _passwordController,
-                        label: 'Password',
-                        helperText: 'Minimum $_minPasswordLength characters',
+                        label: t.auth_strongPassword,
                         autofillHints: const [AutofillHints.newPassword],
-                        validator: _validatePassword,
+                        validator: (v) => validateNewPassword(t, v),
                         onFieldSubmitted: (_) => _submit(),
                         enabled: !loading,
                       ),
+                      const SizedBox(height: 8),
+                      // The rules, live, as V2 shows them — instead of a helper line that
+                      // named only one of the three.
+                      PasswordRulesChecklist(password: _passwordController.text),
                       const SizedBox(height: 24),
                       AuthSubmitButton(
-                        label: 'Create Account',
+                        label: t.auth_createAccount,
                         isLoading: loading,
                         onPressed: _submit,
                       ),

@@ -71,15 +71,25 @@ class RegisterInput {
   final String firstName;
   final String lastName;
 
+  /// A last check before the account is asked for, matching V2's rules. See #45.
+  ///
+  /// The form has already said all of this in V2's own words — `auth_form_widgets.dart`
+  /// validates every field against the mirrored copy, and nothing reaches here until it
+  /// passes. This is the guard for a caller that did not go through the form, so its
+  /// wording is a backstop and not what a traveller normally reads.
+  ///
+  /// **A last name is not required**, because V2 does not require one: its register form
+  /// checks `firstName` alone, which is why no "last name is required" message exists to
+  /// mirror. Demanding one here turned somebody away that the web would have let in.
   void validate() {
     if (!email.contains('@')) {
-      throw ApiError('Please enter a valid email address.', category: ErrorCategory.validation);
+      throw ApiError('Enter a valid email', category: ErrorCategory.validation);
     }
     if (password.length < 8) {
-      throw ApiError('Password must be at least 8 characters.', category: ErrorCategory.validation);
+      throw ApiError('Password must be at least 8 characters', category: ErrorCategory.validation);
     }
-    if (firstName.trim().isEmpty || lastName.trim().isEmpty) {
-      throw ApiError('First and last name are required.', category: ErrorCategory.validation);
+    if (firstName.trim().isEmpty) {
+      throw ApiError('First name is required', category: ErrorCategory.validation);
     }
   }
 

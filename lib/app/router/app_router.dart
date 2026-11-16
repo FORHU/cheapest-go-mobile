@@ -13,7 +13,9 @@ import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/legal/lib/legal_documents.dart';
 import 'package:cheapest_go_mobile/features/legal/views/help_view.dart';
 import 'package:cheapest_go_mobile/features/legal/views/legal_view.dart';
+import 'package:cheapest_go_mobile/features/auth/views/auth_code_error_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/forgot_password_view.dart';
+import 'package:cheapest_go_mobile/features/auth/views/reset_password_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/login_view.dart';
 import 'package:cheapest_go_mobile/features/auth/views/register_view.dart';
 import 'package:cheapest_go_mobile/features/flights/views/flight_checkout_view.dart';
@@ -125,6 +127,14 @@ GoRouter createAppRouter() => GoRouter(
         GoRoute(path: '/login', builder: (_, _) => const LoginView()),
         GoRoute(path: '/register', builder: (_, _) => const RegisterView()),
         GoRoute(path: '/forgot-password', builder: (_, _) => const ForgotPasswordView()),
+        // `?token=` is the whole credential here; the email writes this path for the web.
+        GoRoute(
+          path: '/reset-password',
+          builder: (_, state) =>
+              ResetPasswordView(token: state.uri.queryParameters['token'] ?? ''),
+        ),
+        // V2's path, so a failed OAuth round trip lands somewhere on both products.
+        GoRoute(path: '/auth/auth-code-error', builder: (_, _) => const AuthCodeErrorView()),
         // Nothing links here yet: the account screen that carries V2's footer links is a later
         // slice. Reachable by deep link and by test until then.
         GoRoute(path: '/about', builder: (_, _) => const AboutView()),
