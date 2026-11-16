@@ -395,7 +395,16 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
     tripSearchStore
       ..setOrigin(offer.origin)
       ..setAirport(offer.destination);
-    context.push('/flight-checkout?offer=${offer.id}');
+    // The map draws the catalogue's illustrative fares, which no airline sells; booking one means
+    // searching the route for real ones (#47).
+    context.push(Uri(path: '/flights/search', queryParameters: {
+      'origin': offer.origin,
+      'destination': offer.destination,
+      'depart': '${tripSearchStore.checkIn.year.toString().padLeft(4, '0')}-'
+          '${tripSearchStore.checkIn.month.toString().padLeft(2, '0')}-'
+          '${tripSearchStore.checkIn.day.toString().padLeft(2, '0')}',
+      'adults': '${tripSearchStore.adults}',
+    }).toString());
   }
 
   // --- Mapbox --------------------------------------------------------------

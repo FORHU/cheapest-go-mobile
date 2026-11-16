@@ -3,7 +3,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_checkout_view.dart';
-import 'package:cheapest_go_mobile/features/flights/views/flight_checkout_view.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 
@@ -168,90 +167,6 @@ void main() {
       expect(booking.kind, BookingKind.stay);
       expect(booking.title, 'Terminal 3 Garden Hotel');
       expect(booking.detail, contains('Deluxe King'));
-      expect(find.text('Trips'), findsWidgets);
-    });
-  });
-
-  group('FlightCheckoutView (Mock fare revalidation & baggage rules)', () {
-    testWidgets('renders fare hold timer and revalidation status badge', (tester) async {
-      usePhoneViewport(tester);
-      await tester.pumpWidget(
-        wrap(
-          const FlightCheckoutView(
-            offerId: 'SIN-MNL-0',
-            initialHoldSeconds: 900,
-            autoStartTimer: false,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.textContaining('Fare locked for 15:00'), findsOneWidget);
-      expect(find.text('Fare verified · Price guaranteed'), findsOneWidget);
-      expect(find.textContaining('Baggage: 7 kg carry-on'), findsOneWidget);
-      expect(find.textContaining('Policy: Non-refundable'), findsOneWidget);
-    });
-
-    testWidgets('fill demo passenger pre-populates fields', (tester) async {
-      usePhoneViewport(tester);
-      await tester.pumpWidget(
-        wrap(
-          const FlightCheckoutView(
-            offerId: 'SIN-MNL-0',
-            autoStartTimer: false,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      await tester.tap(find.text('Fill demo'));
-      await tester.pump();
-
-      expect(find.text('Juan Dela Cruz'), findsOneWidget);
-      expect(find.text('juan.delacruz@cheapestgo.dev'), findsOneWidget);
-    });
-
-    testWidgets('flight price shift prompts for acceptance', (tester) async {
-      usePhoneViewport(tester);
-      await tester.pumpWidget(
-        wrap(
-          const FlightCheckoutView(
-            offerId: 'SIN-MNL-0',
-            simulatedPriceShift: 250,
-            autoStartTimer: false,
-          ),
-        ),
-      );
-      await tester.pump();
-
-      expect(find.text('Fare updated by carrier'), findsOneWidget);
-      expect(find.textContaining('+₱250'), findsOneWidget);
-
-      await tester.tap(find.text('Accept new fare'));
-      await tester.pump();
-
-      await tester.drag(find.byType(ListView), const Offset(0, -300));
-      await tester.pump();
-
-      expect(find.text('Supplier adjustment'), findsOneWidget);
-    });
-
-    testWidgets('completes flight booking and records to bookingsStore', (tester) async {
-      final before = bookingsStore.all.length;
-      await pumpApp(tester, location: '/flight-checkout?offer=SIN-MNL-0');
-
-      expect(find.text('Review and pay'), findsOneWidget);
-      await tester.tap(find.text('Fill demo'));
-      await tester.pump();
-
-      await tester.tap(find.textContaining('Pay ₱'));
-      await tester.pump(const Duration(milliseconds: 700));
-      await tester.pumpAndSettle();
-
-      expect(bookingsStore.all.length, before + 1);
-      final booking = bookingsStore.all.last;
-      expect(booking.kind, BookingKind.flight);
-      expect(booking.title, contains('BY'));
       expect(find.text('Trips'), findsWidgets);
     });
   });

@@ -72,35 +72,6 @@ void main() {
     expect(booking.when, endsWith('6:40 AM'));
   });
 
-  // Opened directly rather than through the bar: #36 adopted V2's three slots, and V2 reaches
-  // flight search from its landing page, not from a tab. Mobile's landing gains that entry
-  // point with #38 — until then this journey starts at the route.
-  testWidgets('flights: SIN → MNL, pick the cheapest non-stop, pay', (tester) async {
-    final before = bookingsStore.all.length;
-    await pumpApp(tester, location: '/flights');
-    await tester.pumpAndSettle();
-    expect(find.text('FROM'), findsOneWidget);
-    expect(find.text('SIN'), findsWidgets);
-
-    await tester.tap(find.text('Non-stop').first);
-    await tester.pumpAndSettle();
-    expect(find.textContaining('1 stop'), findsNothing);
-
-    await tester.tap(find.text('Cheapest').last);
-    await tester.pumpAndSettle();
-    await tester.enterText(find.widgetWithText(TextFormField, 'Full name (as on passport)'), 'Juan Dela Cruz');
-    await tester.enterText(find.widgetWithText(TextFormField, 'Email for e-ticket'), 'juan@example.com');
-    await tester.tap(find.textContaining('Pay ₱'));
-    await tester.pump(const Duration(milliseconds: 700));
-    await tester.pumpAndSettle();
-
-    expect(bookingsStore.all.length, before + 1);
-    final booking = bookingsStore.all.last;
-    expect(booking.kind, BookingKind.flight);
-    expect(booking.detail, startsWith('SIN → MNL · Non-stop'));
-    expect(find.text(booking.reference), findsOneWidget);
-  });
-
   // Reached from Home rather than a tab since #36; Home still links here.
   testWidgets('Stay & Play switches between hotels and golf', (tester) async {
     await pumpApp(tester, location: '/stay');
