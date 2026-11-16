@@ -3,6 +3,7 @@ import 'package:cheapest_go_mobile/shared/lib/demo.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
+import 'package:cheapest_go_mobile/features/profile/components/legal_links_card.dart';
 import 'package:cheapest_go_mobile/features/profile/components/saved_stays_card.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
@@ -95,6 +96,13 @@ class ProfileView extends StatelessWidget {
               _buildSectionHeader('SAVED TRIPS', theme),
               const SizedBox(height: 8),
               const SavedStaysCard(),
+              const SizedBox(height: 32),
+
+              // 4. Help and the legal documents. V2 reaches these from a footer on every
+              // page; an app has no footer, and this is where that material belongs (#44).
+              _buildSectionHeader('HELP & LEGAL', theme),
+              const SizedBox(height: 8),
+              const LegalLinksCard(),
               const SizedBox(height: 32),
 
               if (kDemoTools) ...[
