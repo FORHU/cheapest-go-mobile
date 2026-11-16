@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/features/home/components/stage_chrome.dart';
 import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
-import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 
 /// The controls inside the search steps. See #38.
@@ -109,6 +108,17 @@ class MonthCalendar extends StatelessWidget {
         return !day.isBefore(r.start) && !day.isAfter(r.end);
     }
 
+    /// The two days a person actually chose — the night they arrive and the night they leave.
+    ///
+    /// V2 draws these with `ACCENT`, which is the brand gradient, and washes the days between
+    /// them instead. Filling the whole range with one flat blue says the eight nights were
+    /// each picked, and loses the two that were.
+    bool _isEdge(DateTime day) {
+        final r = range;
+        if (r == null) return false;
+        return day == DateUtils.dateOnly(r.start) || day == DateUtils.dateOnly(r.end);
+    }
+
     @override
     Widget build(BuildContext context) {
         final today = DateUtils.dateOnly(DateTime.now());
@@ -172,6 +182,7 @@ class MonthCalendar extends StatelessWidget {
                                         // the month is part of reading it — but it is not a choice.
                                         final past = day.isBefore(today);
                                         final selected = _inRange(day);
+                                        final edge = _isEdge(day);
                                         return InkWell(
                                             onTap: past ? null : () => onPick(day),
                                             borderRadius: BorderRadius.circular(TwRadius.md),
@@ -179,7 +190,14 @@ class MonthCalendar extends StatelessWidget {
                                                 height: 36,
                                                 alignment: Alignment.center,
                                                 decoration: BoxDecoration(
-                                                    color: selected ? TwPalette.blue600 : null,
+                                                    // The chosen nights wear the gradient;
+                                                    // the ones between them are washed.
+                                                    gradient: edge ? brandGradient : null,
+                                                    color: edge
+                                                        ? null
+                                                        : selected
+                                                            ? const Color(0x1FFFFFFF)
+                                                            : null,
                                                     borderRadius: BorderRadius.circular(TwRadius.md),
                                                     border: day == today && !selected
                                                         ? Border.all(color: const Color(0x66FFFFFF))

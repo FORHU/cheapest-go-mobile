@@ -27,6 +27,9 @@ class ApiTravelCatalog implements TravelCatalog {
   final MockTravelCatalog _mock;
 
   final Map<String, List<Hotel>> _hotelsByAirport = {};
+
+  /// Verified reviews, by hotel code, as the last property fetch returned them.
+  final Map<String, List<Review>> _reviewsById = {};
   final Map<String, Hotel> _hotelById = {};
   final Map<String, List<FlightOffer>> _flightsByRoute = {};
   final Map<String, FlightOffer> _flightById = {};
@@ -63,6 +66,9 @@ class ApiTravelCatalog implements TravelCatalog {
   Hotel? hotel(String id) {
     return _hotelById[id] ?? _mock.hotel(id);
   }
+
+  @override
+  List<Review> reviewsFor(String hotelId) => _reviewsById[hotelId] ?? const [];
 
   @override
   List<FlightOffer> flights(String from, String to) {
@@ -236,16 +242,28 @@ class ApiTravelCatalog implements TravelCatalog {
             for (var i = 0; i < rawRooms.length; i++) {
               final r = rawRooms[i];
               if (r is Map<String, dynamic>) {
+                // Every way this room can be bought, as api-v2 separated them. Reading only
+                // the headline price — which this did until #40 — hides the refundable rate
+                // from sale and leaves the traveller choosing rooms when V2 has them
+                // choosing terms. See its ADR 0005 and ADR-0007 in the web repo.
+                final offers = _parseOffers(r);
+                final best = offers.isEmpty ? null : offers.first;
                 rooms.add(Room(
-                  id: r['offerId']?.toString() ?? r['roomCode']?.toString() ?? '${id}_r$i',
-                  name: r['roomName']?.toString() ?? 'Room ${i + 1}',
-                  meta: r['boardCode']?.toString() ?? 'Room only',
-                  nightlyRate: (r['price'] as num?)?.round() ??
+                  id: r['id']?.toString() ?? r['offerId']?.toString() ?? '${id}_r$i',
+                  name: r['name']?.toString() ?? r['roomName']?.toString() ?? 'Room ${i + 1}',
+                  meta: best?.boardName ?? r['boardName']?.toString() ?? 'Room only',
+                  nightlyRate: best?.nightlyRate ??
+                      (r['price'] as num?)?.round() ??
                       (r['gross'] as num?)?.round() ??
                       (existing?.fromRate ?? 5000),
-                  cancellation: r['refundable'] == true
+                  cancellation: (best?.refundable ?? r['refundable'] == true)
                       ? (r['refundableTag']?.toString() ?? 'Free cancellation')
                       : null,
+                  // The room's own pictures, which ETG matches to the room name. `gallery`
+                  // is where a provider that owns its content puts them; `roomPhotos` is
+                  // what the older builds send, and the web reads both.
+                  images: _roomPhotos(r),
+                  offers: offers,
                 ));
               }
             }
@@ -284,10 +302,23 @@ class ApiTravelCatalog implements TravelCatalog {
             images: images,
             latitude: (content['lat'] as num?)?.toDouble() ?? existing?.latitude,
             longitude: (content['lng'] as num?)?.toDouble() ?? existing?.longitude,
+            amenities: (content['amenities'] as List?)?.map((e) => e.toString()).toList() ??
+                existing?.amenities ??
+                const [],
+            checkInTime: content['checkInTime']?.toString() ?? existing?.checkInTime,
+            checkOutTime: content['checkOutTime']?.toString() ?? existing?.checkOutTime,
             address: content['address']?.toString() ?? existing?.address,
             description: content['description']?.toString() ?? existing?.description,
           );
           _hotelById[id] = updated;
+          // Verified reviews ride with the property, keyed by the same hotel code. Kept
+          // beside the hotel rather than on it: a Hotel is cached to disk and a review is
+          // the supplier's text, refetched with the page rather than stored.
+          _reviewsById[id] = ((res['reviewItems'] as List?) ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .map(Review.fromJson)
+              .where((r) => r.hasText || (r.headline?.isNotEmpty ?? false))
+              .toList();
           return updated;
         }
       }
@@ -579,4 +610,47 @@ class ApiTravelCatalog implements TravelCatalog {
       arrivesOverride: arrivesOverride,
     );
   }
+}
+
+/// The Offers api-v2 sends for one room, cheapest first.
+///
+/// Prices arrive per night with the stay total beside them, so nothing here multiplies a
+/// rounded nightly figure back up — that is how a two-night stay came to be billed twice over
+/// on the web before api-v2 took the division on itself.
+List<Offer> _parseOffers(Map<String, dynamic> room) {
+  final rates = room['rates'];
+  if (rates is! List) return const [];
+
+  final offers = <Offer>[];
+  for (final raw in rates) {
+    if (raw is! Map<String, dynamic>) continue;
+    final offerId = raw['offerId']?.toString();
+    if (offerId == null || offerId.isEmpty) continue;
+
+    final nightly = (raw['price'] as num?)?.round();
+    if (nightly == null) continue;
+
+    offers.add(Offer(
+      offerId: offerId,
+      nightlyRate: nightly,
+      stayTotal: (raw['stayTotal'] as num?)?.round() ?? nightly,
+      currency: raw['currency']?.toString().toUpperCase() ?? catalogCurrency,
+      boardName: raw['boardName']?.toString() ?? raw['boardCode']?.toString() ?? 'Room only',
+      refundable: raw['refundable'] == true,
+      cancellationDeadline: DateTime.tryParse(raw['cancellationDeadline']?.toString() ?? ''),
+      bed: raw['bed']?.toString(),
+      terms: (raw['offerTerms'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+    ));
+  }
+
+  offers.sort((a, b) => a.nightlyRate.compareTo(b.nightlyRate));
+  return offers;
+}
+
+/// A room's own photographs. Two field names for one thing, as the web reads them.
+List<String> _roomPhotos(Map<String, dynamic> room) {
+  final gallery = (room['content'] as Map<String, dynamic>?)?['gallery'];
+  final photos = gallery is List ? gallery : room['roomPhotos'];
+  if (photos is! List) return const [];
+  return photos.map((e) => e.toString()).where((s) => s.isNotEmpty).toList();
 }

@@ -47,6 +47,78 @@ int _seed(String id) => id.codeUnits.fold(7, (h, c) => (h * 31 + c) & 0x7fffffff
 String _pick(String folder, String prefix, int count, int n) =>
     'assets/images/$folder/$prefix${((n % count) + 1).toString().padLeft(2, '0')}.jpg';
 
+/// One bookable price for a [Room], on stated terms. See **Offer / Rate** in CONTEXT.md.
+///
+/// Several Offers for one Room is the normal case and each is separately buyable: the same
+/// double sells non-refundable, or refundable until the 18th, at different prices. The
+/// traveller is choosing the terms, not the room.
+///
+/// api-v2 decides which Offers exist and which are the same promise — it keeps one per
+/// `board × refundability × deadline × bed × qualifiers` and drops the rest (its ADR 0005).
+/// Nothing here re-derives that; these fields are read as they arrive.
+class Offer {
+  const Offer({
+    required this.offerId,
+    required this.nightlyRate,
+    required this.stayTotal,
+    required this.currency,
+    required this.boardName,
+    required this.refundable,
+    this.cancellationDeadline,
+    this.bed,
+    this.terms = const [],
+  });
+
+  /// What a prebook is made against.
+  final String offerId;
+
+  /// Per night, and for the whole stay. api-v2 sends both so nothing has to multiply a
+  /// rounded nightly figure back up to learn what is billed.
+  final int nightlyRate;
+  final int stayTotal;
+  final String currency;
+
+  /// "Room only", "Bed & Breakfast" — named by api-v2, not mapped here.
+  final String boardName;
+  final bool refundable;
+
+  /// When free cancellation ends, if it is refundable at all.
+  final DateTime? cancellationDeadline;
+
+  /// The bed this Offer is sold with, where the supplier said. Differs between Offers of one
+  /// Room, which is why it sits here rather than on the Room.
+  final String? bed;
+
+  /// Qualifier chips lifted off the supplier's room name — "bed not guaranteed". Usually empty.
+  final List<String> terms;
+
+  Map<String, dynamic> toJson() => {
+        'offerId': offerId,
+        'nightlyRate': nightlyRate,
+        'stayTotal': stayTotal,
+        'currency': currency,
+        'boardName': boardName,
+        'refundable': refundable,
+        'cancellationDeadline': cancellationDeadline?.toIso8601String(),
+        'bed': bed,
+        'terms': terms,
+      };
+
+  factory Offer.fromJson(Map<String, dynamic> json) => Offer(
+        offerId: json['offerId'] as String,
+        nightlyRate: (json['nightlyRate'] as num).toInt(),
+        stayTotal: (json['stayTotal'] as num).toInt(),
+        currency: json['currency'] as String? ?? catalogCurrency,
+        boardName: json['boardName'] as String? ?? 'Room only',
+        refundable: json['refundable'] as bool? ?? false,
+        cancellationDeadline: json['cancellationDeadline'] == null
+            ? null
+            : DateTime.tryParse(json['cancellationDeadline'] as String),
+        bed: json['bed'] as String?,
+        terms: (json['terms'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+      );
+}
+
 class Room {
   const Room({
     required this.id,
@@ -55,6 +127,7 @@ class Room {
     required this.nightlyRate,
     this.cancellation,
     this.images = const [],
+    this.offers = const [],
   });
 
   final String id;
@@ -68,6 +141,31 @@ class Room {
   final String? cancellation;
   final List<String> images;
 
+  /// Every way this Room can be bought, cheapest first. Empty only where a caller built a
+  /// Room by hand — the property endpoint always sends at least one.
+  final List<Offer> offers;
+
+  /// Every way this Room can be bought, cheapest first.
+  ///
+  /// The property endpoint always sends at least one Offer. A Room built by hand — the
+  /// bundled fixtures, a disk cache written before #40 — has none, and its own nightly rate
+  /// stands as the single Offer so the screen behaves the same either way.
+  List<Offer> get buyableOffers => offers.isNotEmpty
+      ? offers
+      : [
+          Offer(
+            offerId: id,
+            nightlyRate: nightlyRate,
+            stayTotal: nightlyRate,
+            currency: catalogCurrency,
+            boardName: meta,
+            refundable: refundable,
+          ),
+        ];
+
+  /// What the card headlines, and what a tap selects when nobody picks another Offer.
+  Offer get cheapestOffer => buyableOffers.first;
+
   bool get refundable => cancellation != null;
 
   Map<String, dynamic> toJson() => {
@@ -77,6 +175,7 @@ class Room {
         'nightlyRate': nightlyRate,
         'cancellation': cancellation,
         'images': images,
+        'offers': offers.map((o) => o.toJson()).toList(),
       };
 
   factory Room.fromJson(Map<String, dynamic> json) => Room(
@@ -86,6 +185,11 @@ class Room {
         nightlyRate: (json['nightlyRate'] as num).toInt(),
         cancellation: json['cancellation'] as String?,
         images: (json['images'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        offers: (json['offers'] as List?)
+                ?.whereType<Map<String, dynamic>>()
+                .map(Offer.fromJson)
+                .toList() ??
+            const [],
       );
 }
 
@@ -103,6 +207,9 @@ class Hotel {
     required this.rooms,
     this.currency = catalogCurrency,
     this.anchorDistanceKm,
+    this.amenities = const [],
+    this.checkInTime,
+    this.checkOutTime,
     this.badge,
     this.images = const [],
     this.latitude,
@@ -138,6 +245,14 @@ class Hotel {
   /// sends this one only when a stay is far for the rung a person searched, so its absence
   /// means central rather than unknown — see ADR-0051 in the web repo.
   final double? anchorDistanceKm;
+
+  /// What the property offers, as the supplier lists it. The search sends a handful; the
+  /// property page sends the lot.
+  final List<String> amenities;
+
+  /// "15:00", "11:00" — the supplier's own strings, not times to do arithmetic on.
+  final String? checkInTime;
+  final String? checkOutTime;
   final String? badge;
   final List<String> images;
   final double? latitude;
@@ -365,6 +480,10 @@ abstract class TravelCatalog {
   FlightOffer? flight(String id);
   List<Hotel> hotelsNear(String airportCode);
   Hotel? hotel(String id);
+
+  /// The verified reviews for a hotel, as the last property fetch returned them. Empty
+  /// where none have been fetched, or where the supplier has none — never invented.
+  List<Review> reviewsFor(String hotelId) => const [];
   List<GolfCourse> coursesNear(String airportCode);
   GolfCourse? course(String id);
 
@@ -458,6 +577,10 @@ class MockTravelCatalog implements TravelCatalog {
 
   @override
   Hotel? hotel(String id) => _firstWhere(_hotels, (h) => h.id == id);
+
+  @override
+  /// The fixtures carry no reviews, and a fabricated one must never be called verified.
+  List<Review> reviewsFor(String hotelId) => const [];
 
   @override
   List<GolfCourse> coursesNear(String airportCode) =>
@@ -570,6 +693,9 @@ class DefaultTravelCatalog implements TravelCatalog {
   List<Hotel> hotelsNear(String airportCode) => delegate.hotelsNear(airportCode);
   @override
   Hotel? hotel(String id) => delegate.hotel(id);
+
+  @override
+  List<Review> reviewsFor(String hotelId) => delegate.reviewsFor(hotelId);
   @override
   List<GolfCourse> coursesNear(String airportCode) => delegate.coursesNear(airportCode);
   @override
@@ -987,3 +1113,50 @@ const _moreCourses = <GolfCourse>[
   GolfCourse(id: 'dps-nusa-greens', airportCode: 'DPS', name: 'Nusa Greens Golf', holes: 18, par: 72, driveMinutes: 15, pricePerPlayer: 9200, inclusion: 'caddy included', teeTimes: ['06:00', '07:10', '08:30', '14:00']),
   GolfCourse(id: 'dps-highland-lake', airportCode: 'DPS', name: 'Highland Lake Golf', holes: 18, par: 72, driveMinutes: 95, pricePerPlayer: 7400, teeTimes: ['07:00', '09:30']),
 ];
+
+/// A **verified review**: one guest's words, from the supplier's nightly dump.
+///
+/// Distinct from the hotel's **aggregate score**, which is a number over all stays. Both are
+/// defined in CONTEXT.md; the word "verified" belongs only to these, never to a placeholder.
+class Review {
+  const Review({
+    required this.id,
+    required this.score,
+    this.author,
+    this.date,
+    this.headline,
+    this.pros,
+    this.cons,
+    this.travellerType,
+    this.country,
+  });
+
+  final String id;
+
+  /// Out of ten, as the aggregate score is.
+  final double score;
+  final String? author;
+  final DateTime? date;
+  final String? headline;
+
+  /// What the guest liked, and what they did not. Either may be absent; a review with
+  /// neither is not worth drawing.
+  final String? pros;
+  final String? cons;
+  final String? travellerType;
+  final String? country;
+
+  bool get hasText => (pros?.isNotEmpty ?? false) || (cons?.isNotEmpty ?? false);
+
+  factory Review.fromJson(Map<String, dynamic> json) => Review(
+        id: json['id']?.toString() ?? '',
+        score: (json['score'] as num?)?.toDouble() ?? 0,
+        author: json['reviewer_name']?.toString(),
+        date: DateTime.tryParse(json['review_date']?.toString() ?? ''),
+        headline: json['headline']?.toString(),
+        pros: json['pros']?.toString(),
+        cons: json['cons']?.toString(),
+        travellerType: json['traveler_type']?.toString(),
+        country: json['country']?.toString(),
+      );
+}
