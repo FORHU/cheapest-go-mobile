@@ -386,8 +386,13 @@ class _Empty extends StatelessWidget {
         icon: Icons.luggage_outlined,
         title: tab == BookingTab.golf ? t.trips_golfCard_empty : t.trips_emptyState_allTitle,
         message: t.trips_emptyHint,
+        // V2's own button text, which is a button's worth of words. This used to read
+        // `trips_emptyState_otherDesc` — "Start exploring and book your first trip" — a
+        // *description*, which is what its name says and what its neighbours are
+        // (`upcomingDesc` is "Time to plan your next adventure!"). V2 renders it nowhere.
+        // On a handset it ran past the end of the button and was clipped mid-word.
         action: AppGradientButton(
-            label: t.trips_emptyState_otherDesc,
+            label: t.trips_exploreDestinations,
             height: 46,
             onPressed: () => context.go('/'),
         ),

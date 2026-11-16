@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
+import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/token.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
+import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
 const _kMapboxToken = String.fromEnvironment(
@@ -28,12 +30,16 @@ Future<void> main() async {
   }
   await tokenStorage.init();
   await uiSettingsStore.init();
+  await coachMarkStore.init();
   await bookingsStore.init();
   // No demo history. It existed so Trips had something to show; Trips now shows what api-v2
   // confirms, and five invented past trips are not that. See ADR-0003. The store itself still
   // backs the Map's flight tracking and the two mock checkouts, so it is still initialised.
   // Download offline route maps for flights leaving soon; never blocks start-up.
   offlineRouteMaps.refresh(bookingsStore.flights);
+  // Keeps the gate's onboarding answer in step with who is signed in. Wired before the
+  // session is restored, so the sign-in that restoring produces is one this is listening for.
+  wireGateToAuth();
   // Fire-and-forget session validation on startup
   authStore.restoreSession();
   runApp(const CheapestGoApp());

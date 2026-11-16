@@ -334,6 +334,46 @@ const _templateLocale = 'en';
 /// keyed by its position (`…_items_1_label`). The index keeps the document's own order, and a
 /// screen names the entries it renders, since gen-l10n produces static getters and nothing
 /// can iterate them. The count is still reported, so a list growing in V2 is visible here.
+/// Key prefixes this app owns, which V2 has no original for.
+///
+/// Every other string in these files is mirrored, and the rebuild below is a replacement: it
+/// reads V2's locale JSON and writes the whole ARB, so a key V2 does not have would be dropped
+/// on the next run. That is the right behaviour for drift — copy deleted in V2 should vanish
+/// here too — and the wrong one for a screen V2 does not have at all.
+///
+/// Onboarding is that case: mobile requires an account and the web does not (ADR-0005), so its
+/// step titles and progress wording were written here and are translated here. Keep this list
+/// short. A prefix on it is a promise that nobody will ever find these strings in V2 and
+/// wonder why they differ.
+const Set<String> _locallyOwnedPrefixes = {'onboarding_', 'coach_'};
+
+/// Carries the locally-owned keys from the ARB already on disk into the one about to replace
+/// it, so a rebuild does not delete the strings V2 was never going to supply.
+void _carryLocalKeys(Map<String, dynamic> rebuilt, String path) {
+    final file = File(path);
+    if (!file.existsSync()) return;
+
+    final existing = jsonDecode(file.readAsStringSync()) as Map<String, dynamic>;
+    for (final entry in existing.entries) {
+        final key = entry.key.startsWith('@') ? entry.key.substring(1) : entry.key;
+        if (!_locallyOwnedPrefixes.any(key.startsWith)) continue;
+        // Not overwritten if V2 has since grown a key by the same name: the mirror wins, and
+        // the prefix should then come off this list.
+        rebuilt.putIfAbsent(entry.key, () => entry.value);
+    }
+
+    // Re-sorted, because the carried keys were appended and the mirrored ones are in order.
+    // Without this the file is correct but never equal to itself, and `--check` would report
+    // drift on every run with nothing actually different.
+    final locale = rebuilt.remove('@@locale');
+    final sorted = Map<String, dynamic>.fromEntries(
+        rebuilt.entries.toList()..sort((a, b) => a.key.compareTo(b.key)));
+    rebuilt
+        ..clear()
+        ..['@@locale'] = locale
+        ..addAll(sorted);
+}
+
 Map<String, String> _arbFiles(Directory v2) {
     final dir = Directory('${v2.path}/src/locales');
     if (!dir.existsSync()) _fail('No locale files at ${dir.path}');
@@ -364,6 +404,8 @@ Map<String, String> _arbFiles(Directory v2) {
                 arb['@$key'] = {'placeholders': placeholders};
             }
         }
+
+        _carryLocalKeys(arb, 'lib/l10n/app_$locale.arb');
 
         out['lib/l10n/app_$locale.arb'] =
             '${const JsonEncoder.withIndent('  ').convert(arb)}\n';

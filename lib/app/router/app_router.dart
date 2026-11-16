@@ -2,7 +2,12 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
+import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_target.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
+import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
+import 'package:cheapest_go_mobile/features/onboarding/views/onboarding_view.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
@@ -34,12 +39,24 @@ import 'package:cheapest_go_mobile/features/trips/views/booking_detail_view.dart
 import 'package:cheapest_go_mobile/features/trips/views/trips_view.dart';
 
 /// FAOS `app/` layer: routes and the tab shell.
-GoRouter createAppRouter() => GoRouter(
+/// [gate] is what stands between a launch and the app. On in every build; a widget test that
+/// is about some other screen turns it off rather than signing an account in first, because
+/// otherwise every test in the repo would be a test of the gate. `test/app/auth_gate_test.dart`
+/// and the gated case in `test/app/shell_test.dart` are where it is actually exercised.
+GoRouter createAppRouter({bool gate = true}) => GoRouter(
       // `--dart-define=START_AT=/about` opens straight onto a screen, which is how a screen
       // under construction gets looked at before anything links to it. Defaults to the home
       // tab, so a release build behaves exactly as it always did.
       initialLocation: const String.fromEnvironment('START_AT', defaultValue: '/'),
+
+      // The gate: no account, no app. See `auth_gate.dart` and ADR-0005 — this is the one
+      // place mobile deliberately parts company with V2, which lets anyone browse signed out.
+      redirect: gate ? (context, state) => routerGateRedirect(state.uri.toString()) : null,
+      refreshListenable: GateListenable([authStore, onboardingStore]),
+
       routes: [
+        GoRoute(path: splashPath, builder: (_, _) => const _StartingView()),
+        GoRoute(path: onboardingPath, builder: (_, _) => const OnboardingView()),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => MainScaffoldShell(navigationShell: navigationShell),
           branches: [
@@ -183,6 +200,60 @@ String _flightSearchFromStore() {
   ).toLocation();
 }
 
+/// The moment between a stored session being restored and the server saying what that account
+/// still owes.
+///
+/// A spinner while the answer is coming, and a way out when it does not. That second part is
+/// not decoration: the gate holds on an unknown status, so without it a request that fails —
+/// an expired token, a dropped connection, an API that is not answering — leaves the app
+/// spinning on this screen with no route to anywhere, which is exactly what it did the first
+/// time it ran on a handset.
+class _StartingView extends StatelessWidget {
+  const _StartingView();
+
+  @override
+  Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
+
+    return Scaffold(
+      body: ListenableBuilder(
+        listenable: onboardingStore,
+        builder: (context, _) {
+          if (!onboardingStore.failed) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          return Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.cloud_off_rounded, size: 40, color: Theme.of(context).colorScheme.outline),
+                  const SizedBox(height: 16),
+                  Text(t.errors_generic, textAlign: TextAlign.center),
+                  const SizedBox(height: 24),
+                  FilledButton(
+                    onPressed: onboardingStore.isLoading ? null : onboardingStore.load,
+                    child: Text(t.auth_tryAgain),
+                  ),
+                  // The escape hatch for the case retrying cannot fix: a session this device
+                  // still holds that the server will no longer accept. Signing out puts them
+                  // back at the sign-in screen, which is a place they can act from.
+                  TextButton(
+                    onPressed: onboardingStore.isLoading ? null : authStore.logout,
+                    child: Text(t.nav_signOut),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
 /// The app shell: a shared header, the current branch, and V2's bottom bar.
 ///
 /// The bar is Home · Trips · Settings, which is V2's exactly (#36). It used to be four
@@ -261,12 +332,16 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
       // stripped from the page below it, so with the header gone a heading sat under the
       // status bar — the overlap #61 reports.
       body: widget.navigationShell,
-      bottomNavigationBar: V2BottomNav(
-        activeIndex: _activeIndex,
-        settingsOpen: _settingsOpen,
-        onHome: () => _goBranch(_homeBranch),
-        onTrips: () => _goBranch(_tripsBranch),
-        onSettings: _openSettings,
+      // Anchored for the first-run tour (#63). Draws nothing of its own.
+      bottomNavigationBar: CoachMarkTarget(
+        id: CoachMarkIds.bottomBar,
+        child: V2BottomNav(
+          activeIndex: _activeIndex,
+          settingsOpen: _settingsOpen,
+          onHome: () => _goBranch(_homeBranch),
+          onTrips: () => _goBranch(_tripsBranch),
+          onSettings: _openSettings,
+        ),
       ),
     );
   }

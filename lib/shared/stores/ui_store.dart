@@ -7,8 +7,16 @@ class UiSettingsStore extends ChangeNotifier {
   static const String _currencyKey = 'cheapestgo_display_currency';
   static const String _themeModeKey = 'cheapestgo_theme_mode';
   static const String _mapTierKey = 'cheapestgo_map_tier';
+  static const String _languageKey = 'cheapestgo_language';
+
+  /// The languages V2 is translated into, which are the four this app carries copy for.
+  static const List<String> supportedLanguages = ['en', 'ja', 'ko', 'zh'];
 
   String _displayCurrency = 'USD';
+
+  /// English until somebody chooses otherwise, which mirrors V2's own default rather than the
+  /// handset's language. See the comment on `locale:` in `app/app.dart`.
+  String _language = 'en';
 
   /// Light, and not the handset's setting. See [setThemeMode].
   ThemeMode _themeMode = ThemeMode.light;
@@ -17,6 +25,7 @@ class UiSettingsStore extends ChangeNotifier {
   No3dReason? _no3dReason;
 
   String get displayCurrency => _displayCurrency;
+  String get language => _language;
   ThemeMode get themeMode => _themeMode;
   MapTier get mapTier => _mapTier;
   DeviceCapabilities? get deviceCapabilities => _deviceCapabilities;
@@ -40,6 +49,11 @@ class UiSettingsStore extends ChangeNotifier {
       if (savedCcy != null && savedCcy.isNotEmpty) {
         _displayCurrency = savedCcy;
       }
+      final savedLanguage = prefs.getString(_languageKey);
+      if (savedLanguage != null && supportedLanguages.contains(savedLanguage)) {
+        _language = savedLanguage;
+      }
+
       // Only the two V2 offers. Anyone carrying `system` from an older build lands on light,
       // which is what V2 shows a visitor who has never chosen — no migration step needed.
       final savedTheme = prefs.getString(_themeModeKey);
@@ -58,6 +72,24 @@ class UiSettingsStore extends ChangeNotifier {
             : (is3dSupported ? MapTier.standard : MapTier.lite);
       }
       notifyListeners();
+    } catch (_) {}
+  }
+
+  /// The language the app renders in, chosen during onboarding or on the account screen.
+  ///
+  /// Held here as well as against the account because the app has to render in it before any
+  /// request completes, and because a signed-out traveller — at the sign-in wall itself — has
+  /// no account to read it from. An unknown code is ignored rather than crashing the app into
+  /// a locale it has no copy for.
+  Future<void> setLanguage(String code) async {
+    final normalized = code.trim().toLowerCase();
+    if (!supportedLanguages.contains(normalized)) return;
+    if (_language == normalized) return;
+    _language = normalized;
+    notifyListeners();
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_languageKey, normalized);
     } catch (_) {}
   }
 

@@ -67,7 +67,15 @@ class AppGradientButton extends StatelessWidget {
                     if (isLoading || icon != null) const SizedBox(width: 8),
                     Flexible(
                       child: Padding(
-                        padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 4),
+                        // Room either side of the words. Four pixels was enough only while
+                        // every full-size caller stretched the button to the width of its
+                        // parent — a pill that sizes to a short label instead sat with the
+                        // text against its own edges.
+                        //
+                        // Twenty and not more: the narrowest caller is a 112px "Select" on a
+                        // flight row, and padding is taken before the label is, so a generous
+                        // number here would clip that one instead.
+                        padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 20),
                         child: Text(
                           label,
                           maxLines: 1,

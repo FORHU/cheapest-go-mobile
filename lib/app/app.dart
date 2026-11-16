@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/router/app_router.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
+import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_overlay.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
@@ -48,13 +49,26 @@ class _CheapestGoAppState extends State<CheapestGoApp> with WidgetsBindingObserv
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
 
-          // English regardless of the handset's language, which mirrors V2 rather than the
-          // platform: there the locale lives in the URL and defaults to English, with no
-          // cookie and no Accept-Language negotiation, so a Korean browser gets English too.
-          // The switcher that lets someone choose otherwise belongs with the account screen.
-          locale: const Locale('en'),
+          // The chosen language, never the handset's, and English until somebody chooses.
+          // That default mirrors V2 rather than the platform: there the locale lives in the
+          // URL and defaults to English, with no cookie and no Accept-Language negotiation,
+          // so a Korean browser gets English too. Onboarding is where it is first chosen
+          // (#62); the account screen is where it is changed afterwards.
+          locale: Locale(uiSettingsStore.language),
 
           routerConfig: appRouter,
+
+          // The first-run tour sits above every screen rather than inside Home, so it can
+          // point at the bottom bar — which belongs to the shell, not to any one page — and
+          // so it survives the tab switches it is describing. See #63.
+          //
+          // `builder` and not a wrapper around the router: this is the one place that is
+          // inside the MaterialApp, and therefore has localisations and a Directionality,
+          // while still being outside every route.
+          builder: (context, child) => CoachMarkOverlay(
+            marks: coachMarksFor(AppLocalizations.of(context)!),
+            child: child ?? const SizedBox.shrink(),
+          ),
         );
       },
     );

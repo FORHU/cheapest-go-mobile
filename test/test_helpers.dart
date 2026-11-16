@@ -16,9 +16,17 @@ void usePhoneViewport(WidgetTester tester) {
 /// Carries the localisation delegates because the app does: since #35 the screens take their
 /// words from V2's own translations, so a harness without them is not the app — every screen
 /// that reads a string throws on a null `AppLocalizations`.
-Future<void> pumpApp(WidgetTester tester, {String location = '/', ThemeData? theme}) async {
+/// [gate] is off here, and on in every build. Since #62 the app refuses a launch without an
+/// account (ADR-0005), so a harness with it on lands every test on the sign-in screen no matter
+/// what it meant to pump. A test that is about the gate asks for it: `gate: true`.
+Future<void> pumpApp(
+  WidgetTester tester, {
+  String location = '/',
+  ThemeData? theme,
+  bool gate = false,
+}) async {
   usePhoneViewport(tester);
-  final router = createAppRouter();
+  final router = createAppRouter(gate: gate);
   addTearDown(router.dispose);
   router.go(location);
   await tester.pumpWidget(MaterialApp.router(

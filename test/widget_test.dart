@@ -80,10 +80,23 @@ void main() {
     });
   });
 
-  testWidgets('CheapestGoApp renders Home and V2\'s three-slot bar', (tester) async {
+  testWidgets('CheapestGoApp opens on the sign-in wall, not on Home', (tester) async {
+    // What a fresh install does since #62: there is no signed-out browsing, so the first
+    // screen is the way in rather than the app. ADR-0005 says why, and says the web is not
+    // expected to follow. This used to assert the opposite — if it is failing, read the ADR
+    // before deciding which of the two is the bug.
     usePhoneViewport(tester);
     await tester.pumpWidget(const CheapestGoApp());
     await tester.pumpAndSettle();
+
+    expect(find.text('Welcome back'), findsOneWidget);
+    expect(find.text('One search.'), findsNothing, reason: 'Home is behind the gate');
+    expect(find.byType(V2BottomNav), findsNothing, reason: 'no bar before there is an account');
+  });
+
+  testWidgets('inside the app, V2\'s three-slot bar', (tester) async {
+    // The gate is off here: this is about the bar, not about who may see it.
+    await pumpApp(tester);
 
     expect(find.text('One search.'), findsOneWidget);
 

@@ -5,6 +5,7 @@ import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/features/home/components/stage_chrome.dart';
 import 'package:cheapest_go_mobile/features/home/components/step_search.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_target.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 
@@ -65,19 +66,26 @@ class _HomeViewState extends State<HomeView> {
                                 child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
-                                        _Tabs(face: _face, onChanged: (f) => setState(() => _face = f)),
+                                        // Anchored for the first-run tour (#63). Draws nothing.
+                                        CoachMarkTarget(
+                                            id: CoachMarkIds.searchFaces,
+                                            child: _Tabs(face: _face, onChanged: (f) => setState(() => _face = f)),
+                                        ),
                                         SizedBox(height: TwSpace.of(5)),
                                         _StageHeading(face: _face, t: t),
                                         SizedBox(height: TwSpace.of(5)),
                                         // Keyed by face: a tab switched in place starts its own
                                         // search afresh, as V2 does by keying on mode.
-                                        switch (_face) {
-                                            _Face.stays => const StepSearch(
-                                                key: ValueKey('stays'), mode: StepMode.stays),
-                                            _Face.flights => const StepSearch(
-                                                key: ValueKey('flights'), mode: StepMode.flights),
-                                            _Face.golf => _GolfPanel(t: t),
-                                        },
+                                        CoachMarkTarget(
+                                            id: CoachMarkIds.searchStart,
+                                            child: switch (_face) {
+                                                _Face.stays => const StepSearch(
+                                                    key: ValueKey('stays'), mode: StepMode.stays),
+                                                _Face.flights => const StepSearch(
+                                                    key: ValueKey('flights'), mode: StepMode.flights),
+                                                _Face.golf => _GolfPanel(t: t),
+                                            },
+                                        ),
                                     ],
                                 ),
                             ),

@@ -58,6 +58,47 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   motion; on mobile it is the default rendering, not a fallback.
   _Avoid_: calling it "the reduced-motion version" here — on mobile it is simply the Journey.
 
+## Access
+
+- **Gate** — the rule that nothing but the **Open Screens** is reachable without an account.
+  A property of the app, not of any one screen: there is no signed-out browsing on mobile, so
+  every screen below the gate may assume a user. This is the one place mobile deliberately
+  does not follow its **Design Source** — the web has no gate and is not expected to grow one.
+  _Avoid_: calling it a paywall or a login prompt. Nothing is being sold, and a prompt is
+  something you can dismiss.
+
+- **Open Screens** — what the **Gate** lets through: sign-in, register, forgot password, reset
+  password, the auth-error screen, and the four legal documents. The legal ones are open
+  because the sign-in screen's own copy links to them — a link that bounces to sign-in is a
+  dead end — and because a policy must be readable before somebody creates an account.
+  _Avoid_: adding to this list for convenience; each addition is a hole in the Gate and needs
+  the same reason the legal screens have.
+
+- **Onboarding** — the setup a newly created account completes before reaching the app:
+  **Preferences** first and mandatory, **Traveller Details** after and skippable. It is
+  attached to the account, not the install, so it survives a reinstall and does not repeat on
+  a second device. Mobile's own flow — the web has no equivalent.
+  _Avoid_: "welcome screens" or "intro" — those are something you read, and this is something
+  you finish. Nothing here is explanatory; every step stores an answer.
+
+- **Preferences** — display currency, language and email notifications: the three V2 already
+  keeps against the account, which is why their labels are mirrored rather than written. Held
+  server-side and shared with the web, so changing one in the app changes it in the browser.
+  _Avoid_: treating these as device settings. Theme and map tier are device settings; these
+  are not.
+
+- **Traveller Details** — birth date, phone and nationality, held against the account so a
+  later booking does not ask again. Distinct from the per-passenger details a flight order
+  carries: those describe who is flying on one trip, these describe the account holder.
+  _Avoid_: assuming they are present. They are skippable, and most accounts predate them.
+
+- **Grandfathered** — an account created before **Onboarding** existed, recognised by having
+  neither marker in its preferences. It goes straight into the app. Distinct from an account
+  that *started* onboarding and stopped: that one carries a start marker without a completion
+  marker, and resumes where it left off.
+  _Avoid_: reading a missing marker as "has not onboarded" — that would wall every existing
+  user out of the app they already use.
+
 ## Hotel domain
 
 - **Saved Trip** — a hotel or flight a user has marked with the heart icon to revisit later.
@@ -91,9 +132,12 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   not is not a Booking, whatever the screen that produced it claimed.
 
 - **Catalogue** — what CheapestGo has for sale: airports, flights, stays, courses and their
-  prices. Impersonal — the same for everybody, and readable signed out.
+  prices. Impersonal — the same for everybody.
   _Avoid_: filing a traveller's own records here. A **Booking** belongs to a person and needs
   an account to see; the catalogue knows nothing about either.
+  Being impersonal is not the same as being reachable. On the web the catalogue is readable
+  signed out; on mobile it sits behind the **Gate**. The content did not change — who may
+  look at it did. See ADR-0005.
 
 - **Lead guest** — the named guest a room is reserved under. Bedbank suppliers
   (TravelgateX) typically require only the lead guest per room, not every occupant.

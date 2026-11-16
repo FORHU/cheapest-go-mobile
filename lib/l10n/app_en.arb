@@ -1,5 +1,1215 @@
 {
   "@@locale": "en",
+  "@auth_signIn_terms": {
+    "placeholders": {
+      "terms": {},
+      "privacy": {}
+    }
+  },
+  "@checkout_cancellation_earlyDepartureFee": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_cancellation_noShowPenalty": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_cancellation_refund": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_duplicateBookingTitle": {
+    "placeholders": {
+      "hotel": {}
+    }
+  },
+  "@checkout_example": {
+    "placeholders": {
+      "value": {}
+    }
+  },
+  "@checkout_flight_adultN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "@checkout_flight_duplicateBody": {
+    "placeholders": {
+      "route": {},
+      "date": {}
+    }
+  },
+  "@checkout_flight_infantN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "@checkout_flight_priceChanged": {
+    "placeholders": {
+      "was": {},
+      "now": {}
+    }
+  },
+  "@checkout_flight_receipt_approxTotal": {
+    "placeholders": {
+      "currency": {}
+    }
+  },
+  "@checkout_flight_receipt_checkedBagsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@checkout_flight_receipt_confirmedToDestination": {
+    "placeholders": {
+      "destination": {}
+    }
+  },
+  "@checkout_flight_receipt_fareLine": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@checkout_flight_receipt_next_hotelLine": {
+    "placeholders": {
+      "city": {},
+      "dates": {}
+    }
+  },
+  "@checkout_flight_receipt_next_teeTimeLine": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "@checkout_flight_receipt_passengersCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@checkout_flight_receipt_receiptSentTo": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "@checkout_guestsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@checkout_nightsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@checkout_payNow": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_priceChanged_refundNotice": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_promos_minAmount": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_promos_until": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@checkout_promos_upTo": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_receiptSent": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "@checkout_submit_continueToPayment": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_success_needFlight": {
+    "placeholders": {
+      "destination": {}
+    }
+  },
+  "@checkout_success_saved": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_summary_freeCancellationBefore": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@checkout_summary_promoCode": {
+    "placeholders": {
+      "code": {}
+    }
+  },
+  "@checkout_summary_roomNights": {
+    "placeholders": {
+      "nights": {},
+      "count": {}
+    }
+  },
+  "@checkout_summary_youSave": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@checkout_userDetails_childN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "@checkout_userDetails_guestN": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "@checkout_validation_bookingFailed": {
+    "placeholders": {
+      "message": {}
+    }
+  },
+  "@checkout_validation_sessionExpiredCharge": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "@checkout_voucher_saved": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@coach_step": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
+  "@deals_allDealsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@deals_headerPersonalized": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "@deals_subtitlePersonalized": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "@destinations_hotelsAvailableFor": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "@destinations_metaTitle": {
+    "placeholders": {
+      "place": {}
+    }
+  },
+  "@documents_voucher_fromTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@documents_voucher_occupancy": {
+    "placeholders": {
+      "adults": {
+        "type": "num"
+      },
+      "children": {
+        "type": "num"
+      }
+    }
+  },
+  "@documents_voucher_untilTime": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@flights_filtersPanel_rangeFrom": {
+    "placeholders": {
+      "label": {}
+    }
+  },
+  "@flights_filtersPanel_rangeTo": {
+    "placeholders": {
+      "label": {}
+    }
+  },
+  "@flights_filtersPanel_underHours": {
+    "placeholders": {
+      "hours": {}
+    }
+  },
+  "@flights_itinerary_layoverValue": {
+    "placeholders": {
+      "duration": {},
+      "airport": {}
+    }
+  },
+  "@flights_itinerary_legLabel": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "@flights_itinerary_stopCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@flights_itinerary_terminal": {
+    "placeholders": {
+      "terminal": {}
+    }
+  },
+  "@flights_meta_description": {
+    "placeholders": {
+      "brand": {}
+    }
+  },
+  "@flights_meta_descriptionRoute": {
+    "placeholders": {
+      "origin": {},
+      "destination": {},
+      "brand": {}
+    }
+  },
+  "@flights_meta_titleRoute": {
+    "placeholders": {
+      "origin": {},
+      "destination": {}
+    }
+  },
+  "@flights_passengers_adults": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@flights_passengers_children": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@flights_passengers_infants": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@flights_results_countFlights": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@flights_results_flightsFound": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@flights_results_flightsTo": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "@golf_booking_extraAdd": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@golf_booking_extraEach": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "@golf_booking_extraLine": {
+    "placeholders": {
+      "name": {},
+      "count": {}
+    }
+  },
+  "@golf_booking_extraRemove": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@golf_booking_freeCancelEnded": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@golf_booking_freeCancelUntil": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@golf_booking_holdTimer": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@golf_booking_payButton": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@golf_booking_refundNote": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@golf_booking_refunded": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@golf_booking_status_held_body": {
+    "placeholders": {
+      "holdEnds": {}
+    }
+  },
+  "@golf_booking_status_requested_body": {
+    "placeholders": {
+      "deadline": {}
+    }
+  },
+  "@golf_booking_supportDraft": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "@golf_booking_tooFewSpots": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@golf_count": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@golf_countIn": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "country": {}
+    }
+  },
+  "@golf_courseMetaTitle": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@golf_emptyCountryTitle": {
+    "placeholders": {
+      "country": {}
+    }
+  },
+  "@golf_greenFeesFrom": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "@golf_holes": {
+    "placeholders": {
+      "holes": {}
+    }
+  },
+  "@golf_par": {
+    "placeholders": {
+      "par": {}
+    }
+  },
+  "@golf_photo": {
+    "placeholders": {
+      "n": {}
+    }
+  },
+  "@golf_teeTimes_draft": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "course": {},
+      "date": {},
+      "time": {},
+      "city": {}
+    }
+  },
+  "@golf_teeTimes_playerCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@golf_teeTimes_priceNote": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@golf_teeTimes_spotsLeft": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@golf_teeTimes_summary": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "date": {},
+      "time": {}
+    }
+  },
+  "@guestFavorites_allFavoritesCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@hotels_allHotelsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@hotels_fromPrice": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "@hotels_headerPersonalized": {
+    "placeholders": {
+      "country": {}
+    }
+  },
+  "@hotels_subtitlePersonalized": {
+    "placeholders": {
+      "country": {}
+    }
+  },
+  "@invoice_issued": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@landing_journey_strip_from": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "@landing_search_bundle_instructions": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "@landing_search_childLabel": {
+    "placeholders": {
+      "index": {},
+      "age": {}
+    }
+  },
+  "@landing_search_guest": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@landing_search_guestPlural": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@landing_search_guests": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@landing_search_guestsPlural": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@landing_search_noAirportsFound": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "@landing_search_yearsOld": {
+    "placeholders": {
+      "age": {}
+    }
+  },
+  "@map_fromProperty": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "@onboarding_step": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
+  "@propertyGallery_alt_galleryView": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "@propertyGallery_alt_propertyViewNumbered": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "@propertyGallery_alt_thumbnail": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "@propertyGallery_alt_view": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "@propertyGallery_morePhotos": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@propertyOverview_seeAllAmenities": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@propertyOverview_verifiedReview": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@propertyOverview_verifiedReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@propertyOverview_verifiedReviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@property_bookingWidget_guests": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@property_breadcrumbStaysIn": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "@property_bundleApplied": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "@property_faq_checkInAnswer": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@property_faq_checkOutAnswer": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@property_faq_fallbackCancellationQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_faq_fallbackPaymentQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_faq_parkingAnswer": {
+    "placeholders": {
+      "facility": {}
+    }
+  },
+  "@property_faq_parkingQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_faq_poolAnswer": {
+    "placeholders": {
+      "facility": {}
+    }
+  },
+  "@property_faq_poolQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_faq_restaurantQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_faq_wifiQuestion": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_mapOverlay_kmAway": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "@property_metaDescription": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_meta_description": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_meta_descriptionIn": {
+    "placeholders": {
+      "name": {},
+      "location": {}
+    }
+  },
+  "@property_meta_rated": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  "@property_meta_title": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@property_nearby_away": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "@property_nearby_directions_toHotel": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "@property_nearby_fromHotel": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "@property_nearby_minutes": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@property_nearby_ratingOutOf5": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  "@property_nearby_reviewsCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@property_nearby_trip_max": {
+    "placeholders": {
+      "max": {}
+    }
+  },
+  "@property_nearby_trip_summary": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
+  "@property_nearby_trip_title": {
+    "placeholders": {
+      "count": {},
+      "max": {}
+    }
+  },
+  "@property_nearby_weather_feelsLike": {
+    "placeholders": {
+      "temp": {}
+    }
+  },
+  "@property_nearby_weather_highLow": {
+    "placeholders": {
+      "high": {},
+      "low": {}
+    }
+  },
+  "@property_policies_earlyDepartureBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@property_policies_noShowBody": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@property_propertyNotFound": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "@property_rooms_availableRooms": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@property_rooms_includesTaxes": {
+    "placeholders": {
+      "nights": {
+        "type": "num"
+      }
+    }
+  },
+  "@property_rooms_pageOf": {
+    "placeholders": {
+      "current": {},
+      "total": {}
+    }
+  },
+  "@property_rooms_rateOptions": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@property_rooms_showingRooms": {
+    "placeholders": {
+      "start": {},
+      "end": {},
+      "total": {}
+    }
+  },
+  "@property_rooms_sleeps": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@property_savePercent": {
+    "placeholders": {
+      "percent": {}
+    }
+  },
+  "@property_v2_rateOptionsFor": {
+    "placeholders": {
+      "room": {}
+    }
+  },
+  "@property_v2_roomPhotoCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@reviewsSection_basedOnReview": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@reviewsSection_basedOnReviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@reviewsSection_showAllReviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@reviewsSection_showingCount": {
+    "placeholders": {
+      "shown": {},
+      "total": {}
+    }
+  },
+  "@reviewsSection_verifiedReviewCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@search_golf_noMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "@search_nights": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@search_noAirportsMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "@search_prose_players": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@search_results_amenitiesSuffix": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@search_results_guestCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "guest": {},
+      "guests": {}
+    }
+  },
+  "@search_results_namePrefix": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@search_results_ratingPrefix": {
+    "placeholders": {
+      "rating": {}
+    }
+  },
+  "@search_results_reviewsSuffix": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@search_results_starSuffix": {
+    "placeholders": {
+      "stars": {}
+    }
+  },
+  "@search_steps_fromOrigin": {
+    "placeholders": {
+      "city": {}
+    }
+  },
+  "@search_steps_noPlaceMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "@search_steps_selected": {
+    "placeholders": {
+      "name": {}
+    }
+  },
+  "@search_v2_checkingCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@search_v2_clusterChecking": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@search_v2_clusterFrom": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "@search_v2_clusterHotels": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@search_v2_staysCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@search_validation_fieldList": {
+    "placeholders": {
+      "fields": {},
+      "last": {}
+    }
+  },
+  "@search_validation_selectField": {
+    "placeholders": {
+      "field": {}
+    }
+  },
+  "@support_reference": {
+    "placeholders": {
+      "reference": {}
+    }
+  },
+  "@support_reopens": {
+    "placeholders": {
+      "when": {}
+    }
+  },
+  "@support_reopensToday": {
+    "placeholders": {
+      "when": {}
+    }
+  },
+  "@trips_bookingCard_adult": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_bookingCard_adults": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_bookingCard_child": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_bookingCard_children": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_bookingCard_night": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_bookingCard_nights": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_bookingCard_reviews": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_bookingCard_stayDates": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "@trips_cancellationModal_bookingId": {
+    "placeholders": {
+      "id": {}
+    }
+  },
+  "@trips_cancellationPolicies_cancellationFee": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_cancellationPolicies_earlyDepartureDescription": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_cancellationPolicies_noShowDescription": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_flightBookingCard_cancelModal_estimatedPenalty": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_flightBookingCard_cancelModal_pnr": {
+    "placeholders": {
+      "pnr": {}
+    }
+  },
+  "@trips_flightBookingCard_cancelModal_taxesRefund": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_flightBookingCard_cancelModal_willReceive": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_flightBookingCard_layover": {
+    "placeholders": {
+      "duration": {},
+      "airport": {}
+    }
+  },
+  "@trips_flightBookingCard_originTo": {
+    "placeholders": {
+      "origin": {},
+      "destination": {}
+    }
+  },
+  "@trips_flightBookingCard_passenger": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_flightBookingCard_passengers": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_flightBookingCard_pax": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_flightBookingCard_penaltyApplied": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_flightBookingCard_stop": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_flightBookingCard_stops": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_flightBookingCard_tripLegs_leg": {
+    "placeholders": {
+      "number": {}
+    }
+  },
+  "@trips_golfCard_refunded": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_hotelCancel_confirmRefund": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@trips_hotelCancel_feeRisesOn": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@trips_hotelCancel_freeUntil": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@trips_labels_afterDatePenalty": {
+    "placeholders": {
+      "date": {},
+      "amount": {}
+    }
+  },
+  "@trips_search_noMatch": {
+    "placeholders": {
+      "query": {}
+    }
+  },
+  "@trips_search_results": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@trips_shareForm_sent": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "@trips_shareForm_sentTo": {
+    "placeholders": {
+      "email": {}
+    }
+  },
+  "@trips_tripMap_away": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "@trips_viewMore": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@trips_wishlist_savedOn": {
+    "placeholders": {
+      "date": {}
+    }
+  },
   "about_builtBody": "We focus on travelers in Southeast Asia — local currencies, local context, and support that understands how you travel.",
   "about_builtTitle": "Built for the region",
   "about_contactUs": "Contact us",
@@ -125,12 +1335,6 @@
   "auth_signIn_orDivider": "or",
   "auth_signIn_privacyLink": "Privacy",
   "auth_signIn_terms": "By signing in you agree to our {terms} and {privacy}.",
-  "@auth_signIn_terms": {
-    "placeholders": {
-      "terms": {},
-      "privacy": {}
-    }
-  },
   "auth_signIn_termsLink": "Terms",
   "auth_signIn_title": "Sign in to CheapestGo",
   "auth_signUpWithGoogle": "Sign up with Google",
@@ -166,28 +1370,13 @@
   "checkout_cancellation_cancelBy": "Cancel by",
   "checkout_cancellation_description": "How much will it cost to cancel the rooms?",
   "checkout_cancellation_earlyDepartureFee": "Early Departure Fee: {amount} if you check out before your scheduled date.",
-  "@checkout_cancellation_earlyDepartureFee": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_cancellation_footer": "Cancellation costs are based on the total booking value. All dates and times are mentioned in GMT.",
   "checkout_cancellation_freeCancellation": "Free cancellation available — see deadlines below",
   "checkout_cancellation_freeCancellationLabel": "Free Cancellation",
   "checkout_cancellation_fullRefund": "(Full refund)",
   "checkout_cancellation_noShowPenalty": "No-Show Penalty: {amount} if you don’t check in without cancelling.",
-  "@checkout_cancellation_noShowPenalty": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_cancellation_nonRefundable": "Non-refundable — this booking cannot be cancelled for a refund",
   "checkout_cancellation_refund": "{amount} Refund",
-  "@checkout_cancellation_refund": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_cancellation_title": "Cancellation Policy",
   "checkout_cardNamePlaceholder": "John Doe",
   "checkout_checkIn": "Check-in",
@@ -211,143 +1400,64 @@
   "checkout_dontClosePage": "Please don't close this page",
   "checkout_duplicateBookingDesc": "Cancel your existing booking first, or go back and keep it.",
   "checkout_duplicateBookingTitle": "You already have a booking at {hotel} for overlapping dates.",
-  "@checkout_duplicateBookingTitle": {
-    "placeholders": {
-      "hotel": {}
-    }
-  },
   "checkout_errors_paymentFailed": "Payment failed. Please try again.",
   "checkout_errors_paymentProcessing": "Payment is processing. Check your trips shortly.",
   "checkout_example": "e.g. {value}",
-  "@checkout_example": {
-    "placeholders": {
-      "value": {}
-    }
-  },
   "checkout_failed_released": "You have not been charged — the hold on your card has been released.",
   "checkout_failed_title": "We couldn't complete your booking",
   "checkout_failed_tryAgain": "Try again",
   "checkout_failed_unknown": "We couldn't confirm whether your payment was taken. Check your trips or contact support before trying again.",
   "checkout_finalizingDetails": "Finalizing booking details...",
   "checkout_flight_adultN": "ADULT {n}",
-  "@checkout_flight_adultN": {
-    "placeholders": {
-      "n": {}
-    }
-  },
   "checkout_flight_cardHeld": "Your card is authorised now and charged only once the airline confirms your ticket. If it can't, the hold is released and you pay nothing.",
   "checkout_flight_contactHint": "Your e-ticket is sent here, and the airline uses this number for flight changes.",
   "checkout_flight_contactTitle": "Contact details",
   "checkout_flight_countryNoResults": "No countries found",
   "checkout_flight_countryPlaceholder": "Select country",
   "checkout_flight_duplicateBody": "Your booking departing {route} on {date} is still active.",
-  "@checkout_flight_duplicateBody": {
-    "placeholders": {
-      "route": {},
-      "date": {}
-    }
-  },
   "checkout_flight_duplicateClose": "Close",
   "checkout_flight_duplicateHint": "Check it before you book another flight on the same date.",
   "checkout_flight_duplicateTitle": "You already have a flight that day",
   "checkout_flight_genderPlaceholder": "Select gender",
   "checkout_flight_infantN": "INFANT {n}",
-  "@checkout_flight_infantN": {
-    "placeholders": {
-      "n": {}
-    }
-  },
   "checkout_flight_nameHint": "Enter names exactly as they appear on the passport.",
   "checkout_flight_needsReview_description": "Our team is finishing this booking with the airline. We'll email you as soon as your ticket is confirmed.",
   "checkout_flight_needsReview_title": "We're confirming this with the airline",
   "checkout_flight_passportPlaceholder": "e.g. P1234567A",
   "checkout_flight_passportTitle": "Passport details",
   "checkout_flight_priceChanged": "The fare changed from {was} to {now} before the airline could confirm it. You have not been charged — the hold on your card has been released. Submit your details again to book at the new fare.",
-  "@checkout_flight_priceChanged": {
-    "placeholders": {
-      "was": {},
-      "now": {}
-    }
-  },
   "checkout_flight_receipt_airlinePnr": "Airline PNR",
   "checkout_flight_receipt_allSet": "You’re all set",
   "checkout_flight_receipt_approxTotal": "Approx. in {currency}",
-  "@checkout_flight_receipt_approxTotal": {
-    "placeholders": {
-      "currency": {}
-    }
-  },
   "checkout_flight_receipt_arrivalTerminal": "Arrival terminal",
   "checkout_flight_receipt_arriveAt": "Arrive At",
   "checkout_flight_receipt_bagsLabel": "Bags",
   "checkout_flight_receipt_carryOnBag": "1 carry-on bag",
   "checkout_flight_receipt_checkedBagsCount": "{count, plural, one {# checked bag} other {# checked bags}}",
-  "@checkout_flight_receipt_checkedBagsCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "checkout_flight_receipt_confirmedBadge": "Confirmed",
   "checkout_flight_receipt_confirmedToDestination": "Your flight to {destination} is confirmed.",
-  "@checkout_flight_receipt_confirmedToDestination": {
-    "placeholders": {
-      "destination": {}
-    }
-  },
   "checkout_flight_receipt_contact": "Contact",
   "checkout_flight_receipt_copyReference": "Copy",
   "checkout_flight_receipt_copyReferenceDone": "Copied",
   "checkout_flight_receipt_departFrom": "Depart From",
   "checkout_flight_receipt_departureTerminal": "Departure terminal",
   "checkout_flight_receipt_fareLine": "Fare · {count, plural, one {# passenger} other {# passengers}}",
-  "@checkout_flight_receipt_fareLine": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "checkout_flight_receipt_includedLabel": "Included",
   "checkout_flight_receipt_loadingItinerary": "Loading your flight details…",
   "checkout_flight_receipt_next_hotel": "Book a hotel",
   "checkout_flight_receipt_next_hotelLine": "Stays in {city} · {dates}",
-  "@checkout_flight_receipt_next_hotelLine": {
-    "placeholders": {
-      "city": {},
-      "dates": {}
-    }
-  },
   "checkout_flight_receipt_next_teeTime": "Book a tee time",
   "checkout_flight_receipt_next_teeTimeAnywhere": "Browse our golf courses",
   "checkout_flight_receipt_next_teeTimeLine": "Golf courses in {city}",
-  "@checkout_flight_receipt_next_teeTimeLine": {
-    "placeholders": {
-      "city": {}
-    }
-  },
   "checkout_flight_receipt_next_title": "Complete your trip",
   "checkout_flight_receipt_outbound": "Outbound",
   "checkout_flight_receipt_paidBadge": "Paid",
   "checkout_flight_receipt_passengerSectionTitle": "Passengers",
   "checkout_flight_receipt_passengersCount": "{count, plural, one {# passenger} other {# passengers}}",
-  "@checkout_flight_receipt_passengersCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "checkout_flight_receipt_paymentProcessedSecurely": "Payment processed securely by Stripe.",
   "checkout_flight_receipt_paymentSummary": "Payment Summary",
   "checkout_flight_receipt_pnrHint": "use this at check-in",
   "checkout_flight_receipt_receiptSentTo": "Receipt sent to {email}",
-  "@checkout_flight_receipt_receiptSentTo": {
-    "placeholders": {
-      "email": {}
-    }
-  },
   "checkout_flight_receipt_refundable": "Refundable (fees may apply)",
   "checkout_flight_receipt_return": "Return",
   "checkout_flight_receipt_taxesAndFees": "Taxes & fees",
@@ -368,13 +1478,6 @@
   "checkout_guestDetails": "Guest details",
   "checkout_guestLabel": "Guest",
   "checkout_guestsCount": "{count, plural, one {# guest} other {# guests}}",
-  "@checkout_guestsCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "checkout_keepExistingBooking": "Keep existing booking",
   "checkout_loadingCheckout": "Loading checkout…",
   "checkout_loadingPaymentForm": "Loading payment form...",
@@ -384,22 +1487,10 @@
   "checkout_needsReview_description": "Your payment hasn't been taken yet. We'll email you as soon as it's confirmed, or release the hold on your card if it isn't.",
   "checkout_needsReview_title": "We're confirming this with the hotel",
   "checkout_nightsCount": "{count, plural, one {# night} other {# nights}}",
-  "@checkout_nightsCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "checkout_notPayableOnline_chooseAnother": "Choose another room",
   "checkout_notPayableOnline_description": "The hotel collects payment for this rate itself. Choose a different room to book and pay here.",
   "checkout_notPayableOnline_title": "This room can't be paid for online",
   "checkout_payNow": "Pay {amount}",
-  "@checkout_payNow": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_paymentDetails": "Payment details",
   "checkout_paymentDetailsTitle": "Payment Details",
   "checkout_paymentInfo": "Payment info",
@@ -430,11 +1521,6 @@
   "checkout_priceChanged_newPrice": "New price",
   "checkout_priceChanged_originalPrice": "Original price",
   "checkout_priceChanged_refundNotice": "Your payment of {amount} has been automatically refunded. It may take 3–5 business days to appear on your statement.",
-  "@checkout_priceChanged_refundNotice": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_priceChanged_title": "Price has changed",
   "checkout_priceMoved_accept": "Continue at the new price",
   "checkout_priceMoved_chooseAnother": "Choose another room",
@@ -453,27 +1539,12 @@
   "checkout_promos_loadingPromos": "Loading available promos...",
   "checkout_promos_location": "Location",
   "checkout_promos_minAmount": "Min. {amount}",
-  "@checkout_promos_minAmount": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_promos_newUser": "New User",
   "checkout_promos_off": "off",
   "checkout_promos_promo": "Promo",
   "checkout_promos_seasonal": "Seasonal",
   "checkout_promos_until": "Until {date}",
-  "@checkout_promos_until": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "checkout_promos_upTo": "Up to {amount}",
-  "@checkout_promos_upTo": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_rating_average": "Average",
   "checkout_rating_exceptional": "Exceptional",
   "checkout_rating_fabulous": "Fabulous",
@@ -481,11 +1552,6 @@
   "checkout_rating_pleasant": "Pleasant",
   "checkout_rating_veryGood": "Very Good",
   "checkout_receiptSent": "Your booking is confirmed. A receipt has been sent to {email}.",
-  "@checkout_receiptSent": {
-    "placeholders": {
-      "email": {}
-    }
-  },
   "checkout_retry": "Retry",
   "checkout_roomFallback": "Standard Room",
   "checkout_searchAvailableRooms": "Search available rooms →",
@@ -514,11 +1580,6 @@
   "checkout_stripe_processing": "Payment is processing...",
   "checkout_stripe_unexpectedError": "An unexpected error occurred.",
   "checkout_submit_continueToPayment": "Continue to Payment • {amount}",
-  "@checkout_submit_continueToPayment": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_submit_goBackDifferentHotel": "Go back & choose a different hotel",
   "checkout_submit_goBackReselect": "Go back & reselect room",
   "checkout_submit_hotelUnavailable": "Hotel temporarily unavailable",
@@ -549,21 +1610,11 @@
   "checkout_success_hotelCheckInInfo": "Present your booking ID at the hotel reception upon arrival.",
   "checkout_success_hotelSuccess": "Your hotel has been booked successfully.",
   "checkout_success_needFlight": "Need a flight to {destination}?",
-  "@checkout_success_needFlight": {
-    "placeholders": {
-      "destination": {}
-    }
-  },
   "checkout_success_openingDestination": "Opening your destination…",
   "checkout_success_returnToHome": "Return to Home",
   "checkout_success_room": "Room",
   "checkout_success_saveUpTo": "Save up to 8%",
   "checkout_success_saved": "{amount} saved",
-  "@checkout_success_saved": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_success_searchFlightsAndBundle": "Search flights & bundle",
   "checkout_success_sent": "Sent",
   "checkout_success_stayDuration": "Stay Duration",
@@ -584,11 +1635,6 @@
   "checkout_summary_fetchingPolicy": "Fetching cancellation policy…",
   "checkout_summary_flight": "Flight",
   "checkout_summary_freeCancellationBefore": "Free cancellation before {date}",
-  "@checkout_summary_freeCancellationBefore": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "checkout_summary_freeCancellationShort": "Free cancellation",
   "checkout_summary_guests": "Guests",
   "checkout_summary_included": "included",
@@ -598,20 +1644,9 @@
   "checkout_summary_nonRefundable": "Non-refundable",
   "checkout_summary_priceDetails": "Price details",
   "checkout_summary_promoCode": "Promo: {code}",
-  "@checkout_summary_promoCode": {
-    "placeholders": {
-      "code": {}
-    }
-  },
   "checkout_summary_room": "Room",
   "checkout_summary_roomConfirmed": "Room Confirmed",
   "checkout_summary_roomNights": "1 room × {nights} {count}",
-  "@checkout_summary_roomNights": {
-    "placeholders": {
-      "nights": {},
-      "count": {}
-    }
-  },
   "checkout_summary_serviceFee": "Platform service fee",
   "checkout_summary_taxes": "Taxes",
   "checkout_summary_termsNotProvided": "Cancellation terms not provided by supplier — confirm with property before booking",
@@ -619,11 +1654,6 @@
   "checkout_summary_tripSummary": "Trip summary",
   "checkout_summary_updateDates": "Update dates",
   "checkout_summary_youSave": "You save {amount} with this promo",
-  "@checkout_summary_youSave": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_summary_yourRoom": "Your Room",
   "checkout_supplierDown_description": "Nothing is wrong with your booking — the hotel's system didn't answer. Please try again in a moment.",
   "checkout_supplierDown_retry": "Try again",
@@ -636,11 +1666,6 @@
   "checkout_userDetails_age": "Age",
   "checkout_userDetails_agePlaceholder": "0–17",
   "checkout_userDetails_childN": "CHILD {n}",
-  "@checkout_userDetails_childN": {
-    "placeholders": {
-      "n": {}
-    }
-  },
   "checkout_userDetails_country": "Country",
   "checkout_userDetails_dateOfBirth": "Date of birth",
   "checkout_userDetails_email": "Email",
@@ -652,11 +1677,6 @@
   "checkout_userDetails_genderMale": "Male",
   "checkout_userDetails_guest1": "GUEST 1 (YOU)",
   "checkout_userDetails_guestN": "GUEST {n}",
-  "@checkout_userDetails_guestN": {
-    "placeholders": {
-      "n": {}
-    }
-  },
   "checkout_userDetails_lastName": "Last name",
   "checkout_userDetails_lastNamePlaceholder": "Last name",
   "checkout_userDetails_no": "No",
@@ -670,11 +1690,6 @@
   "checkout_userDetails_yes": "Yes",
   "checkout_validation_ageInvalid": "Enter an age from 0 to 17",
   "checkout_validation_bookingFailed": "Booking confirmation failed: {message}. Your payment will be automatically refunded.",
-  "@checkout_validation_bookingFailed": {
-    "placeholders": {
-      "message": {}
-    }
-  },
   "checkout_validation_emailInvalid": "Enter a valid email address",
   "checkout_validation_fieldRequired": "This field is required",
   "checkout_validation_firstNameRequired": "First name is required",
@@ -692,11 +1707,6 @@
   "checkout_validation_requiresAuth": "Authentication required",
   "checkout_validation_sessionExpired": "Booking session expired. Please go back and select the room again.",
   "checkout_validation_sessionExpiredCharge": "Your session expired during payment. Your card was charged — please contact support with payment reference: {id}",
-  "@checkout_validation_sessionExpiredCharge": {
-    "placeholders": {
-      "id": {}
-    }
-  },
   "checkout_validation_specialRequestsTooLong": "Please keep special requests under 500 characters",
   "checkout_verifyingPayment": "Verifying payment...",
   "checkout_viewExistingBooking": "View existing booking",
@@ -708,13 +1718,18 @@
   "checkout_voucher_promoCode": "Promo code",
   "checkout_voucher_removeVoucher": "Remove voucher",
   "checkout_voucher_saved": "{amount} saved",
-  "@checkout_voucher_saved": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "checkout_whosCheckingIn": "Who's checking in?",
   "checkout_whosCheckingInYou": "Who’s checking in? (Your Details)",
+  "coach_bar_body": "Home to search, Trips for what you have booked, and the gear for your account.",
+  "coach_bar_title": "Your trips live here",
+  "coach_done": "Got it",
+  "coach_faces_body": "Switch between stays, flights and golf. Each one searches on its own.",
+  "coach_faces_title": "Three ways to travel",
+  "coach_next": "Next",
+  "coach_search_body": "Where you are going, when, and who is coming. Prices include fees before you book.",
+  "coach_search_title": "Search in three steps",
+  "coach_skip": "Skip",
+  "coach_step": "Tip {current} of {total}",
   "common_back": "Back",
   "common_close": "Close",
   "common_closeSettings": "Close settings",
@@ -737,21 +1752,11 @@
   "currencyPicker_label": "Select currency",
   "deals_all": "All",
   "deals_allDealsCount": "All {count} deals",
-  "@deals_allDealsCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "deals_collapse": "Collapse ↑",
   "deals_emptyBody": "Check back soon — we update our deals regularly.",
   "deals_emptyTitle": "No active deals right now",
   "deals_headerDefault": "Exclusive Deals & Offers",
   "deals_headerPersonalized": "Flight Deals from {city}",
-  "@deals_headerPersonalized": {
-    "placeholders": {
-      "city": {}
-    }
-  },
   "deals_limitedTime": "Limited-time offers",
   "deals_loadError": "Could not load deals",
   "deals_metaTitle": "Deals",
@@ -762,25 +1767,9 @@
   "deals_subtitle": "Handpicked deals with the lowest prices we could find. Prices update frequently — book early to lock in your rate.",
   "deals_subtitleDefault": "Low fares on popular routes",
   "deals_subtitlePersonalized": "Low fares departing from {city}",
-  "@deals_subtitlePersonalized": {
-    "placeholders": {
-      "city": {}
-    }
-  },
   "deals_todaysBest": "Today's Best Hotel Deals",
   "destinations_hotelsAvailableFor": "Hotels available for {from} — {to}",
-  "@destinations_hotelsAvailableFor": {
-    "placeholders": {
-      "from": {},
-      "to": {}
-    }
-  },
   "destinations_metaTitle": "Hotels in {place}",
-  "@destinations_metaTitle": {
-    "placeholders": {
-      "place": {}
-    }
-  },
   "destinations_plural": "Destinations",
   "destinations_singular": "Destination",
   "documents_actions_checkIn": "Check in with airline",
@@ -821,25 +1810,10 @@
   "documents_voucher_confirmationNumber": "Hotel confirmation number",
   "documents_voucher_footer": "Present this voucher and a valid government-issued ID or passport at check-in. The property may apply additional requirements.",
   "documents_voucher_fromTime": "From {time}",
-  "@documents_voucher_fromTime": {
-    "placeholders": {
-      "time": {}
-    }
-  },
   "documents_voucher_guests": "Guests",
   "documents_voucher_leadGuest": "Lead guest",
   "documents_voucher_mealPlan": "Meal plan",
   "documents_voucher_occupancy": "{adults, plural, one {# adult} other {# adults}}{children, plural, =0 {} one {, # child} other {, # children}}",
-  "@documents_voucher_occupancy": {
-    "placeholders": {
-      "adults": {
-        "type": "num"
-      },
-      "children": {
-        "type": "num"
-      }
-    }
-  },
   "documents_voucher_ourReference": "Our reference",
   "documents_voucher_paidOnline": "Paid online",
   "documents_voucher_payAtProperty": "Pay at property",
@@ -850,11 +1824,6 @@
   "documents_voucher_stay": "Stay",
   "documents_voucher_title": "Hotel booking voucher",
   "documents_voucher_untilTime": "Until {time}",
-  "@documents_voucher_untilTime": {
-    "placeholders": {
-      "time": {}
-    }
-  },
   "errors_auth_description": "There was an error processing your authentication request. This could happen if the link expired or was already used.",
   "errors_auth_goHome": "Go to homepage",
   "errors_auth_retryDescription": "Something went wrong during authentication. Please try again.",
@@ -900,17 +1869,7 @@
   "flights_filtersPanel_pricePerPerson": "Price Per Person",
   "flights_filtersPanel_provider": "Provider",
   "flights_filtersPanel_rangeFrom": "{label} from",
-  "@flights_filtersPanel_rangeFrom": {
-    "placeholders": {
-      "label": {}
-    }
-  },
   "flights_filtersPanel_rangeTo": "{label} to",
-  "@flights_filtersPanel_rangeTo": {
-    "placeholders": {
-      "label": {}
-    }
-  },
   "flights_filtersPanel_refundable": "Refundable",
   "flights_filtersPanel_refundableFares": "Refundable fares",
   "flights_filtersPanel_refundableFaresDescription": "Fares that allow cancellation with a refund",
@@ -924,11 +1883,6 @@
   "flights_filtersPanel_times": "Times",
   "flights_filtersPanel_twoStopsPlus": "2 Stops +",
   "flights_filtersPanel_underHours": "Under {hours} hours",
-  "@flights_filtersPanel_underHours": {
-    "placeholders": {
-      "hours": {}
-    }
-  },
   "flights_filtersPanel_upToOneStop": "Up to 1 stop",
   "flights_filters_airlines": "Airlines",
   "flights_filters_anyStops": "Any stops",
@@ -949,83 +1903,21 @@
   "flights_itinerary_flightDuration": "Flight Duration",
   "flights_itinerary_layoverLabel": "Layover",
   "flights_itinerary_layoverValue": "{duration} at {airport}",
-  "@flights_itinerary_layoverValue": {
-    "placeholders": {
-      "duration": {},
-      "airport": {}
-    }
-  },
   "flights_itinerary_legLabel": "Leg {number}",
-  "@flights_itinerary_legLabel": {
-    "placeholders": {
-      "number": {}
-    }
-  },
   "flights_itinerary_nonstop": "Nonstop",
   "flights_itinerary_outbound": "Outbound",
   "flights_itinerary_return": "Return",
   "flights_itinerary_stopCount": "{count, plural, one {# stop} other {# stops}}",
-  "@flights_itinerary_stopCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "flights_itinerary_terminal": "Terminal {terminal}",
-  "@flights_itinerary_terminal": {
-    "placeholders": {
-      "terminal": {}
-    }
-  },
   "flights_itinerary_terminalUnavailable": "Terminal available closer to departure",
   "flights_itinerary_totalFlightDuration": "Total Flight Duration",
   "flights_meta_description": "Compare and book cheap flights worldwide. Find the best deals on {brand}.",
-  "@flights_meta_description": {
-    "placeholders": {
-      "brand": {}
-    }
-  },
   "flights_meta_descriptionRoute": "Compare and book the cheapest flights from {origin} to {destination}. Find the best deals on {brand}.",
-  "@flights_meta_descriptionRoute": {
-    "placeholders": {
-      "origin": {},
-      "destination": {},
-      "brand": {}
-    }
-  },
   "flights_meta_title": "Flight Search Results",
   "flights_meta_titleRoute": "Flights {origin} → {destination}",
-  "@flights_meta_titleRoute": {
-    "placeholders": {
-      "origin": {},
-      "destination": {}
-    }
-  },
   "flights_passengers_adults": "{count, plural, one {# adult} other {# adults}}",
-  "@flights_passengers_adults": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "flights_passengers_children": "{count, plural, one {# child} other {# children}}",
-  "@flights_passengers_children": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "flights_passengers_infants": "{count, plural, one {# infant} other {# infants}}",
-  "@flights_passengers_infants": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "flights_priceAlert_active": "Price alerts active",
   "flights_priceAlert_emailMe": "Email me when price drops",
   "flights_priceAlert_loading": "Loading",
@@ -1038,13 +1930,6 @@
   "flights_results_checkingProviders": "Checking multiple providers",
   "flights_results_clearFilters": "Clear filters",
   "flights_results_countFlights": "{count, plural, one {# flight} other {# flights}}",
-  "@flights_results_countFlights": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "flights_results_datePicked": "We picked this date — change it to see other fares.",
   "flights_results_duration": "Duration",
   "flights_results_empty": "No flights found for these dates.",
@@ -1054,19 +1939,7 @@
   "flights_results_filtersTitle": "Flight Filters",
   "flights_results_findingFares": "Finding the best fares…",
   "flights_results_flightsFound": "{count, plural, one {# flight} other {# flights}} found",
-  "@flights_results_flightsFound": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "flights_results_flightsTo": "Flights to {city}",
-  "@flights_results_flightsTo": {
-    "placeholders": {
-      "city": {}
-    }
-  },
   "flights_results_loading": "Finding the best fares…",
   "flights_results_missingRoute": "Tell us where you are flying from and to, and we will find the fares.",
   "flights_results_newSearch": "New Search",
@@ -1146,60 +2019,24 @@
   "golf_booking_date": "Date",
   "golf_booking_email": "Email",
   "golf_booking_extraAdd": "Add one: {name}",
-  "@golf_booking_extraAdd": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "golf_booking_extraEach": "{price} each",
-  "@golf_booking_extraEach": {
-    "placeholders": {
-      "price": {}
-    }
-  },
   "golf_booking_extraLine": "{name} × {count}",
-  "@golf_booking_extraLine": {
-    "placeholders": {
-      "name": {},
-      "count": {}
-    }
-  },
   "golf_booking_extraNames_caddie": "Caddie",
   "golf_booking_extraNames_cart": "Golf cart",
   "golf_booking_extraNames_club_rental": "Club rental",
   "golf_booking_extraNames_lessons": "Golf lesson",
   "golf_booking_extraNames_range_balls": "Bucket of range balls",
   "golf_booking_extraRemove": "Remove one: {name}",
-  "@golf_booking_extraRemove": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "golf_booking_extrasHeading": "Extras",
   "golf_booking_extrasHint": "Optional. Our team arranges them with the course when confirming your tee time.",
   "golf_booking_extrasUnavailable": "The extras on offer have changed. Please review them and try again.",
   "golf_booking_finishPaying": "Finish paying",
   "golf_booking_freeCancelEnded": "Free cancellation ended on {date}. To change this booking, please talk to us.",
-  "@golf_booking_freeCancelEnded": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "golf_booking_freeCancelUntil": "Free cancellation until {date}.",
-  "@golf_booking_freeCancelUntil": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "golf_booking_greenFee": "Green fees",
   "golf_booking_holdRanOutBody": "We released your spots after 15 minutes. Nothing was charged.",
   "golf_booking_holdRanOutTitle": "Your hold ran out",
   "golf_booking_holdTimer": "Your spots are held for {time}.",
-  "@golf_booking_holdTimer": {
-    "placeholders": {
-      "time": {}
-    }
-  },
   "golf_booking_howItWorks": "Your card is authorised now and charged only once the course confirms your tee time, within 48 hours at most. If the course can’t take you, the hold is released and you’re not charged.",
   "golf_booking_keepBooking": "Keep my booking",
   "golf_booking_leadName": "Lead player",
@@ -1210,11 +2047,6 @@
   "golf_booking_missingTitle": "We can’t find this booking",
   "golf_booking_noFreeCancel": "Free cancellation has already passed for this tee time, so once it’s confirmed it can’t be cancelled online.",
   "golf_booking_payButton": "Request this tee time · {amount}",
-  "@golf_booking_payButton": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "golf_booking_payFailed": "Your card couldn’t be authorised. Please try again.",
   "golf_booking_paying": "Authorising your card…",
   "golf_booking_pickAnother": "Pick another time",
@@ -1222,17 +2054,7 @@
   "golf_booking_priceChanged": "The price of this tee time has just changed. Please check the new total before you continue.",
   "golf_booking_reference": "Reference",
   "golf_booking_refundNote": "You’ll get {amount} back, the whole amount including the service fee.",
-  "@golf_booking_refundNote": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "golf_booking_refunded": "We’ve refunded {amount}. It can take 5–10 business days to appear on your statement.",
-  "@golf_booking_refunded": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "golf_booking_serviceFee": "Service fee",
   "golf_booking_startError": "We couldn’t start the payment. Please try again.",
   "golf_booking_starting": "Holding your spots…",
@@ -1247,37 +2069,15 @@
   "golf_booking_status_expired_body": "It wasn’t paid for in time, so nothing was charged and the spots were released.",
   "golf_booking_status_expired_title": "This booking ran out",
   "golf_booking_status_held_body": "Your spots are held until {holdEnds}. Finish paying to send your request to the course.",
-  "@golf_booking_status_held_body": {
-    "placeholders": {
-      "holdEnds": {}
-    }
-  },
   "golf_booking_status_held_title": "Waiting for your payment",
   "golf_booking_status_notAnswered_body": "Your card wasn’t charged, and the hold on it has been released. We’re sorry. Please pick another time.",
   "golf_booking_status_notAnswered_title": "We couldn’t confirm this in time",
   "golf_booking_status_requested_body": "Your card is authorised, not charged. We’ll have an answer by {deadline}. If the course can’t take you, the hold is released and you pay nothing.",
-  "@golf_booking_status_requested_body": {
-    "placeholders": {
-      "deadline": {}
-    }
-  },
   "golf_booking_status_requested_title": "We’re checking with the course",
   "golf_booking_supportDraft": "Hi! I’d like to ask about changing my golf booking {reference}.",
-  "@golf_booking_supportDraft": {
-    "placeholders": {
-      "reference": {}
-    }
-  },
   "golf_booking_time": "Tee time",
   "golf_booking_title": "Book your tee time",
   "golf_booking_tooFewSpots": "Only {count, plural, one {# spot is} other {# spots are}} left on this tee time. Nothing was charged.",
-  "@golf_booking_tooFewSpots": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "golf_booking_tooMany": "Too many attempts. Please wait a moment and try again.",
   "golf_booking_total": "Total",
   "golf_booking_unavailableBody": "It has been taken or closed since you picked it. Nothing was charged.",
@@ -1285,36 +2085,11 @@
   "golf_booking_yourBooking": "Your golf booking",
   "golf_breadcrumb": "Golf",
   "golf_count": "{count, plural, one {# course} other {# courses}}",
-  "@golf_count": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "golf_countIn": "{count, plural, one {# course} other {# courses}} in {country}",
-  "@golf_countIn": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      },
-      "country": {}
-    }
-  },
   "golf_courseMetaTitle": "{name} — golf",
-  "@golf_courseMetaTitle": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "golf_emptyBody": "We're adding golf courses. Check back soon.",
   "golf_emptyCountryBody": "Try another country, or see every course.",
   "golf_emptyCountryTitle": "No courses in {country}",
-  "@golf_emptyCountryTitle": {
-    "placeholders": {
-      "country": {}
-    }
-  },
   "golf_emptyTitle": "No courses yet",
   "golf_errorBody": "Something went wrong on our side. Please try again.",
   "golf_errorTitle": "Golf courses didn't load",
@@ -1322,34 +2097,14 @@
   "golf_filterLabel": "Filter by country",
   "golf_fromLabel": "Green fees from",
   "golf_greenFeesFrom": "Green fees from {price}",
-  "@golf_greenFeesFrom": {
-    "placeholders": {
-      "price": {}
-    }
-  },
   "golf_guidePrice": "A guide price per player. We confirm the exact fee when you ask about a tee time.",
   "golf_holes": "{holes} holes",
-  "@golf_holes": {
-    "placeholders": {
-      "holes": {}
-    }
-  },
   "golf_metaDescription": "Golf courses our team can arrange play at, with a guide green fee and tee times on request.",
   "golf_metaTitle": "Golf courses",
   "golf_missingBody": "It may have been removed. See the courses we can arrange.",
   "golf_missingTitle": "This course isn't available",
   "golf_par": "Par {par}",
-  "@golf_par": {
-    "placeholders": {
-      "par": {}
-    }
-  },
   "golf_photo": "Photo {n}",
-  "@golf_photo": {
-    "placeholders": {
-      "n": {}
-    }
-  },
   "golf_retry": "Try again",
   "golf_seeAll": "See all courses",
   "golf_subtitle": "Courses our team can arrange play at. Pick one and ask us about tee times.",
@@ -1358,17 +2113,6 @@
   "golf_teeTimes_chargedAfter": "Your card is only charged once the course confirms.",
   "golf_teeTimes_date": "Date",
   "golf_teeTimes_draft": "Hi! I'd like to play {course} on {date} at {time} ({city} time) for {count, plural, one {# player} other {# players}}. Is it available?",
-  "@golf_teeTimes_draft": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      },
-      "course": {},
-      "date": {},
-      "time": {},
-      "city": {}
-    }
-  },
   "golf_teeTimes_earlierDays": "Earlier days",
   "golf_teeTimes_earlierTimes": "Earlier times",
   "golf_teeTimes_justGone": "That time has just gone. Please pick another.",
@@ -1379,49 +2123,16 @@
   "golf_teeTimes_none": "No tee times left on this day. Try another date.",
   "golf_teeTimes_pickHint": "Pick a time to book it.",
   "golf_teeTimes_playerCount": "{count, plural, one {# player} other {# players}}",
-  "@golf_teeTimes_playerCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "golf_teeTimes_players": "Players",
   "golf_teeTimes_prevMonth": "Previous month",
   "golf_teeTimes_priceNote": "All-in price per player for {count, plural, one {# player} other {# players}}, service fee included. It changes with the size of the party.",
-  "@golf_teeTimes_priceNote": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "golf_teeTimes_priceOnRequest": "Price on request",
   "golf_teeTimes_spotsLeft": "{count} left",
-  "@golf_teeTimes_spotsLeft": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "golf_teeTimes_summary": "{date} · {time} · {count, plural, one {# player} other {# players}}",
-  "@golf_teeTimes_summary": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      },
-      "date": {},
-      "time": {}
-    }
-  },
   "golf_teeTimes_title": "Book a tee time",
   "golf_teeTimes_total": "Total",
   "golf_title": "Golf courses",
   "guestFavorites_allFavoritesCount": "All {count} favorites",
-  "@guestFavorites_allFavoritesCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "guestFavorites_collapse": "Collapse ↑",
   "guestFavorites_headerHighlight": "Favorites",
   "guestFavorites_headerMain": "Guest",
@@ -1445,11 +2156,6 @@
   "help_sections_refunds_title": "When do I get my refund?",
   "help_title": "Help",
   "hotels_allHotelsCount": "All {count} hotels",
-  "@hotels_allHotelsCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "hotels_bookNow": "Book Now",
   "hotels_collapse": "Collapse ↑",
   "hotels_description_checkIn": "CHECK-IN",
@@ -1464,19 +2170,9 @@
   "hotels_filters_reset": "Reset",
   "hotels_filters_show": "Show filters",
   "hotels_fromPrice": "From {price}",
-  "@hotels_fromPrice": {
-    "placeholders": {
-      "price": {}
-    }
-  },
   "hotels_guestFavorite": "Guest Favorite",
   "hotels_headerDefault": "Top Hotel Deals",
   "hotels_headerPersonalized": "Hotel Deals in {country}",
-  "@hotels_headerPersonalized": {
-    "placeholders": {
-      "country": {}
-    }
-  },
   "hotels_maintenance_description": "Our accommodation supplier isn't returning availability right now. Nothing on your end caused this, and we're working to bring stays back.",
   "hotels_maintenance_flightsCta": "Search flights",
   "hotels_maintenance_homeCta": "Back to home",
@@ -1507,11 +2203,6 @@
   "hotels_rooms_roomDetails": "Room details",
   "hotels_subtitleDefault": "Handpicked stays at unbeatable prices",
   "hotels_subtitlePersonalized": "Top-rated stays in {country} · updated daily",
-  "@hotels_subtitlePersonalized": {
-    "placeholders": {
-      "country": {}
-    }
-  },
   "invoice_amount": "Amount",
   "invoice_billedTo": "Billed to",
   "invoice_bookingDetails": "Booking Details",
@@ -1522,11 +2213,6 @@
   "invoice_hotel": "Hotel",
   "invoice_hotelPartner": "Hotel Partner",
   "invoice_issued": "Issued: {date}",
-  "@invoice_issued": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "invoice_passengers": "Passengers",
   "invoice_payment": "Payment",
   "invoice_paymentMethod": "Stripe (Card)",
@@ -1600,11 +2286,6 @@
   "landing_journey_stages_stays_titleLead": "Find",
   "landing_journey_stages_stays_titleRest": "your stay.",
   "landing_journey_strip_from": "from {price}",
-  "@landing_journey_strip_from": {
-    "placeholders": {
-      "price": {}
-    }
-  },
   "landing_perNight": "/ night",
   "landing_popularDestinations_subtitle": "Explore top spots across Asia-Pacific — search flights and hotels in seconds.",
   "landing_popularDestinations_title": "Popular Destinations",
@@ -1627,12 +2308,6 @@
   "landing_search_askAi": "Ask AI",
   "landing_search_bundle_hotelBooked": "Hotel booked!",
   "landing_search_bundle_instructions": "Enter your {from} and {to} airports, pick your dates, then hit Search to bundle and save up to 8%.",
-  "@landing_search_bundle_instructions": {
-    "placeholders": {
-      "from": {},
-      "to": {}
-    }
-  },
   "landing_search_cabinClassLabel": "Cabin Class",
   "landing_search_cabinClass_business": "Business",
   "landing_search_cabinClass_economy": "Economy",
@@ -1643,12 +2318,6 @@
   "landing_search_checkOut": "Check-out",
   "landing_search_childAge": "Age 2-11",
   "landing_search_childLabel": "Child {index}: {age} yrs",
-  "@landing_search_childLabel": {
-    "placeholders": {
-      "index": {},
-      "age": {}
-    }
-  },
   "landing_search_children": "Children",
   "landing_search_childrenAges": "Ages 0 to 17",
   "landing_search_cities": "Cities",
@@ -1675,29 +2344,9 @@
   "landing_search_from": "From",
   "landing_search_go": "GO",
   "landing_search_guest": "{count} Guest",
-  "@landing_search_guest": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "landing_search_guestPlural": "{count} Guests",
-  "@landing_search_guestPlural": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "landing_search_guests": "{count} guest",
-  "@landing_search_guests": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "landing_search_guestsPlural": "{count} guests",
-  "@landing_search_guestsPlural": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "landing_search_guestsRooms": "Guests & Rooms",
   "landing_search_infantAge": "Under 2 (lap)",
   "landing_search_infants": "Infants",
@@ -1715,11 +2364,6 @@
   "landing_search_months_8": "August",
   "landing_search_months_9": "September",
   "landing_search_noAirportsFound": "No airports found for \"{query}\"",
-  "@landing_search_noAirportsFound": {
-    "placeholders": {
-      "query": {}
-    }
-  },
   "landing_search_noResults": "No results found",
   "landing_search_passengers": "Passengers",
   "landing_search_placeholder_airport": "City or airport",
@@ -1754,11 +2398,6 @@
   "landing_search_whosComing": "Who's coming?",
   "landing_search_year": "Year",
   "landing_search_yearsOld": "{age} years old",
-  "@landing_search_yearsOld": {
-    "placeholders": {
-      "age": {}
-    }
-  },
   "landing_telemetry_confirmed": "CONFIRMED",
   "landing_telemetry_flight": "Flight",
   "landing_telemetry_gate": "Gate",
@@ -2081,11 +2720,6 @@
   "legal_termsOfService_title": "Terms of Service — CheapestGo",
   "map_details": "Map Details",
   "map_fromProperty": "{distance} from property",
-  "@map_fromProperty": {
-    "placeholders": {
-      "distance": {}
-    }
-  },
   "map_labels": "Labels",
   "map_mapType": "Map Type",
   "map_noPlacesInArea": "No places found in this area",
@@ -2105,39 +2739,32 @@
   "nav_signOut": "Sign out",
   "nav_support": "Support",
   "nav_trips": "Trips",
+  "onboarding_birthDate": "Date of birth",
+  "onboarding_birthDateFormat": "Use the format YYYY-MM-DD",
+  "onboarding_birthDateFuture": "Date of birth cannot be in the future",
+  "onboarding_birthDateReal": "Enter a real date",
+  "onboarding_continue": "Continue",
+  "onboarding_details_subtitle": "Saved to your account so your next booking does not ask again.",
+  "onboarding_details_title": "A few travel details",
+  "onboarding_finish": "Finish setup",
+  "onboarding_nationality": "Nationality",
+  "onboarding_nationalityFormat": "Use a two-letter country code, for example PH",
+  "onboarding_phone": "Phone number",
+  "onboarding_phoneFormat": "Include the country code, for example +639171234567",
+  "onboarding_preferences_subtitle": "You can change any of this later from your account.",
+  "onboarding_preferences_title": "How should we show prices?",
+  "onboarding_saveFailed": "We could not save that. Check your connection and try again.",
+  "onboarding_skip": "Skip for now",
+  "onboarding_step": "Step {current} of {total}",
+  "onboarding_title": "Set up your account",
   "propertyGallery_alt_galleryView": "Gallery view {number}",
-  "@propertyGallery_alt_galleryView": {
-    "placeholders": {
-      "number": {}
-    }
-  },
   "propertyGallery_alt_mainPropertyView": "Main property view",
   "propertyGallery_alt_propertyView": "Property view",
   "propertyGallery_alt_propertyViewNumbered": "Property view {number}",
-  "@propertyGallery_alt_propertyViewNumbered": {
-    "placeholders": {
-      "number": {}
-    }
-  },
   "propertyGallery_alt_thumbnail": "Thumbnail {number}",
-  "@propertyGallery_alt_thumbnail": {
-    "placeholders": {
-      "number": {}
-    }
-  },
   "propertyGallery_alt_view": "View {number}",
-  "@propertyGallery_alt_view": {
-    "placeholders": {
-      "number": {}
-    }
-  },
   "propertyGallery_moreInfo": "More Info",
   "propertyGallery_morePhotos": "+{count} photos",
-  "@propertyGallery_morePhotos": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "propertyGallery_noImages": "No images available",
   "propertyGallery_showAllPhotos": "Show all photos",
   "propertyGallery_viewPhoto": "View photo",
@@ -2234,129 +2861,42 @@
   "propertyOverview_popularAmenities": "Popular amenities",
   "propertyOverview_readMore": "Read more",
   "propertyOverview_seeAllAmenities": "See all {count} amenities",
-  "@propertyOverview_seeAllAmenities": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "propertyOverview_showLess": "Show less",
   "propertyOverview_showLessAmenities": "Show less amenities",
   "propertyOverview_verifiedReview": "{count} verified review",
-  "@propertyOverview_verifiedReview": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "propertyOverview_verifiedReviewCount": "{count, plural, one {# verified review} other {# verified reviews}}",
-  "@propertyOverview_verifiedReviewCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "propertyOverview_verifiedReviews": "{count} verified reviews",
-  "@propertyOverview_verifiedReviews": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "property_addressNotAvailable": "Address not available",
   "property_bookingWidget_amenities": "Amenities",
   "property_bookingWidget_bookThisRoom": "Book This Room",
   "property_bookingWidget_description": "Description",
   "property_bookingWidget_guests": "{count} guests",
-  "@property_bookingWidget_guests": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "property_bookingWidget_roomDetails": "Room Details",
   "property_bookingWidget_selectedRoom": "Selected Room",
   "property_breadcrumbHome": "Home",
   "property_breadcrumbStaysIn": "Stays in {city}",
-  "@property_breadcrumbStaysIn": {
-    "placeholders": {
-      "city": {}
-    }
-  },
   "property_bundleActive": "Bundle Discount Active",
   "property_bundleApplied": "Bundle discount applied — you're saving {percent}% on this hotel",
-  "@property_bundleApplied": {
-    "placeholders": {
-      "percent": {}
-    }
-  },
   "property_faq_checkInAnswer": "Check-in time is {time}",
-  "@property_faq_checkInAnswer": {
-    "placeholders": {
-      "time": {}
-    }
-  },
   "property_faq_checkInQuestion": "What time is check-in at this property?",
   "property_faq_checkOutAnswer": "Check-out time is {time}",
-  "@property_faq_checkOutAnswer": {
-    "placeholders": {
-      "time": {}
-    }
-  },
   "property_faq_checkOutQuestion": "What are the check-out times?",
   "property_faq_fallbackCancellationAnswer": "Cancellation policies vary by rate. Please check the room options above for specific cancellation terms before booking.",
   "property_faq_fallbackCancellationQuestion": "What is the cancellation policy at {name}?",
-  "@property_faq_fallbackCancellationQuestion": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_faq_fallbackModificationAnswer": "You can manage your booking through the confirmation email you receive after booking. For urgent changes, contact the property directly.",
   "property_faq_fallbackModificationQuestion": "How do I modify or cancel my reservation?",
   "property_faq_fallbackPaymentAnswer": "Most major credit and debit cards are accepted. Contact the property directly to confirm accepted payment methods.",
   "property_faq_fallbackPaymentQuestion": "Does {name} accept credit cards?",
-  "@property_faq_fallbackPaymentQuestion": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_faq_importantQuestion": "Is there anything important I should know before booking?",
   "property_faq_parkingAnswer": "Yes, the property offers {facility}.",
-  "@property_faq_parkingAnswer": {
-    "placeholders": {
-      "facility": {}
-    }
-  },
   "property_faq_parkingQuestion": "Does {name} have parking?",
-  "@property_faq_parkingQuestion": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_faq_poolAnswer": "Yes, the property has {facility}.",
-  "@property_faq_poolAnswer": {
-    "placeholders": {
-      "facility": {}
-    }
-  },
   "property_faq_poolQuestion": "Does {name} have a pool?",
-  "@property_faq_poolQuestion": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_faq_restaurantAnswer": "Yes, the property has an on-site restaurant.",
   "property_faq_restaurantQuestion": "Is there a restaurant at {name}?",
-  "@property_faq_restaurantQuestion": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_faq_title": "Frequently asked questions",
   "property_faq_wifiAnswer": "Yes, WiFi is available at the property.",
   "property_faq_wifiQuestion": "Is WiFi available at {name}?",
-  "@property_faq_wifiQuestion": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_locationLabel": "Location",
   "property_locationTitle": "Where you'll be",
   "property_mapOverlay_details": "Details",
@@ -2364,59 +2904,23 @@
   "property_mapOverlay_fullscreen": "Fullscreen",
   "property_mapOverlay_getDirections": "Get directions...",
   "property_mapOverlay_kmAway": "{distance} km away",
-  "@property_mapOverlay_kmAway": {
-    "placeholders": {
-      "distance": {}
-    }
-  },
   "property_mapOverlay_layers": "Layers",
   "property_mapOverlay_recenterMap": "Recenter Map",
   "property_mapOverlay_selectMode": "Select Mode",
   "property_mapOverlay_viewOnMaps": "View on Maps",
   "property_mapOverlay_whereFrom": "Where from?",
   "property_metaDescription": "Rates, rooms and photos for {name}. Compare prices and book with free cancellation where available.",
-  "@property_metaDescription": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_meta_closing": "Best deals on hotels with free cancellation options.",
   "property_meta_description": "Book {name} at the cheapest price.",
-  "@property_meta_description": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_meta_descriptionIn": "Book {name} in {location} at the cheapest price.",
-  "@property_meta_descriptionIn": {
-    "placeholders": {
-      "name": {},
-      "location": {}
-    }
-  },
   "property_meta_rated": "Rated {rating}/10.",
-  "@property_meta_rated": {
-    "placeholders": {
-      "rating": {}
-    }
-  },
   "property_meta_title": "{name} – Cheapest Rates | CheapestGo",
-  "@property_meta_title": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "property_mobileCta_checkRoomRates": "Check room rates",
   "property_mobileCta_from": "From",
   "property_mobileCta_perNight": "/night",
   "property_mobileCta_viewRooms": "View Rooms",
   "property_nearby_addToTrip": "Add to trip",
   "property_nearby_away": "{distance} away",
-  "@property_nearby_away": {
-    "placeholders": {
-      "distance": {}
-    }
-  },
   "property_nearby_bike": "Bike",
   "property_nearby_call": "Call",
   "property_nearby_categories_all": "All",
@@ -2436,46 +2940,19 @@
   "property_nearby_directions_open": "Get directions",
   "property_nearby_directions_searchFailed": "Couldn't search places. Try again.",
   "property_nearby_directions_toHotel": "{minutes} min to the hotel",
-  "@property_nearby_directions_toHotel": {
-    "placeholders": {
-      "minutes": {}
-    }
-  },
   "property_nearby_directions_whereFrom": "Where from?",
   "property_nearby_drive": "Drive",
   "property_nearby_fromHotel": "{distance} from the hotel",
-  "@property_nearby_fromHotel": {
-    "placeholders": {
-      "distance": {}
-    }
-  },
   "property_nearby_googleMaps": "Google Maps",
   "property_nearby_hotel": "Hotel",
   "property_nearby_loadFailed": "Couldn't load nearby places.",
   "property_nearby_loadingRoute": "Finding a route…",
   "property_nearby_minutes": "{count} min",
-  "@property_nearby_minutes": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "property_nearby_radiusLabel": "Search radius",
   "property_nearby_ratingOutOf5": "{rating} out of 5 stars",
-  "@property_nearby_ratingOutOf5": {
-    "placeholders": {
-      "rating": {}
-    }
-  },
   "property_nearby_removeFromTrip": "Remove from trip",
   "property_nearby_retry": "Try again",
   "property_nearby_reviewsCount": "{count, plural, one {# review} other {# reviews}}",
-  "@property_nearby_reviewsCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "property_nearby_routeUnavailable": "Route unavailable",
   "property_nearby_scrollLeft": "Scroll left",
   "property_nearby_scrollRight": "Scroll right",
@@ -2484,41 +2961,14 @@
   "property_nearby_trip_clear": "Clear",
   "property_nearby_trip_failed": "Couldn't optimize this route.",
   "property_nearby_trip_max": "You can plan up to {max} stops.",
-  "@property_nearby_trip_max": {
-    "placeholders": {
-      "max": {}
-    }
-  },
   "property_nearby_trip_optimize": "Optimize route",
   "property_nearby_trip_optimizing": "Optimizing…",
   "property_nearby_trip_summary": "{minutes} min round trip from the hotel",
-  "@property_nearby_trip_summary": {
-    "placeholders": {
-      "minutes": {}
-    }
-  },
   "property_nearby_trip_title": "Your trip · {count}/{max}",
-  "@property_nearby_trip_title": {
-    "placeholders": {
-      "count": {},
-      "max": {}
-    }
-  },
   "property_nearby_unitLabel": "Distance unit",
   "property_nearby_walk": "Walk",
   "property_nearby_weather_feelsLike": "Feels like {temp}",
-  "@property_nearby_weather_feelsLike": {
-    "placeholders": {
-      "temp": {}
-    }
-  },
   "property_nearby_weather_highLow": "{high} / {low}",
-  "@property_nearby_weather_highLow": {
-    "placeholders": {
-      "high": {},
-      "low": {}
-    }
-  },
   "property_nearby_website": "Website",
   "property_poiDetails_addPhoto": "Add Photo",
   "property_poiDetails_brandReviews": "Cheapest Go Reviews",
@@ -2541,35 +2991,15 @@
   "property_policies_checkOut": "Check-out",
   "property_policies_contactProperty": "Contact property",
   "property_policies_earlyDepartureBody": "{amount} if you check out before your scheduled date.",
-  "@property_policies_earlyDepartureBody": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "property_policies_earlyDepartureFee": "Early Departure Fee:",
   "property_policies_importantInformation": "Important Information",
   "property_policies_noShowBody": "{amount} if you don't check in without cancelling.",
-  "@property_policies_noShowBody": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "property_policies_noShowPenalty": "No-Show Penalty:",
   "property_policies_nonRefundable": "Non-refundable",
   "property_policies_refundable": "Refundable",
   "property_policies_title": "Policies",
   "property_propertyNotFound": "Property not found. (ID: {id})",
-  "@property_propertyNotFound": {
-    "placeholders": {
-      "id": {}
-    }
-  },
   "property_rooms_availableRooms": "Available Rooms ({count})",
-  "@property_rooms_availableRooms": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "property_rooms_changeDates": "Change dates",
   "property_rooms_checkAtCheckout": "Check at checkout",
   "property_rooms_choose": "Choose",
@@ -2583,13 +3013,6 @@
   "property_rooms_freeCancellationTick": "✓ Free cancellation",
   "property_rooms_hotelPhotoLabel": "Hotel photo",
   "property_rooms_includesTaxes": "({nights, plural, one {1 night} other {# nights}}, 1 Room incl. taxes)",
-  "@property_rooms_includesTaxes": {
-    "placeholders": {
-      "nights": {
-        "type": "num"
-      }
-    }
-  },
   "property_rooms_noMeals": "No meals included",
   "property_rooms_noNonRefundableRooms": "No non-refundable rooms available.",
   "property_rooms_noRefundableRooms": "No refundable rooms available.",
@@ -2597,48 +3020,20 @@
   "property_rooms_nonRefundable": "Non-refundable",
   "property_rooms_nonRefundablePill": "Non-Refundable",
   "property_rooms_pageOf": "Page {current} of {total}",
-  "@property_rooms_pageOf": {
-    "placeholders": {
-      "current": {},
-      "total": {}
-    }
-  },
   "property_rooms_perNight": "/night",
   "property_rooms_rateOptions": "{count} rate options",
-  "@property_rooms_rateOptions": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "property_rooms_reserve": "Reserve",
   "property_rooms_room": "Room",
   "property_rooms_roomOnly": "Room only",
   "property_rooms_select": "Select",
   "property_rooms_showLess": "Show less",
   "property_rooms_showingRooms": "Showing {start}–{end} of {total} rooms",
-  "@property_rooms_showingRooms": {
-    "placeholders": {
-      "start": {},
-      "end": {},
-      "total": {}
-    }
-  },
   "property_rooms_sleeps": "Sleeps {count}",
-  "@property_rooms_sleeps": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "property_rooms_standardRoom": "Standard Room",
   "property_rooms_total": "total",
   "property_rooms_viewHotelPhotos": "View hotel photos",
   "property_rooms_viewRoomPhotos": "View room photos",
   "property_savePercent": "SAVE {percent}%",
-  "@property_savePercent": {
-    "placeholders": {
-      "percent": {}
-    }
-  },
   "property_v2_additionalInfo": "Additional information",
   "property_v2_availableRooms": "Available Rooms",
   "property_v2_cancellationPolicy": "Cancellation policy",
@@ -2656,19 +3051,7 @@
   "property_v2_previousPhoto": "Previous photo",
   "property_v2_price": "Price",
   "property_v2_rateOptionsFor": "Rates for {room}",
-  "@property_v2_rateOptionsFor": {
-    "placeholders": {
-      "room": {}
-    }
-  },
   "property_v2_roomPhotoCount": "{count, plural, one {# photo} other {# photos}}",
-  "@property_v2_roomPhotoCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "property_v2_switchToDark": "Switch to dark mode",
   "property_v2_switchToLight": "Switch to light mode",
   "property_v2_whatGuestsSay": "What guests say",
@@ -2695,36 +3078,15 @@
   "reviewsSection_aggregatedScore": "Aggregated guest score",
   "reviewsSection_anonymous": "Anonymous",
   "reviewsSection_basedOnReview": "Based on {count} review",
-  "@reviewsSection_basedOnReview": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "reviewsSection_basedOnReviews": "Based on {count} reviews",
-  "@reviewsSection_basedOnReviews": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "reviewsSection_guestReviews": "Guest reviews",
   "reviewsSection_loadMore": "Load more reviews",
   "reviewsSection_noReviews": "No individual reviews available.",
   "reviewsSection_noReviewsAvailable": "No reviews available",
   "reviewsSection_showAllReviews": "Show all {count} reviews",
-  "@reviewsSection_showAllReviews": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "reviewsSection_showLess": "Show Less",
   "reviewsSection_showMore": "Show More",
   "reviewsSection_showingCount": "Showing {shown} of {total} reviews",
-  "@reviewsSection_showingCount": {
-    "placeholders": {
-      "shown": {},
-      "total": {}
-    }
-  },
   "reviewsSection_sort_highestRated": "Highest rated",
   "reviewsSection_sort_lowestRated": "Lowest rated",
   "reviewsSection_sort_newestFirst": "Newest first",
@@ -2734,13 +3096,6 @@
   "reviewsSection_travelerTypes_friendsGroup": "Friends/Group",
   "reviewsSection_travelerTypes_solo": "Solo",
   "reviewsSection_verifiedReviewCount": "{count, plural, one {# verified review} other {# verified reviews}}",
-  "@reviewsSection_verifiedReviewCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "reviewsSection_whoStaysHere": "Who stays here",
   "search_chatPlaceholder": "Ask anything — flights, hotels, trip planning...",
   "search_chatWithCheap": "Chat with Cheap",
@@ -2757,11 +3112,6 @@
   "search_golf_loading": "Loading courses…",
   "search_golf_more": "More players",
   "search_golf_noMatch": "No course matches “{query}”.",
-  "@search_golf_noMatch": {
-    "placeholders": {
-      "query": {}
-    }
-  },
   "search_golf_none": "No courses are open for booking yet.",
   "search_golf_whenPlay": "When do you want to play?",
   "search_hotels": "Hotels",
@@ -2770,42 +3120,18 @@
   "search_mapView": "Map View",
   "search_metaTitle": "Search hotels and stays",
   "search_nights": "{count, plural, one {# night} other {# nights}}",
-  "@search_nights": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "search_noAirportsMatch": "No airports match “{query}”",
-  "@search_noAirportsMatch": {
-    "placeholders": {
-      "query": {}
-    }
-  },
   "search_oneWay": "One-way",
   "search_popularAirports": "Popular airports",
   "search_prose_firstOpenDay": "the first open day",
   "search_prose_forPlayers": ", for ",
   "search_prose_onDay": ", on ",
   "search_prose_players": "{count, plural, one {# player} other {# players}}",
-  "@search_prose_players": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "search_prose_teeOffAt": "Tee off at",
   "search_prose_theCourse": "the course",
   "search_recent": "Recent",
   "search_results_activeFilters": "Active Filters:",
   "search_results_amenitiesSuffix": "{count} amenities",
-  "@search_results_amenitiesSuffix": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "search_results_anyWeek": "Any week",
   "search_results_anywhere": "Anywhere",
   "search_results_boardTypes_AI": "All Inclusive",
@@ -2815,41 +3141,12 @@
   "search_results_boardTypes_RO": "Room Only",
   "search_results_freeCancellation": "Free cancellation",
   "search_results_guestCount": "{count} {count, plural, one {guest} other {guests}}",
-  "@search_results_guestCount": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      },
-      "guest": {},
-      "guests": {}
-    }
-  },
   "search_results_namePrefix": "Name: {name}",
-  "@search_results_namePrefix": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "search_results_otherCities": "Other cities:",
   "search_results_ratingPrefix": "Rating {rating}+",
-  "@search_results_ratingPrefix": {
-    "placeholders": {
-      "rating": {}
-    }
-  },
   "search_results_reviewsSuffix": "{count}+ reviews",
-  "@search_results_reviewsSuffix": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "search_results_showingHotelsIn": "Showing hotels in",
   "search_results_starSuffix": "{stars} stars",
-  "@search_results_starSuffix": {
-    "placeholders": {
-      "stars": {}
-    }
-  },
   "search_results_whereTo": "Where to?",
   "search_roundTrip": "Round-trip",
   "search_steps_askFrom": "Where are you flying from?",
@@ -2866,11 +3163,6 @@
   "search_steps_fewerChildren": "Fewer children",
   "search_steps_from": "From",
   "search_steps_fromOrigin": "From {city}",
-  "@search_steps_fromOrigin": {
-    "placeholders": {
-      "city": {}
-    }
-  },
   "search_steps_moreAdults": "More adults",
   "search_steps_moreChildren": "More children",
   "search_steps_navLabel": "Search steps",
@@ -2880,11 +3172,6 @@
   "search_steps_nextOrigin": "Next: departure",
   "search_steps_nextTravellers": "Next: travellers",
   "search_steps_noPlaceMatch": "No places match “{query}”",
-  "@search_steps_noPlaceMatch": {
-    "placeholders": {
-      "query": {}
-    }
-  },
   "search_steps_oneWayNote": "Just the flight there",
   "search_steps_orPickOne": "Or pick one",
   "search_steps_placePlaceholder": "City, area, or hotel name",
@@ -2892,11 +3179,6 @@
   "search_steps_searchFlights": "Search flights",
   "search_steps_searchStays": "Search stays",
   "search_steps_selected": "{name} selected",
-  "@search_steps_selected": {
-    "placeholders": {
-      "name": {}
-    }
-  },
   "search_steps_to": "To",
   "search_steps_trip": "Trip",
   "search_steps_when": "When",
@@ -2904,57 +3186,21 @@
   "search_steps_who": "Who",
   "search_trending": "Trending right now",
   "search_v2_checkingCount": "Checking {count}…",
-  "@search_v2_checkingCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "search_v2_clusterChecking": "checking {count}…",
-  "@search_v2_clusterChecking": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "search_v2_clusterFrom": "from {price}",
-  "@search_v2_clusterFrom": {
-    "placeholders": {
-      "price": {}
-    }
-  },
   "search_v2_clusterHotels": "{count} hotels",
-  "@search_v2_clusterHotels": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "search_v2_hideCards": "Hide cards",
   "search_v2_hideStayCards": "Hide stay cards",
   "search_v2_mapLoading": "Loading map…",
   "search_v2_noAccommodations": "No accommodations found",
   "search_v2_staysCount": "{count} Stays",
-  "@search_v2_staysCount": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "search_validation_allHotelFieldsRequired": "All fields are required to search for hotels",
   "search_validation_fieldList": "{fields} and {last}",
-  "@search_validation_fieldList": {
-    "placeholders": {
-      "fields": {},
-      "last": {}
-    }
-  },
   "search_validation_fields_checkInDate": "check-in date",
   "search_validation_fields_checkOutDate": "check-out date",
   "search_validation_fields_destination": "destination",
   "search_validation_listSeparator": ", ",
   "search_validation_selectField": "Please select {field}",
-  "@search_validation_selectField": {
-    "placeholders": {
-      "field": {}
-    }
-  },
   "search_viewStay": "View Stay",
   "search_whenFlying": "When are you flying?",
   "seo_faq_a1": "CheapestGo searches across multiple airlines and global distribution systems to surface the lowest available fares in real time, letting you compare and book in one place.",
@@ -2983,24 +3229,9 @@
   "support_quick_priceGap": "The price changed at checkout",
   "support_quick_refunds": "When do I get my refund?",
   "support_reference": "Chat {reference}",
-  "@support_reference": {
-    "placeholders": {
-      "reference": {}
-    }
-  },
   "support_removeFile": "Remove",
   "support_reopens": "Nobody is at the desk right now. We reply from {when}.",
-  "@support_reopens": {
-    "placeholders": {
-      "when": {}
-    }
-  },
   "support_reopensToday": "Nobody is at the desk right now. We reply from {when} today.",
-  "@support_reopensToday": {
-    "placeholders": {
-      "when": {}
-    }
-  },
   "support_send": "Send",
   "support_sendFailed": "That message did not send. Try again.",
   "support_showOriginal": "Show original",
@@ -3027,42 +3258,12 @@
   "trips_bookingCard_actions_receipt": "Download receipt",
   "trips_bookingCard_actions_retryRefund": "Retry refund",
   "trips_bookingCard_adult": "{count} adult",
-  "@trips_bookingCard_adult": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_bookingCard_adults": "{count} adults",
-  "@trips_bookingCard_adults": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_bookingCard_cancelled": "Cancelled",
   "trips_bookingCard_child": "{count} child",
-  "@trips_bookingCard_child": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_bookingCard_children": "{count} children",
-  "@trips_bookingCard_children": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_bookingCard_night": "{count} night",
-  "@trips_bookingCard_night": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_bookingCard_nights": "{count} nights",
-  "@trips_bookingCard_nights": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_bookingCard_policyBadges_freeCancellation": "Free cancellation",
   "trips_bookingCard_policyBadges_nonRefundable": "Non-refundable",
   "trips_bookingCard_policyBadges_partialRefund": "Partial refund",
@@ -3072,18 +3273,7 @@
   "trips_bookingCard_ratings_pleasant": "Pleasant",
   "trips_bookingCard_ratings_veryGood": "Very Good",
   "trips_bookingCard_reviews": "{count} reviews",
-  "@trips_bookingCard_reviews": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_bookingCard_stayDates": "{from} to {to}",
-  "@trips_bookingCard_stayDates": {
-    "placeholders": {
-      "from": {},
-      "to": {}
-    }
-  },
   "trips_bookingCard_total": "total",
   "trips_bookingCard_totalPaid": "Total Paid",
   "trips_bookingCard_tripCompleted": "Trip completed",
@@ -3092,11 +3282,6 @@
   "trips_cancellationFeeCard_ifYouCancelNow": "If you cancel now:",
   "trips_cancellationFeeCard_youllReceive": "You'll Receive",
   "trips_cancellationModal_bookingId": "Booking ID: {id}",
-  "@trips_cancellationModal_bookingId": {
-    "placeholders": {
-      "id": {}
-    }
-  },
   "trips_cancellationModal_cancelBooking": "Cancel Booking",
   "trips_cancellationModal_cancelling": "Cancelling...",
   "trips_cancellationModal_close": "Close",
@@ -3115,26 +3300,11 @@
   "trips_cancellationModal_unableToLoadPolicy": "Unable to load policy",
   "trips_cancellationPolicies_before": "Before: ",
   "trips_cancellationPolicies_cancellationFee": "Cancellation fee: {amount}",
-  "@trips_cancellationPolicies_cancellationFee": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_cancellationPolicies_earlyDepartureDescription": "{amount} fee applies if you check out before your scheduled date.",
-  "@trips_cancellationPolicies_earlyDepartureDescription": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_cancellationPolicies_earlyDepartureFee": "Early Departure Fee",
   "trips_cancellationPolicies_importantNotes": "Important Notes",
   "trips_cancellationPolicies_noPolicy": "No specific cancellation policy available. Standard terms apply.",
   "trips_cancellationPolicies_noShowDescription": "{amount} will be charged if you don't check in without cancelling.",
-  "@trips_cancellationPolicies_noShowDescription": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_cancellationPolicies_noShowPenalty": "No-Show Penalty",
   "trips_cancellationPolicies_passed": "Passed: ",
   "trips_eTicket": "E-Ticket",
@@ -3164,11 +3334,6 @@
   "trips_flightBookingCard_cancelModal_checkingRefund": "Checking with airline for live refund amount…",
   "trips_flightBookingCard_cancelModal_confirmCancel": "Yes, Cancel Booking",
   "trips_flightBookingCard_cancelModal_estimatedPenalty": "Estimated airline penalty: {amount}",
-  "@trips_flightBookingCard_cancelModal_estimatedPenalty": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_flightBookingCard_cancelModal_fareRulesNonRefundable": "The fare rules indicate this ticket is non-refundable.",
   "trips_flightBookingCard_cancelModal_keepBooking": "Keep Booking",
   "trips_flightBookingCard_cancelModal_loading": "Loading…",
@@ -3177,27 +3342,12 @@
   "trips_flightBookingCard_cancelModal_noRefund": "No refund — this fare is non-refundable per airline policy.",
   "trips_flightBookingCard_cancelModal_penaltiesDeducted": "Cancellation penalties set by the airline will be deducted.",
   "trips_flightBookingCard_cancelModal_pnr": "PNR: {pnr}",
-  "@trips_flightBookingCard_cancelModal_pnr": {
-    "placeholders": {
-      "pnr": {}
-    }
-  },
   "trips_flightBookingCard_cancelModal_refundEligibility": "Refund eligibility and amounts are strictly determined by the airline's fare rules.",
   "trips_flightBookingCard_cancelModal_refundPolicy": "Refund Policy:",
   "trips_flightBookingCard_cancelModal_refundTiming": "If a refund is issued, it typically takes 5–10 business days.",
   "trips_flightBookingCard_cancelModal_taxesRefund": "Taxes & fees refund: {amount}",
-  "@trips_flightBookingCard_cancelModal_taxesRefund": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_flightBookingCard_cancelModal_title": "Cancel Booking?",
   "trips_flightBookingCard_cancelModal_willReceive": "You will receive {amount} back.",
-  "@trips_flightBookingCard_cancelModal_willReceive": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_flightBookingCard_cancelModal_zeroRefund": "You will receive $0 back if you cancel.",
   "trips_flightBookingCard_cancellationFailed": "Cancellation failed",
   "trips_flightBookingCard_changeFlight": "Change flight",
@@ -3221,12 +3371,6 @@
   "trips_flightBookingCard_hideVoidQuote": "Hide void quote",
   "trips_flightBookingCard_issuedTickets": "Issued Tickets",
   "trips_flightBookingCard_layover": "{duration} layover in {airport}",
-  "@trips_flightBookingCard_layover": {
-    "placeholders": {
-      "duration": {},
-      "airport": {}
-    }
-  },
   "trips_flightBookingCard_loadingTripDetails": "Loading airline details…",
   "trips_flightBookingCard_networkError": "Network error. Please try again.",
   "trips_flightBookingCard_noRefund": "No refund issued",
@@ -3234,36 +3378,10 @@
   "trips_flightBookingCard_noteAdded": "Note added successfully.",
   "trips_flightBookingCard_notePlaceholder": "Enter a note for this booking…",
   "trips_flightBookingCard_originTo": "{origin} to {destination}",
-  "@trips_flightBookingCard_originTo": {
-    "placeholders": {
-      "origin": {},
-      "destination": {}
-    }
-  },
   "trips_flightBookingCard_passenger": "{count} passenger",
-  "@trips_flightBookingCard_passenger": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_flightBookingCard_passengers": "{count} passengers",
-  "@trips_flightBookingCard_passengers": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_flightBookingCard_pax": "{count} pax",
-  "@trips_flightBookingCard_pax": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_flightBookingCard_penaltyApplied": "Penalty applied: {amount}",
-  "@trips_flightBookingCard_penaltyApplied": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_flightBookingCard_pnr": "PNR",
   "trips_flightBookingCard_receipt": "Download receipt",
   "trips_flightBookingCard_refundFailed": "Refund failed",
@@ -3292,17 +3410,7 @@
   "trips_flightBookingCard_stateChips_unknown": "Unknown",
   "trips_flightBookingCard_stateChips_upcomingFlight": "Upcoming Flight",
   "trips_flightBookingCard_stop": "{count} stop",
-  "@trips_flightBookingCard_stop": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_flightBookingCard_stops": "{count} stops",
-  "@trips_flightBookingCard_stops": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_flightBookingCard_successBanners_cancelled": "Booking cancelled successfully.",
   "trips_flightBookingCard_successBanners_refundProcessed": "Booking cancelled. Refund has been processed.",
   "trips_flightBookingCard_successBanners_refundProcessing": "Booking cancelled. Refund is being processed — check back shortly.",
@@ -3310,11 +3418,6 @@
   "trips_flightBookingCard_totalPaid": "Total Paid",
   "trips_flightBookingCard_totalRefund": "Total Refund",
   "trips_flightBookingCard_tripLegs_leg": "Leg {number}",
-  "@trips_flightBookingCard_tripLegs_leg": {
-    "placeholders": {
-      "number": {}
-    }
-  },
   "trips_flightBookingCard_tripLegs_outbound": "Outbound",
   "trips_flightBookingCard_tripLegs_return": "Return",
   "trips_flightBookingCard_tripTypes_multiCity": "Multi-city",
@@ -3328,11 +3431,6 @@
   "trips_golfCard_empty": "No golf bookings yet",
   "trips_golfCard_notCharged": "Not charged",
   "trips_golfCard_refunded": "Refunded {amount}",
-  "@trips_golfCard_refunded": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_golfCard_status_cancelled": "Cancelled",
   "trips_golfCard_status_confirmed": "Confirmed",
   "trips_golfCard_status_declined": "Declined",
@@ -3349,27 +3447,12 @@
   "trips_hotelCancel_confirm": "Cancel booking",
   "trips_hotelCancel_confirmNoRefund": "Cancel anyway — no refund",
   "trips_hotelCancel_confirmRefund": "Cancel and get {amount} back",
-  "@trips_hotelCancel_confirmRefund": {
-    "placeholders": {
-      "amount": {}
-    }
-  },
   "trips_hotelCancel_doneNoRefund": "Your booking is cancelled. Nothing was refunded, as the rate was non-refundable.",
   "trips_hotelCancel_doneRefundFailed": "Your booking is cancelled, but the refund didn't go through. Contact support and we'll sort it out.",
   "trips_hotelCancel_doneRefunded": "Your booking is cancelled and your refund is on its way. It can take 3–5 business days to appear on your statement.",
   "trips_hotelCancel_failed": "We couldn't cancel this booking. Please try again, or contact support.",
   "trips_hotelCancel_feeRisesOn": "The fee goes up on {date}",
-  "@trips_hotelCancel_feeRisesOn": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "trips_hotelCancel_freeUntil": "Free to cancel until {date}",
-  "@trips_hotelCancel_freeUntil": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "trips_hotelCancel_fullRefund": "You'll be refunded in full.",
   "trips_hotelCancel_keep": "Keep my booking",
   "trips_hotelCancel_loadError": "We couldn't check the cancellation terms. Please try again.",
@@ -3391,12 +3474,6 @@
   "trips_invoice_pdfError": "Could not build the PDF. You can still print this page.",
   "trips_invoice_print": "Print",
   "trips_labels_afterDatePenalty": "After {date}: penalty of {amount}",
-  "@trips_labels_afterDatePenalty": {
-    "placeholders": {
-      "date": {},
-      "amount": {}
-    }
-  },
   "trips_labels_bookedOn": "Booked On",
   "trips_labels_checkIn": "Check-in",
   "trips_labels_checkOut": "Check-out",
@@ -3453,21 +3530,9 @@
   "trips_search_clear": "Clear search",
   "trips_search_label": "Search your bookings",
   "trips_search_noMatch": "No bookings match “{query}”",
-  "@trips_search_noMatch": {
-    "placeholders": {
-      "query": {}
-    }
-  },
   "trips_search_noMatchHint": "Try a hotel or course name, an airport code like MNL, or a booking reference.",
   "trips_search_placeholder": "Search by name, route or reference",
   "trips_search_results": "{count, plural, one {# booking found} other {# bookings found}}",
-  "@trips_search_results": {
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
   "trips_sections_cancellationPolicy": "Cancellation Policy",
   "trips_sections_guestInformation": "Guest Information",
   "trips_sections_itinerary": "Itinerary",
@@ -3478,17 +3543,7 @@
   "trips_shareForm_sendError": "Failed to send. Please try again.",
   "trips_shareForm_sendTo": "Send to",
   "trips_shareForm_sent": "Sent to {email}",
-  "@trips_shareForm_sent": {
-    "placeholders": {
-      "email": {}
-    }
-  },
   "trips_shareForm_sentTo": "Sent to {email}.",
-  "@trips_shareForm_sentTo": {
-    "placeholders": {
-      "email": {}
-    }
-  },
   "trips_shareForm_submit": "Send confirmation",
   "trips_shareForm_title": "Share this booking",
   "trips_sharePage_note": "Resend the confirmation email to yourself or anyone else — useful for a travel companion or your own records.",
@@ -3517,11 +3572,6 @@
   "trips_tabs_wishlist": "Wishlist",
   "trips_title": "My Trips | CheapestGo",
   "trips_tripMap_away": "{distance} away",
-  "@trips_tripMap_away": {
-    "placeholders": {
-      "distance": {}
-    }
-  },
   "trips_tripMap_calculatingDistance": "Calculating distance…",
   "trips_tripMap_centerOnHotel": "Center on hotel",
   "trips_tripMap_close": "Close map",
@@ -3544,11 +3594,6 @@
   "trips_v2_refundNotice": "Refund eligibility is subject to airline fare rules.",
   "trips_viewDetails": "View Details",
   "trips_viewMore": "View more ({count} remaining)",
-  "@trips_viewMore": {
-    "placeholders": {
-      "count": {}
-    }
-  },
   "trips_viewReceipt": "View Receipt",
   "trips_wishlist_emptyDesc": "Tap the heart icon on any flight or hotel to save it here.",
   "trips_wishlist_emptyTitle": "No saved trips yet",
@@ -3557,10 +3602,5 @@
   "trips_wishlist_removeFromWishlist": "Remove from wishlist",
   "trips_wishlist_saveToWishlist": "Save to wishlist",
   "trips_wishlist_savedOn": "Saved {date}",
-  "@trips_wishlist_savedOn": {
-    "placeholders": {
-      "date": {}
-    }
-  },
   "trips_wishlist_searchAgain": "Search again"
 }

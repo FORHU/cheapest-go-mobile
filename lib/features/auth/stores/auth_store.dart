@@ -8,7 +8,9 @@ import 'package:cheapest_go_mobile/shared/auth/permissions.dart';
 import 'package:cheapest_go_mobile/shared/saved/saved_trips_store.dart';
 import 'package:cheapest_go_mobile/shared/auth/rbac.dart';
 import 'package:cheapest_go_mobile/shared/auth/roles.dart';
+import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
+import 'package:cheapest_go_mobile/shared/lib/token.dart';
 
 /// While the app runs on mock data, auth stays on the device: a demo user is
 /// signed in by default and nothing calls the API. Build with
@@ -78,8 +80,22 @@ class AuthStore extends ChangeNotifier {
         _user = fresh;
         await prefs.setString(_cachedUserKey, jsonEncode(fresh.toJson()));
       }
+    } on ApiError catch (err) {
+      // Being offline and being refused are not the same thing. A dropped connection leaves
+      // the cached user in place, because they are still signed in and the app is still
+      // theirs. A 401 means this device is holding a session the server will not accept, and
+      // keeping it signs them into an app where every request fails — which, once there was a
+      // gate in front of it (#62), left the app waiting on a screen it could never leave.
+      if (err.category == ErrorCategory.auth) {
+        _user = null;
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.remove(_cachedUserKey);
+        } catch (_) {}
+        await tokenStorage.clearTokens();
+      }
     } catch (_) {
-      // Keep cached user or guest state if offline/unauthenticated
+      // Anything else: keep the cached user, as before. Offline is not signed out.
     } finally {
       _isLoading = false;
       notifyListeners();
