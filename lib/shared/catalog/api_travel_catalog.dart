@@ -67,6 +67,9 @@ class ApiTravelCatalog implements TravelCatalog {
     return _hotelById[id] ?? _mock.hotel(id);
   }
 
+  @override
+  List<Review> reviewsFor(String hotelId) => _reviewsById[hotelId] ?? const [];
+
   // Flights are the airline's or nothing: unlike stays, there is no invented fare to fall back
   // on in API mode. A fare shown as bookable has to be one an airline will sell (#47).
   @override
