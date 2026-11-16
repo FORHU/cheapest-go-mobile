@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/features/auth/components/auth_form_widgets.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
@@ -43,9 +44,10 @@ class _LoginViewState extends State<LoginView> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: const Text('Sign In to CheapestGo')),
+      appBar: AppBar(title: Text(t.auth_signIn_title)),
       body: ListenableBuilder(
         listenable: authStore,
         builder: (context, _) {
@@ -59,10 +61,9 @@ class _LoginViewState extends State<LoginView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      const AuthHeader(
-                        title: 'Welcome back',
-                        subtitle:
-                            'Sign in to manage your flight and hotel bookings.',
+                      AuthHeader(
+                        title: t.auth_welcomeBack,
+                        subtitle: t.auth_signInToContinue,
                       ),
                       const SizedBox(height: 24),
                       if (authStore.errorMessage != null) ...[
@@ -98,17 +99,17 @@ class _LoginViewState extends State<LoginView> {
                       ],
                       AuthTextField(
                         controller: _emailController,
-                        label: 'Email',
+                        label: t.auth_signIn_emailLabel,
                         icon: Icons.email_outlined,
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
-                        validator: validateEmail,
+                        validator: (v) => validateEmail(t, v),
                         enabled: !loading,
                       ),
                       const SizedBox(height: 16),
                       AuthPasswordField(
                         controller: _passwordController,
-                        validator: requiredField('password'),
+                        validator: (v) => validateSignInPassword(t, v),
                         onFieldSubmitted: (_) => _submit(),
                         enabled: !loading,
                       ),
@@ -119,11 +120,13 @@ class _LoginViewState extends State<LoginView> {
                           onPressed: loading
                               ? null
                               : () => context.push('/forgot-password'),
-                          child: const Text('Forgot password?'),
+                          child: Text(t.auth_forgotPasswordQ),
                         ),
                       ),
                       const SizedBox(height: 12),
                       AuthSubmitButton(
+                        // V2's own button text, a literal there too; the page title above is
+                        // the longer 'Sign in to CheapestGo'.
                         label: 'Sign In',
                         isLoading: loading,
                         onPressed: _submit,
@@ -137,7 +140,7 @@ class _LoginViewState extends State<LoginView> {
                         crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
-                            "Don't have an account?",
+                            t.auth_noAccount,
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurfaceVariant,
                             ),
@@ -145,7 +148,7 @@ class _LoginViewState extends State<LoginView> {
                           TextButton(
                             onPressed:
                                 loading ? null : () => context.push('/register'),
-                            child: const Text('Create account'),
+                            child: Text(t.auth_createOne),
                           ),
                         ],
                       ),
@@ -210,6 +213,7 @@ class _GoogleButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return SizedBox(
       height: 52,
@@ -240,7 +244,7 @@ class _GoogleButton extends StatelessWidget {
             ),
             const SizedBox(width: 10),
             Text(
-              'Sign in with Google',
+              t.auth_signInWithGoogle,
               style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
             ),
           ],
@@ -256,13 +260,14 @@ class _OrDivider extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return Row(
       children: [
         Expanded(child: Divider(color: theme.dividerColor)),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Text('or', style: theme.textTheme.bodySmall),
+          child: Text(t.auth_signIn_orDivider, style: theme.textTheme.bodySmall),
         ),
         Expanded(child: Divider(color: theme.dividerColor)),
       ],

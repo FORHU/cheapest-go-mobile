@@ -89,6 +89,17 @@ class AuthApi {
     );
   }
 
+  /// Consumes an emailed reset token and sets the new password. See #45.
+  ///
+  /// Unauthenticated, like the request that sent the email: the token is the credential.
+  Future<void> confirmPasswordReset(String token, String password) async {
+    await http.put(
+      '/api/v2/auth/reset-password',
+      body: {'token': token, 'password': password},
+      options: const HttpRequestOptions(requiresAuth: false),
+    );
+  }
+
   Future<void> logout() async {
     try {
       await http.post('/api/v2/auth/logout');

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/features/auth/components/auth_form_widgets.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 
@@ -37,8 +38,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
 
   @override
   Widget build(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Reset Password')),
+      appBar: AppBar(title: Text(t.auth_resetPassword)),
       body: ListenableBuilder(
         listenable: authStore,
         builder: (context, _) {
@@ -54,6 +56,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   }
 
   Widget _buildSent(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     final scheme = theme.colorScheme;
     return Column(
@@ -69,10 +72,9 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
           ),
         ),
         const SizedBox(height: 16),
-        const AuthHeader(
-          title: 'Check your email',
-          subtitle:
-              'We sent password recovery instructions to your email address.',
+        AuthHeader(
+          title: t.auth_checkInbox,
+          subtitle: t.auth_clickLinkSuffix,
         ),
         const SizedBox(height: 24),
         OutlinedButton(
@@ -83,23 +85,23 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
               borderRadius: BorderRadius.circular(12),
             ),
           ),
-          child: const Text('Back to Sign In'),
+          child: Text(t.auth_backToSignIn),
         ),
       ],
     );
   }
 
   Widget _buildForm(BuildContext context) {
+    final t = AppLocalizations.of(context)!;
     final loading = authStore.isLoading;
     return Form(
       key: _formKey,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const AuthHeader(
-            title: 'Forgot your password?',
-            subtitle:
-                'Enter your account email and we will send you a reset link.',
+          AuthHeader(
+            title: t.auth_forgotPasswordQ,
+            subtitle: t.auth_forgotBody,
           ),
           const SizedBox(height: 24),
           if (authStore.errorMessage != null) ...[
@@ -108,18 +110,18 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
           ],
           AuthTextField(
             controller: _emailController,
-            label: 'Email',
+            label: t.auth_signIn_emailLabel,
             icon: Icons.email_outlined,
             keyboardType: TextInputType.emailAddress,
             textInputAction: TextInputAction.done,
             autofillHints: const [AutofillHints.email],
-            validator: validateEmail,
+            validator: (v) => validateEmail(t, v),
             onFieldSubmitted: (_) => _submit(),
             enabled: !loading,
           ),
           const SizedBox(height: 20),
           AuthSubmitButton(
-            label: 'Send Reset Link',
+            label: t.auth_sendResetLink,
             isLoading: loading,
             onPressed: _submit,
           ),
