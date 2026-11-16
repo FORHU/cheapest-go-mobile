@@ -173,10 +173,13 @@ class BookingsStore extends ChangeNotifier {
     required DateTime checkOut,
     required int adults,
     required int total,
+    String? reference,
   }) {
     final nights = checkOut.difference(checkIn).inDays;
     return _add(Booking(
-      reference: _newReference('CG'),
+      // api-v2's own reference when the stay was really booked; a made-up one only for the
+      // sample trips. Trips reads this store until #42 points it at the server.
+      reference: reference ?? _newReference('CG'),
       kind: BookingKind.stay,
       airportCode: airportCode,
       title: hotelName,

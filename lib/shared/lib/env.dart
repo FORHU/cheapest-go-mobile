@@ -17,6 +17,7 @@ class EnvConfig {
     required this.mobileApiKey,
     required this.mapboxToken,
     required this.stripePublishableKey,
+    required this.googleServerClientId,
     required this.appEnv,
     required this.appVersion,
   });
@@ -26,6 +27,10 @@ class EnvConfig {
   final String mobileApiKey;
   final String mapboxToken;
   final String stripePublishableKey;
+
+  /// The **web** OAuth client id, which is what a native Google sign-in audiences its ID
+  /// token to. Not the Android client: that one is matched by package name and signature.
+  final String googleServerClientId;
   final AppEnvironment appEnv;
   final String appVersion;
 
@@ -58,6 +63,9 @@ class EnvConfig {
         'EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY',
       ),
     );
+    // The web OAuth client id. Native Google sign-in is off without it, rather than failing
+    // at the moment somebody taps the button.
+    const googleServerClientId = String.fromEnvironment('GOOGLE_SERVER_CLIENT_ID');
     const rawAppEnv = String.fromEnvironment(
       'APP_ENV',
       defaultValue: 'development',
@@ -86,6 +94,7 @@ class EnvConfig {
       mobileApiKey: mobileApiKey,
       mapboxToken: mapboxToken,
       stripePublishableKey: stripePublishableKey,
+      googleServerClientId: googleServerClientId,
       appEnv: appEnv,
       appVersion: '1.0.0',
     );

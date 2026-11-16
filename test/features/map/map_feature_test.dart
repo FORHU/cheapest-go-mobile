@@ -7,7 +7,6 @@ import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dar
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
 import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
-import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/flights/flight_status.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
@@ -362,17 +361,13 @@ void main() {
       expect(find.text('${ceb.city}, ${ceb.country}'), findsOneWidget);
     });
 
-    testWidgets('Trips › Track opens the flight in the air on the map', (tester) async {
+    // Opened at the route, not from Trips. #42 rebuilt Trips to V2's My Bookings, which has
+    // no flight tracking and so no Track button — the map's last reachable entry point. The
+    // feature still works, which is what this proves and why ADR-0001 keeps it.
+    testWidgets('a flight in the air renders on the map with its telemetry', (tester) async {
       final b = bookFlight(mnlToIcn, const Duration(hours: -1));
-      await pumpApp(tester, location: '/trips');
-      final card = find.ancestor(of: find.text(b.reference), matching: find.byType(AppCard));
-      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
-      final track = find.descendant(of: card, matching: find.text('Track'));
-      expect(find.descendant(of: card, matching: find.textContaining('In the air')), findsOneWidget);
-      // Bring it up clear of the bottom navigation before tapping.
-      await tester.drag(find.byType(Scrollable).first, Offset(0, 300 - tester.getCenter(track).dy));
-      await tester.pumpAndSettle();
-      await tester.tap(track);
+      flightToTrack.value = b.reference;
+      await pumpApp(tester, location: '/map');
       await tester.pump();
       await tester.pump();
 
@@ -384,7 +379,11 @@ void main() {
       await tester.pump();
     });
 
-    testWidgets('the tracker pauses on another tab and comes back on return', (tester) async {
+    // Was "…and comes back on return". The return leg went through the Track button on the
+    // flight's own card in Trips, and #42 rebuilt Trips as V2's My Bookings, which has no
+    // tracking and so no such button — see ADR-0001 and ADR-0003. Coming back is covered by
+    // the deep-link test above; what is still this test's own is that leaving stops the work.
+    testWidgets('the tracker pauses when another tab is opened', (tester) async {
       final b = bookFlight(mnlToIcn, const Duration(hours: -1));
       flightToTrack.value = b.reference;
       await pumpApp(tester, location: '/map');
@@ -398,23 +397,6 @@ void main() {
       ));
       await tester.pumpAndSettle();
       expect(find.byType(FlightTelemetryHud), findsNothing);
-
-      // Back via this booking's own Track button. The centre globe went with the old bar; the
-      // map is still reached from here and from the airport hub — see ADR-0001. It has to be
-      // *this* flight's button: the first one on the list belongs to somebody else's trip.
-      final card = find.ancestor(of: find.text(b.reference), matching: find.byType(AppCard));
-      await tester.scrollUntilVisible(card, 300, scrollable: find.byType(Scrollable).first);
-      final track = find.descendant(of: card, matching: find.text('Track'));
-      await tester.drag(find.byType(Scrollable).first, Offset(0, 300 - tester.getCenter(track).dy));
-      await tester.pumpAndSettle();
-      await tester.tap(track);
-      await tester.pump();
-      await tester.pump(const Duration(seconds: 1));
-      final hud = tester.widget<FlightTelemetryHud>(find.byType(FlightTelemetryHud));
-      expect(hud.flight.reference, b.reference);
-      expect(hud.status.phase, FlightPhase.inAir);
-      await tester.tap(find.byTooltip('Stop tracking'));
-      await tester.pump();
     });
 
     testWidgets('a landed flight hands over to its arrival airport', (tester) async {

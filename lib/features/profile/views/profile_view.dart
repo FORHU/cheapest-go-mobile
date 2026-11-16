@@ -3,6 +3,7 @@ import 'package:cheapest_go_mobile/shared/lib/demo.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
+import 'package:cheapest_go_mobile/features/profile/components/saved_stays_card.dart';
 import 'package:cheapest_go_mobile/shared/stores/saved_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
@@ -86,6 +87,15 @@ class ProfileView extends StatelessWidget {
               _buildSectionHeader('PREFERENCES', theme),
               const SizedBox(height: 8),
               _buildPreferencesCard(context, theme),
+              const SizedBox(height: 32),
+
+              // 3. Saved Trips. Moved here from the Trips screen with #42: V2 keeps them in
+              // Account, and a shortlist does not belong among confirmed bookings. Still
+              // device-local — wiring `/saved-trips` is its own ticket, and until then this
+              // is not yet the Saved Trip CONTEXT.md describes.
+              _buildSectionHeader('SAVED TRIPS', theme),
+              const SizedBox(height: 8),
+              const SavedStaysCard(),
               const SizedBox(height: 32),
 
               if (kDemoTools) ...[

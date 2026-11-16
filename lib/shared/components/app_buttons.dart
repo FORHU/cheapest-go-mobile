@@ -10,6 +10,7 @@ class AppGradientButton extends StatelessWidget {
     this.icon,
     this.isLoading = false,
     this.height = 52,
+    this.compact = false,
     super.key,
   });
 
@@ -18,6 +19,13 @@ class AppGradientButton extends StatelessWidget {
   final IconData? icon;
   final bool isLoading;
   final double height;
+
+  /// A panel's action rather than the screen's.
+  ///
+  /// Same gradient, quieter: smaller type and a shadow that sits the control on the card
+  /// instead of lifting it off the page. At full size inside a panel it reads as the most
+  /// important thing on screen, which it is not — "Save request" is not "Pay".
+  final bool compact;
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +39,11 @@ class AppGradientButton extends StatelessWidget {
           decoration: BoxDecoration(
             gradient: kBrandGradient,
             borderRadius: BorderRadius.circular(999),
-            boxShadow: const [BoxShadow(color: Color(0x592563EB), blurRadius: 20, offset: Offset(0, 8), spreadRadius: -8)],
+            boxShadow: [
+              compact
+                  ? const BoxShadow(color: Color(0x332563EB), blurRadius: 8, offset: Offset(0, 2))
+                  : const BoxShadow(color: Color(0x592563EB), blurRadius: 20, offset: Offset(0, 8), spreadRadius: -8),
+            ],
           ),
           child: Material(
             type: MaterialType.transparency,
@@ -39,7 +51,7 @@ class AppGradientButton extends StatelessWidget {
               customBorder: const StadiumBorder(),
               onTap: enabled ? onPressed : null,
               child: SizedBox(
-                height: height,
+                height: compact ? 38 : height,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   mainAxisSize: MainAxisSize.min,
@@ -55,15 +67,15 @@ class AppGradientButton extends StatelessWidget {
                     if (isLoading || icon != null) const SizedBox(width: 8),
                     Flexible(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 4),
+                        padding: EdgeInsets.symmetric(horizontal: compact ? 14 : 4),
                         child: Text(
                           label,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: Theme.of(context).textTheme.labelLarge?.copyWith(
                                 color: Colors.white,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w700,
+                                fontSize: compact ? 14 : 16,
+                                fontWeight: compact ? FontWeight.w600 : FontWeight.w700,
                               ),
                         ),
                       ),

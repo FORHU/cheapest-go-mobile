@@ -28,6 +28,16 @@ RoutedError routeError(Object? error) {
 
   switch (error.category) {
     case ErrorCategory.auth:
+      // Two very different 401s. api-v2 answers a wrong password or an unknown account with
+      // `INVALID_CREDENTIALS`, and a session that has run out with `AUTH_INVALID`. Reporting
+      // both as "Session expired" told someone who had simply mistyped their password that
+      // something had expired, and signed them out of an account they were never in.
+      if (error.code == 'INVALID_CREDENTIALS') {
+        return const RoutedError(
+          toast: 'Those details did not match an account',
+          action: ErrorRouteAction.form,
+        );
+      }
       return const RoutedError(
         toast: 'Session expired',
         action: ErrorRouteAction.logout,

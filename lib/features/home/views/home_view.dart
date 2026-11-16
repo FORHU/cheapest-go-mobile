@@ -147,10 +147,14 @@ class _Hero extends StatelessWidget {
                 TwSpace.of(4), TwSpace.of(16), TwSpace.of(4), TwSpace.of(8),
             ),
             child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                // Centred: the hero is the one block on the page with nothing beside it, and
+                // left-aligned over a full-bleed photograph it read as a caption stuck to
+                // the edge rather than the page's opening line.
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                     Text(
                         t.landing_journey_hero_kicker,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: TwText.xs.size,
                             height: TwText.xs.height,
@@ -163,15 +167,18 @@ class _Hero extends StatelessWidget {
                     // Two lines because V2 writes them as two: the second is the turn.
                     Text(
                         t.landing_journey_hero_titleLine1,
+                        textAlign: TextAlign.center,
                         style: _title,
                     ),
                     Text(
                         t.landing_journey_hero_titleLine2,
+                        textAlign: TextAlign.center,
                         style: _title,
                     ),
                     SizedBox(height: TwSpace.of(4)),
                     Text(
                         t.landing_journey_hero_subtitle,
+                        textAlign: TextAlign.center,
                         style: TextStyle(
                             fontSize: TwText.base.size,
                             height: 1.625,
@@ -207,7 +214,9 @@ class _Tabs extends StatelessWidget {
     @override
     Widget build(BuildContext context) {
         return Align(
-            alignment: Alignment.centerLeft,
+            // Centred with the hero above it: the three faces are the page's main choice,
+            // and a choice reads as one when it sits under the line that offered it.
+            alignment: Alignment.center,
             child: GlassPanel(
                 radius: 999,
                 padding: EdgeInsets.all(TwSpace.of(1)),
@@ -307,7 +316,9 @@ class _StageHeading extends StatelessWidget {
         };
 
         return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            // Centred with the hero and the faces above it, so the stage's own heading
+            // continues the same column rather than stepping back to the left margin.
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
                 // Text.rich, not RichText: RichText takes no style from its surroundings, so
                 // the heading silently fell back to the platform font — Roboto on a device,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/features/auth/components/auth_form_widgets.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 
@@ -79,6 +80,22 @@ class _LoginViewState extends State<LoginView> {
                         ),
                         const SizedBox(height: 16),
                       ],
+                      // Above the divider, as V2's login has it: the quickest way in comes
+                      // first, and the form is the alternative. Absent entirely when the
+                      // build has no client id — an offer that cannot work is worse than
+                      // none. See #45.
+                      if (env.googleServerClientId.isNotEmpty) ...[
+                        _GoogleButton(
+                          enabled: !loading,
+                          onPressed: () async {
+                            final ok = await authStore.signInWithGoogle();
+                            if (ok && context.mounted) context.go('/');
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        const _OrDivider(),
+                        const SizedBox(height: 16),
+                      ],
                       AuthTextField(
                         controller: _emailController,
                         label: 'Email',
@@ -112,8 +129,12 @@ class _LoginViewState extends State<LoginView> {
                         onPressed: _submit,
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
+                      // Wrap, not Row: the prompt and the button together overflow a handset
+                      // at a larger text scale, and the translations are longer than the
+                      // English. Wrapping onto a second line costs nothing and never clips.
+                      Wrap(
+                        alignment: WrapAlignment.center,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
                           Text(
                             "Don't have an account?",
@@ -175,6 +196,76 @@ class _DemoAccountCard extends StatelessWidget {
           TextButton(onPressed: enabled ? onUse : null, child: const Text('Use')),
         ],
       ),
+    );
+  }
+}
+
+/// "Sign in with Google", as V2 draws it: a plain bordered button with the mark, not the
+/// brand blue — the form's own button is the one that should carry the weight.
+class _GoogleButton extends StatelessWidget {
+  const _GoogleButton({required this.enabled, required this.onPressed});
+
+  final bool enabled;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return SizedBox(
+      height: 52,
+      child: OutlinedButton(
+        onPressed: enabled ? onPressed : null,
+        style: OutlinedButton.styleFrom(
+          side: BorderSide(color: theme.dividerColor),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Google's mark is a trademark and not ours to redraw; its four colours in a
+            // simple glyph is the closest honest thing without bundling their asset.
+            Container(
+              width: 20,
+              height: 20,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(shape: BoxShape.circle),
+              child: const Text(
+                'G',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: Color(0xFF4285F4),
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Sign in with Google',
+              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// The word "or" on a rule, between the two ways in.
+class _OrDivider extends StatelessWidget {
+  const _OrDivider();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Row(
+      children: [
+        Expanded(child: Divider(color: theme.dividerColor)),
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12),
+          child: Text('or', style: theme.textTheme.bodySmall),
+        ),
+        Expanded(child: Divider(color: theme.dividerColor)),
+      ],
     );
   }
 }
