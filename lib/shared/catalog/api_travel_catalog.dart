@@ -70,18 +70,13 @@ class ApiTravelCatalog implements TravelCatalog {
   @override
   List<Review> reviewsFor(String hotelId) => _reviewsById[hotelId] ?? const [];
 
+  // Flights are the airline's or nothing: unlike stays, there is no invented fare to fall back
+  // on in API mode. A fare shown as bookable has to be one an airline will sell (#47).
   @override
-  List<FlightOffer> flights(String from, String to) {
-    final routeKey = '${from}_$to';
-    final cached = _flightsByRoute[routeKey];
-    if (cached != null && cached.isNotEmpty) return cached;
-    return _mock.flights(from, to);
-  }
+  List<FlightOffer> flights(String from, String to) => _flightsByRoute['${from}_$to'] ?? const [];
 
   @override
-  FlightOffer? flight(String id) {
-    return _flightById[id] ?? _mock.flight(id);
-  }
+  FlightOffer? flight(String id) => _flightById[id];
 
   @override
   bool isOfflineData(String key) => _offlineKeys.contains(key);
@@ -410,11 +405,8 @@ class ApiTravelCatalog implements TravelCatalog {
       } catch (_) {}
     }
 
-    // Final fallback to mock catalog
-    final mockFlights = _mock.flights(from, to);
-    _flightsByRoute[routeKey] = mockFlights;
-    _offlineKeys.add(routeKey);
-    return mockFlights;
+    // Neither the network nor a saved answer: no flights, rather than invented ones.
+    return const [];
   }
 
   @override

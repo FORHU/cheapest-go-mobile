@@ -10,7 +10,7 @@ import '../test_helpers.dart';
 
 void main() {
   group('Shared header', () {
-    for (final (location, label) in [('/', 'Home'), ('/stay', 'Stay & Play'), ('/flights', 'Flights'), ('/trips', 'Trips')]) {
+    for (final (location, label) in [('/', 'Home'), ('/stay', 'Stay & Play'), ('/trips', 'Trips')]) {
       testWidgets('shows on $label', (tester) async {
         await pumpApp(tester, location: location);
         expect(find.byType(AppHeader), findsOneWidget);

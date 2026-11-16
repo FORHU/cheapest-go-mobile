@@ -317,6 +317,23 @@ void main() {
       expect(catalog.isOfflineData('BKK'), isTrue);
     });
 
+    // #47: a fare shown as bookable must be one an airline sells. Stays still fall back to the
+    // catalogue above; flights never invent one.
+    test('when network fails and cache is empty, flights answer nothing — never invented fares', () async {
+      final failingHttp = HttpClientAdapter(
+        client: MockClient((request) async {
+          throw Exception('Network timeout');
+        }),
+      );
+
+      SharedPreferences.setMockInitialValues({});
+      final catalog = ApiTravelCatalog(client: failingHttp, prefs: await SharedPreferences.getInstance());
+
+      expect(await catalog.fetchFlights('SIN', 'MNL'), isEmpty);
+      expect(catalog.flights('SIN', 'MNL'), isEmpty);
+      expect(catalog.flight('SIN-MNL-0'), isNull);
+    });
+
     test('golf courses always delegate to mock catalog', () {
       final catalog = ApiTravelCatalog();
       final courses = catalog.coursesNear('MNL');
