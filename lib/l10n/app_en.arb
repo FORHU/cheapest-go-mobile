@@ -205,12 +205,6 @@
       "amount": {}
     }
   },
-  "@coach_step": {
-    "placeholders": {
-      "current": {},
-      "total": {}
-    }
-  },
   "@deals_allDealsCount": {
     "placeholders": {
       "count": {}
@@ -1720,16 +1714,6 @@
   "checkout_voucher_saved": "{amount} saved",
   "checkout_whosCheckingIn": "Who's checking in?",
   "checkout_whosCheckingInYou": "Who’s checking in? (Your Details)",
-  "coach_bar_body": "Home to search, Trips for what you have booked, and the gear for your account.",
-  "coach_bar_title": "Your trips live here",
-  "coach_done": "Got it",
-  "coach_faces_body": "Switch between stays, flights and golf. Each one searches on its own.",
-  "coach_faces_title": "Three ways to travel",
-  "coach_next": "Next",
-  "coach_search_body": "Where you are going, when, and who is coming. Prices include fees before you book.",
-  "coach_search_title": "Search in three steps",
-  "coach_skip": "Skip",
-  "coach_step": "Tip {current} of {total}",
   "common_back": "Back",
   "common_close": "Close",
   "common_closeSettings": "Close settings",
@@ -3243,6 +3227,27 @@
   "support_translating": "Translating…",
   "theme_switchToDark": "Switch to dark mode",
   "theme_switchToLight": "Switch to light mode",
+  "tip_bar_body": "Home to search, Trips for what you have booked, and the gear for your account.",
+  "tip_bar_title": "Your trips live here",
+  "tip_done": "Got it",
+  "tip_faces_body": "Switch between stays, flights and golf. Each one searches on its own.",
+  "tip_faces_title": "Three ways to travel",
+  "tip_flightCheckout_body": "Money moves only once the airline confirms your ticket. If it cannot, the hold is released.",
+  "tip_flightCheckout_title": "Your card is authorised, not charged",
+  "tip_flightSearch_body": "Trip type, dates, airports and who is flying. Results appear at the last step.",
+  "tip_flightSearch_title": "Five quick questions",
+  "tip_hotelCheckout_body": "This is what will be charged. The cancellation policy for this room is shown above it.",
+  "tip_hotelCheckout_title": "Check the total before you pay",
+  "tip_hotelResult_body": "Taxes and fees are already in what you see. Tap a stay to see its rooms.",
+  "tip_hotelResult_title": "Every price is the full price",
+  "tip_hotelRooms_body": "Each room shows what it includes and whether it can be cancelled.",
+  "tip_hotelRooms_title": "Pick a room to continue",
+  "tip_next": "Next",
+  "tip_search_body": "Where you are going, when, and who is coming. Prices include fees before you book.",
+  "tip_search_title": "Search in three steps",
+  "tip_skip": "Skip",
+  "tip_trips_body": "Open a booking for its reference, e-ticket or voucher.",
+  "tip_trips_title": "Everything you book lands here",
   "topCities_exploreHotels": "Explore Hotels",
   "topCities_headerHighlight": "Worldwide",
   "topCities_headerMain": "Top Cities",

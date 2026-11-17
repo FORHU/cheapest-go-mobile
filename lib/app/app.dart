@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/router/app_router.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
-import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_overlay.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
@@ -58,15 +58,15 @@ class _CheapestGoAppState extends State<CheapestGoApp> with WidgetsBindingObserv
 
           routerConfig: appRouter,
 
-          // The first-run tour sits above every screen rather than inside Home, so it can
-          // point at the bottom bar — which belongs to the shell, not to any one page — and
-          // so it survives the tab switches it is describing. See #63.
+          // Home's Tip lives here rather than inside Home, because it points at the bottom
+          // bar — which belongs to the shell, not to any one page. Every other screen wraps
+          // itself; a Tip belongs to the screen it explains. See #62 and ADR-0006.
           //
           // `builder` and not a wrapper around the router: this is the one place that is
           // inside the MaterialApp, and therefore has localisations and a Directionality,
           // while still being outside every route.
-          builder: (context, child) => CoachMarkOverlay(
-            marks: coachMarksFor(AppLocalizations.of(context)!),
+          builder: (context, child) => TipScope(
+            tip: homeTip(AppLocalizations.of(context)!),
             child: child ?? const SizedBox.shrink(),
           ),
         );

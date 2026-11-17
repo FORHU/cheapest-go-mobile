@@ -1,58 +1,109 @@
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
-/// Whether the first-run tour still has to be shown. See #63.
+import 'package:cheapest_go_mobile/shared/account/account_preferences.dart';
+
+/// Which **Tips** an account has been shown, and whether it still wants them. See #62,
+/// ADR-0006.
 ///
-/// Held on the device, not against the account — deliberately, and the opposite of where
-/// onboarding's markers live (#62, ADR-0005). Onboarding stores answers that belong to the
-/// person: asking a second time for a birth date already given is a mistake. A tour teaches a
-/// screen on a device, and being shown it again after a reinstall or on a new phone costs
-/// three taps and is arguably right, since the screen is new on that device too.
+/// Against the account, not the device. It began the other way round — a Tip teaches a screen
+/// on a phone, and a screen is new again on a new phone — and the gate (#62) made that wrong:
+/// the app now requires an account, so a second person signing in on a shared handset was
+/// offered no help at all, and one person's Skip silenced everybody who touched that phone.
+/// Testing found it first, by creating account after account and being shown nothing.
 ///
-/// It also means the tour costs no request, so it can run the instant Home appears instead of
-/// waiting on a round trip at the one moment somebody is deciding whether this app is worth it.
-class CoachMarkStore extends ChangeNotifier {
-  static const String _seenKey = 'cheapestgo_coach_marks_seen';
+/// The cost is a request before any Tip can appear. Accepted deliberately: being shown help
+/// meant for somebody else is worse than being shown it a moment later.
+class TipStore extends ChangeNotifier {
+  TipStore({AccountPreferences? preferences}) : _prefs = preferences ?? accountPreferences;
 
-  bool _seen = true;
+  final AccountPreferences _prefs;
 
-  /// True once the tour has been finished or dismissed — and true before [init] has run, so
-  /// nothing flashes over Home on the frame before the answer is known.
-  bool get seen => _seen;
+  /// Where this sits inside the account's preferences blob.
+  static const String key = 'tips';
 
-  Future<void> init() async {
+  Set<String> _shown = const {};
+  bool _ended = false;
+  bool _loaded = false;
+
+  /// True until an account's answer has arrived, so nothing flashes on a screen before it is
+  /// known whether this traveller has already seen it.
+  bool get isSilenced => !_loaded || _ended;
+
+  bool get ended => _ended;
+
+  /// Whether this Tip still has something to say to the account signed in now.
+  bool shouldShow(String id) => !isSilenced && !_shown.contains(id);
+
+  /// Asks the server what this account has been shown. Call on sign-in.
+  Future<void> load() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      _seen = prefs.getBool(_seenKey) ?? false;
+      _read(await _prefs.get());
+      _loaded = true;
     } catch (_) {
-      // Unreadable storage means the tour does not run. A traveller who cannot be told we
-      // already showed it is better served by silence than by a tour on every launch.
-      _seen = true;
+      // No answer means no Tips. Guessing would either repeat help somebody has dismissed or
+      // withhold it from somebody who has never seen it, and the second is the quieter
+      // failure — nobody is interrupted by help that does not arrive.
+      _loaded = false;
     }
     notifyListeners();
   }
 
-  /// Finished, or skipped. The two are the same to this: either way it is not shown again.
-  Future<void> markSeen() async {
-    if (_seen) return;
-    _seen = true;
+  /// Forgets everything on sign-out, so the next account starts its own.
+  void reset() {
+    _shown = const {};
+    _ended = false;
+    _loaded = false;
     notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_seenKey, true);
-    } catch (_) {}
   }
 
-  /// Only for tests, and for a debug build that wants to look at it again.
-  @visibleForTesting
-  Future<void> reset() async {
-    _seen = false;
+  /// Shown and finished with — read, or acted on.
+  Future<void> markShown(String id) async {
+    if (_shown.contains(id)) return;
+    _shown = {..._shown, id};
     notifyListeners();
+    await _write();
+  }
+
+  /// Stops the Tips outright: no further one, on any screen, for this account.
+  Future<void> endTutorial() async {
+    if (_ended) return;
+    _ended = true;
+    notifyListeners();
+    await _write();
+  }
+
+  void _read(Map<String, dynamic> preferences) {
+    final raw = preferences[key];
+    if (raw is! Map) {
+      _shown = const {};
+      _ended = false;
+      return;
+    }
+    final shown = raw['shown'];
+    _shown = shown is List ? shown.whereType<String>().toSet() : const {};
+    _ended = raw['ended'] == true;
+  }
+
+  /// Merged into the blob rather than replacing it — the currency and language live there too.
+  Future<void> _write() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.remove(_seenKey);
-    } catch (_) {}
+      await _prefs.update({
+        key: {'shown': _shown.toList(), 'ended': _ended},
+      });
+    } catch (_) {
+      // The traveller saw the Tip; failing to record that is not worth interrupting them for.
+      // The worst case is being shown it once more.
+    }
+  }
+
+  /// Only for tests, and for a debug build that wants to see them again.
+  @visibleForTesting
+  void debugLoad({Set<String> shown = const {}, bool ended = false}) {
+    _shown = shown;
+    _ended = ended;
+    _loaded = true;
+    notifyListeners();
   }
 }
 
-final CoachMarkStore coachMarkStore = CoachMarkStore();
+final TipStore tipStore = TipStore();

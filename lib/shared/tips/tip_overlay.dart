@@ -3,284 +3,205 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
-import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_store.dart';
-import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_target.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_store.dart';
 
-/// One thing the tour points at.
-class CoachMark {
-  const CoachMark({required this.anchorId, required this.title, required this.body});
+/// One thing a screen is willing to explain.
+class Tip {
+  const Tip({required this.anchorId, required this.title, required this.body});
 
   final String anchorId;
   final String title;
   final String body;
 }
 
-/// The first-run tour: a dimmed screen with one thing left lit, and a line about it. See #63.
+/// A **Tip**: a card beside one control, the first time somebody reaches the screen that
+/// carries it. See #62 and ADR-0006.
 ///
-/// Coach marks rather than a carousel of slides, because the gate (#62) means somebody now
-/// reaches Home having never browsed: they arrive cold where a web visitor would have found
-/// their way in by searching. A carousel teaches in the abstract and gets tapped through; this
-/// points at the actual control, on the actual screen, while they are looking at it.
+/// It does not dim, does not cover the control it names, and does not take taps — the screen
+/// underneath keeps working, and using it dismisses the Tip. That is the whole difference from
+/// what #63 shipped, and it is deliberate: a tutorial that blocks the screen you are trying to
+/// use is the one people resent, and on a checkout it would cover the price while asking
+/// somebody to read about paying.
 ///
-/// Shown once per device and skippable on every step. It is a help, and a help somebody cannot
-/// dismiss is an obstacle.
-class CoachMarkOverlay extends StatefulWidget {
-  const CoachMarkOverlay({required this.marks, required this.child, super.key});
+/// Wrap a screen in one of these. Each screen carries its own; they are not steps of a tour,
+/// so no screen has to know where a traveller goes next.
+class TipScope extends StatefulWidget {
+  const TipScope({required this.tip, required this.child, this.ready = true, super.key});
 
-  final List<CoachMark> marks;
+  /// What to say. Null shows nothing, for a screen whose Tip depends on state.
+  final Tip? tip;
+
+  /// Whether the screen has something to point at yet.
+  ///
+  /// A results screen passes false while it is loading: a Tip over a spinner, describing cards
+  /// that have not arrived, teaches nothing.
+  final bool ready;
+
   final Widget child;
 
   @override
-  State<CoachMarkOverlay> createState() => _CoachMarkOverlayState();
+  State<TipScope> createState() => _TipScopeState();
 }
 
-class _CoachMarkOverlayState extends State<CoachMarkOverlay> {
-  /// How long to keep looking for something to point at before giving up.
+class _TipScopeState extends State<TipScope> {
+  /// How long somebody has to do nothing before the Tip offers itself.
   ///
-  /// The tour is mounted above the router, so it exists before any route does. On the launch
-  /// it matters for, the screen it describes is still being built — and worse, the gate (#62)
-  /// may put a spinner and a sign-in screen in front of Home first. One look after the first
-  /// frame finds nothing and, since nothing notifies this widget when a route lays out, it
-  /// would never look again. That is exactly what it did on a handset.
-  static const Duration _lookInterval = Duration(milliseconds: 400);
-  static const int _maxLooks = 30; // 12 seconds, then stop burning frames.
+  /// Material's guidance is that prompts should follow what somebody is doing rather than a
+  /// page load, and that a prompt landing on someone who opened the app to act is unhelpful.
+  /// Two seconds is the line: act within it and the Tip never appears at all.
+  static const Duration _pause = Duration(seconds: 2);
 
-  int _step = 0;
-  bool _ready = false;
-  int _looks = 0;
-  Timer? _look;
+  Timer? _wait;
+  bool _visible = false;
 
   @override
   void initState() {
     super.initState();
-    // After the first frame: anchors have no position until their widgets are laid out, and
-    // asking before that gives an empty tour on the very launch it exists for.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      setState(() => _ready = true);
-      _startLooking();
+    TipAnchorRegistry.revision.addListener(_onAnchorsChanged);
+    // ...and to the store, because a Tip is silent until the account's answer arrives. The
+    // anchor is usually on screen long before that reply, so without this the only thing
+    // that could wake it up had already happened.
+    tipStore.addListener(_onAnchorsChanged);
+    _considerShowing();
+  }
+
+  @override
+  void didUpdateWidget(TipScope old) {
+    super.didUpdateWidget(old);
+    // The screen just became ready, or is now about something else.
+    if (old.ready != widget.ready || old.tip?.anchorId != widget.tip?.anchorId) {
+      _visible = false;
+      _considerShowing();
+    }
+  }
+
+  /// Waits for the pause, then shows the Tip if its anchor is there.
+  ///
+  /// The anchor arriving later is not a failure and has no deadline. Home's TipScope sits
+  /// above the router and mounts while the traveller is still at the sign-in wall; the bottom
+  /// bar it points at does not exist until they are through the gate and past onboarding,
+  /// which can be minutes. An earlier version polled for twenty seconds and gave up, so Home
+  /// showed nothing at all. [TipAnchorRegistry.revision] says when to look again.
+  void _considerShowing() {
+    _wait?.cancel();
+    final tip = widget.tip;
+    if (!widget.ready || tip == null || !tipStore.shouldShow(tip.anchorId)) return;
+    if (!TipAnchorRegistry.has(tip.anchorId)) return; // nothing yet; wait to be told.
+
+    _wait = Timer(_pause, () {
+      if (!mounted || !tipStore.shouldShow(tip.anchorId)) return;
+      // Gone again during the pause — the traveller moved on. Its turn is kept.
+      if (TipAnchorRegistry.rectOf(tip.anchorId) == null) return;
+      setState(() => _visible = true);
     });
   }
 
-  void _startLooking() {
-    _look?.cancel();
-    if (coachMarkStore.seen) return;
-
-    _look = Timer.periodic(_lookInterval, (timer) {
-      if (!mounted || coachMarkStore.seen || ++_looks >= _maxLooks) {
-        timer.cancel();
-        return;
-      }
-      // Rebuild first, stop second. Stopping on the tick that finds the anchor without
-      // rebuilding leaves the tour invisible forever: the thing it was waiting for has
-      // arrived and nothing redraws to say so.
-      setState(() {});
-      if (_anchorIsShowing) timer.cancel();
-    });
+  /// An anchor appeared or went. If this Tip is still waiting for its own, try again.
+  void _onAnchorsChanged() {
+    if (_visible || !mounted) return;
+    _considerShowing();
   }
 
-  bool get _anchorIsShowing =>
-      widget.marks.skip(_step).any((m) => CoachMarkRegistry.rectOf(m.anchorId) != null);
+  /// Seen, and finished with. Not a refusal: they read it or they acted.
+  void _dismiss() {
+    final tip = widget.tip;
+    if (tip == null) return;
+    setState(() => _visible = false);
+    tipStore.markShown(tip.anchorId);
+  }
+
+  /// Ends the walkthrough. Not this card — all of it.
+  void _refuse() {
+    setState(() => _visible = false);
+    tipStore.endTutorial();
+  }
 
   @override
   void dispose() {
-    _look?.cancel();
+    TipAnchorRegistry.revision.removeListener(_onAnchorsChanged);
+    tipStore.removeListener(_onAnchorsChanged);
+    _wait?.cancel();
     super.dispose();
-  }
-
-  void _next() {
-    if (_step + 1 >= widget.marks.length) {
-      coachMarkStore.markSeen();
-      return;
-    }
-    setState(() => _step += 1);
   }
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: coachMarkStore,
-      builder: (context, child) {
-        if (coachMarkStore.seen || !_ready) return widget.child;
+    final tip = widget.tip;
+    if (!_visible || tip == null) return widget.child;
 
-        // A step whose anchor is not on screen is skipped rather than drawn over nothing.
-        // That happens legitimately: the tour starts on Home, and Home does not hold every
-        // control it mentions.
-        final visible = widget.marks
-            .skip(_step)
-            .where((m) => CoachMarkRegistry.rectOf(m.anchorId) != null)
-            .toList();
+    final rect = TipAnchorRegistry.rectOf(tip.anchorId);
+    if (rect == null) return widget.child;
 
-        if (visible.isEmpty) return widget.child;
+    final size = MediaQuery.of(context).size;
+    // Below the anchor when there is room, above it otherwise. Never over it: a card covering
+    // the thing it is describing is worse than no card.
+    final below = rect.bottom + 170 < size.height;
 
-        final mark = visible.first;
-        final rect = CoachMarkRegistry.rectOf(mark.anchorId)!;
-
-        return Stack(
-          children: [
-            widget.child,
-            Positioned.fill(
-              child: _Scrim(
-                rect: rect,
-                mark: mark,
-                step: widget.marks.indexOf(mark) + 1,
-                total: widget.marks.length,
-                onNext: _next,
-                onSkip: coachMarkStore.markSeen,
-              ),
-            ),
-          ],
-        );
-      },
+    return Stack(
+      children: [
+        // The screen underneath keeps working — nothing is dimmed and nothing is intercepted.
+        //
+        // It does **not** dismiss on touch. That is what this did first, and on a handset it
+        // meant the Tip appeared and was gone on the traveller's very next tap, before it had
+        // been read: three were marked seen on a test device by somebody who never saw one.
+        // A card that vanishes when you touch anything cannot be read on a screen you are
+        // using. It stays until "Got it" or "Skip".
+        widget.child,
+        Positioned(
+          left: 16,
+          right: 16,
+          top: below ? rect.bottom + 12 : null,
+          bottom: below ? null : size.height - rect.top + 12,
+          child: _TipCard(tip: tip, onGotIt: _dismiss, onSkip: _refuse),
+        ),
+      ],
     );
   }
 }
 
-class _Scrim extends StatelessWidget {
-  const _Scrim({
-    required this.rect,
-    required this.mark,
-    required this.step,
-    required this.total,
-    required this.onNext,
-    required this.onSkip,
-  });
+class _TipCard extends StatelessWidget {
+  const _TipCard({required this.tip, required this.onGotIt, required this.onSkip});
 
-  final Rect rect;
-  final CoachMark mark;
-  final int step;
-  final int total;
-  final VoidCallback onNext;
+  final Tip tip;
+  final VoidCallback onGotIt;
   final VoidCallback onSkip;
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
-    final size = MediaQuery.of(context).size;
-
-    // Below the highlight when there is room beneath it, above it otherwise. The card must
-    // never cover the thing it is describing, which is the one way a coach mark can be worse
-    // than no coach mark at all.
-    final below = rect.bottom + 180 < size.height;
-
-    return Material(
-      color: Colors.transparent,
-      child: Stack(
-        children: [
-          // Tapping the dimmed area advances, which is what people try first.
-          Positioned.fill(
-            child: GestureDetector(
-              onTap: onNext,
-              child: CustomPaint(painter: _CutOutPainter(rect)),
-            ),
-          ),
-          Positioned(
-            left: 20,
-            right: 20,
-            top: below ? rect.bottom + 16 : null,
-            bottom: below ? null : size.height - rect.top + 16,
-            child: _Caption(
-              mark: mark,
-              step: step,
-              total: total,
-              isLast: step == total,
-              onNext: onNext,
-              onSkip: onSkip,
-              nextLabel: step == total ? t.coach_done : t.coach_next,
-              skipLabel: t.coach_skip,
-              stepLabel: t.coach_step(step, total),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Dims everything, then clears a rounded window over the thing being pointed at.
-class _CutOutPainter extends CustomPainter {
-  const _CutOutPainter(this.rect);
-
-  final Rect rect;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final hole = RRect.fromRectAndRadius(rect.inflate(8), const Radius.circular(16));
-
-    // Even-odd so the hole is genuinely transparent rather than painted lighter: the control
-    // underneath should look exactly as it does normally, because that is what somebody has
-    // to recognise again a moment later.
-    final scrim = Path.combine(
-      PathOperation.difference,
-      Path()..addRect(Offset.zero & size),
-      Path()..addRRect(hole),
-    );
-
-    canvas.drawPath(scrim, Paint()..color = const Color(0xCC0B1220));
-    canvas.drawRRect(
-      hole,
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2
-        ..color = const Color(0xFF2563EB),
-    );
-  }
-
-  @override
-  bool shouldRepaint(_CutOutPainter old) => old.rect != rect;
-}
-
-class _Caption extends StatelessWidget {
-  const _Caption({
-    required this.mark,
-    required this.step,
-    required this.total,
-    required this.isLast,
-    required this.onNext,
-    required this.onSkip,
-    required this.nextLabel,
-    required this.skipLabel,
-    required this.stepLabel,
-  });
-
-  final CoachMark mark;
-  final int step;
-  final int total;
-  final bool isLast;
-  final VoidCallback onNext;
-  final VoidCallback onSkip;
-  final String nextLabel;
-  final String skipLabel;
-  final String stepLabel;
-
-  @override
-  Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
 
-    return Card(
+    return Material(
       elevation: 8,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      borderRadius: BorderRadius.circular(16),
+      color: scheme.surface,
       child: Padding(
-        padding: const EdgeInsets.all(18),
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 8),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(stepLabel, style: TextStyle(fontSize: 11, color: scheme.onSurfaceVariant)),
-            const SizedBox(height: 6),
-            Text(
-              mark.title,
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            Row(
+              children: [
+                Icon(Icons.lightbulb_outline_rounded, size: 18, color: scheme.primary),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    tip.title,
+                    style: const TextStyle(fontSize: 15.5, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 6),
-            Text(mark.body, style: TextStyle(fontSize: 13.5, color: scheme.onSurfaceVariant)),
-            const SizedBox(height: 14),
+            Text(tip.body, style: TextStyle(fontSize: 13, color: scheme.onSurfaceVariant)),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                // Always there, on every step. A tour you cannot leave is not a help.
-                TextButton(onPressed: onSkip, child: Text(skipLabel)),
-                FilledButton(onPressed: onNext, child: Text(nextLabel)),
+                // Waving this one away is not "never help me again" — but three of them is.
+                TextButton(onPressed: onSkip, child: Text(t.tip_skip)),
+                TextButton(onPressed: onGotIt, child: Text(t.tip_done)),
               ],
             ),
           ],
@@ -290,25 +211,66 @@ class _Caption extends StatelessWidget {
   }
 }
 
-/// What the first-run tour says, in order. See #63.
+/// The Tip for a screen, by anchor. See #62 and ADR-0006.
 ///
-/// Three, and no more: each one points at something on screen and says what it is for. The
-/// order follows what somebody does — choose what they are looking for, search for it, then
-/// find it again afterwards.
-List<CoachMark> coachMarksFor(AppLocalizations t) => [
-      CoachMark(
-        anchorId: CoachMarkIds.searchFaces,
-        title: t.coach_faces_title,
-        body: t.coach_faces_body,
-      ),
-      CoachMark(
-        anchorId: CoachMarkIds.searchStart,
-        title: t.coach_search_title,
-        body: t.coach_search_body,
-      ),
-      CoachMark(
-        anchorId: CoachMarkIds.bottomBar,
-        title: t.coach_bar_title,
-        body: t.coach_bar_body,
-      ),
-    ];
+/// One function rather than a list, because these are not a sequence: each screen asks for its
+/// own and no screen needs to know the others exist.
+Tip? tipFor(AppLocalizations t, String anchorId) => switch (anchorId) {
+      TipAnchors.bottomBar => Tip(
+          anchorId: TipAnchors.bottomBar,
+          title: t.tip_bar_title,
+          body: t.tip_bar_body,
+        ),
+      TipAnchors.hotelResult => Tip(
+          anchorId: TipAnchors.hotelResult,
+          title: t.tip_hotelResult_title,
+          body: t.tip_hotelResult_body,
+        ),
+      TipAnchors.hotelRooms => Tip(
+          anchorId: TipAnchors.hotelRooms,
+          title: t.tip_hotelRooms_title,
+          body: t.tip_hotelRooms_body,
+        ),
+      TipAnchors.hotelCheckout => Tip(
+          anchorId: TipAnchors.hotelCheckout,
+          title: t.tip_hotelCheckout_title,
+          body: t.tip_hotelCheckout_body,
+        ),
+      TipAnchors.flightSearch => Tip(
+          anchorId: TipAnchors.flightSearch,
+          title: t.tip_flightSearch_title,
+          body: t.tip_flightSearch_body,
+        ),
+      TipAnchors.flightCheckout => Tip(
+          anchorId: TipAnchors.flightCheckout,
+          title: t.tip_flightCheckout_title,
+          body: t.tip_flightCheckout_body,
+        ),
+      TipAnchors.trips => Tip(
+          anchorId: TipAnchors.trips,
+          title: t.tip_trips_title,
+          body: t.tip_trips_body,
+        ),
+      _ => null,
+    };
+
+/// What Home explains: where the bar takes you. The faces and the search box are the screen's
+/// own subject and explain themselves; the bar is the thing a newcomer has no reason to read.
+Tip? homeTip(AppLocalizations t) => tipFor(t, TipAnchors.bottomBar);
+
+/// Every Tip, for anything that needs the whole set — a test, or a debug screen.
+///
+/// A set, not a sequence: there is no order to a Tip, which is the point. Each waits on its
+/// own screen and says one thing about what is in front of somebody. An earlier version
+/// numbered them "Tip 2 of 7", and that made the help read as a flow the traveller was inside
+/// — so Skip looked like it should let them out of it, and leaving them where they stood felt
+/// broken. Nothing numbers them now.
+const List<String> allTips = [
+  TipAnchors.bottomBar,
+  TipAnchors.hotelResult,
+  TipAnchors.hotelRooms,
+  TipAnchors.hotelCheckout,
+  TipAnchors.flightSearch,
+  TipAnchors.flightCheckout,
+  TipAnchors.trips,
+];

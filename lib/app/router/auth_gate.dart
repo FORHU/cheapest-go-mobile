@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/onboarding/lib/onboarding_markers.dart';
 import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_store.dart';
 
 /// Nothing but the Open Screens is reachable without an account. See #62 and ADR-0005.
 ///
@@ -140,12 +141,19 @@ void wireGateToAuth() {
 
     if (isAuthenticated) {
       unawaited(onboardingStore.load());
+      // Which Tips this account has seen lives with the account too, so a second person on
+      // a shared phone is offered help rather than inheriting somebody else's Skip.
+      unawaited(tipStore.load());
     } else {
       onboardingStore.reset();
+      tipStore.reset();
     }
   });
 
   // A session restored from storage at launch signs the user in before anything listens, so
   // the first answer has to be asked for here rather than waited for.
-  if (authStore.isAuthenticated) unawaited(onboardingStore.load());
+  if (authStore.isAuthenticated) {
+    unawaited(onboardingStore.load());
+    unawaited(tipStore.load());
+  }
 }
