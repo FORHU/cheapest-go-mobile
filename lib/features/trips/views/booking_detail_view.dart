@@ -42,10 +42,21 @@ class _BookingDetailViewState extends State<BookingDetailView> {
     @override
     void initState() {
         super.initState();
-        _reload();
+        // Assigned directly rather than through `_reload`: there is nothing on screen yet to
+        // rebuild, and `setState` during `initState` is what the framework objects to.
+        _load = _find();
     }
 
-    void _reload() => setState(() => _load = _find());
+    /// Starts the lookup again and rebuilds once it is under way.
+    ///
+    /// A block body, not an arrow. `setState(() => _load = _find())` returns the value of the
+    /// assignment — a `Future` — and Flutter rejects a callback that returns one outright,
+    /// which took this screen down with a red error every time it opened.
+    void _reload() {
+        setState(() {
+            _load = _find();
+        });
+    }
 
     Future<TripBooking?> _find() async {
         final page = await bookingsSource.myBookings();

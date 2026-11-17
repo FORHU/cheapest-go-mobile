@@ -107,6 +107,7 @@ class FakeFlightsApi extends FlightsApi {
     this.bookError,
     this.offerGone = false,
     this.confirmError,
+    this.statusAnswers = const [],
   }) : offers = offers ?? sampleOffers();
 
   List<FlightFare> offers;
@@ -116,6 +117,11 @@ class FakeFlightsApi extends FlightsApi {
   bool offerGone;
   ApiError? confirmError;
 
+  /// What `bookingStatus` answers, in order: null for "nothing to report yet", a confirmation
+  /// once the booking lands, or an [ApiError] to throw. The last entry repeats once used up.
+  List<Object?> statusAnswers;
+
+  final statusChecks = <String>[];
   final searches = <Map<String, Object?>>[];
   final revalidated = <String>[];
   final books = <Map<String, Object?>>[];
@@ -196,5 +202,17 @@ class FakeFlightsApi extends FlightsApi {
     confirms.add({'paymentIntentId': paymentIntentId, 'sessionId': sessionId});
     if (confirmError != null) throw confirmError!;
     return const FlightConfirmation(bookingId: 'bk_1', pnr: 'QZX7PA', status: 'ticketed');
+  }
+
+  @override
+  Future<FlightConfirmation?> bookingStatus(String sessionId) async {
+    statusChecks.add(sessionId);
+    if (statusAnswers.isEmpty) return null;
+    final answer = statusChecks.length <= statusAnswers.length
+        ? statusAnswers[statusChecks.length - 1]
+        : statusAnswers.last;
+    if (answer is Exception) throw answer;
+    if (answer is Error) throw answer;
+    return answer as FlightConfirmation?;
   }
 }

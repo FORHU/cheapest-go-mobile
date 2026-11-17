@@ -136,6 +136,42 @@ class FlightsApi {
       status: body['status']?.toString() ?? '',
     );
   }
+
+  /// Where a booking stands, asked by session rather than by payment.
+  ///
+  /// `confirm` answers once. When it answers `BOOKING_PROCESSING` — the card charged, the
+  /// order placed, the booking row not yet readable — nothing else was ever asked, and a
+  /// booking that finished a second later went on claiming it was still being worked on. This
+  /// is what the settling screen asks, until it has an answer.
+  ///
+  /// Returns null while there is still nothing to report, so a caller can keep waiting without
+  /// telling a traveller anything it does not yet know.
+  Future<FlightConfirmation?> bookingStatus(String sessionId) async {
+    final res = await _client.get(
+      '/api/v2/flights/booking-status?sessionId=$sessionId',
+      options: const HttpRequestOptions(timeout: Duration(seconds: 20)),
+    );
+    final body = res is Map<String, dynamic> ? res : const <String, dynamic>{};
+
+    // Said plainly rather than left to the caller: a failed booking is an outcome, and one
+    // the settling screen must stop claiming to be in progress.
+    if (body['failed'] == true) {
+      throw ApiError(
+        body['error']?.toString() ?? 'This booking could not be completed.',
+        category: ErrorCategory.server,
+        code: body['code']?.toString(),
+      );
+    }
+
+    if (body['found'] != true) return null;
+
+    final pnr = body['pnr']?.toString();
+    return FlightConfirmation(
+      bookingId: body['bookingId']?.toString() ?? '',
+      pnr: pnr == null || pnr.isEmpty ? null : pnr,
+      status: body['status']?.toString() ?? '',
+    );
+  }
 }
 
 /// What `/flights/confirm` answered with when the airline said yes.
