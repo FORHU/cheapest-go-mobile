@@ -5,7 +5,7 @@ import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/features/home/components/stage_chrome.dart';
 import 'package:cheapest_go_mobile/features/home/components/step_search.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
-import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_target.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 
@@ -67,8 +67,8 @@ class _HomeViewState extends State<HomeView> {
                                     crossAxisAlignment: CrossAxisAlignment.stretch,
                                     children: [
                                         // Anchored for the first-run tour (#63). Draws nothing.
-                                        CoachMarkTarget(
-                                            id: CoachMarkIds.searchFaces,
+                                        TipAnchor(
+                                            id: TipAnchors.searchFaces,
                                             child: _Tabs(face: _face, onChanged: (f) => setState(() => _face = f)),
                                         ),
                                         SizedBox(height: TwSpace.of(5)),
@@ -76,8 +76,8 @@ class _HomeViewState extends State<HomeView> {
                                         SizedBox(height: TwSpace.of(5)),
                                         // Keyed by face: a tab switched in place starts its own
                                         // search afresh, as V2 does by keying on mode.
-                                        CoachMarkTarget(
-                                            id: CoachMarkIds.searchStart,
+                                        TipAnchor(
+                                            id: TipAnchors.searchStart,
                                             child: switch (_face) {
                                                 _Face.stays => const StepSearch(
                                                     key: ValueKey('stays'), mode: StepMode.stays),

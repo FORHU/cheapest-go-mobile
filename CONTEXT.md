@@ -99,6 +99,34 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   _Avoid_: reading a missing marker as "has not onboarded" — that would wall every existing
   user out of the app they already use.
 
+## Guidance
+
+- **Tip** — a one-time, non-blocking pointer at a single control, shown the first time somebody
+  reaches the screen that carries it. It names what that control is for and gets out of the
+  way: nothing is dimmed, taps pass through to the screen underneath, and acting on the screen
+  dismisses it. Each screen owns its own; they are not steps of anything.
+  _Avoid_: "coach mark". Everywhere else that word means a dimmed screen with a cut-out, which
+  is the thing these deliberately are not — and a name that invites the scrim back is how the
+  scrim comes back.
+  _Avoid_: calling a run of them a **Journey**. That word is already V2's, for the landing
+  page's opening sequence, and means something else entirely.
+
+- **Tip Anchor** — the widget a **Tip** points at, named so the tip can find it without the
+  screen knowing a tip exists. A feature may not import another feature, and the things worth
+  pointing at are spread across several, so anchors register themselves and are looked up.
+  _Avoid_: treating a missing anchor as an error. A screen nobody is looking at has no anchor,
+  and that is the normal case.
+
+- **Tipped Out** — somebody who has stopped the **Tips**. Skip does that, from any Tip, and no
+  further Tip appears on any screen. Skip means all of them, not the card in front of you: a
+  way out that only closes what you are looking at is not a way out.
+  _Avoid_: reading "Got it" as stopping them. That is somebody taking the help, not refusing
+  it. _Avoid_: expecting Skip to navigate. It stops the help; it does not move anybody, least
+  of all out of a booking they are in the middle of.
+  _Avoid_: numbering them, or calling them a tour, a walkthrough or a sequence. They were
+  numbered once — "Tip 2 of 7" — and it made the help read as a flow the traveller was inside,
+  so Skip looked like a door out of it and leaving them where they stood read as broken.
+
 ## Hotel domain
 
 - **Saved Trip** — a hotel or flight a user has marked with the heart icon to revisit later.

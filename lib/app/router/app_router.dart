@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
-import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_target.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
 import 'package:cheapest_go_mobile/features/onboarding/views/onboarding_view.dart';
@@ -333,8 +333,8 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
       // status bar — the overlap #61 reports.
       body: widget.navigationShell,
       // Anchored for the first-run tour (#63). Draws nothing of its own.
-      bottomNavigationBar: CoachMarkTarget(
-        id: CoachMarkIds.bottomBar,
+      bottomNavigationBar: TipAnchor(
+        id: TipAnchors.bottomBar,
         child: V2BottomNav(
           activeIndex: _activeIndex,
           settingsOpen: _settingsOpen,

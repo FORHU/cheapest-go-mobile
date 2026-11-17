@@ -8,6 +8,8 @@ import 'package:cheapest_go_mobile/features/hotels/components/property_hero.dart
 import 'package:cheapest_go_mobile/features/hotels/components/room_selection.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
@@ -87,7 +89,10 @@ class _HotelDetailViewState extends State<HotelDetailView> {
             );
         }
 
-        return ListenableBuilder(
+        return TipScope(
+            tip: tipFor(AppLocalizations.of(context)!, TipAnchors.hotelRooms),
+            ready: !_loading,
+            child: ListenableBuilder(
             listenable: Listenable.merge([tripSearchStore, uiSettingsStore, exchangeRates]),
             builder: (context, _) {
                 final currency = uiSettingsStore.displayCurrency;
@@ -116,7 +121,11 @@ class _HotelDetailViewState extends State<HotelDetailView> {
                                     child: Center(child: CircularProgressIndicator()),
                                 )
                             else
-                                RoomSelection(
+                                // What the Tip points at: picking a room is what turns a
+                                // stay into something bookable. See #62.
+                                TipAnchor(
+                                    id: TipAnchors.hotelRooms,
+                                    child: RoomSelection(
                                     rooms: hotel.rooms,
                                     currency: currency,
                                     selectedOfferId: selected?.offerId,
@@ -125,6 +134,7 @@ class _HotelDetailViewState extends State<HotelDetailView> {
                                     // galleries, so the building stands in — V2 passes the
                                     // same photograph as its `galleryFallback`.
                                     fallbackPhoto: hotel.photos.isEmpty ? null : hotel.photos.first,
+                                ),
                                 ),
                             // V2's order: the rooms, then what is around them, then what guests
                             // said. The explorer removes itself where the endpoint has
@@ -155,6 +165,7 @@ class _HotelDetailViewState extends State<HotelDetailView> {
                         ),
                 );
             },
+            ),
         );
     }
 }

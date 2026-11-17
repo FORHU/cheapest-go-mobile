@@ -80,7 +80,7 @@ void main() {
     // The carry works off a prefix list. If a prefix comes off it, the keys above survive
     // only until the next sync — so the list itself is part of the contract.
     final source = File('tools/sync_design.dart').readAsStringSync();
-    for (final prefix in ['onboarding_', 'coach_']) {
+    for (final prefix in ['onboarding_', 'tip_']) {
       expect(
         source,
         contains("'$prefix'"),
@@ -93,16 +93,16 @@ void main() {
     // Same reasoning as onboarding: the web has no tour, so `sync_design` has no original to
     // rebuild these from and would drop them.
     const coachKeys = [
-      'coach_step',
-      'coach_next',
-      'coach_done',
-      'coach_skip',
-      'coach_faces_title',
-      'coach_faces_body',
-      'coach_search_title',
-      'coach_search_body',
-      'coach_bar_title',
-      'coach_bar_body',
+      
+      'tip_next',
+      'tip_done',
+      'tip_skip',
+      'tip_faces_title',
+      'tip_faces_body',
+      'tip_search_title',
+      'tip_search_body',
+      'tip_bar_title',
+      'tip_bar_body',
     ];
 
     for (final locale in locales) {
@@ -111,9 +111,6 @@ void main() {
         expect(file.containsKey(key), isTrue, reason: '$locale lost $key');
         expect((file[key] as String).trim(), isNotEmpty, reason: '$locale has $key but blank');
       }
-      final step = file['coach_step'] as String;
-      expect(step, contains('{current}'), reason: '$locale lost {current}');
-      expect(step, contains('{total}'), reason: '$locale lost {total}');
     }
   });
 }
