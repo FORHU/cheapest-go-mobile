@@ -133,11 +133,6 @@ class _TipScopeState extends State<TipScope> {
     final rect = TipAnchorRegistry.rectOf(tip.anchorId);
     if (rect == null) return widget.child;
 
-    final size = MediaQuery.of(context).size;
-    // Below the anchor when there is room, above it otherwise. Never over it: a card covering
-    // the thing it is describing is worse than no card.
-    final below = rect.bottom + 170 < size.height;
-
     return Stack(
       children: [
         // The screen underneath keeps working — nothing is dimmed and nothing is intercepted.
@@ -148,12 +143,15 @@ class _TipScopeState extends State<TipScope> {
         // A card that vanishes when you touch anything cannot be read on a screen you are
         // using. It stays until "Got it" or "Skip".
         widget.child,
-        Positioned(
-          left: 16,
-          right: 16,
-          top: below ? rect.bottom + 12 : null,
-          bottom: below ? null : size.height - rect.top + 12,
-          child: _TipCard(tip: tip, onGotIt: _dismiss, onSkip: _refuse),
+        // Positioned by a delegate rather than by arithmetic, because only the delegate is
+        // told how tall the card turned out to be. Guessing it — this guessed 170 — put the
+        // card half off the bottom of handsets, where a traveller saw "Got it" and "Skip"
+        // floating with no words above them.
+        Positioned.fill(
+          child: CustomSingleChildLayout(
+            delegate: _TipPlacement(anchor: rect, safe: MediaQuery.paddingOf(context)),
+            child: _TipCard(tip: tip, onGotIt: _dismiss, onSkip: _refuse),
+          ),
         ),
       ],
     );
@@ -274,3 +272,62 @@ const List<String> allTips = [
   TipAnchors.flightCheckout,
   TipAnchors.trips,
 ];
+
+/// Puts the card beside the thing it describes, and never off the screen.
+///
+/// A `SingleChildLayoutDelegate` rather than a `Positioned`, for one reason: this is told the
+/// card's real height before it has to place it. The arithmetic version assumed 170 logical
+/// pixels, and a card with a longer line — or a larger text scale, or a translation — ran past
+/// the bottom of the screen. What was left on screen was its last row: "Got it" and "Skip",
+/// with nothing above them. That is the bug this exists to make impossible.
+class _TipPlacement extends SingleChildLayoutDelegate {
+  const _TipPlacement({required this.anchor, required this.safe});
+
+  /// Where the thing being described is, in global coordinates.
+  final Rect anchor;
+
+  /// The system insets — status bar, gesture bar — which are not ours to draw in.
+  final EdgeInsets safe;
+
+  static const double _margin = 16;
+  static const double _gap = 12;
+
+  @override
+  BoxConstraints getConstraintsForChild(BoxConstraints constraints) {
+    // Width is the screen less a margin either side. Height is loose: the card is as tall as
+    // its words, and the placement below copes with whatever that turns out to be.
+    final width = constraints.maxWidth - _margin * 2;
+    return BoxConstraints(
+      minWidth: width,
+      maxWidth: width,
+      maxHeight: (constraints.maxHeight - safe.vertical - _margin * 2).clamp(0.0, double.infinity),
+    );
+  }
+
+  @override
+  Offset getPositionForChild(Size size, Size childSize) {
+    final top = safe.top + _margin;
+    final bottom = size.height - safe.bottom - _margin;
+
+    // Below the anchor if it fits there, above it if it fits there instead. Never over it: a
+    // card covering the control it is describing is worse than no card.
+    final roomBelow = bottom - (anchor.bottom + _gap);
+    final roomAbove = (anchor.top - _gap) - top;
+
+    double y;
+    if (childSize.height <= roomBelow) {
+      y = anchor.bottom + _gap;
+    } else if (childSize.height <= roomAbove) {
+      y = anchor.top - _gap - childSize.height;
+    } else {
+      // Neither side has room — a tall anchor, a small screen, a large text scale. Being
+      // readable beats being beside the right thing, so it goes wherever it fits.
+      y = roomBelow >= roomAbove ? bottom - childSize.height : top;
+    }
+
+    return Offset(_margin, y.clamp(top, (bottom - childSize.height).clamp(top, bottom)));
+  }
+
+  @override
+  bool shouldRelayout(_TipPlacement old) => old.anchor != anchor || old.safe != safe;
+}

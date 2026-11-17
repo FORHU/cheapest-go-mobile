@@ -303,4 +303,127 @@ void main() {
       expect(onTheWay.toSet(), hasLength(onTheWay.length), reason: 'ids must be distinct');
     });
   });
+
+  placementTests();
+}
+
+/// Where the card lands. See #62 and ADR-0006.
+///
+/// On a handset these appeared "in random areas", with the words off-screen and only "Got it"
+/// and "Skip" visible. The placement assumed the card was 170 logical pixels tall; a longer
+/// line, a translation or a larger text scale made it taller, and the rest ran off the bottom.
+void placementTests() {
+  group('the card stays on screen', () {
+    Future<void> pumpAnchoredAt(WidgetTester tester, Alignment where, {double height = 56}) async {
+      // A handset, not the 800x600 the test binding defaults to. On that larger surface the
+      // old arithmetic happened to fit, which is why nothing caught this before a phone did.
+      tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      tipStore.debugLoad();
+      TipAnchorRegistry.clear();
+
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: Builder(builder: (context) {
+          return TipScope(
+            tip: tipFor(AppLocalizations.of(context)!, TipAnchors.hotelCheckout),
+            child: Scaffold(
+              body: Align(
+                alignment: where,
+                child: TipAnchor(
+                  id: TipAnchors.hotelCheckout,
+                  child: SizedBox(height: height, width: 320),
+                ),
+              ),
+            ),
+          );
+        }),
+      ));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+    }
+
+    void expectFullyVisible(WidgetTester tester) {
+      final screen = tester.view.physicalSize / tester.view.devicePixelRatio;
+
+      // The words, not just the buttons at the card's bottom edge. That was the whole
+      // complaint: "some points that i cant see text, only buttons like got it and skip".
+      final title = tester.getRect(find.text('Check the total before you pay'));
+      expect(title.top, greaterThanOrEqualTo(0.0), reason: 'the title ran off the top');
+      expect(title.bottom, lessThanOrEqualTo(screen.height), reason: 'the title ran off the bottom');
+
+      final body = tester.getRect(find.textContaining('This is what will be charged'));
+      expect(body.top, greaterThanOrEqualTo(0.0));
+      expect(body.bottom, lessThanOrEqualTo(screen.height), reason: 'the body ran off the bottom');
+
+      final skip = tester.getRect(find.text('Skip'));
+      expect(skip.bottom, lessThanOrEqualTo(screen.height), reason: 'the buttons ran off');
+    }
+
+    testWidgets('anchored at the very bottom', (tester) async {
+      // The case from the handset: a checkout button sits at the bottom, so there is no room
+      // beneath it and the card has to go above.
+      await pumpAnchoredAt(tester, Alignment.bottomCenter);
+      expectFullyVisible(tester);
+    });
+
+    testWidgets('anchored at the very top', (tester) async {
+      await pumpAnchoredAt(tester, Alignment.topCenter);
+      expectFullyVisible(tester);
+    });
+
+    testWidgets('anchored in the middle', (tester) async {
+      await pumpAnchoredAt(tester, Alignment.center);
+      expectFullyVisible(tester);
+    });
+
+    testWidgets('anchored to something tall that starts at the top', (tester) async {
+      // The case from the handset. Trips wraps its whole list, flight search its whole top
+      // bar: anchors that are tall and start high. The old formula put the card "above" such
+      // an anchor by measuring from its top, which is off the top of the screen — leaving the
+      // buttons showing and the words gone.
+      await pumpAnchoredAt(tester, Alignment.topCenter, height: 780);
+      expectFullyVisible(tester);
+    });
+
+    testWidgets('and at a large text scale, where the card grows', (tester) async {
+      tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      tipStore.debugLoad();
+      TipAnchorRegistry.clear();
+
+      await tester.pumpWidget(MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.6)),
+          child: Builder(builder: (context) {
+            return TipScope(
+              tip: tipFor(AppLocalizations.of(context)!, TipAnchors.hotelCheckout),
+              child: Scaffold(
+                body: Align(
+                  alignment: Alignment.bottomCenter,
+                  child: TipAnchor(
+                    id: TipAnchors.hotelCheckout,
+                    child: const SizedBox(height: 56, width: 320),
+                  ),
+                ),
+              ),
+            );
+          }),
+        ),
+      ));
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+
+      expectFullyVisible(tester);
+    });
+  });
 }
