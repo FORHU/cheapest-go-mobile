@@ -16,6 +16,8 @@ import 'package:cheapest_go_mobile/features/flights/lib/flight_search_query.dart
 import 'package:cheapest_go_mobile/features/flights/lib/flight_utils.dart';
 import 'package:cheapest_go_mobile/features/flights/models/flight_fare.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -342,7 +344,12 @@ class _FlightSearchViewState extends State<FlightSearchView> {
       cabin: _query.cabin,
     );
 
-    return Scaffold(
+    // Five questions rather than three, and the results arrive in the same screen — so the
+    // Tip waits until the search is not mid-flight. See #62 and ADR-0006.
+    return TipScope(
+      tip: tipFor(t, TipAnchors.flightSearch),
+      ready: !loading,
+      child: Scaffold(
       backgroundColor: skin.ground,
       body: SafeArea(
         bottom: false,
@@ -364,7 +371,11 @@ class _FlightSearchViewState extends State<FlightSearchView> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                   child: Column(
                     children: [
-                      FlightTopBar(
+                      // What the Tip points at: the bar carrying the route, the dates and who
+                      // is flying — the five questions, in one control.
+                      TipAnchor(
+                        id: TipAnchors.flightSearch,
+                        child: FlightTopBar(
                         origin: _query.origin,
                         destination: _query.destination,
                         searching: loading,
@@ -387,6 +398,7 @@ class _FlightSearchViewState extends State<FlightSearchView> {
                         currency: _userCurrency,
                         onCurrency: uiSettingsStore.setDisplayCurrency,
                         onToggleTheme: () => uiSettingsStore.setThemeMode(dark ? ThemeMode.light : ThemeMode.dark),
+                      ),
                       ),
                       // A date nobody asked for is disclosed, never applied quietly.
                       if (!_query.departureChosen)
@@ -458,6 +470,7 @@ class _FlightSearchViewState extends State<FlightSearchView> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

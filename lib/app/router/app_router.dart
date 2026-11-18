@@ -4,10 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
-import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_target.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
 import 'package:cheapest_go_mobile/features/onboarding/views/onboarding_view.dart';
+import 'package:cheapest_go_mobile/features/ai_chat/views/ai_chat_view.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
@@ -128,6 +129,13 @@ GoRouter createAppRouter({bool gate = true}) => GoRouter(
             },
             onSignIn: () => context.push('/login'),
           ),
+        ),
+        // V2's AI chat. Outside the shell because V2's bar steps aside on `/ai-chat`
+        // (`MobileBottomNav.tsx`): the conversation has the screen to itself. `?q=` is the
+        // question a landing or search hands over, sent on arrival.
+        GoRoute(
+          path: '/ai-chat',
+          builder: (_, state) => AiChatView(initialQuery: state.uri.queryParameters['q']),
         ),
         // V2's flight search and booking (#47). Every fare is api-v2's, from Duffel.
         GoRoute(
@@ -333,8 +341,8 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
       // status bar — the overlap #61 reports.
       body: widget.navigationShell,
       // Anchored for the first-run tour (#63). Draws nothing of its own.
-      bottomNavigationBar: CoachMarkTarget(
-        id: CoachMarkIds.bottomBar,
+      bottomNavigationBar: TipAnchor(
+        id: TipAnchors.bottomBar,
         child: V2BottomNav(
           activeIndex: _activeIndex,
           settingsOpen: _settingsOpen,

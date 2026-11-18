@@ -345,7 +345,7 @@ const _templateLocale = 'en';
 /// step titles and progress wording were written here and are translated here. Keep this list
 /// short. A prefix on it is a promise that nobody will ever find these strings in V2 and
 /// wonder why they differ.
-const Set<String> _locallyOwnedPrefixes = {'onboarding_', 'coach_'};
+const Set<String> _locallyOwnedPrefixes = {'onboarding_', 'tip_'};
 
 /// Carries the locally-owned keys from the ARB already on disk into the one about to replace
 /// it, so a rebuild does not delete the strings V2 was never going to supply.

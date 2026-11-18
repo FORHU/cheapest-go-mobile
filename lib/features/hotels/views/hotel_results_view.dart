@@ -9,6 +9,8 @@ import 'package:cheapest_go_mobile/features/hotels/components/stay_rail_card.dar
 import 'package:cheapest_go_mobile/features/hotels/components/stay_status.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_top_bar.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
@@ -194,7 +196,12 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                 final shown = _apply(_filters);
                 final currency = uiSettingsStore.displayCurrency;
 
-                return Stack(
+                // The Tip waits for stays to actually be there: one over a spinner, describing
+                // cards that have not arrived, teaches nothing. See #62 and ADR-0006.
+                return TipScope(
+                    tip: tipFor(t, TipAnchors.hotelResult),
+                    ready: !_loading && shown.isNotEmpty,
+                    child: Stack(
                     children: [
                         Positioned.fill(
                             child: _mapView
@@ -271,6 +278,8 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                 left: 0,
                                 right: 0,
                                 bottom: 0,
+                                child: TipAnchor(
+                                id: TipAnchors.hotelResult,
                                 child: _Rail(
                                     hotels: shown,
                                     currency: currency,
@@ -281,8 +290,10 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                     onSelect: (h) => _select(h, shown),
                                     onView: _openStay,
                                 ),
+                                ),
                             ),
                     ],
+                ),
                 );
             },
         );
@@ -436,11 +447,18 @@ class _StayList extends StatelessWidget {
                 padding: const EdgeInsets.fromLTRB(16, 150, 16, 24),
                 itemCount: hotels.length,
                 separatorBuilder: (_, _) => const SizedBox(height: 12),
-                itemBuilder: (context, i) => StayListCard(
-                    hotel: hotels[i],
-                    currency: currency,
-                    onOpen: () => onView(hotels[i]),
-                ),
+                itemBuilder: (context, i) {
+                    final card = StayListCard(
+                        hotel: hotels[i],
+                        currency: currency,
+                        onOpen: () => onView(hotels[i]),
+                    );
+                    // The first card is what the Tip points at — the one a newcomer reads to
+                    // learn what a price on this screen means. See #62.
+                    return i == 0
+                        ? TipAnchor(id: TipAnchors.hotelResult, child: card)
+                        : card;
+                },
             ),
         );
     }

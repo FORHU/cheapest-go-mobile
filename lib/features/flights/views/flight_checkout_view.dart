@@ -11,7 +11,10 @@ import 'package:cheapest_go_mobile/features/flights/lib/flight_utils.dart';
 import 'package:cheapest_go_mobile/features/flights/lib/passengers.dart';
 import 'package:cheapest_go_mobile/features/flights/models/flight_fare.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
+import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -257,7 +260,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      await _alert(t.checkout_alert_paymentTitle, error.toString().replaceFirst('Exception: ', ''));
+      await _alert(t.checkout_alert_paymentTitle, errorMessage(error));
       return;
     }
 
@@ -353,7 +356,11 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     final payment = _step == _Step.payment;
     if (_step == _Step.confirmed) return _verification(t, c);
 
-    return PopScope(
+    // Only on the payment step: a Tip about authorising a card has nothing to say while
+    // somebody is still typing passenger names. See #62 and ADR-0006.
+    return TipScope(
+      tip: payment ? tipFor(t, TipAnchors.flightCheckout) : null,
+      child: PopScope(
       canPop: !payment,
       onPopInvokedWithResult: (didPop, _) {
         // The Android back gesture does what the page's own back does: from payment, to details.
@@ -423,7 +430,10 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    GradientPill(
+                    // What the Tip points at: the charge, and what authorising it means.
+                    TipAnchor(
+                      id: TipAnchors.flightCheckout,
+                      child: GradientPill(
                       label: payment ? t.checkout_payNow(_payLabel) : t.checkout_continueToPayment,
                       busy: _submitting,
                       onTap: payment ? _pay : _submitDetails,
@@ -431,6 +441,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
                       height: 52,
                       radius: 999,
                       fontSize: 16,
+                    ),
                     ),
                     const SizedBox(height: 10),
                     Text(
@@ -446,6 +457,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

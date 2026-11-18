@@ -10,6 +10,8 @@ import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/app_refresh.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 
 /// **My Bookings** — everything the traveller has booked. See #42 and ADR-0003.
 ///
@@ -80,7 +82,9 @@ class _TripsViewState extends State<TripsView> {
         final t = AppLocalizations.of(context)!;
         final c = context.colors;
 
-        return SafeArea(
+        return TipScope(
+            tip: tipFor(t, TipAnchors.trips),
+            child: SafeArea(
             bottom: false,
             child: FutureBuilder<BookingsPage>(
                 future: _load,
@@ -127,10 +131,12 @@ class _TripsViewState extends State<TripsView> {
                                 onChanged: (_) => setState(() {}),
                             ),
                             const SizedBox(height: 16),
-                            body,
+                            // What the Tip points at: where a booking turns up afterwards.
+                            TipAnchor(id: TipAnchors.trips, child: body),
                         ],
                     );
                 },
+            ),
             ),
         );
     }

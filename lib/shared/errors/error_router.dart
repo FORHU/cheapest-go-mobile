@@ -18,6 +18,24 @@ class RoutedError {
   final ErrorRouteAction action;
 }
 
+/// The one sentence to show a traveller for [error].
+///
+/// `ApiError.toString()` is a diagnostic — it renders as
+/// "ApiError(ErrorCategory.unknown, status: 200): Hotel booking is switched off in this
+/// environment." — and three screens were putting that on the page verbatim. [routeError]
+/// already decides what each category should say; this is that decision as a single line.
+///
+/// Validation is the one category routeError deliberately gives no toast, because its place is
+/// against the field. A screen with nowhere to put it still has to say something, so the error's
+/// own message is used rather than nothing at all.
+String errorMessage(Object? error) {
+  // Anything that is not an ApiError already carries words worth showing — a declined card
+  // arrives as Stripe's own sentence, and routeError would replace it with "Unexpected error
+  // occurred". Only an ApiError gets routed.
+  if (error is! ApiError) return error.toString().replaceFirst('Exception: ', '');
+  return routeError(error).toast ?? error.message;
+}
+
 RoutedError routeError(Object? error) {
   if (error is! ApiError) {
     return const RoutedError(

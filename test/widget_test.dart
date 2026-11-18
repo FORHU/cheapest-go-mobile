@@ -33,6 +33,29 @@ void main() {
       expect(authRouted.toast, 'Session expired');
     });
 
+    test('what a traveller is shown is never the exception itself', () {
+      // The screen that prompted this showed, in a red banner on the payment step:
+      //   ApiError(ErrorCategory.unknown, status: 200): Hotel booking is switched off…
+      // Three checkout screens printed error.toString(), which for an ApiError is a
+      // diagnostic. A refusal the server worded for a person must reach them as that wording.
+      final off = ApiError(
+        'Hotel booking is switched off in this environment.',
+        status: 200,
+      );
+      expect(errorMessage(off), 'Hotel booking is switched off in this environment.');
+      expect(errorMessage(off), isNot(contains('ApiError')));
+      expect(errorMessage(off), isNot(contains('status:')));
+
+      // A category routeError has its own words for keeps them.
+      expect(
+        errorMessage(ApiError('Unauthorized', category: ErrorCategory.auth)),
+        'Session expired',
+      );
+
+      // And anything that is not an ApiError is already a sentence: a declined card arrives
+      // as Stripe's own, and routing it would replace it with "Unexpected error occurred".
+      expect(errorMessage(Exception('Your card was declined.')), 'Your card was declined.');
+    });
     test('RBAC engine enforces role permissions', () {
       expect(hasPermission(Role.admin, Permission.adminAccess), isTrue);
       expect(hasPermission(Role.user, Permission.adminAccess), isFalse);

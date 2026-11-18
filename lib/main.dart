@@ -8,7 +8,6 @@ import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/token.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
-import 'package:cheapest_go_mobile/shared/coachmarks/coach_mark_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
 const _kMapboxToken = String.fromEnvironment(
@@ -30,7 +29,6 @@ Future<void> main() async {
   }
   await tokenStorage.init();
   await uiSettingsStore.init();
-  await coachMarkStore.init();
   await bookingsStore.init();
   // No demo history. It existed so Trips had something to show; Trips now shows what api-v2
   // confirms, and five invented past trips are not that. See ADR-0003. The store itself still

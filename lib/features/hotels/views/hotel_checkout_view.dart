@@ -4,8 +4,11 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
 import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
+import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
+import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -309,10 +312,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
         }
     }
 
-    static String _readable(Object error) {
-        final text = error.toString();
-        return text.startsWith('Exception: ') ? text.substring(11) : text;
-    }
+    static String _readable(Object error) => errorMessage(error);
 
     @override
     Widget build(BuildContext context) {
@@ -320,7 +320,11 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
         final skin = StaySkin.of(context);
         final hotel = _hotel;
 
-        return Scaffold(
+        // Only on the payment step, and only once there is a price to talk about. See #62.
+        return TipScope(
+            tip: _step == _Step.payment ? tipFor(t, TipAnchors.hotelCheckout) : null,
+            ready: _quote?.display != null,
+            child: Scaffold(
             backgroundColor: skin.surface,
             appBar: AppBar(
                 backgroundColor: skin.surface,
@@ -363,7 +367,9 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                 ),
             bottomNavigationBar: hotel == null || _step == _Step.confirmed
                 ? null
-                : _Action(
+                : TipAnchor(
+                    id: TipAnchors.hotelCheckout,
+                    child: _Action(
                     // api-v2's figure, fee included — nothing is billed above it. Without one
                     // there is no price to name and nothing to press: the notice above says
                     // why, and the bar does not offer to charge a number nobody has.
@@ -382,6 +388,8 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                             ? null
                             : _pay,
                 ),
+                ),
+            ),
         );
     }
 
