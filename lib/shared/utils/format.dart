@@ -1,8 +1,19 @@
 /// Display formatting for prices, dates, and tee times.
 library;
 
-const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+import 'package:intl/intl.dart';
+
+// Dates read in the language the app is set to, not in English.
+//
+// These were two const English arrays, so an app rendering Korean still wrote "Nov 28 – 29"
+// beside Korean copy. DateFormat takes its language from `Intl.defaultLocale`, which
+// app.dart sets whenever the language changes; unset, intl falls back to English, which is
+// what the tests run in.
+//
+// Built per call rather than cached: the language can change while the app is running, and a
+// formatter built once would keep writing the old language until the next launch.
+String _month(DateTime d) => DateFormat.MMM(Intl.defaultLocale).format(d);
+String _weekday(DateTime d) => DateFormat.E(Intl.defaultLocale).format(d);
 
 /// `4850` → `₱4,850`.
 String formatPeso(int amount) {
@@ -16,13 +27,13 @@ String formatPeso(int amount) {
 }
 
 /// `Nov 14`.
-String formatShortDate(DateTime d) => '${_months[d.month - 1]} ${d.day}';
+String formatShortDate(DateTime d) => '${_month(d)} ${d.day}';
 
 /// `Thu, Nov 14`.
 String formatDayDate(DateTime d) => '${weekdayShort(d)}, ${formatShortDate(d)}';
 
 /// `Thu`.
-String weekdayShort(DateTime d) => _weekdays[d.weekday - 1];
+String weekdayShort(DateTime d) => _weekday(d);
 
 /// `Nov 14 – 17`, or `Nov 30 – Dec 2` across months.
 String formatDateRange(DateTime start, DateTime end) {

@@ -113,7 +113,7 @@ class _DeviceSavesNotice extends StatelessWidget {
                     const SizedBox(height: 8),
                     Align(
                         alignment: Alignment.centerLeft,
-                        child: TextButton(onPressed: onDismiss, child: const Text('Got it')),
+                        child: TextButton(onPressed: onDismiss, child: Text(AppLocalizations.of(context)!.tip_done)),
                     ),
                 ],
             ),

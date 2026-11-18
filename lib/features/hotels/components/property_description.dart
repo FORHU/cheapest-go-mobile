@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/utils/money.dart';
@@ -64,7 +65,7 @@ class _PropertyDescriptionState extends State<PropertyDescription> {
                                             color: skin.title,
                                         ),
                                     ),
-                                    Text('/night', style: TextStyle(fontSize: 12, color: skin.muted)),
+                                    Text(AppLocalizations.of(context)!.hotels_perNight, style: TextStyle(fontSize: 12, color: skin.muted)),
                                 ],
                             ),
                         ],
@@ -98,7 +99,7 @@ class _PropertyDescriptionState extends State<PropertyDescription> {
                             TextButton(
                                 onPressed: () => setState(() => _expanded = !_expanded),
                                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
-                                child: Text(_expanded ? 'Read less' : 'Read more'),
+                                child: Text(_expanded ? 'Read less' : AppLocalizations.of(context)!.propertyOverview_readMore),
                             ),
                     ],
 

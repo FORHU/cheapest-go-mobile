@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/airport_picker.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
@@ -76,7 +77,7 @@ class _GolfViewState extends State<GolfView> {
                   if (widget.showBack) ...[
                     CircleIconButton(
                       icon: Icons.chevron_left_rounded,
-                      tooltip: 'Back',
+                      tooltip: AppLocalizations.of(context)!.checkout_back,
                       onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                     ),
                     const SizedBox(width: 10),
@@ -201,7 +202,7 @@ class _CourseCard extends StatelessWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('from', style: TextStyle(fontSize: 11, color: c.textMuted)),
+                  Text(AppLocalizations.of(context)!.landing_recentlyViewed_from, style: TextStyle(fontSize: 11, color: c.textMuted)),
                   PriceText(course.pricePerPlayer),
                   Text('/player', style: TextStyle(fontSize: 11, color: c.textMuted)),
                 ],
@@ -274,9 +275,9 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
             const SizedBox(height: 18),
             Row(
               children: [
-                const Expanded(child: Text('Players', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
+                Expanded(child: Text(AppLocalizations.of(context)!.golf_booking_players, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
                 IconButton.outlined(
-                  tooltip: 'Fewer players',
+                  tooltip: AppLocalizations.of(context)!.search_golf_fewer,
                   onPressed: _players > 1 ? () => setState(() => _players--) : null,
                   icon: const Icon(Icons.remove),
                 ),
@@ -285,7 +286,7 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
                   child: Text('$_players', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
                 ),
                 IconButton.outlined(
-                  tooltip: 'More players',
+                  tooltip: AppLocalizations.of(context)!.search_golf_more,
                   onPressed: _players < 4 ? () => setState(() => _players++) : null,
                   icon: const Icon(Icons.add),
                 ),

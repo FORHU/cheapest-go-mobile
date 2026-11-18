@@ -77,13 +77,13 @@ class _FlightCardState extends State<FlightCard> {
         ? t.flights_card_freeCancellation
         : penalty != null && penalty > 0
         ? 'Refundable (est. fee: ${widget.money(penalty, policy?.refundPenaltyCurrency ?? 'USD')})'
-        : 'Refundable (fees may apply)';
+        : AppLocalizations.of(context)!.checkout_flight_receipt_refundable;
     final bag = offer.baggage;
     final bagsLine = bag == null
         ? null
         : [
             if (bag.cabinBag != null) bag.cabinBag! ? '1 carry-on' : 'No carry-on',
-            bag.checkedBags > 0 ? '${bag.checkedBags} checked' : 'No checked bag',
+            bag.checkedBags > 0 ? '${bag.checkedBags} checked' : AppLocalizations.of(context)!.checkout_flight_summary_noCheckedBag,
           ].join(' · ');
 
     final timeStyle = TextStyle(

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/shared/lib/demo.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/components/language_picker.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
@@ -62,7 +64,7 @@ class ProfileView extends StatelessWidget {
         leading: Navigator.of(context).canPop()
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back',
+                tooltip: AppLocalizations.of(context)!.checkout_back,
                 onPressed: () => Navigator.of(context).maybePop(),
               )
             : null,
@@ -117,7 +119,7 @@ class ProfileView extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'CheapestGo Mobile v${env.appVersion}',
+                      '$brandName Mobile v${env.appVersion}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
@@ -203,7 +205,7 @@ class ProfileView extends StatelessWidget {
                                   child: Text(
                                     userName?.isNotEmpty == true
                                         ? userName!
-                                        : 'CheapestGo Traveler',
+                                        : '$brandName Traveler',
                                     style: theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -323,7 +325,7 @@ class ProfileView extends StatelessWidget {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: const Text('Sign In'),
+                          child: Text(AppLocalizations.of(context)!.checkout_signIn),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -361,7 +363,41 @@ class ProfileView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 1. Theme Mode
+          // 1. Language. First in the card on purpose: in an app that opens in Korean it is
+          // the setting someone is most likely to be hunting for, and the one that makes the
+          // rest of this screen readable. Options are written in their own script.
+          ListTile(
+            leading: _buildLeadingIcon(
+              Icons.language_rounded,
+              const Color(0xFF2563EB),
+              theme,
+            ),
+            title: Text(
+              AppLocalizations.of(context)!.account_preferences_language,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            subtitle: Text(
+              languageLabel(uiSettingsStore.language),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            trailing: DropdownButton<String>(
+              value: uiSettingsStore.language,
+              underline: const SizedBox.shrink(),
+              borderRadius: BorderRadius.circular(12),
+              items: [
+                for (final code in UiSettingsStore.supportedLanguages)
+                  DropdownMenuItem(value: code, child: Text(languageLabel(code))),
+              ],
+              onChanged: (v) {
+                if (v != null) uiSettingsStore.setLanguage(v);
+              },
+            ),
+          ),
+          Divider(height: 1, indent: 16, endIndent: 16, color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+
+          // 2. Theme Mode
           ListTile(
             leading: _buildLeadingIcon(
               Icons.brightness_6_rounded,
@@ -385,14 +421,14 @@ class ProfileView extends StatelessWidget {
               // Two options, as V2 offers. "System" is deliberately absent: V2 never reads the
               // browser's preference, so mobile does not read the handset's. See
               // UiSettingsStore.setThemeMode.
-              items: const [
+              items: [
                 DropdownMenuItem(
                   value: ThemeMode.light,
-                  child: Text('Light'),
+                  child: Text(AppLocalizations.of(context)!.common_themeLight),
                 ),
                 DropdownMenuItem(
                   value: ThemeMode.dark,
-                  child: Text('Dark'),
+                  child: Text(AppLocalizations.of(context)!.common_themeDark),
                 ),
               ],
               onChanged: (v) {
@@ -414,8 +450,8 @@ class ProfileView extends StatelessWidget {
               const Color(0xFF0EA5E9),
               theme,
             ),
-            title: const Text(
-              'Map',
+            title: Text(
+              AppLocalizations.of(context)!.trips_bookingCard_actions_map,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
@@ -507,8 +543,8 @@ class ProfileView extends StatelessWidget {
         title: const Text('Reset demo data?'),
         content: const Text('Bookings made on this phone and saved stays will be removed.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Reset')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context)!.trips_bookingCard_actions_cancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(AppLocalizations.of(context)!.flights_filtersPanel_reset)),
         ],
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// Material 3 form building blocks, shared across features.
@@ -149,7 +150,7 @@ class AuthTextField extends StatelessWidget {
 class AuthPasswordField extends StatefulWidget {
   const AuthPasswordField({
     required this.controller,
-    this.label = 'Password',
+    this.label,
     this.helperText,
     this.validator,
     this.textInputAction = TextInputAction.done,
@@ -160,7 +161,7 @@ class AuthPasswordField extends StatefulWidget {
   });
 
   final TextEditingController controller;
-  final String label;
+  final String? label;
   final String? helperText;
   final String? Function(String?)? validator;
   final TextInputAction textInputAction;
@@ -186,12 +187,12 @@ class _AuthPasswordFieldState extends State<AuthPasswordField> {
       validator: widget.validator,
       onFieldSubmitted: widget.onFieldSubmitted,
       decoration: InputDecoration(
-        labelText: widget.label,
+        labelText: widget.label ?? AppLocalizations.of(context)!.account_profile_password,
         helperText: widget.helperText,
         prefixIcon: const Icon(Icons.lock_outline),
         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         suffixIcon: IconButton(
-          tooltip: _obscured ? 'Show password' : 'Hide password',
+          tooltip: _obscured ? AppLocalizations.of(context)!.auth_showPassword : AppLocalizations.of(context)!.auth_hidePassword,
           icon: Icon(
             _obscured
                 ? Icons.visibility_outlined

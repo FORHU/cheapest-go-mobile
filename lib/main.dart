@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
@@ -17,6 +18,10 @@ const _kMapboxToken = String.fromEnvironment(
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Month and weekday names for every locale the app carries. Without this, formatting a date
+  // in anything but English throws LocaleDataException the first time it is asked.
+  await initializeDateFormatting();
   if (_kMapboxToken.isNotEmpty) {
     MapboxOptions.setAccessToken(_kMapboxToken);
   }

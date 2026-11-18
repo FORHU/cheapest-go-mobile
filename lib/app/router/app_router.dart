@@ -398,7 +398,7 @@ class _SettingsSheet extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Settings',
+                  AppLocalizations.of(context)!.common_settings,
                   style: TextStyle(
                     fontSize: TwText.lg.size,
                     height: TwText.lg.height,
@@ -408,7 +408,7 @@ class _SettingsSheet extends StatelessWidget {
                 ),
                 IconButton(
                   onPressed: () => Navigator.of(context).pop(),
-                  tooltip: 'Close settings',
+                  tooltip: AppLocalizations.of(context)!.common_closeSettings,
                   icon: Icon(LucideIcons.x, size: 20, color: TwPalette.slate500),
                 ),
               ],

@@ -4,6 +4,15 @@
 // Uses compile-time `--dart-define` values with safe defaults for local/staging runs,
 // and validates URL syntax on startup.
 
+/// The storefront this build is. A build-time constant, as ADR-0005 requires: brand is chosen
+/// when the APK is made, never at runtime, so there is no brand conditional to get wrong and no
+/// way for one brand's failure to reach the other.
+///
+/// Most brand-bearing copy comes from the .arb files, which tool/brand_l10n.dart rewrites before
+/// the build. This covers what is NOT translated copy and so cannot be reached that way: the
+/// task-switcher title, the name Stripe prints on its payment sheet, and a handful of labels.
+const String brandName = String.fromEnvironment('BRAND_NAME', defaultValue: 'CheapestGo');
+
 enum AppEnvironment {
   development,
   staging,

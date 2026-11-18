@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
@@ -85,7 +86,7 @@ class AirportHubSheet extends StatelessWidget {
                 ),
                 IconButton(tooltip: 'Previous airport', onPressed: onPreviousAirport, icon: const Icon(Icons.chevron_left_rounded)),
                 IconButton(tooltip: 'Next airport', onPressed: onNextAirport, icon: const Icon(Icons.chevron_right_rounded)),
-                IconButton(tooltip: 'Close', onPressed: onClose, icon: const Icon(Icons.close_rounded)),
+                IconButton(tooltip: AppLocalizations.of(context)!.checkout_alert_close, onPressed: onClose, icon: const Icon(Icons.close_rounded)),
               ],
             ),
           ),
@@ -94,7 +95,7 @@ class AirportHubSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
               child: SegmentedTabs(
-                labels: ['Overview', 'Stays ${stays.length}', 'Golf ${courses.length}', 'Flights'],
+                labels: [AppLocalizations.of(context)!.legal_content_refund_overview_title, 'Stays ${stays.length}', 'Golf ${courses.length}', AppLocalizations.of(context)!.about_flightsTitle],
                 selected: MapFilter.values.indexOf(filter),
                 onChanged: (i) => onFilterChanged(MapFilter.values[i]),
               ),
@@ -374,7 +375,7 @@ class _PlacePreview extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           AppGradientButton(
-            label: place.isGolf ? 'Book a tee time' : 'See rooms & book',
+            label: place.isGolf ? AppLocalizations.of(context)!.checkout_flight_receipt_next_teeTime : 'See rooms & book',
             icon: place.isGolf ? Icons.golf_course_rounded : Icons.hotel_rounded,
             height: 48,
             onPressed: onOpen,

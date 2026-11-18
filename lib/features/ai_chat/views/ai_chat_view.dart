@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:cheapest_go_mobile/features/ai_chat/api/chat_api.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/features/ai_chat/lib/conversations.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -55,7 +56,7 @@ const _openSidebar = 'Open sidebar';
 const _unreachable = "Sorry, I couldn't reach the AI service. Please try again.";
 
 /// V2's `useBrandName()` on this app's deployment.
-const _brand = 'CheapestGo';
+const _brand = brandName;
 
 /// Tailwind's default transition, `cubic-bezier(0.4, 0, 0.2, 1)`.
 const _ease = Curves.fastOutSlowIn;

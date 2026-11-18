@@ -296,7 +296,7 @@ class _Body extends StatelessWidget {
                     '${b.startsAt.hour.toString().padLeft(2, '0')}:'
                     '${b.startsAt.minute.toString().padLeft(2, '0')}',
                 )),
-                _Row('Players', '${b.players}'),
+                _Row(AppLocalizations.of(context)!.golf_booking_players, '${b.players}'),
                 _Row(t.trips_labels_name, b.leadName),
                 _Row(t.trips_labels_email, b.contactEmail),
             ],
@@ -305,8 +305,8 @@ class _Body extends StatelessWidget {
             title: t.trips_sections_payment,
             icon: Icons.credit_card_rounded,
             rows: [
-                _Row('Green fees', formatMoney(b.greenFee, b.currency)),
-                if (b.serviceFee > 0) _Row('Service fee', formatMoney(b.serviceFee, b.currency)),
+                _Row(AppLocalizations.of(context)!.golf_booking_greenFee, formatMoney(b.greenFee, b.currency)),
+                if (b.serviceFee > 0) _Row(AppLocalizations.of(context)!.checkout_serviceFee, formatMoney(b.serviceFee, b.currency)),
                 // A refunded booking says so here rather than only in the badge.
                 if (b.refundAmount > 0)
                     _Row(t.trips_golfCard_refunded(formatMoney(b.refundAmount, b.currency)), ''),
@@ -546,7 +546,7 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                     maxLines: 3,
                     style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
-                        hintText: 'e.g. Late check-in after 10 PM, extra bed, high floor…',
+                        hintText: AppLocalizations.of(context)!.trips_requestsForm_placeholder,
                         hintStyle: TextStyle(fontSize: 14, color: c.textSubtle),
                         filled: true,
                         fillColor: c.surfaceMuted,
@@ -559,7 +559,7 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                    'Requests are passed to the property and are not guaranteed.',
+                    AppLocalizations.of(context)!.documents_voucher_requestsNotGuaranteed,
                     style: TextStyle(fontSize: 11.5, color: c.textMuted),
                 ),
                 if (_error != null) ...[
@@ -572,7 +572,7 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                 Align(
                     alignment: Alignment.centerLeft,
                     child: AppGradientButton(
-                        label: 'Save request',
+                        label: AppLocalizations.of(context)!.trips_requestsForm_submit,
                         compact: true,
                         isLoading: _busy,
                         onPressed: _busy ? null : _save,
@@ -728,13 +728,13 @@ class _DocumentsPanel extends StatelessWidget {
         if (docs.isEmpty && pending == null) return const SizedBox.shrink();
 
         return _Panel(
-            title: 'Travel documents',
+            title: AppLocalizations.of(context)!.documents_section,
             icon: Icons.description_outlined,
             children: [
                 if (docs.contains(TravelDocument.receipt))
                     _DocButton(
                         icon: Icons.receipt_long_rounded,
-                        label: 'View payment receipt',
+                        label: AppLocalizations.of(context)!.documents_actions_receipt,
                         onTap: () => _openReceipt(context),
                     ),
                 // The voucher and the e-ticket are screens built from the booking, which is

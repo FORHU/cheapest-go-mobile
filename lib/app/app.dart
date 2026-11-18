@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/app/router/app_router.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
@@ -38,8 +40,14 @@ class _CheapestGoAppState extends State<CheapestGoApp> with WidgetsBindingObserv
     return ListenableBuilder(
       listenable: uiSettingsStore,
       builder: (context, _) {
+        // Dates are formatted by plain functions in shared/utils/format.dart, which have no
+        // BuildContext to read a locale from; intl reads this global instead. Set here rather
+        // than once at startup because the language can change while the app is running, and
+        // this builder is exactly what re-runs when it does.
+        Intl.defaultLocale = uiSettingsStore.language;
+
         return MaterialApp.router(
-          title: 'CheapestGo',
+          title: brandName,
           debugShowCheckedModeBanner: false,
           theme: AppTheme.light,
           darkTheme: AppTheme.dark,

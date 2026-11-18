@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -87,7 +88,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                 left: 16,
                 child: CircleIconButton(
                   icon: Icons.chevron_left_rounded,
-                  tooltip: 'Back',
+                  tooltip: AppLocalizations.of(context)!.checkout_back,
                   onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                 ),
               ),
@@ -152,7 +153,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                       const SizedBox(height: 10),
                     ],
                     if (courses.isEmpty)
-                      const EmptyState(icon: Icons.golf_course_rounded, title: 'No courses yet', message: 'Try another airport.')
+                      EmptyState(icon: Icons.golf_course_rounded, title: AppLocalizations.of(context)!.golf_emptyTitle, message: 'Try another airport.')
                     else
                       OutlinedButton(
                         onPressed: () {

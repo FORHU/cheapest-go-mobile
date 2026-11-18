@@ -185,7 +185,7 @@ class StayListCard extends StatelessWidget {
             SnackBar(
                 content: const Text('Sign in to save stays to your account.'),
                 action: SnackBarAction(
-                    label: 'Sign in',
+                    label: AppLocalizations.of(context)!.nav_signIn,
                     onPressed: () => context.push('/login'),
                 ),
             ),

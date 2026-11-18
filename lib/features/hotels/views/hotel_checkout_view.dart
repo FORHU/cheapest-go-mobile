@@ -486,7 +486,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                     _Field(
                         controller: _requests,
                         label: '',
-                        hint: 'The property will do its best to arrange it.',
+                        hint: AppLocalizations.of(context)!.checkout_specialRequests_placeholder,
                         maxLines: 3,
                     ),
                 ],

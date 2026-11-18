@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:cheapest_go_mobile/shared/theme/tokens/chrome_skin.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 
 /// V2's bottom bar, as it appears on a phone. See #36 and `CONTEXT.md` (**Design Parity**).
@@ -42,9 +43,9 @@ class V2BottomNav extends StatelessWidget {
             : ChromeSkin.light;
 
         final slots = <_Slot>[
-            _Slot(icon: LucideIcons.house, label: 'Home', onTap: onHome),
-            _Slot(icon: LucideIcons.list, label: 'Trips', onTap: onTrips),
-            _Slot(icon: LucideIcons.settings2, label: 'Settings', onTap: onSettings, expanded: settingsOpen),
+            _Slot(icon: LucideIcons.house, label: AppLocalizations.of(context)!.property_breadcrumbHome, onTap: onHome),
+            _Slot(icon: LucideIcons.list, label: AppLocalizations.of(context)!.nav_trips, onTap: onTrips),
+            _Slot(icon: LucideIcons.settings2, label: AppLocalizations.of(context)!.common_settings, onTap: onSettings, expanded: settingsOpen),
         ];
 
         return Container(

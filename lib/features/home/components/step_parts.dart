@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/features/home/components/stage_chrome.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 
@@ -132,7 +133,7 @@ class MonthCalendar extends StatelessWidget {
                     children: [
                         RoundBlueButton(
                             icon: Icons.chevron_left_rounded,
-                            tooltip: 'Previous month',
+                            tooltip: AppLocalizations.of(context)!.checkout_datePicker_previousMonth,
                             onPressed: () => onMonth(DateTime(month.year, month.month - 1)),
                         ),
                         Expanded(
@@ -148,7 +149,7 @@ class MonthCalendar extends StatelessWidget {
                         ),
                         RoundBlueButton(
                             icon: Icons.chevron_right_rounded,
-                            tooltip: 'Next month',
+                            tooltip: AppLocalizations.of(context)!.checkout_datePicker_nextMonth,
                             onPressed: () => onMonth(DateTime(month.year, month.month + 1)),
                         ),
                     ],

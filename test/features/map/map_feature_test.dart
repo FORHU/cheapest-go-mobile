@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
@@ -197,6 +198,11 @@ void main() {
     }) =>
         MaterialApp(
           theme: AppTheme.light,
+          // The sheet's close button takes its tooltip from V2's translations, so this
+          // harness carries the delegates the app does. Pinned to English, as these tests assert.
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AirportHubSheet(
               airport: mnl,
