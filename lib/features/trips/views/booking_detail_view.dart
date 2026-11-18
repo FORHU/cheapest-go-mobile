@@ -10,6 +10,7 @@ import 'package:cheapest_go_mobile/features/trips/models/trip_booking.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
+import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 import 'package:cheapest_go_mobile/shared/utils/money.dart';
@@ -528,7 +529,7 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
             if (!mounted) return;
             setState(() {
                 _busy = false;
-                _error = error.toString().replaceFirst('Exception: ', '');
+                _error = errorMessage(error);
             });
         }
     }

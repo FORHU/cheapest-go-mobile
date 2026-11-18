@@ -4,6 +4,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
 import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
+import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
@@ -311,10 +312,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
         }
     }
 
-    static String _readable(Object error) {
-        final text = error.toString();
-        return text.startsWith('Exception: ') ? text.substring(11) : text;
-    }
+    static String _readable(Object error) => errorMessage(error);
 
     @override
     Widget build(BuildContext context) {

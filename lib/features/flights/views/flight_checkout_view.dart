@@ -14,6 +14,7 @@ import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
+import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -259,7 +260,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      await _alert(t.checkout_alert_paymentTitle, error.toString().replaceFirst('Exception: ', ''));
+      await _alert(t.checkout_alert_paymentTitle, errorMessage(error));
       return;
     }
 
