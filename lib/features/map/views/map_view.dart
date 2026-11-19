@@ -1280,7 +1280,7 @@ class _AirportStrip extends StatelessWidget {
                   Text('${plural(hotels.length, 'stay')} · $golf golf', style: TextStyle(fontSize: 12, color: c.textSecondary)),
                   if (from != null) ...[
                     const SizedBox(height: 4),
-                    PriceText(from, suffix: '/night', size: 13),
+                    PriceText(from, suffix: AppLocalizations.of(context)!.hotels_perNight, size: 13),
                   ],
                 ],
               ),

@@ -206,7 +206,7 @@ class _StayRow extends StatelessWidget {
                       Expanded(
                         child: Text(hotel.scoreLabel(AppLocalizations.of(context)!), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textSecondary)),
                       ),
-                      PriceText(hotel.fromRate, suffix: '/night', size: 15),
+                      PriceText(hotel.fromRate, suffix: AppLocalizations.of(context)!.hotels_perNight, size: 15),
                     ],
                   ),
                 ],

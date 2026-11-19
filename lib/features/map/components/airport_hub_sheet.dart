@@ -142,7 +142,7 @@ class _Overview extends StatelessWidget {
                 child: _StatTile(
                   label: plural(stays.length, 'stay'),
                   amount: stayFrom,
-                  suffix: '/night',
+                  suffix: AppLocalizations.of(context)!.hotels_perNight,
                   onTap: () => onFilterChanged(MapFilter.stays),
                 ),
               ),
@@ -266,7 +266,9 @@ class _PlaceRow extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          PriceText(place.price, suffix: place.isGolf ? '/player' : '/night', size: 14),
+          // `/player` has no key in V2's copy, so it stays English until one exists rather
+          // than being invented here in four languages. See the note on golf pricing below.
+          PriceText(place.price, suffix: place.isGolf ? '/player' : AppLocalizations.of(context)!.hotels_perNight, size: 14),
         ],
       ),
     );
@@ -367,7 +369,7 @@ class _PlacePreview extends StatelessWidget {
                       Text(course.meta, style: TextStyle(fontSize: 12, color: c.textSecondary)),
                     ],
                     const SizedBox(height: 6),
-                    PriceText(place.price, suffix: place.isGolf ? '/player' : '/night'),
+                    PriceText(place.price, suffix: place.isGolf ? '/player' : AppLocalizations.of(context)!.hotels_perNight),
                   ],
                 ),
               ),

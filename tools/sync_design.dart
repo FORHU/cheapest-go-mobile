@@ -19,6 +19,7 @@ library;
 import 'dart:convert';
 import 'dart:io';
 
+import 'brand.dart';
 import 'oklch.dart';
 
 const _generatedDir = 'lib/shared/theme/tokens/generated';
@@ -406,7 +407,8 @@ Map<String, String> _arbFiles(Directory v2) {
 
         final arb = <String, dynamic>{'@@locale': locale};
         for (final key in flat.keys.toList()..sort()) {
-            final message = flat[key]!;
+            // V2's copy, restated in the brand this app ships as. See tools/brand.dart.
+            final message = inBrand(flat[key]!);
             arb[key] = message;
             if (locale != _templateLocale) continue;
             final placeholders = _placeholdersIn(message);

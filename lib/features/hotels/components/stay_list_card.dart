@@ -107,7 +107,7 @@ class StayListCard extends StatelessWidget {
                                                             // scale because a 7.8 out of 5 would be a
                                                             // different stay entirely.
                                                             hotel.score > 0
-                                                                ? '${hotel.score.toStringAsFixed(1)} / 10 rating'
+                                                                ? '${hotel.score.toStringAsFixed(1)} / 10 ${t.hotels_description_rating}'
                                                                 : 'No rating yet',
                                                             style: TextStyle(fontSize: 14, color: skin.muted),
                                                         ),
@@ -119,7 +119,7 @@ class StayListCard extends StatelessWidget {
                                                 children: [
                                                     Expanded(
                                                         child: Text(
-                                                            '${formatMoney(shown.amount, shown.currency)}/ night',
+                                                            '${formatMoney(shown.amount, shown.currency)}${t.hotels_perNight}',
                                                             maxLines: 1,
                                                             overflow: TextOverflow.ellipsis,
                                                             style: TextStyle(fontSize: 17, color: skin.muted),

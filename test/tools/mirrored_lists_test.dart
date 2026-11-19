@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import '../../tools/brand.dart';
+
 /// The lists V2 writes are the lists mobile holds. See #44.
 ///
 /// `sync_design.dart` used to drop every array, on a stated ground that expired: "no screen
@@ -35,7 +37,10 @@ void main() {
           checked++;
           expect(
             arb[_arbKey(entry.key)],
-            entry.value,
+            // V2's entry as this app states it. The copy is mirrored, the brand it names is
+            // not: comparing against V2's raw string would assert that an AirangGo build
+            // ships CheapestGo's legal documents.
+            inBrand(entry.value),
             reason: 'ARB $locale is missing or differs at ${entry.key}',
           );
         }

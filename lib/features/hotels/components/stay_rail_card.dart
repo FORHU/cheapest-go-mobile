@@ -98,7 +98,7 @@ class StayRailCard extends StatelessWidget {
                                         child: _Panel(
                                             hotel: hotel,
                                             skin: skin,
-                                            price: '${formatMoney(shown.amount, shown.currency)}/night',
+                                            price: '${formatMoney(shown.amount, shown.currency)}${t.hotels_perNight}',
                                             onView: onView,
                                         ),
                                     ),
@@ -242,7 +242,9 @@ class _Panel extends StatelessWidget {
                                         ),
                                     ),
                                     Text(
-                                        hotel.score > 0 ? '${hotel.score.toStringAsFixed(1)} rating' : ' ',
+                                        hotel.score > 0
+                                            ? '${hotel.score.toStringAsFixed(1)} ${AppLocalizations.of(context)!.hotels_description_rating}'
+                                            : ' ',
                                         maxLines: 1,
                                         style: TextStyle(fontSize: 11, height: 1.35, color: skin.muted),
                                     ),

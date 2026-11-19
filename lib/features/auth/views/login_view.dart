@@ -131,9 +131,13 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       const SizedBox(height: 12),
                       AuthSubmitButton(
-                        // V2's own button text, a literal there too; the page title above is
-                        // the longer 'Sign in to CheapestGo'.
-                        label: 'Sign In',
+                        // V2 hard-codes this one as a literal, which is a defect there rather
+                        // than copy to mirror: Design Parity is V2's own en/ja/ko/zh, and a
+                        // literal is in none of them. Carried across unchanged it left the
+                        // primary action on a Korean screen reading "Sign In" in English.
+                        // `nav_signIn` is V2's own string for this action and is translated in
+                        // all four. The title above stays the longer 'Sign in to {brand}'.
+                        label: t.nav_signIn,
                         isLoading: loading,
                         onPressed: _submit,
                       ),

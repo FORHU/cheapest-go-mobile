@@ -192,7 +192,7 @@ class _SavedRow extends StatelessWidget {
                                     Text(
                                         // The price as it was when this was saved — a rate
                                         // lapses, and this is a shortlist, not a quote.
-                                        '${formatMoney(trip.price!, trip.currency)} /night',
+                                        '${formatMoney(trip.price!, trip.currency)} ${AppLocalizations.of(context)!.hotels_perNight}',
                                         style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,
