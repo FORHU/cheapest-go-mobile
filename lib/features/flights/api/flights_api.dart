@@ -144,9 +144,11 @@ class FlightsApi {
   /// booking that finished a second later went on claiming it was still being worked on. This
   /// is what the settling screen asks, until it has an answer.
   ///
-  /// Returns null while there is still nothing to report, so a caller can keep waiting without
-  /// telling a traveller anything it does not yet know.
-  Future<FlightConfirmation?> bookingStatus(String sessionId) async {
+  /// `booking` is null while there is still nothing to report, so a caller can keep waiting
+  /// without telling a traveller anything it does not yet know. `needsReview` is the one kind
+  /// of nothing worth saying out loud: api-v2 has handed the booking to a person to finish with
+  /// the airline, and asking again will not change that.
+  Future<BookingStatusAnswer> bookingStatus(String sessionId) async {
     final res = await _client.get(
       '/api/v2/flights/booking-status?sessionId=$sessionId',
       options: const HttpRequestOptions(timeout: Duration(seconds: 20)),
@@ -163,16 +165,27 @@ class FlightsApi {
       );
     }
 
-    if (body['found'] != true) return null;
+    if (body['found'] != true) {
+      // api-v2's `lifecycle`: 'pending' and 'processing' both mean ask again, and only a
+      // review is a state asking again will never move off.
+      return (booking: null, needsReview: body['lifecycle'] == 'needs_review');
+    }
 
     final pnr = body['pnr']?.toString();
-    return FlightConfirmation(
-      bookingId: body['bookingId']?.toString() ?? '',
-      pnr: pnr == null || pnr.isEmpty ? null : pnr,
-      status: body['status']?.toString() ?? '',
+    return (
+      booking: FlightConfirmation(
+        bookingId: body['bookingId']?.toString() ?? '',
+        pnr: pnr == null || pnr.isEmpty ? null : pnr,
+        status: body['status']?.toString() ?? '',
+      ),
+      needsReview: false,
     );
   }
 }
+
+/// What [FlightsApi.bookingStatus] found: the booking once there is a row to show it from, and
+/// whether api-v2 has handed it to a person rather than still working on it itself.
+typedef BookingStatusAnswer = ({FlightConfirmation? booking, bool needsReview});
 
 /// What `/flights/confirm` answered with when the airline said yes.
 class FlightConfirmation {

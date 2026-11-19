@@ -265,12 +265,13 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     for (final gap in gaps) {
       await Future<void>.delayed(gap);
       // The traveller may have left for Trips, or started again. Either way this is no
-      // longer theirs to answer.
-      if (!mounted || _confirmed != null) return;
+      // longer theirs to answer. A booking already showing its PNR is finished with too; one
+      // showing without a PNR is not, and is what the remaining gaps are for.
+      if (!mounted || _confirmed?.pnr != null) return;
 
-      FlightConfirmation? found;
+      BookingStatusAnswer answer;
       try {
-        found = await _api.bookingStatus(sessionId);
+        answer = await _api.bookingStatus(sessionId);
       } on ApiError catch (error) {
         if (!mounted) return;
         // A booking that failed outright, refunded by the server. Said rather than left
@@ -285,12 +286,29 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
         continue;
       }
 
-      if (found?.pnr != null && mounted) {
+      if (!mounted) return;
+
+      // Handed to a person to finish with the airline. Polling cannot move this, and leaving
+      // the generic holding message up would have the screen imply otherwise for two minutes
+      // and then go quiet. Said once, and the watching stops.
+      if (answer.needsReview) {
+        setState(() => _settling = const ConfirmProcessing(needsReview: true));
+        return;
+      }
+
+      final found = answer.booking;
+      if (found != null) {
+        // A row exists, so Trips can already show it — which is the whole reason this screen
+        // must stop claiming the booking is still in the air. Shown even without a PNR: the
+        // receipt leaves the PNR block out, and `_verification` keeps the holding wording
+        // until the ticket number lands.
         setState(() {
           _confirmed = found;
           _settling = null;
         });
-        return;
+        // Ticketed, so nothing is left to wait for. Without one, keep the remaining gaps:
+        // api-v2 writes the row before the airline returns the PNR.
+        if (found.pnr != null) return;
       }
     }
   }
@@ -328,6 +346,9 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
         _submitting = false;
       });
       _goTo(_Step.confirmed);
+      // The airline said yes without yet saying which ticket. Not finished, so it is watched
+      // like the processing answer is, rather than left for the traveller to find in Trips.
+      if (done.pnr == null) _watchForTheBooking(held.sessionId);
     } catch (error) {
       if (!mounted) return;
       setState(() => _submitting = false);
@@ -529,12 +550,16 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     final settling = _settling;
     final lead = _passengers.first;
     final price = _price;
-    final title = done != null
+    // A booking row without a PNR is real enough to show — Trips has it — but the airline has
+    // not issued the ticket, so "All set" and a green tick would be this screen's own words,
+    // not the airline's. The wording waits for the ticket; the receipt below does not.
+    final ticketed = done?.pnr != null;
+    final title = ticketed
         ? t.checkout_flight_receipt_allSet
         : (settling?.needsReview ?? false)
         ? t.checkout_flight_needsReview_title
         : t.checkout_settling_title;
-    final body = done != null
+    final body = ticketed
         ? t.checkout_flight_receipt_confirmedToDestination(_destination)
         : (settling?.needsReview ?? false)
         ? t.checkout_flight_needsReview_description
@@ -557,9 +582,9 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
               const Center(child: _Steps(active: 2)),
               const SizedBox(height: 32),
               Icon(
-                done != null ? LucideIcons.circleCheck : LucideIcons.clock,
+                ticketed ? LucideIcons.circleCheck : LucideIcons.clock,
                 size: 44,
-                color: done != null ? const Color(0xFF16A34A) : c.muted,
+                color: ticketed ? const Color(0xFF16A34A) : c.muted,
               ),
               const SizedBox(height: 14),
               Text(
@@ -573,7 +598,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
                 textAlign: TextAlign.center,
                 style: TextStyle(fontSize: 15, height: 1.45, color: c.soft),
               ),
-              if (done == null) ...[
+              if (!ticketed) ...[
                 const SizedBox(height: 8),
                 Text(
                   t.checkout_settling_doNotPayAgain,

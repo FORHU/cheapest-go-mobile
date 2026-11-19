@@ -117,8 +117,9 @@ class FakeFlightsApi extends FlightsApi {
   bool offerGone;
   ApiError? confirmError;
 
-  /// What `bookingStatus` answers, in order: null for "nothing to report yet", a confirmation
-  /// once the booking lands, or an [ApiError] to throw. The last entry repeats once used up.
+  /// What `bookingStatus` answers, in order: null for "nothing to report yet", the string
+  /// `'needs_review'` for a booking api-v2 has handed to a person, a confirmation once the
+  /// booking lands, or an [ApiError] to throw. The last entry repeats once used up.
   List<Object?> statusAnswers;
 
   final statusChecks = <String>[];
@@ -205,14 +206,15 @@ class FakeFlightsApi extends FlightsApi {
   }
 
   @override
-  Future<FlightConfirmation?> bookingStatus(String sessionId) async {
+  Future<BookingStatusAnswer> bookingStatus(String sessionId) async {
     statusChecks.add(sessionId);
-    if (statusAnswers.isEmpty) return null;
+    if (statusAnswers.isEmpty) return (booking: null, needsReview: false);
     final answer = statusChecks.length <= statusAnswers.length
         ? statusAnswers[statusChecks.length - 1]
         : statusAnswers.last;
     if (answer is Exception) throw answer;
     if (answer is Error) throw answer;
-    return answer as FlightConfirmation?;
+    if (answer == 'needs_review') return (booking: null, needsReview: true);
+    return (booking: answer as FlightConfirmation?, needsReview: false);
   }
 }

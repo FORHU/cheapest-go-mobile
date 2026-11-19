@@ -295,6 +295,64 @@ void main() {
     expect(api.statusChecks, hasLength(2));
   });
 
+  testWidgets('a booking handed to a person says so once, instead of being polled at', (tester) async {
+    // api-v2 answers `lifecycle: 'needs_review'` when it has given up finishing the booking
+    // itself. Asking again cannot move that, and the client used to read the whole answer as
+    // "nothing yet" — so the screen showed the generic holding message for two minutes and
+    // then went quiet on a booking a person was working through with the airline.
+    api.confirmError = ApiError('processing', code: 'BOOKING_PROCESSING', status: 409, body: {'needsReview': false});
+    api.statusAnswers = ['needs_review'];
+
+    await toPayment(tester);
+    await tester.tap(find.text('Pay PHP 8,108.79'));
+    await tester.pumpAndSettle();
+    expect(find.text('Confirming your booking'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    expect(find.text("We're confirming this with the airline"), findsOneWidget);
+    expect(find.text('Confirming your booking'), findsNothing);
+
+    // And the watching stops: the remaining gaps would ask a question already answered.
+    await tester.pump(const Duration(minutes: 3));
+    await tester.pumpAndSettle();
+    expect(api.statusChecks, hasLength(1));
+  });
+
+  testWidgets('a booking that lands before its ticket number is shown, without claiming to be ticketed', (tester) async {
+    // api-v2 writes the booking row before the airline returns a PNR. The row is enough for
+    // Trips to show the trip, so this screen must stop implying the booking may not exist —
+    // but it is not a ticket, so "All set" would be this screen's word and not the airline's.
+    api.confirmError = ApiError('processing', code: 'BOOKING_PROCESSING', status: 409, body: {'needsReview': false});
+    api.statusAnswers = [
+      const FlightConfirmation(bookingId: 'bk_11', pnr: null, status: 'pending'),
+      const FlightConfirmation(bookingId: 'bk_11', pnr: 'ATG7PE', status: 'ticketed'),
+    ];
+
+    await toPayment(tester);
+    await tester.tap(find.text('Pay PHP 8,108.79'));
+    await tester.pumpAndSettle();
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpAndSettle();
+
+    // The booking is on screen...
+    expect(find.textContaining('bk_11'), findsOneWidget);
+    expect(find.text('View My Trips'), findsOneWidget);
+    // ...under wording that still waits for the airline, not a green "You're all set".
+    expect(find.text('Confirming your booking'), findsOneWidget);
+    expect(find.text('You’re all set'), findsNothing);
+
+    // Then the ticket arrives on a later gap, which is why the watching kept going.
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('ATG7PE'), findsOneWidget);
+    expect(find.text('You’re all set'), findsOneWidget);
+    expect(find.text('Confirming your booking'), findsNothing);
+  });
+
   testWidgets('a booking that failed outright says so instead of waiting forever', (tester) async {
     api.confirmError = ApiError('processing', code: 'BOOKING_PROCESSING', status: 409, body: {'needsReview': false});
     api.statusAnswers = [
