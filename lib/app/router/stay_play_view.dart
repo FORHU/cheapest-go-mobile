@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/features/golf/views/golf_view.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_results_view.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 
@@ -36,7 +37,7 @@ class _StayPlayViewState extends State<StayPlayView> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Stay & Play', style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 26)),
+                Text(AppLocalizations.of(context)!.mobile_nav_stayAndPlay, style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontSize: 26)),
                 const SizedBox(height: 12),
                 SegmentedTabs(
                   labels: const ['Hotels', 'Golf'],

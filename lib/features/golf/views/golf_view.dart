@@ -97,7 +97,7 @@ class _GolfViewState extends State<GolfView> {
                       if (code != null) s.setAirport(code);
                     },
                     icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                    label: const Text('Airport'),
+                    label: Text(AppLocalizations.of(context)!.mobile_golf_airport),
                   ),
                 ],
               ),
@@ -151,9 +151,9 @@ class _GolfViewState extends State<GolfView> {
               ),
               const SizedBox(height: 16),
               if (courses.isEmpty)
-                const EmptyState(
+                EmptyState(
                   icon: Icons.golf_course_rounded,
-                  title: 'No courses here yet',
+                  title: AppLocalizations.of(context)!.mobile_golf_noCoursesHere,
                   message: 'Switch to another arrival airport to see tee times.',
                 ),
               for (final course in courses) ...[
@@ -195,7 +195,7 @@ class _CourseCard extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(course.meta, style: TextStyle(fontSize: 12, color: c.textMuted)),
                     const SizedBox(height: 3),
-                    PinLine('${course.driveMinutes} min from ${course.airportCode}', icon: Icons.schedule_rounded),
+                    PinLine(AppLocalizations.of(context)!.mobile_map_minFromAirport(course.driveMinutes, course.airportCode), icon: Icons.schedule_rounded),
                   ],
                 ),
               ),
@@ -302,7 +302,7 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
             const SizedBox(height: 16),
             AppGradientButton(
               onPressed: () => Navigator.pop(context, _players),
-              label: 'Book tee time · ${formatPeso(total)}',
+              label: AppLocalizations.of(context)!.mobile_golf_bookTeeTime(formatPeso(total)),
             ),
             const SizedBox(height: 6),
             Text('Test mode: no card is charged in this build.',

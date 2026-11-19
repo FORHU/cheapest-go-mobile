@@ -86,7 +86,7 @@ class ProfileView extends StatelessWidget {
               const SizedBox(height: 24),
 
               // 2. Preferences Section
-              _buildSectionHeader('PREFERENCES', theme),
+              _buildSectionHeader(AppLocalizations.of(context)!.mobile_account_preferences, theme),
               const SizedBox(height: 8),
               _buildPreferencesCard(context, theme),
               const SizedBox(height: 32),
@@ -95,14 +95,14 @@ class ProfileView extends StatelessWidget {
               // Account, and a shortlist does not belong among confirmed bookings. Still
               // device-local — wiring `/saved-trips` is its own ticket, and until then this
               // is not yet the Saved Trip CONTEXT.md describes.
-              _buildSectionHeader('SAVED TRIPS', theme),
+              _buildSectionHeader(AppLocalizations.of(context)!.mobile_account_savedTrips, theme),
               const SizedBox(height: 8),
               const SavedStaysCard(),
               const SizedBox(height: 32),
 
               // 4. Help and the legal documents. V2 reaches these from a footer on every
               // page; an app has no footer, and this is where that material belongs (#44).
-              _buildSectionHeader('HELP & LEGAL', theme),
+              _buildSectionHeader(AppLocalizations.of(context)!.mobile_account_helpLegal, theme),
               const SizedBox(height: 8),
               const LegalLinksCard(),
               const SizedBox(height: 32),
@@ -224,7 +224,7 @@ class ProfileView extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    'MEMBER',
+                                    AppLocalizations.of(context)!.mobile_account_member,
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -255,7 +255,7 @@ class ProfileView extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: onSignOutTap,
                       icon: const Icon(Icons.logout, size: 18),
-                      label: const Text('Log Out'),
+                      label: Text(AppLocalizations.of(context)!.mobile_account_logOut),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: colorScheme.error,
                         backgroundColor: Colors.transparent,
@@ -404,12 +404,14 @@ class ProfileView extends StatelessWidget {
               const Color(0xFF6366F1),
               theme,
             ),
-            title: const Text(
-              'App Theme',
+            title: Text(
+              AppLocalizations.of(context)!.mobile_account_appTheme,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
-              '${uiSettingsStore.themeMode.name.toUpperCase()} mode',
+              AppLocalizations.of(context)!.mobile_account_themeMode(uiSettingsStore.themeMode == ThemeMode.light
+                  ? AppLocalizations.of(context)!.common_themeLight
+                  : AppLocalizations.of(context)!.common_themeDark),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -458,8 +460,8 @@ class ProfileView extends StatelessWidget {
               uiSettingsStore.is3dSupported
                   ? (uiSettingsStore.mapTier == MapTier.standard
                       ? '3D Standard Globe'
-                      : '2D Lite Map')
-                  : (uiSettingsStore.no3dReasonDescription ?? '3D Globe unsupported on device'),
+                      : AppLocalizations.of(context)!.mobile_map_tier2dLiteMap)
+                  : (uiSettingsStore.no3dReasonDescription(AppLocalizations.of(context)!) ?? AppLocalizations.of(context)!.mobile_map_no3dUnsupported),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: !uiSettingsStore.is3dSupported
                     ? const Color(0xFFF59E0B)
@@ -471,9 +473,9 @@ class ProfileView extends StatelessWidget {
               underline: const SizedBox.shrink(),
               borderRadius: BorderRadius.circular(12),
               items: [
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: MapTier.lite,
-                  child: Text('2D Lite'),
+                  child: Text(AppLocalizations.of(context)!.mobile_map_tier2dLite),
                 ),
                 DropdownMenuItem(
                   value: MapTier.standard,
@@ -482,7 +484,7 @@ class ProfileView extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '3D Globe',
+                        AppLocalizations.of(context)!.mobile_map_tier3dGlobe,
                         style: TextStyle(
                           color: uiSettingsStore.is3dSupported
                               ? null

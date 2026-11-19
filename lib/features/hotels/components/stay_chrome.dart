@@ -1,3 +1,4 @@
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
 
 /// The search screen's own chrome, as V2 draws it. See #39 and `rail-card.tsx`.
@@ -90,10 +91,10 @@ enum StaySort {
 
 /// The words V2 puts to an **aggregate score** or a review's own, so one number is not called
 /// "excellent" in the summary and "very good" in the list under it.
-String scoreBand(double score) {
-    if (score >= 9) return 'Exceptional';
-    if (score >= 8) return 'Excellent';
-    if (score >= 7) return 'Very good';
-    if (score >= 6) return 'Good';
-    return 'Rated';
+String scoreBand(double score, AppLocalizations t) {
+    if (score >= 9) return t.hotels_ratings_exceptional;
+    if (score >= 8) return t.hotels_ratings_excellent;
+    if (score >= 7) return t.hotels_ratings_veryGood;
+    if (score >= 6) return t.hotels_ratings_good;
+    return t.hotels_ratings_average;
 }

@@ -212,7 +212,7 @@ class _Body extends StatelessWidget {
                 t: t,
                 total: formatMoney(b.totalPaid, b.currency),
                 bookedAt: b.bookedAt,
-                method: 'Card (Stripe)',
+                method: AppLocalizations.of(context)!.mobile_trips_cardStripe,
             ),
         ];
     }

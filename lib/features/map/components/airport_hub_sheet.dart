@@ -84,8 +84,8 @@ class AirportHubSheet extends StatelessWidget {
                     ],
                   ),
                 ),
-                IconButton(tooltip: 'Previous airport', onPressed: onPreviousAirport, icon: const Icon(Icons.chevron_left_rounded)),
-                IconButton(tooltip: 'Next airport', onPressed: onNextAirport, icon: const Icon(Icons.chevron_right_rounded)),
+                IconButton(tooltip: AppLocalizations.of(context)!.mobile_map_previousAirport, onPressed: onPreviousAirport, icon: const Icon(Icons.chevron_left_rounded)),
+                IconButton(tooltip: AppLocalizations.of(context)!.mobile_map_nextAirport, onPressed: onNextAirport, icon: const Icon(Icons.chevron_right_rounded)),
                 IconButton(tooltip: AppLocalizations.of(context)!.checkout_alert_close, onPressed: onClose, icon: const Icon(Icons.close_rounded)),
               ],
             ),
@@ -149,7 +149,7 @@ class _Overview extends StatelessWidget {
               const SizedBox(width: 10),
               Expanded(
                 child: _StatTile(
-                  label: plural(courses.length, 'golf course'),
+                  label: plural(courses.length, AppLocalizations.of(context)!.mobile_map_golfCourse),
                   amount: golfFrom,
                   suffix: '/player',
                   golf: true,
@@ -261,7 +261,7 @@ class _PlaceRow extends StatelessWidget {
                 if (hotel != null)
                   PinLine(hotel.distanceLabel)
                 else
-                  PinLine('${course!.driveMinutes} min from ${course.airportCode}', icon: Icons.schedule_rounded),
+                  PinLine(AppLocalizations.of(context)!.mobile_map_minFromAirport(course!.driveMinutes, course.airportCode), icon: Icons.schedule_rounded),
               ],
             ),
           ),
@@ -337,7 +337,7 @@ class _PlacePreview extends StatelessWidget {
             child: TextButton.icon(
               onPressed: onBack,
               icon: const Icon(Icons.arrow_back_rounded, size: 18),
-              label: Text(place.isGolf ? 'All golf' : 'All stays'),
+              label: Text(place.isGolf ? AppLocalizations.of(context)!.mobile_map_allGolf : AppLocalizations.of(context)!.mobile_map_allStays),
             ),
           ),
           Row(
@@ -352,17 +352,17 @@ class _PlacePreview extends StatelessWidget {
                     Text(place.name, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 4),
                     if (hotel != null) ...[
-                      PinLine(hotel.hasShuttle ? '${hotel.distanceLabel} · free shuttle' : hotel.distanceLabel),
+                      PinLine(hotel.hasShuttle ? AppLocalizations.of(context)!.mobile_hotels_freeShuttle(hotel.distanceLabel) : hotel.distanceLabel),
                       const SizedBox(height: 6),
                       Row(
                         children: [
                           RatingBadge(hotel.score),
                           const SizedBox(width: 6),
-                          Flexible(child: Text('${hotel.scoreLabel} · ${hotel.reviews} reviews', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textSecondary))),
+                          Flexible(child: Text('${hotel.scoreLabel(AppLocalizations.of(context)!)} · ${hotel.reviews} reviews', maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textSecondary))),
                         ],
                       ),
                     ] else ...[
-                      PinLine('${course!.driveMinutes} min from ${course.airportCode}', icon: Icons.schedule_rounded),
+                      PinLine(AppLocalizations.of(context)!.mobile_map_minFromAirport(course!.driveMinutes, course.airportCode), icon: Icons.schedule_rounded),
                       const SizedBox(height: 4),
                       Text(course.meta, style: TextStyle(fontSize: 12, color: c.textSecondary)),
                     ],
@@ -375,7 +375,7 @@ class _PlacePreview extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           AppGradientButton(
-            label: place.isGolf ? AppLocalizations.of(context)!.checkout_flight_receipt_next_teeTime : 'See rooms & book',
+            label: place.isGolf ? AppLocalizations.of(context)!.checkout_flight_receipt_next_teeTime : AppLocalizations.of(context)!.mobile_map_seeRoomsAndBook,
             icon: place.isGolf ? Icons.golf_course_rounded : Icons.hotel_rounded,
             height: 48,
             onPressed: onOpen,

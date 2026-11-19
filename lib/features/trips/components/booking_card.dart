@@ -138,7 +138,7 @@ class BookingCard extends StatelessWidget {
                 fromLabel: 'Date',
                 toValue: _clock(b.startsAt),
                 toLabel: t.trips_golfCard_teeTime,
-                above: b.players == 1 ? '1 player' : '${b.players} players',
+                above: b.players == 1 ? AppLocalizations.of(context)!.mobile_trips_onePlayer : '${b.players} players',
                 below: b.reference,
             ),
             price: formatMoney(b.totalPaid, b.currency),

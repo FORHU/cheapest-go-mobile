@@ -495,7 +495,7 @@ class _FareOptions extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              current ? '${cabinLabel(cabin)} · Best Value' : cabinLabel(cabin),
+              current ? t.mobile_flights_bestValue(cabinLabel(cabin)) : cabinLabel(cabin),
               style: TextStyle(fontSize: 12, color: skin.muted),
             ),
             const SizedBox(height: 8),
@@ -520,7 +520,7 @@ class _FareOptions extends StatelessWidget {
                         height: 32,
                         child: Center(
                           child: Text(
-                            'Select ${o.brandedFare?.label ?? 'this fare'}',
+                            t.mobile_flights_selectFare(o.brandedFare?.label ?? t.mobile_flights_thisFare),
                             style: TextStyle(fontSize: 12, color: skin.text),
                           ),
                         ),

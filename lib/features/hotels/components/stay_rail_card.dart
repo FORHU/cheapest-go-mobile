@@ -272,7 +272,7 @@ class _Panel extends StatelessWidget {
                                     // in `CARD_GEOM_MOBILE` there, so it is one here rather
                                     // than a phone-only entry in the shared copy.
                                         child: Text(
-                                            'View',
+                                            AppLocalizations.of(context)!.mobile_hotels_view,
                                             style: TextStyle(
                                                 fontSize: 11.5,
                                                 fontWeight: FontWeight.w600,

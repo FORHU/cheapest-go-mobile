@@ -78,9 +78,9 @@ class _PropertyDescriptionState extends State<PropertyDescription> {
                             runSpacing: 10,
                             children: [
                                 if (hotel.checkInTime != null)
-                                    _Fact(icon: Icons.login_rounded, label: 'Check-in ${hotel.checkInTime}', skin: skin),
+                                    _Fact(icon: Icons.login_rounded, label: AppLocalizations.of(context)!.mobile_hotels_checkInAt(hotel.checkInTime!), skin: skin),
                                 if (hotel.checkOutTime != null)
-                                    _Fact(icon: Icons.logout_rounded, label: 'Check-out ${hotel.checkOutTime}', skin: skin),
+                                    _Fact(icon: Icons.logout_rounded, label: AppLocalizations.of(context)!.mobile_hotels_checkOutAt(hotel.checkOutTime!), skin: skin),
                             ],
                         ),
                     ],
@@ -99,14 +99,14 @@ class _PropertyDescriptionState extends State<PropertyDescription> {
                             TextButton(
                                 onPressed: () => setState(() => _expanded = !_expanded),
                                 style: TextButton.styleFrom(padding: EdgeInsets.zero, minimumSize: const Size(0, 36)),
-                                child: Text(_expanded ? 'Read less' : AppLocalizations.of(context)!.propertyOverview_readMore),
+                                child: Text(_expanded ? AppLocalizations.of(context)!.mobile_hotels_readLess : AppLocalizations.of(context)!.propertyOverview_readMore),
                             ),
                     ],
 
                     if (hotel.amenities.isNotEmpty) ...[
                         const SizedBox(height: 18),
                         Text(
-                            'What this place offers',
+                            AppLocalizations.of(context)!.mobile_hotels_whatThisPlaceOffers,
                             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: skin.title),
                         ),
                         const SizedBox(height: 10),
@@ -170,13 +170,13 @@ class _Score extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                         Text(
-                            scoreBand(score),
+                            scoreBand(score, AppLocalizations.of(context)!),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: skin.title),
                         ),
                         Text(
-                            '$reviews reviews',
+                            AppLocalizations.of(context)!.mobile_hotels_reviewsCount(reviews),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(fontSize: 12, color: skin.muted),

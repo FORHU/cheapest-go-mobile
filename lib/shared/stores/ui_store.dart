@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/account/account_preferences.dart';
 
 /// Shared UI & Display Settings Store (mirrors `SettingsContext.tsx` & `ui.store.ts`)
@@ -39,8 +40,10 @@ class UiSettingsStore extends ChangeNotifier {
   DeviceCapabilities? get deviceCapabilities => _deviceCapabilities;
   No3dReason? get no3dReason => _no3dReason;
   bool get is3dSupported => _no3dReason == null;
-  String? get no3dReasonDescription =>
-      _no3dReason != null ? no3dReasonText(_no3dReason!) : null;
+  /// Takes the translations rather than exposing a getter: the reason is shown to a person,
+  /// and a store has no context to resolve one from.
+  String? no3dReasonDescription(AppLocalizations t) =>
+      _no3dReason != null ? no3dReasonText(_no3dReason!, t) : null;
 
   Future<void> init() async {
     try {

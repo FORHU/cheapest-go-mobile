@@ -586,6 +586,128 @@
       "distance": {}
     }
   },
+  "@mobile_account_themeMode": {
+    "placeholders": {
+      "mode": {}
+    }
+  },
+  "@mobile_airports_seeAllStays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "code": {}
+    }
+  },
+  "@mobile_checkout_doNotPayAgain": {
+    "placeholders": {
+      "message": {},
+      "email": {}
+    }
+  },
+  "@mobile_checkout_priceCameDown": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "@mobile_checkout_priceWentUp": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "@mobile_checkout_roomSubstituted": {
+    "placeholders": {
+      "room": {}
+    }
+  },
+  "@mobile_checkout_stayPlusFee": {
+    "placeholders": {
+      "total": {},
+      "fee": {}
+    }
+  },
+  "@mobile_flights_allShown": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@mobile_flights_bestValue": {
+    "placeholders": {
+      "cabin": {}
+    }
+  },
+  "@mobile_flights_discoveringMore": {
+    "placeholders": {
+      "shown": {},
+      "total": {}
+    }
+  },
+  "@mobile_flights_selectFare": {
+    "placeholders": {
+      "fare": {}
+    }
+  },
+  "@mobile_golf_bookTeeTime": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "@mobile_golf_courseCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@mobile_golf_players": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@mobile_hotels_checkInAt": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@mobile_hotels_checkOutAt": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@mobile_hotels_freeShuttle": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "@mobile_hotels_freeUntil": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@mobile_hotels_reviewsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@mobile_map_minFromAirport": {
+    "placeholders": {
+      "minutes": {},
+      "code": {}
+    }
+  },
+  "@mobile_stay_nights": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
   "@onboarding_step": {
     "placeholders": {
       "current": {},
@@ -2710,6 +2832,75 @@
   "map_searchOnMap": "Search on map…",
   "map_viewDeal": "View Deal",
   "map_viewOnGoogleMaps": "View on Google Maps →",
+  "mobile_account_appTheme": "App Theme",
+  "mobile_account_helpLegal": "HELP & LEGAL",
+  "mobile_account_logOut": "Log Out",
+  "mobile_account_member": "MEMBER",
+  "mobile_account_preferences": "PREFERENCES",
+  "mobile_account_savedTrips": "SAVED TRIPS",
+  "mobile_account_themeMode": "{mode} mode",
+  "mobile_airports_noStaysYet": "No stays yet",
+  "mobile_airports_seeAllStays": "{count, plural, =1{See all 1 stay near {code}} other{See all {count} stays near {code}}}",
+  "mobile_checkout_doNotPayAgain": "{message} Do not pay again — we will email {email} as soon as the hotel confirms.",
+  "mobile_checkout_egLastName": "e.g. Doe",
+  "mobile_checkout_egPhone": "e.g. 912 345 6789",
+  "mobile_checkout_priceCameDown": "The price came down from {from} to {to}.",
+  "mobile_checkout_priceWentUp": "The price went up from {from} to {to}.",
+  "mobile_checkout_roomSubstituted": "The hotel offered {room} instead of the room you chose.",
+  "mobile_checkout_stayPlusFee": "{total} for the stay, plus {fee} service fee.",
+  "mobile_flights_allShown": "{count, plural, =1{All 1 flight shown} other{All {count} flights shown}}",
+  "mobile_flights_bestValue": "{cabin} · Best Value",
+  "mobile_flights_discoveringMore": "DISCOVERING MORE ({shown} / {total})",
+  "mobile_flights_selectFare": "Select {fare}",
+  "mobile_flights_thisFare": "this fare",
+  "mobile_golf_airport": "Airport",
+  "mobile_golf_bookTeeTime": "Book tee time · {price}",
+  "mobile_golf_courseCount": "{count, plural, =1{1 course} other{{count} courses}}",
+  "mobile_golf_noCoursesHere": "No courses here yet",
+  "mobile_golf_players": "{count, plural, =1{1 player} other{{count} players}}",
+  "mobile_hotels_checkInAt": "Check-in {time}",
+  "mobile_hotels_checkOutAt": "Check-out {time}",
+  "mobile_hotels_freeShuttle": "{distance} · free shuttle",
+  "mobile_hotels_freeUntil": "Free until {date}",
+  "mobile_hotels_nothingNearby": "Nothing of this kind nearby",
+  "mobile_hotels_readLess": "Read less",
+  "mobile_hotels_removeSavedStay": "Remove from saved stays",
+  "mobile_hotels_reviewsCount": "{count} reviews",
+  "mobile_hotels_saveStay": "Save this stay",
+  "mobile_hotels_view": "View",
+  "mobile_hotels_whatThisPlaceOffers": "What this place offers",
+  "mobile_hotels_whatsNearby": "What's nearby",
+  "mobile_map_airports": "Airports",
+  "mobile_map_allGolf": "All golf",
+  "mobile_map_allStays": "All stays",
+  "mobile_map_golfCourse": "golf course",
+  "mobile_map_minFromAirport": "{minutes} min from {code}",
+  "mobile_map_myFlights": "My flights",
+  "mobile_map_nextAirport": "Next airport",
+  "mobile_map_no3dUnsupported": "3D Globe unsupported on device",
+  "mobile_map_no3d_is32Bit": "This phone can't run it (needs 64-bit Android)",
+  "mobile_map_no3d_lowMemory": "This phone can't run it (needs 6 GB of memory)",
+  "mobile_map_no3d_oldAndroid": "This phone can't run it (needs Android 10 or newer)",
+  "mobile_map_no3d_tooSlow": "Turned off: it ran too slowly here",
+  "mobile_map_openTheMap": "Open the map",
+  "mobile_map_previousAirport": "Previous airport",
+  "mobile_map_seeRoomsAndBook": "See rooms & book",
+  "mobile_map_tier2dLite": "2D Lite",
+  "mobile_map_tier2dLiteMap": "2D Lite Map",
+  "mobile_map_tier3dGlobe": "3D Globe",
+  "mobile_nav_stayAndPlay": "Stay & Play",
+  "mobile_shared_photo": "Photo",
+  "mobile_stay_nights": "{count, plural, =1{1 night} other{{count} nights}}",
+  "mobile_tracker_altitude": "Altitude",
+  "mobile_tracker_boarding": "Boarding",
+  "mobile_tracker_inAir": "In the air",
+  "mobile_tracker_landed": "Landed",
+  "mobile_tracker_nextFlight": "Next flight",
+  "mobile_tracker_noFlights": "No flights to track",
+  "mobile_tracker_scheduled": "Scheduled",
+  "mobile_tracker_timeLeft": "Time left",
+  "mobile_trips_cardStripe": "Card (Stripe)",
+  "mobile_trips_onePlayer": "1 player",
   "nav_account": "Account",
   "nav_accountSettings": "Account Settings",
   "nav_accountWorks": "Your account works across CheapestGo and all partner sites",

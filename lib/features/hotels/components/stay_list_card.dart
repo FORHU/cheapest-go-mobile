@@ -143,7 +143,7 @@ class StayListCard extends StatelessWidget {
                             builder: (context, _) {
                                 final saved = savedTripsStore.isSaved(hotel.id);
                                 return Tooltip(
-                                    message: saved ? 'Remove from saved stays' : 'Save this stay',
+                                    message: saved ? AppLocalizations.of(context)!.mobile_hotels_removeSavedStay : AppLocalizations.of(context)!.mobile_hotels_saveStay,
                                     child: _ChipCircle(
                                         onTap: () => _toggle(context, hotel),
                                         child: Icon(

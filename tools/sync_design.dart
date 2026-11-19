@@ -345,7 +345,17 @@ const _templateLocale = 'en';
 /// step titles and progress wording were written here and are translated here. Keep this list
 /// short. A prefix on it is a promise that nobody will ever find these strings in V2 and
 /// wonder why they differ.
-const Set<String> _locallyOwnedPrefixes = {'onboarding_', 'tip_'};
+///
+/// `mobile_` stretches that promise and is the one to be careful with. It was added on
+/// 2026-11-18 for the AirangGo build, which opens in Korean: around a hundred strings on
+/// screens the web also has — a sort menu, a View button, "What this place offers" — were
+/// English literals here with no key in V2 to read. Shipping a Korean app with English
+/// buttons was the worse of the two problems, so the words were written here.
+///
+/// They are mobile's only until V2 grows its own. When it does, the mirror wins: delete the
+/// `mobile_` key rather than leaving two phrasings for one button. Anything genuinely shared
+/// belongs in V2 first — this prefix is for closing a gap, not for owning copy.
+const Set<String> _locallyOwnedPrefixes = {'onboarding_', 'tip_', 'mobile_'};
 
 /// Carries the locally-owned keys from the ARB already on disk into the one about to replace
 /// it, so a rebuild does not delete the strings V2 was never going to supply.

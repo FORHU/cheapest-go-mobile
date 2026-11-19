@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/flights/flight_status.dart';
@@ -96,7 +97,7 @@ class FlightTelemetryHud extends StatelessWidget {
                   children: [
                     Text(f.airline, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700)),
                     Text(
-                      [_phaseLabel(status.phase), ?flightLabel].join(' · '),
+                      [_phaseLabel(status.phase, AppLocalizations.of(context)!), ?flightLabel].join(' · '),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(fontSize: 11, color: c.textMuted),
@@ -105,7 +106,7 @@ class FlightTelemetryHud extends StatelessWidget {
                 ),
               ),
               if (onNextFlight != null)
-                IconButton(tooltip: 'Next flight', onPressed: onNextFlight, icon: Icon(Icons.skip_next_rounded, color: c.accent)),
+                IconButton(tooltip: AppLocalizations.of(context)!.mobile_tracker_nextFlight, onPressed: onNextFlight, icon: Icon(Icons.skip_next_rounded, color: c.accent)),
               CircleIconButton(icon: Icons.close_rounded, tooltip: 'Stop tracking', onPressed: onExitTracking),
             ],
           ),
@@ -155,9 +156,9 @@ class FlightTelemetryHud extends StatelessWidget {
         return [
           Row(
             children: [
-              _Stat(label: 'Altitude', value: '${_thousands(flight.cruiseFeet)} ft'),
+              _Stat(label: AppLocalizations.of(context)!.mobile_tracker_altitude, value: '${_thousands(flight.cruiseFeet)} ft'),
               _Stat(label: 'Ground speed', value: '${flight.groundSpeedKnots} kts', sub: '${(flight.groundSpeedKnots * 1.852).round()} km/h'),
-              _Stat(label: 'Time left', value: _span(status.untilArrival), sub: '$remainingNm nm to go'),
+              _Stat(label: AppLocalizations.of(context)!.mobile_tracker_timeLeft, value: _span(status.untilArrival), sub: '$remainingNm nm to go'),
             ],
           ),
           const SizedBox(height: 8),
@@ -184,11 +185,14 @@ class FlightTelemetryHud extends StatelessWidget {
     }
   }
 
-  static String _phaseLabel(FlightPhase p) => switch (p) {
-        FlightPhase.scheduled => 'Scheduled',
-        FlightPhase.boarding => 'Boarding',
-        FlightPhase.inAir => 'In the air',
-        FlightPhase.landed => 'Landed',
+  /// Takes the translations rather than a context: it is static, and the four phases read
+  /// as one set — localising only the first would leave three English words beside a Korean
+  /// one, which is worse than leaving all four.
+  static String _phaseLabel(FlightPhase p, AppLocalizations t) => switch (p) {
+        FlightPhase.scheduled => t.mobile_tracker_scheduled,
+        FlightPhase.boarding => t.mobile_tracker_boarding,
+        FlightPhase.inAir => t.mobile_tracker_inAir,
+        FlightPhase.landed => t.mobile_tracker_landed,
       };
 
   /// `2d 4h`, `3h 05m` or `25 min`.
@@ -332,7 +336,7 @@ class NoFlightsCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('No flights to track', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(AppLocalizations.of(context)!.mobile_tracker_noFlights, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
           Text('Book a flight and follow it here, even offline in the air.', style: TextStyle(fontSize: 13, color: c.textSecondary)),
           const SizedBox(height: 12),

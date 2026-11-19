@@ -442,7 +442,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                                 child: _Field(
                                     controller: _lastName,
                                     label: t.checkout_userDetails_lastName,
-                                    hint: 'e.g. Doe',
+                                    hint: AppLocalizations.of(context)!.mobile_checkout_egLastName,
                                     required: true,
                                 ),
                             ),
@@ -469,7 +469,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                     _Field(
                         controller: _phone,
                         label: t.checkout_userDetails_phoneNumber,
-                        hint: 'e.g. 912 345 6789',
+                        hint: AppLocalizations.of(context)!.mobile_checkout_egPhone,
                         keyboard: TextInputType.phone,
                     ),
                     const SizedBox(height: 22),
@@ -549,7 +549,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                             const SizedBox(height: 4),
                             Text(
                                 '${formatDateRange(tripSearchStore.checkIn, tripSearchStore.checkOut)}'
-                                ' · ${plural(tripSearchStore.nights, 'night')}'
+                                ' · ${t.mobile_stay_nights(tripSearchStore.nights)}'
                                 '${_room == null ? '' : ' · ${_room!.name}'}',
                                 style: TextStyle(fontSize: 12.5, color: skin.muted),
                             ),
@@ -572,9 +572,13 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                     // different figure from the one on the property page.
                     _Notice(
                         icon: change.up ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                        message: 'The price ${change.up ? 'went up' : 'came down'} from '
-                            '${formatMoney(change.previous, change.currency)} to '
-                            '${formatMoney(change.current, change.currency)}.',
+                        message: change.up
+                            ? t.mobile_checkout_priceWentUp(
+                                formatMoney(change.previous, change.currency),
+                                formatMoney(change.current, change.currency))
+                            : t.mobile_checkout_priceCameDown(
+                                formatMoney(change.previous, change.currency),
+                                formatMoney(change.current, change.currency)),
                         skin: skin,
                     ),
                 ],
@@ -584,8 +588,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                     // A different room from the one that was picked. Before paying, not after.
                     _Notice(
                         icon: Icons.swap_horiz_rounded,
-                        message: 'The hotel offered ${quote.substitutedRoomName} instead of the '
-                            'room you chose.',
+                        message: t.mobile_checkout_roomSubstituted(quote.substitutedRoomName!),
                         skin: skin,
                     ),
                 ],
@@ -594,8 +597,9 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                     const SizedBox(height: 14),
                     _Notice(
                         icon: Icons.receipt_long_rounded,
-                        message: '${formatMoney(price.total, price.currency)} for the stay, plus '
-                            '${formatMoney(price.serviceFee, price.currency)} service fee.',
+                        message: t.mobile_checkout_stayPlusFee(
+                            formatMoney(price.total, price.currency),
+                            formatMoney(price.serviceFee, price.currency)),
                         skin: skin,
                     ),
                 ],
@@ -676,8 +680,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
                                 booked
                                     // api-v2 sends it, receipt attached; this only says where.
                                     ? t.checkout_receiptSent(_email.text.trim())
-                                    : '${outcome.message} Do not pay again — we will email '
-                                        '${_email.text.trim()} as soon as the hotel confirms.',
+                                    : t.mobile_checkout_doNotPayAgain(outcome.message, _email.text.trim()),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(fontSize: 13, height: 1.5, color: skin.muted),
                             ),
