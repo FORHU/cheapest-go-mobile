@@ -105,6 +105,8 @@ class BookingStatusPoller extends ChangeNotifier {
 
     @override
     void dispose() {
+        // Safe twice: a test disposes in its body and again in teardown.
+        if (_disposed) return;
         _disposed = true;
         _timer?.cancel();
         super.dispose();

@@ -75,6 +75,17 @@ Future<GoRouter> _pump(WidgetTester tester, _Server server, {ThemeData? theme, S
     return router;
 }
 
+/// Disposes [poller] inside the test body, then lets time pass to show nothing more is asked.
+///
+/// Inside the body because `testWidgets` checks for pending timers before any `addTearDown`
+/// runs, so a poller still waiting to ask again fails the test however it is torn down after.
+Future<void> _disposeAndCheck(WidgetTester tester, BookingStatusPoller poller, _Server server) async {
+    final asked = server.asked.length;
+    poller.dispose();
+    await tester.pump(const Duration(minutes: 5));
+    expect(server.asked, hasLength(asked), reason: 'a disposed poller asked again');
+}
+
 void main() {
     group('ConfirmOutcome.fromStatus — V2 outcomeFromStatus', () {
         ConfirmOutcome read(String? status, {String? bookingStatus, Map<String, dynamic>? failure}) =>
@@ -121,7 +132,7 @@ void main() {
         testWidgets('keeps asking until the booking settles, then stops', (tester) async {
             final server = _Server([_pending, _pending, _confirmed]);
             final poller = BookingStatusPoller(reference: 'CG-ABC123', fetch: server.call)..start();
-            addTearDown(poller.dispose);
+            addTearDown(poller.dispose); // a backstop if the body throws; see _disposeAndCheck
 
             await tester.pump();
             expect(poller.load, BookingLoad.ready);
@@ -133,12 +144,13 @@ void main() {
 
             await tester.pump(const Duration(seconds: 30));
             expect(server.asked, hasLength(3));
+            await _disposeAndCheck(tester, poller, server);
         });
 
         testWidgets('gives up after its budget and says so; refresh starts a fresh one', (tester) async {
             final server = _Server([_review]);
             final poller = BookingStatusPoller(reference: 'CG-ABC123', fetch: server.call, maxPolls: 3)..start();
-            addTearDown(poller.dispose);
+            addTearDown(poller.dispose); // a backstop if the body throws; see _disposeAndCheck
 
             await tester.pump();
             await tester.pump(const Duration(seconds: 3));
@@ -151,39 +163,43 @@ void main() {
             await tester.pump();
             expect(poller.exhausted, isFalse);
             expect(server.asked, hasLength(4));
+            await _disposeAndCheck(tester, poller, server);
         });
 
         testWidgets('a 404 is "not found", and is not asked again', (tester) async {
             final server = _Server([_notFound]);
             final poller = BookingStatusPoller(reference: 'CG-ABC123', fetch: server.call)..start();
-            addTearDown(poller.dispose);
+            addTearDown(poller.dispose); // a backstop if the body throws; see _disposeAndCheck
 
             await tester.pump();
             await tester.pump(const Duration(seconds: 30));
             expect(poller.load, BookingLoad.notFound);
             expect(server.asked, hasLength(1));
+            await _disposeAndCheck(tester, poller, server);
         });
 
         testWidgets('a first answer that fails is an error, and waits for refresh', (tester) async {
             final server = _Server([_down]);
             final poller = BookingStatusPoller(reference: 'CG-ABC123', fetch: server.call)..start();
-            addTearDown(poller.dispose);
+            addTearDown(poller.dispose); // a backstop if the body throws; see _disposeAndCheck
 
             await tester.pump();
             await tester.pump(const Duration(seconds: 30));
             expect(poller.load, BookingLoad.error);
             expect(server.asked, hasLength(1));
+            await _disposeAndCheck(tester, poller, server);
         });
 
         testWidgets('a later failure keeps what is already shown', (tester) async {
             final server = _Server([_pending, _down]);
             final poller = BookingStatusPoller(reference: 'CG-ABC123', fetch: server.call)..start();
-            addTearDown(poller.dispose);
+            addTearDown(poller.dispose); // a backstop if the body throws; see _disposeAndCheck
 
             await tester.pump();
             await tester.pump(const Duration(seconds: 3));
             expect(poller.load, BookingLoad.ready);
             expect(poller.outcome!.state, ConfirmState.pending);
+            await _disposeAndCheck(tester, poller, server);
         });
 
         test('no reference is not found, and nothing is asked', () {
