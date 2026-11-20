@@ -40,6 +40,19 @@ abstract class BookingsSource {
     Future<BookingsPage> myBookings();
 }
 
+/// One of this traveller's bookings, by row id or by reference — both are in circulation.
+///
+/// Found in the list rather than fetched on its own, as V2's pages do: `GET /bookings/:id`
+/// answers with a hotel-only summary in another shape. A traveller's own bookings are a
+/// short list.
+Future<TripBooking?> findMyBooking(String idOrReference) async {
+    final page = await bookingsSource.myBookings();
+    for (final booking in page.all) {
+        if (booking.id == idOrReference || booking.reference == idOrReference) return booking;
+    }
+    return null;
+}
+
 BookingsSource? _delegate;
 
 /// The app's source. Replaced in tests.

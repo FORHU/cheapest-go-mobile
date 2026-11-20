@@ -37,6 +37,8 @@ import 'package:cheapest_go_mobile/features/about/views/about_view.dart';
 import 'package:cheapest_go_mobile/features/map/views/map_view.dart';
 import 'package:cheapest_go_mobile/features/profile/views/profile_view.dart';
 import 'package:cheapest_go_mobile/features/trips/views/booking_detail_view.dart';
+import 'package:cheapest_go_mobile/features/trips/views/invoice_view.dart';
+import 'package:cheapest_go_mobile/features/trips/views/travel_document_view.dart';
 import 'package:cheapest_go_mobile/features/trips/views/trips_view.dart';
 
 /// FAOS `app/` layer: routes and the tab shell.
@@ -165,6 +167,24 @@ GoRouter createAppRouter({bool gate = true}) => GoRouter(
         GoRoute(
           path: '/trips/:id',
           builder: (_, state) => BookingDetailView(bookingId: state.pathParameters['id']!),
+        ),
+        // A booking's documents (#49), outside the shell like the booking itself. The kind is
+        // what the link asked for; the screen checks it against what the booking has earned.
+        GoRoute(
+          path: '/trips/document/:id',
+          builder: (_, state) => TravelDocumentView(
+            bookingId: state.pathParameters['id']!,
+            kind: state.uri.queryParameters['kind'],
+          ),
+        ),
+        // Linked from the hotel confirmation email rather than from any screen, as on V2.
+        GoRoute(
+          path: '/trips/invoice/:id',
+          builder: (_, state) => InvoiceView(
+            bookingId: state.pathParameters['id']!,
+            type: state.uri.queryParameters['type'],
+            customerEmail: authStore.user?.email ?? '',
+          ),
         ),
         // Saved stays moved to Profile with #42 — V2 keeps them in Account, never among
         // bookings. The old path still lands somewhere sensible.

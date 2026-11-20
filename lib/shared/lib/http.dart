@@ -212,6 +212,49 @@ class HttpClientAdapter {
   }) =>
       request('GET', url, options: options);
 
+  /// A GET whose answer is a file rather than JSON — the invoice PDF. Signed in the same way
+  /// as [request], so the API recognises whose booking it is.
+  Future<List<int>> getBytes(
+    String url, {
+    HttpRequestOptions options = const HttpRequestOptions(),
+  }) async {
+    final token = tokenStorage.getAccessToken();
+    final cookie = tokenStorage.getSessionCookie();
+    final headers = <String, String>{
+      'X-Requested-By': 'cheapestgo-client',
+      if (token != null && token.isNotEmpty && options.requiresAuth)
+        'Authorization': 'Bearer $token',
+      if (cookie != null && cookie.isNotEmpty && options.requiresAuth)
+        'Cookie': cookie,
+      if (options.useMobileApiKey && env.mobileApiKey.isNotEmpty)
+        'X-Mobile-Api-Key': env.mobileApiKey,
+      ...?options.headers,
+    };
+    final uri = Uri.parse(url.startsWith('http')
+        ? url
+        : '${env.webApiUrl}${url.startsWith('/') ? url : '/$url'}');
+    try {
+      final res = await _client.get(uri, headers: headers).timeout(options.timeout);
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw ApiError(
+          'Request failed (HTTP ${res.statusCode})',
+          category: _classify(res.statusCode),
+          status: res.statusCode,
+        );
+      }
+      return res.bodyBytes;
+    } on TimeoutException {
+      throw ApiError(
+        'Request timed out. Please check your connection and try again.',
+        category: ErrorCategory.network,
+      );
+    } on ApiError {
+      rethrow;
+    } catch (_) {
+      throw ApiError('Network error', category: ErrorCategory.network);
+    }
+  }
+
   Future<dynamic> post(
     String url, {
     Object? body,
