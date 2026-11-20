@@ -22,6 +22,8 @@ dependencies:
   intl: any
   lucide_icons_flutter: 4.0.2
   flutter_stripe: ^14.2.0
+  printing: ^5.15.1
+  pdf: ^3.13.1
 
 dev_dependencies:
   flutter_test:

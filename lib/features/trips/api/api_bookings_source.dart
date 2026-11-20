@@ -117,6 +117,11 @@ class ApiBookingsSource implements BookingsSource {
             supplierReference: supplierRef ?? _textOrNull(m['voucher_code']),
             paymentIntentId: _textOrNull(m['payment_intent_id']),
             bookedAt: _date(m['created_at']),
+            bookingReference: _textOrNull(m['booking_reference']),
+            hotelCode: metadata is Map ? _textOrNull(metadata['hotelCode']) : null,
+            board: metadata is Map ? _textOrNull(metadata['board']) : null,
+            checkInTime: metadata is Map ? _textOrNull(metadata['checkInTime']) : null,
+            checkOutTime: metadata is Map ? _textOrNull(metadata['checkOutTime']) : null,
             searchText: searchTextOf([
                 _text(m['property_name']),
                 _text(m['room_name']),
@@ -168,6 +173,11 @@ class ApiBookingsSource implements BookingsSource {
             ticketNumbers: tickets,
             ticketedAt: _date(m['ticketed_at']),
             bookedAt: _date(m['created_at']),
+            bookingReference: _textOrNull(m['booking_reference']),
+            chargedPrice: m['charged_price'] == null ? null : _num(m['charged_price']),
+            farePolicy: _farePolicy(m['fare_policy']),
+            refundAmount: _num(m['refund_amount']),
+            refundCurrency: _textOrNull(m['refund_currency']),
             searchText: searchTextOf([
                 pnr,
                 _text(m['booking_reference']),
@@ -198,8 +208,20 @@ class ApiBookingsSource implements BookingsSource {
             arrival: arrival,
             cabinClass: _text(m['cabin_class']),
             itineraryIndex: _int(m['itinerary_index']),
+            segmentIndex: _int(m['segment_index'] ?? m['itinerary_index']),
             originTerminal: _textOrNull(m['origin_terminal']),
             destinationTerminal: _textOrNull(m['destination_terminal']),
+        );
+    }
+
+    static FarePolicy? _farePolicy(Object? raw) {
+        if (raw is! Map) return null;
+        final changeable = raw['isChangeable'];
+        return FarePolicy(
+            isRefundable: raw['isRefundable'] == true,
+            isChangeable: changeable is bool ? changeable : null,
+            refundPenaltyAmount: raw['refundPenaltyAmount'] == null ? null : _num(raw['refundPenaltyAmount']),
+            refundPenaltyCurrency: _textOrNull(raw['refundPenaltyCurrency']),
         );
     }
 

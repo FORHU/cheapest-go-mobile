@@ -61,6 +61,11 @@ class HotelStayBooking extends TripBooking {
         this.supplierReference,
         this.paymentIntentId,
         this.bookedAt,
+        this.bookingReference,
+        this.hotelCode,
+        this.board,
+        this.checkInTime,
+        this.checkOutTime,
     });
 
     @override
@@ -101,6 +106,21 @@ class HotelStayBooking extends TripBooking {
     final String? supplierReference;
     final String? paymentIntentId;
 
+    /// The row's own `booking_reference` (`CG-…`), when it has one. The documents print this
+    /// rather than [reference], which prefers the supplier-facing `booking_id`.
+    final String? bookingReference;
+
+    /// The supplier's property code — what the voucher looks the property up by, for an
+    /// address and phone number that are current rather than as booked.
+    final String? hotelCode;
+
+    /// The meal plan, as snapshotted at booking. Absent rather than guessed.
+    final String? board;
+
+    /// Check-in and check-out hours, if the booking captured them.
+    final String? checkInTime;
+    final String? checkOutTime;
+
     String get holderName => '$holderFirstName $holderLastName'.trim();
     int get nights => checkOut.difference(checkIn).inDays.clamp(1, 1 << 20);
     bool get refundable => policyType == 'free_cancellation';
@@ -118,6 +138,7 @@ class FlightSegment {
         required this.arrival,
         this.cabinClass = '',
         this.itineraryIndex = 0,
+        this.segmentIndex = 0,
         this.originTerminal,
         this.destinationTerminal,
     });
@@ -132,6 +153,9 @@ class FlightSegment {
 
     /// 0 is the outbound, 1 the return. What splits the itinerary into its two halves.
     final int itineraryIndex;
+
+    /// The column V2's receipt groups Outbound and Return by (`segment_index`).
+    final int segmentIndex;
     final String? originTerminal;
     final String? destinationTerminal;
 }
@@ -175,6 +199,11 @@ class FlightTripBooking extends TripBooking {
         this.ticketNumbers = const [],
         this.ticketedAt,
         this.bookedAt,
+        this.bookingReference,
+        this.chargedPrice,
+        this.farePolicy,
+        this.refundAmount = 0,
+        this.refundCurrency,
     });
 
     @override
@@ -191,6 +220,17 @@ class FlightTripBooking extends TripBooking {
     final String searchText;
     @override
     final DateTime? bookedAt;
+
+    /// The row's own `booking_reference`, when it has one; [reference] falls back to the PNR.
+    final String? bookingReference;
+
+    /// What the card was actually charged, where it differs from `total_price`.
+    final num? chargedPrice;
+    final FarePolicy? farePolicy;
+
+    /// What went back to the card, in [refundCurrency] (or [currency]).
+    final num refundAmount;
+    final String? refundCurrency;
 
     final String pnr;
     final String provider;
@@ -217,6 +257,23 @@ class FlightTripBooking extends TripBooking {
 
     /// Stops on the way out. Two legs is one stop.
     int get stops => outbound.isEmpty ? 0 : outbound.length - 1;
+}
+
+/// The fare's conditions as the airline sold them — `fare_policy` on the row.
+class FarePolicy {
+    const FarePolicy({
+        this.isRefundable = false,
+        this.isChangeable,
+        this.refundPenaltyAmount,
+        this.refundPenaltyCurrency,
+    });
+
+    final bool isRefundable;
+
+    /// Null when unknown — only an explicit `false` is printed as "non-changeable".
+    final bool? isChangeable;
+    final num? refundPenaltyAmount;
+    final String? refundPenaltyCurrency;
 }
 
 // ─── Golf ─────────────────────────────────────────────────────────────────────

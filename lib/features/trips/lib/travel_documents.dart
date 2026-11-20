@@ -83,3 +83,83 @@ DocumentPending? pendingReason(TripBooking b) {
         _ => null,
     };
 }
+
+// ─── How the documents print things ───────────────────────────────────────────
+//
+// V2's `travel-documents.tsx` helpers, so a document opened here and one opened on the web
+// spell the same booking the same way.
+
+/// Ticket numbers as airlines print them: the carrier's three digits, then the ten.
+String formatTicketNumber(String n) {
+    final digits = n.replaceAll(RegExp(r'\s+'), '');
+    final m = RegExp(r'^(\d{3})(\d{10})$').firstMatch(digits);
+    return m == null ? digits : '${m[1]} ${m[2]}';
+}
+
+/// `premium_economy` → `Premium economy`.
+String formatCabin(String? cabin) {
+    final words = (cabin ?? '').replaceAll('_', ' ').trim().toLowerCase();
+    return words.isEmpty ? '—' : words[0].toUpperCase() + words.substring(1);
+}
+
+/// Passport style, the way a check-in desk reads a name: `DELA CRUZ/JUAN`.
+String formatTravellerName(String? first, String? last) {
+    final name = [last, first].where((p) => p != null && p.isNotEmpty).join('/').toUpperCase();
+    return name.isEmpty ? '—' : name;
+}
+
+/// `7C` + `7C2104` → `7C 2104`; `7C` + `2104` → `7C 2104`. Suppliers send it both ways.
+String formatFlightNumber(String? airline, String? number) {
+    final a = airline ?? '';
+    final digits = a.isNotEmpty && (number ?? '').toUpperCase().startsWith(a.toUpperCase())
+        ? number!.substring(a.length)
+        : number;
+    final out = [a, digits ?? ''].where((p) => p.isNotEmpty).join(' ');
+    return out.isEmpty ? '—' : out;
+}
+
+/// The receipt's own number, derived from the row so it is the same on every copy.
+String receiptNumber(TripBooking b) => 'CG-RCP-${_head(b.id)}';
+
+/// The first eight characters of an id, upper-cased — V2's fallback reference everywhere.
+String shortId(String id) => _head(id);
+
+String _head(String id) => (id.length > 8 ? id.substring(0, 8) : id).toUpperCase();
+
+/// The reference a document prints, so its file is found by the number on it.
+String documentReference(TripBooking b) => switch (b) {
+    FlightTripBooking(:final bookingReference?) when bookingReference.isNotEmpty => bookingReference,
+    HotelStayBooking(:final bookingReference?) when bookingReference.isNotEmpty => bookingReference,
+    _ => shortId(b.id),
+};
+
+enum PassengerType { adult, child, infant }
+
+PassengerType? passengerType(String? raw) => switch (raw?.toUpperCase()) {
+    'ADT' || 'ADULT' => PassengerType.adult,
+    'CHD' || 'CHILD' => PassengerType.child,
+    'INF' || 'INFANT' => PassengerType.infant,
+    _ => null,
+};
+
+enum TripType { oneWay, roundTrip, multiCity }
+
+TripType? tripType(String? raw) => switch (raw) {
+    'one-way' => TripType.oneWay,
+    'round-trip' => TripType.roundTrip,
+    'multi-city' => TripType.multiCity,
+    _ => null,
+};
+
+/// What each document's file is called: `Receipt_CG-AB12CD.pdf`, `E-Ticket_…`, `Voucher_…`.
+String documentFilePrefix(TravelDocument kind) => switch (kind) {
+    TravelDocument.receipt => 'Receipt',
+    TravelDocument.eticket => 'E-Ticket',
+    TravelDocument.voucher => 'Voucher',
+};
+
+/// `Receipt_CG-AB12CD.pdf` — V2's `pdfFilename`, character for character.
+String pdfFilename(String prefix, String? reference) {
+    final safe = (reference ?? '').replaceAll(RegExp(r'[^A-Za-z0-9_-]+'), '');
+    return '${prefix}_${safe.isEmpty ? 'booking' : safe}.pdf';
+}

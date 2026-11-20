@@ -1,16 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 import 'package:cheapest_go_mobile/features/trips/api/booking_actions.dart';
 import 'package:cheapest_go_mobile/features/trips/api/bookings_source.dart';
 import 'package:cheapest_go_mobile/features/trips/components/booking_card.dart';
+import 'package:cheapest_go_mobile/features/trips/components/travel_documents.dart';
 import 'package:cheapest_go_mobile/features/trips/lib/travel_documents.dart';
 import 'package:cheapest_go_mobile/features/trips/models/trip_booking.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
-import 'package:cheapest_go_mobile/shared/lib/env.dart';
-import 'package:cheapest_go_mobile/shared/lib/receipt_url.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
@@ -59,15 +57,7 @@ class _BookingDetailViewState extends State<BookingDetailView> {
         });
     }
 
-    Future<TripBooking?> _find() async {
-        final page = await bookingsSource.myBookings();
-        for (final booking in page.all) {
-            if (booking.id == widget.bookingId || booking.reference == widget.bookingId) {
-                return booking;
-            }
-        }
-        return null;
-    }
+    Future<TripBooking?> _find() => findMyBooking(widget.bookingId);
 
     @override
     Widget build(BuildContext context) {
@@ -141,7 +131,7 @@ class _Body extends StatelessWidget {
                 // The reference, in mono: the one thing on this page somebody reads aloud.
                 Row(
                     children: [
-                        Text('${AppLocalizations.of(context)!.golf_booking_reference}: ', style: TextStyle(fontSize: 13, color: c.textMuted)),
+                        Text('${AppLocalizations.of(context)!.trips_pages_ref} ', style: TextStyle(fontSize: 13, color: c.textMuted)),
                         SelectableText(
                             booking.reference,
                             style: TextStyle(
@@ -722,10 +712,12 @@ class _PaymentPanel extends StatelessWidget {
     );
 }
 
-/// **Travel documents** — only the ones this booking has earned. See `travel_documents.dart`.
+/// **Travel documents** — only the ones this booking has earned, each opening its own
+/// screen (`/trips/document/:id`), as V2's `DocumentLinks` panel does.
 ///
 /// A button offered too early promises something that does not exist, so when nothing is
-/// available yet the reason is given instead: silence reads as a fault.
+/// available yet the reason is given instead: silence reads as a fault. Golf has its own
+/// confirmation and no documents here, as on V2.
 class _DocumentsPanel extends StatelessWidget {
     const _DocumentsPanel({required this.booking, required this.t});
 
@@ -734,91 +726,18 @@ class _DocumentsPanel extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
-        final c = context.colors;
-        final docs = availableDocuments(booking);
-        final pending = pendingReason(booking);
-        if (docs.isEmpty && pending == null) return const SizedBox.shrink();
-
+        if (booking is GolfTeeTimeBooking) return const SizedBox.shrink();
+        if (availableDocuments(booking).isEmpty && pendingReason(booking) == null) {
+            return const SizedBox.shrink();
+        }
         return _Panel(
-            title: AppLocalizations.of(context)!.documents_section,
-            icon: Icons.description_outlined,
-            children: [
-                if (docs.contains(TravelDocument.receipt))
-                    _DocButton(
-                        icon: Icons.receipt_long_rounded,
-                        label: t.trips_viewReceipt,
-                        onTap: () => _openReceipt(context),
-                    ),
-                // The voucher and the e-ticket are screens built from the booking, which is
-                // its own ticket. Until then they are not offered, rather than offered broken.
-                if (pending != null)
-                    Padding(
-                        padding: const EdgeInsets.only(top: 6),
-                        child: Text(
-                            pending == DocumentPending.awaitingTicket
-                                ? AppLocalizations.of(context)!.mobile_trips_awaitingTicket
-                                : AppLocalizations.of(context)!.mobile_trips_awaitingProperty,
-                            style: TextStyle(fontSize: 12.5, color: c.textMuted),
-                        ),
-                    ),
-            ],
+            title: t.documents_section,
+            icon: Icons.receipt_long_rounded,
+            children: [DocumentLinkButtons(booking: booking)],
         );
-    }
-
-    Future<void> _openReceipt(BuildContext context) async {
-        // Addressed by the row's id, which is what api-v2's invoice route takes.
-        final url = bookingReceiptUri(
-            apiUrl: env.webApiUrl,
-            bookingId: booking.id,
-            type: booking is FlightTripBooking ? ReceiptType.flight : ReceiptType.hotel,
-        );
-        await launchUrl(url, mode: LaunchMode.externalApplication);
     }
 }
 
-class _DocButton extends StatelessWidget {
-    const _DocButton({required this.icon, required this.label, required this.onTap});
-
-    final IconData icon;
-    final String label;
-    final VoidCallback onTap;
-
-    @override
-    Widget build(BuildContext context) => Align(
-        alignment: Alignment.centerLeft,
-        child: Padding(
-            padding: const EdgeInsets.only(top: 4),
-            // Neutral, not the theme's blue: a document is something you fetch, and the
-            // blue tint made it compete with the panel's own action.
-            child: Material(
-                color: context.colors.surfaceMuted,
-                borderRadius: BorderRadius.circular(999),
-                child: InkWell(
-                    onTap: onTap,
-                    borderRadius: BorderRadius.circular(999),
-                    child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-                        child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                                Icon(icon, size: 15, color: context.colors.textPrimary),
-                                const SizedBox(width: 8),
-                                Text(
-                                    label,
-                                    style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: context.colors.textPrimary,
-                                    ),
-                                ),
-                            ],
-                        ),
-                    ),
-                ),
-            ),
-        ),
-    );
-}
 /// One flight, as V2's itinerary draws it: the two ends side by side, each with its own
 /// time, airport, and the facts a traveller actually needs at the airport — the full date,
 /// the terminal, and the cabin with the flight number.
