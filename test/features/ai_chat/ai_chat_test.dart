@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/ai_chat/api/chat_api.dart';
 import 'package:cheapest_go_mobile/features/ai_chat/lib/conversations.dart';
@@ -69,7 +70,9 @@ void main() {
         expect(find.text('What hotels are available in Bali for 2 adults?'), findsOneWidget);
         expect(find.text('Plan a 5-day trip to Paris on a budget'), findsOneWidget);
         expect(find.text("What's the cheapest day to fly to NYC?"), findsOneWidget);
-        expect(find.text('CheapestGo AI'), findsOneWidget);
+        // Named after whichever brand the build ships as, not one of them: this screen is one
+        // of four surfaces the ARB rewrite cannot reach, so it reads `brandName` directly.
+        expect(find.text('$brandName AI'), findsOneWidget);
         expect(find.text('New chat'), findsOneWidget);
         expect(find.text('English'), findsOneWidget);
         expect(find.text('Ask anything...'), findsOneWidget);

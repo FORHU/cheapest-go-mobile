@@ -1,4 +1,5 @@
 import 'package:cheapest_go_mobile/shared/lib/http.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 
 /// What is around a property. See #40 and V2's nearby explorer.
 ///
@@ -79,6 +80,20 @@ enum NearbyCategory {
     transit('transit', 'Transit');
 
     const NearbyCategory(this.query, this.label);
+
+    /// The chip's word, in the reader's language.
+    ///
+    /// [label] stays as it is: it is the English fallback and some of it is used where there
+    /// is no context. The ids in [query] are the contract with api-v2 and never change.
+    String labelOf(AppLocalizations t) => switch (this) {
+        NearbyCategory.all        => t.property_nearby_categories_all,
+        NearbyCategory.restaurant => t.property_nearby_categories_restaurant,
+        NearbyCategory.cafe       => t.property_nearby_categories_cafe,
+        NearbyCategory.attraction => t.property_nearby_categories_attraction,
+        NearbyCategory.grocery    => t.property_nearby_categories_grocery,
+        NearbyCategory.medical    => t.property_nearby_categories_medical,
+        NearbyCategory.transit    => t.property_nearby_categories_transit,
+    };
 
     /// What api-v2 expects; it maps each to a list of Google types.
     final String query;

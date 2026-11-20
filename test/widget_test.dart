@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
+import 'package:cheapest_go_mobile/shared/components/language_picker.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
@@ -112,9 +113,16 @@ void main() {
     await tester.pumpWidget(const CheapestGoApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Welcome back'), findsOneWidget);
+    // Korean, not English: AirangGo opens in its market's language (UiSettingsStore._language).
+    // If this fails in English, the default was changed back — decide which is intended before
+    // editing the string.
+    expect(find.text('다시 오신 것을 환영합니다'), findsOneWidget);
     expect(find.text('One search.'), findsNothing, reason: 'Home is behind the gate');
     expect(find.byType(V2BottomNav), findsNothing, reason: 'no bar before there is an account');
+
+    // The way out of a language you cannot read. This screen is the only one a signed-out
+    // visitor has, so without the control here they are stuck on it.
+    expect(find.byType(LanguageAction), findsOneWidget);
   });
 
   testWidgets('inside the app, V2\'s three-slot bar', (tester) async {

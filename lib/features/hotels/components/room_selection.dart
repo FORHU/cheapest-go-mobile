@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
@@ -200,7 +201,7 @@ class _OfferRow extends StatelessWidget {
                                         Text(
                                             // The date the promise expires, which is the
                                             // difference between two otherwise equal Offers.
-                                            'Free until ${_day(offer.cancellationDeadline!)}',
+                                            AppLocalizations.of(context)!.mobile_hotels_freeUntil(_day(offer.cancellationDeadline!)),
                                             style: TextStyle(fontSize: 11.5, color: skin.muted),
                                         ),
                                     ],
@@ -231,14 +232,10 @@ class _OfferRow extends StatelessWidget {
         );
     }
 
-    static String _day(DateTime at) {
-        const months = [
-            'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-        ];
-        final local = at.toLocal();
-        return '${months[local.month - 1]} ${local.day}';
-    }
+    /// The deadline's date, in the reader's language. Was a const English array, so a Korean
+    /// app promised free cancellation "until Nov 28".
+    static String _day(DateTime at) =>
+        DateFormat.MMMd(Intl.defaultLocale).format(at.toLocal());
 }
 
 class _Chip extends StatelessWidget {

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 
 import 'package:cheapest_go_mobile/features/home/components/stage_chrome.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 
@@ -96,11 +98,13 @@ class MonthCalendar extends StatelessWidget {
     final ValueChanged<DateTime> onPick;
 
     /// Sunday first, as the reference draws it.
-    static const _dayInitials = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
-    static const _monthNames = [
-        'January', 'February', 'March', 'April', 'May', 'June',
-        'July', 'August', 'September', 'October', 'November', 'December',
-    ];
+    /// Sunday first, in the reader's language — intl's own narrow names for the locale.
+    static List<String> get _dayInitials =>
+        DateFormat.E(Intl.defaultLocale).dateSymbols.NARROWWEEKDAYS;
+
+    /// The month above the grid, written the way the locale writes it.
+    static String _monthName(DateTime month) =>
+        DateFormat.yMMMM(Intl.defaultLocale).format(month);
 
     bool _inRange(DateTime day) {
         final r = range;
@@ -132,12 +136,12 @@ class MonthCalendar extends StatelessWidget {
                     children: [
                         RoundBlueButton(
                             icon: Icons.chevron_left_rounded,
-                            tooltip: 'Previous month',
+                            tooltip: AppLocalizations.of(context)!.checkout_datePicker_previousMonth,
                             onPressed: () => onMonth(DateTime(month.year, month.month - 1)),
                         ),
                         Expanded(
                             child: Text(
-                                '${_monthNames[month.month - 1]} ${month.year}',
+                                _monthName(month),
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                     fontSize: TwText.base.size,
@@ -148,7 +152,7 @@ class MonthCalendar extends StatelessWidget {
                         ),
                         RoundBlueButton(
                             icon: Icons.chevron_right_rounded,
-                            tooltip: 'Next month',
+                            tooltip: AppLocalizations.of(context)!.checkout_datePicker_nextMonth,
                             onPressed: () => onMonth(DateTime(month.year, month.month + 1)),
                         ),
                     ],

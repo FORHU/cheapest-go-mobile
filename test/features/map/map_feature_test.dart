@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
@@ -197,6 +198,11 @@ void main() {
     }) =>
         MaterialApp(
           theme: AppTheme.light,
+          // The sheet's close button takes its tooltip from V2's translations, so this
+          // harness carries the delegates the app does. Pinned to English, as these tests assert.
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: AirportHubSheet(
               airport: mnl,
@@ -273,6 +279,11 @@ void main() {
 
     Widget hud(DateTime now, {PositionSource source = PositionSource.schedule, VoidCallback? onExplore, VoidCallback? onSave}) => MaterialApp(
           theme: AppTheme.dark,
+          // The HUD reads its phase words and labels from the translations now, so the
+          // harness carries the delegates the app does. English, as these tests assert.
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: const Locale('en'),
           home: Scaffold(
             body: SingleChildScrollView(
               child: FlightTelemetryHud(
@@ -415,7 +426,15 @@ void main() {
 
     testWidgets('My flights with nothing booked offers to find flights', (tester) async {
       var found = 0;
-      await tester.pumpWidget(MaterialApp(theme: AppTheme.light, home: Scaffold(body: NoFlightsCard(onFindFlights: () => found++))));
+      // NoFlightsCard takes its words from the translations, so this harness carries the
+      // delegates too.
+      await tester.pumpWidget(MaterialApp(
+        theme: AppTheme.light,
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: Scaffold(body: NoFlightsCard(onFindFlights: () => found++)),
+      ));
       expect(find.text('No flights to track'), findsOneWidget);
       await tester.tap(find.text('Find flights'));
       expect(found, 1);

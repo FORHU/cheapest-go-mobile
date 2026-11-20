@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/components/nearby_icons.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/nearby_map.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/shared/search/nearby_api.dart';
@@ -102,7 +103,7 @@ class _NearbyExplorerState extends State<NearbyExplorer> {
                     Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20),
                         child: Text(
-                            "What's nearby",
+                            AppLocalizations.of(context)!.mobile_hotels_whatsNearby,
                             style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: skin.title),
                         ),
                     ),
@@ -117,7 +118,7 @@ class _NearbyExplorerState extends State<NearbyExplorer> {
                             itemBuilder: (context, i) {
                                 final category = NearbyCategory.values[i];
                                 return _Filter(
-                                    label: category.label,
+                                    label: category.labelOf(AppLocalizations.of(context)!),
                                     icon: iconForCategory(category),
                                     selected: category == _category,
                                     skin: skin,
@@ -151,7 +152,7 @@ class _NearbyExplorerState extends State<NearbyExplorer> {
                             : _places.isEmpty
                                 ? Center(
                                     child: Text(
-                                        'Nothing of this kind nearby',
+                                        AppLocalizations.of(context)!.mobile_hotels_nothingNearby,
                                         style: TextStyle(fontSize: 13, color: skin.muted),
                                     ),
                                 )

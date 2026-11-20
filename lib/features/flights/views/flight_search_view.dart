@@ -395,8 +395,6 @@ class _FlightSearchViewState extends State<FlightSearchView> {
                         filterCount: activeFilterCount(filters),
                         filtersOpen: _filtersOpen,
                         onFilters: () => _openFilters(_offers, filteredNow),
-                        currency: _userCurrency,
-                        onCurrency: uiSettingsStore.setDisplayCurrency,
                         onToggleTheme: () => uiSettingsStore.setThemeMode(dark ? ThemeMode.light : ThemeMode.dark),
                       ),
                       ),
@@ -616,7 +614,7 @@ class _FlightSearchViewState extends State<FlightSearchView> {
           Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
             child: Text(
-              'DISCOVERING MORE (${shown.length} / ${filtered.length})',
+              t.mobile_flights_discoveringMore(shown.length, filtered.length),
               textAlign: TextAlign.center,
               style: TextStyle(
                 fontSize: 10,
@@ -630,7 +628,7 @@ class _FlightSearchViewState extends State<FlightSearchView> {
           Padding(
             padding: const EdgeInsets.only(top: 16, bottom: 48),
             child: Text(
-              'All ${filtered.length} ${filtered.length == 1 ? 'flight' : 'flights'} shown',
+              t.mobile_flights_allShown(filtered.length),
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: dark ? Colors.white38 : TwPalette.slate400),
             ),

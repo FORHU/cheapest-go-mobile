@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 
 /// The Stage's own chrome: glass panels and gradient buttons, as V2 draws them over the
 /// showcase photograph. See #38.
@@ -11,12 +12,9 @@ import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
 /// which is also true on V2, where the landing looks the same in light mode.
 
 /// Blue to cyan, V2's `BRAND_STOPS`. The one gradient in the product, used for the thing the
-/// visitor is meant to press.
-const brandGradient = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
-);
+/// visitor is meant to press — and one definition of it, in the tokens, rather than a hex
+/// repeated per feature that drifts a Tailwind major behind. See [kBrandGradient].
+const brandGradient = kBrandGradient;
 
 /// A translucent panel with a hairline, blurred so the photograph behind it reads as depth
 /// rather than noise under the text.

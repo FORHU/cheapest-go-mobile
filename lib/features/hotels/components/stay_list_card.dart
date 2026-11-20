@@ -7,6 +7,7 @@ import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/saved/saved_trips_store.dart';
 import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/utils/money.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 
 /// One stay in the list, as V2's `HotelCard` draws it below its `md` breakpoint. See #39.
 ///
@@ -107,7 +108,7 @@ class StayListCard extends StatelessWidget {
                                                             // scale because a 7.8 out of 5 would be a
                                                             // different stay entirely.
                                                             hotel.score > 0
-                                                                ? '${hotel.score.toStringAsFixed(1)} / 10 rating'
+                                                                ? '${hotel.score.toStringAsFixed(1)} / 10 ${t.hotels_description_rating}'
                                                                 : 'No rating yet',
                                                             style: TextStyle(fontSize: 14, color: skin.muted),
                                                         ),
@@ -119,7 +120,7 @@ class StayListCard extends StatelessWidget {
                                                 children: [
                                                     Expanded(
                                                         child: Text(
-                                                            '${formatMoney(shown.amount, shown.currency)}/ night',
+                                                            '${formatMoney(shown.amount, shown.currency)}${t.hotels_perNight}',
                                                             maxLines: 1,
                                                             overflow: TextOverflow.ellipsis,
                                                             style: TextStyle(fontSize: 17, color: skin.muted),
@@ -143,7 +144,7 @@ class StayListCard extends StatelessWidget {
                             builder: (context, _) {
                                 final saved = savedTripsStore.isSaved(hotel.id);
                                 return Tooltip(
-                                    message: saved ? 'Remove from saved stays' : 'Save this stay',
+                                    message: saved ? AppLocalizations.of(context)!.mobile_hotels_removeSavedStay : AppLocalizations.of(context)!.mobile_hotels_saveStay,
                                     child: _ChipCircle(
                                         onTap: () => _toggle(context, hotel),
                                         child: Icon(
@@ -185,7 +186,7 @@ class StayListCard extends StatelessWidget {
             SnackBar(
                 content: const Text('Sign in to save stays to your account.'),
                 action: SnackBarAction(
-                    label: 'Sign in',
+                    label: AppLocalizations.of(context)!.nav_signIn,
                     onPressed: () => context.push('/login'),
                 ),
             ),
@@ -194,11 +195,7 @@ class StayListCard extends StatelessWidget {
 }
 
 /// The brand gradient the price chip, the bookmark and Book Now all share.
-const _chipGradient = LinearGradient(
-    begin: Alignment.centerLeft,
-    end: Alignment.centerRight,
-    colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
-);
+const _chipGradient = kBrandGradient;
 
 class _Chip extends StatelessWidget {
     const _Chip({required this.label, required this.onTap});

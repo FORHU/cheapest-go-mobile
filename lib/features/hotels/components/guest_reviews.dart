@@ -72,7 +72,7 @@ class _GuestReviewsState extends State<GuestReviews> {
                         // The aggregate score, then how many of these are verified. The two
                         // counts differ — the score is over every stay, the reviews are the
                         // ones a guest wrote — and saying so is the point of the distinction.
-                        '${widget.score.toStringAsFixed(1)} · ${scoreBand(widget.score)} · '
+                        '${widget.score.toStringAsFixed(1)} · ${scoreBand(widget.score, AppLocalizations.of(context)!)} · '
                         '${t.reviewsSection_verifiedReviewCount(widget.reviews.length)}',
                         style: TextStyle(fontSize: 13, color: skin.muted),
                     ),

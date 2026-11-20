@@ -7,6 +7,7 @@ import 'package:geolocator/geolocator.dart' as geo;
 import 'package:go_router/go_router.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Size;
 import 'package:cheapest_go_mobile/features/map/components/airport_hub_sheet.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/features/map/components/flight_telemetry_hud.dart';
 import 'package:cheapest_go_mobile/features/map/models/map_models.dart';
 import 'package:cheapest_go_mobile/features/map/models/world_landmass_data.dart';
@@ -1229,11 +1230,11 @@ class _PinLegend extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            item(_MapViewState._hotelColor, 'Hotels'),
+            item(_MapViewState._hotelColor, AppLocalizations.of(context)!.footer_hotels),
             const SizedBox(width: 10),
-            item(_MapViewState._golfColor, 'Golf'),
+            item(_MapViewState._golfColor, AppLocalizations.of(context)!.golf_breadcrumb),
             const SizedBox(width: 10),
-            item(_MapViewState._flightColor, 'Flights'),
+            item(_MapViewState._flightColor, AppLocalizations.of(context)!.about_flightsTitle),
           ],
         ),
       ),
@@ -1279,7 +1280,7 @@ class _AirportStrip extends StatelessWidget {
                   Text('${plural(hotels.length, 'stay')} · $golf golf', style: TextStyle(fontSize: 12, color: c.textSecondary)),
                   if (from != null) ...[
                     const SizedBox(height: 4),
-                    PriceText(from, suffix: '/night', size: 13),
+                    PriceText(from, suffix: AppLocalizations.of(context)!.hotels_perNight, size: 13),
                   ],
                 ],
               ),

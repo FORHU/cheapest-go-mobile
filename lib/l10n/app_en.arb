@@ -144,6 +144,11 @@
       "email": {}
     }
   },
+  "@checkout_stayConfirmed": {
+    "placeholders": {
+      "hotel": {}
+    }
+  },
   "@checkout_submit_continueToPayment": {
     "placeholders": {
       "amount": {}
@@ -229,6 +234,26 @@
   "@destinations_metaTitle": {
     "placeholders": {
       "place": {}
+    }
+  },
+  "@documents_receipt_cancellationFee": {
+    "placeholders": {
+      "amount": {}
+    }
+  },
+  "@documents_receipt_issuedOn": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@documents_receipt_terminal": {
+    "placeholders": {
+      "terminal": {}
+    }
+  },
+  "@documents_receipt_ticketIssuedOn": {
+    "placeholders": {
+      "date": {}
     }
   },
   "@documents_voucher_fromTime": {
@@ -584,6 +609,128 @@
   "@map_fromProperty": {
     "placeholders": {
       "distance": {}
+    }
+  },
+  "@mobile_account_themeMode": {
+    "placeholders": {
+      "mode": {}
+    }
+  },
+  "@mobile_airports_seeAllStays": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      },
+      "code": {}
+    }
+  },
+  "@mobile_checkout_doNotPayAgain": {
+    "placeholders": {
+      "message": {},
+      "email": {}
+    }
+  },
+  "@mobile_checkout_priceCameDown": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "@mobile_checkout_priceWentUp": {
+    "placeholders": {
+      "from": {},
+      "to": {}
+    }
+  },
+  "@mobile_checkout_roomSubstituted": {
+    "placeholders": {
+      "room": {}
+    }
+  },
+  "@mobile_checkout_stayPlusFee": {
+    "placeholders": {
+      "total": {},
+      "fee": {}
+    }
+  },
+  "@mobile_flights_allShown": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@mobile_flights_bestValue": {
+    "placeholders": {
+      "cabin": {}
+    }
+  },
+  "@mobile_flights_discoveringMore": {
+    "placeholders": {
+      "shown": {},
+      "total": {}
+    }
+  },
+  "@mobile_flights_selectFare": {
+    "placeholders": {
+      "fare": {}
+    }
+  },
+  "@mobile_golf_bookTeeTime": {
+    "placeholders": {
+      "price": {}
+    }
+  },
+  "@mobile_golf_courseCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@mobile_golf_players": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "@mobile_hotels_checkInAt": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@mobile_hotels_checkOutAt": {
+    "placeholders": {
+      "time": {}
+    }
+  },
+  "@mobile_hotels_freeShuttle": {
+    "placeholders": {
+      "distance": {}
+    }
+  },
+  "@mobile_hotels_freeUntil": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "@mobile_hotels_reviewsCount": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "@mobile_map_minFromAirport": {
+    "placeholders": {
+      "minutes": {},
+      "code": {}
+    }
+  },
+  "@mobile_stay_nights": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
     }
   },
   "@onboarding_step": {
@@ -1211,14 +1358,14 @@
   "about_dealsTitle": "Deals & packages",
   "about_flightsBody": "Search and book flights worldwide through our airline partners, with clear pricing and no surprise fees at checkout.",
   "about_flightsTitle": "Flights",
-  "about_heroBody": "CheapestGo is a modern travel platform that helps you discover, compare, and book flights and hotels in one place — at prices you can actually trust.",
-  "about_heroLabel": "About CheapestGo",
+  "about_heroBody": "AirangGo is a modern travel platform that helps you discover, compare, and book flights and hotels in one place — at prices you can actually trust.",
+  "about_heroLabel": "About AirangGo",
   "about_heroTitle": "Travel that respects your time and your wallet.",
   "about_hotelsBody": "Millions of hotels and unique stays, sourced from leading global suppliers so you always have real availability and rates.",
   "about_hotelsTitle": "Hotels & stays",
-  "about_meta_description": "CheapestGo is a modern online travel agency helping travelers across Southeast Asia find and book flights, hotels, and packages at transparent prices.",
-  "about_meta_title": "About Us — CheapestGo",
-  "about_missionBody": "Booking travel should feel effortless, not adversarial. Too many platforms bury fees, inflate prices, and make you second-guess every click. We built CheapestGo to do the opposite: surface the best real prices, show exactly what you pay, and get you booked in as few steps as possible — whether you are chasing a weekend escape or planning the trip of a lifetime.",
+  "about_meta_description": "AirangGo is a modern online travel agency helping travelers across Southeast Asia find and book flights, hotels, and packages at transparent prices.",
+  "about_meta_title": "About Us — AirangGo",
+  "about_missionBody": "Booking travel should feel effortless, not adversarial. Too many platforms bury fees, inflate prices, and make you second-guess every click. We built AirangGo to do the opposite: surface the best real prices, show exactly what you pay, and get you booked in as few steps as possible — whether you are chasing a weekend escape or planning the trip of a lifetime.",
   "about_missionTitle": "Our mission",
   "about_partnersBody": "Our flight, hotel, and payment inventory comes from established global providers, so the availability and rates you see are real and bookable.",
   "about_partnersTitle": "Powered by trusted partners",
@@ -1232,8 +1379,8 @@
   "about_transparentTitle": "Transparent pricing",
   "about_valuesTitle": "What makes us different",
   "about_whatWeDoTitle": "What we do",
-  "about_whoBody": "CheapestGo is operated by FORHU Inc., headquartered at 30 Wall Street, 8th Floor, New York, NY 10005, United States. Questions, feedback, or partnership ideas are always welcome.",
-  "about_whoTitle": "Who runs CheapestGo",
+  "about_whoBody": "AirangGo is operated by FORHU Inc., headquartered at 30 Wall Street, 8th Floor, New York, NY 10005, United States. Questions, feedback, or partnership ideas are always welcome.",
+  "about_whoTitle": "Who runs AirangGo",
   "account_preferences_displayCurrency": "Display Currency",
   "account_preferences_emailNotifications": "Email notifications",
   "account_preferences_emailNotificationsHint": "Booking confirmations, price alerts, and trip reminders",
@@ -1330,10 +1477,10 @@
   "auth_signIn_privacyLink": "Privacy",
   "auth_signIn_terms": "By signing in you agree to our {terms} and {privacy}.",
   "auth_signIn_termsLink": "Terms",
-  "auth_signIn_title": "Sign in to CheapestGo",
+  "auth_signIn_title": "Sign in to AirangGo",
   "auth_signUpWithGoogle": "Sign up with Google",
   "auth_staff_pitch": "The same account you use everywhere else. This door just knows where to put you.",
-  "auth_staff_subtitle": "Support and administration for CheapestGo",
+  "auth_staff_subtitle": "Support and administration for AirangGo",
   "auth_staff_title": "Staff sign in",
   "auth_strongPassword": "Create a strong password",
   "auth_tryAgain": "try again",
@@ -1564,6 +1711,7 @@
   "checkout_signInToComplete": "Sign in to complete your booking",
   "checkout_specialRequests_placeholder": "The property will do its best to arrange it.",
   "checkout_specialRequests_title": "Any special requests?",
+  "checkout_stayConfirmed": "Your stay at {hotel} is confirmed.",
   "checkout_steps_confirmed": "Confirmed",
   "checkout_steps_details": "Details",
   "checkout_steps_payment": "Payment",
@@ -1605,6 +1753,7 @@
   "checkout_success_hotelSuccess": "Your hotel has been booked successfully.",
   "checkout_success_needFlight": "Need a flight to {destination}?",
   "checkout_success_openingDestination": "Opening your destination…",
+  "checkout_success_printReceipt": "Print receipt",
   "checkout_success_returnToHome": "Return to Home",
   "checkout_success_room": "Room",
   "checkout_success_saveUpTo": "Save up to 8%",
@@ -1777,15 +1926,63 @@
   "documents_eticket_to": "To",
   "documents_pending_awaitingConfirmation": "Your payment went through. We are waiting for the property to confirm — your voucher appears here as soon as it does.",
   "documents_pending_awaitingTicket": "Your payment went through. The airline has not issued the ticket yet — your e-ticket appears here as soon as it does.",
+  "documents_receipt_airlineReference": "Airline reference (PNR)",
+  "documents_receipt_airportTerminal": "Airport / terminal",
   "documents_receipt_bookingReference": "Booking reference",
+  "documents_receipt_cabin": "Class",
+  "documents_receipt_cancellationFee": "Cancellation fee {amount}",
+  "documents_receipt_cancelled": "Cancelled",
   "documents_receipt_card": "Card",
+  "documents_receipt_currency": "Currency",
+  "documents_receipt_departArrive": "Depart / arrive",
+  "documents_receipt_eticketNumber": "E-ticket number",
+  "documents_receipt_flight": "Flight",
   "documents_receipt_footer": "This receipt confirms a payment. It is not a travel document — your e-ticket or hotel voucher is what you show on arrival.",
+  "documents_receipt_introFlight": "This is your record of payment and of the itinerary it covers. Keep it for expense claims and for any question about this booking. Your e-ticket is a separate document, issued by the airline.",
+  "documents_receipt_introHotel": "This is your record of payment for the stay below. Keep it for expense claims and for any question about this booking. Your hotel voucher is a separate document.",
+  "documents_receipt_issuedOn": "Issued {date}",
+  "documents_receipt_leadPassenger": "Lead passenger",
+  "documents_receipt_localTimes": "All times are local to each airport.",
+  "documents_receipt_name": "Name",
+  "documents_receipt_notices_airport": "Arrive at the airport at least 3 hours before an international flight and 2 hours before a domestic one. Check-in desks usually close 45–60 minutes before departure.",
+  "documents_receipt_notices_baggage": "Your baggage allowance is set by your fare. Confirm it with the airline before you travel.",
+  "documents_receipt_notices_checkIn": "Check in with the airline to get your boarding pass. Online check-in usually opens 24–48 hours before departure.",
+  "documents_receipt_notices_liquids": "Check with your departure airport for restrictions on liquids, aerosols and gels in hand baggage.",
+  "documents_receipt_notices_names": "Bring the passport or ID used to book. The names on it must match this booking.",
+  "documents_receipt_outbound": "Outbound",
   "documents_receipt_paid": "Payment successful",
+  "documents_receipt_paxType": "Type",
+  "documents_receipt_paxTypes_adult": "Adult",
+  "documents_receipt_paxTypes_child": "Child",
+  "documents_receipt_paxTypes_infant": "Infant",
   "documents_receipt_paymentDate": "Payment date",
   "documents_receipt_paymentMethod": "Payment method",
+  "documents_receipt_pending": "Pending",
   "documents_receipt_receiptNumber": "Receipt number",
+  "documents_receipt_refunded": "Refunded",
+  "documents_receipt_refundedAmount": "Refunded",
+  "documents_receipt_return": "Return",
+  "documents_receipt_seat": "Seat",
+  "documents_receipt_sections_farePayment": "Fare and payment",
+  "documents_receipt_sections_important": "Important information",
+  "documents_receipt_sections_passengerBooking": "Passenger and booking information",
+  "documents_receipt_sections_passengers": "Passengers",
+  "documents_receipt_sections_stay": "Stay",
+  "documents_receipt_sections_travel": "Travel information",
+  "documents_receipt_segCancelled": "Cancelled",
+  "documents_receipt_segConfirmed": "Confirmed",
+  "documents_receipt_terminal": "Terminal {terminal}",
+  "documents_receipt_ticketIssuedOn": "Issued {date}",
+  "documents_receipt_ticketPending": "Awaiting issue by the airline",
+  "documents_receipt_ticketStatus": "Ticket",
   "documents_receipt_title": "Payment receipt",
+  "documents_receipt_titleItinerary": "Payment receipt & itinerary",
+  "documents_receipt_totalInclTaxes": "Total paid (incl. taxes and fees)",
   "documents_receipt_totalPaid": "Total paid",
+  "documents_receipt_tripType": "Trip",
+  "documents_receipt_tripTypes_multiCity": "Multi-city",
+  "documents_receipt_tripTypes_oneWay": "One-way",
+  "documents_receipt_tripTypes_roundTrip": "Round trip",
   "documents_section": "Travel documents",
   "documents_status_confirmed": "Confirmed",
   "documents_status_ticketed": "Ticketed",
@@ -1823,6 +2020,7 @@
   "errors_page_title": "Something went wrong",
   "errors_page_tryAgain": "Try again",
   "errors_searchFailed": "Search failed. Check your connection and try again.",
+  "flights_card_checkingPrice": "Checking price…",
   "flights_card_currentlySelected": "Currently Selected",
   "flights_card_direct": "Direct",
   "flights_card_fareOptions": "Available Fare Options",
@@ -1832,6 +2030,7 @@
   "flights_card_nonRefundable": "Non-refundable",
   "flights_card_perPerson": "per person",
   "flights_card_select": "Select",
+  "flights_card_selectNow": "Select Now",
   "flights_card_stop": "stop",
   "flights_card_stops": "stops",
   "flights_card_viewDeal": "View deal",
@@ -1955,7 +2154,7 @@
   "footer_cookies": "Cookies",
   "footer_cookiesMinimal": "Cookie preferences",
   "footer_copyright": "© 2026 FORHU Inc. All rights reserved.",
-  "footer_copyrightMinimal": "CheapestGo © 2026",
+  "footer_copyrightMinimal": "AirangGo © 2026",
   "footer_enterprise": "Enterprise",
   "footer_flights": "Flights",
   "footer_flightsApi": "Flights API",
@@ -2149,8 +2348,13 @@
   "hotels_filters_clear": "Clear filters",
   "hotels_filters_close": "Close filters",
   "hotels_filters_hide": "Hide filters",
+  "hotels_filters_max": "Max",
   "hotels_filters_maxPerNight": "Maximum price per night",
+  "hotels_filters_min": "Min",
   "hotels_filters_minPerNight": "Minimum price per night",
+  "hotels_filters_priceEmpty": "Enter a price.",
+  "hotels_filters_priceMaxBelowMin": "Maximum can't be less than the minimum.",
+  "hotels_filters_priceMinAboveMax": "Minimum can't be more than the maximum.",
   "hotels_filters_reset": "Reset",
   "hotels_filters_show": "Show filters",
   "hotels_fromPrice": "From {price}",
@@ -2203,7 +2407,7 @@
   "invoice_provider": "Provider",
   "invoice_receipt": "RECEIPT",
   "invoice_route": "Route",
-  "invoice_thankYou": "Thank you for booking with CheapestGo. For support, contact",
+  "invoice_thankYou": "Thank you for booking with AirangGo. For support, contact",
   "invoice_totalPaid": "Total Paid",
   "invoice_type": "Type",
   "invoice_yourTravelPartner": "Your Travel Partner",
@@ -2402,9 +2606,9 @@
   "legal_content_cookie_contact_email": "📧 support@cheapestgo.com",
   "legal_content_cookie_contact_intro": "For questions about our use of cookies:",
   "legal_content_cookie_contact_title": "Contact",
-  "legal_content_cookie_doNotTrack_body": "Some browsers send a \"Do Not Track\" (DNT) signal. CheapestGo does not currently respond to DNT signals, as there is no universal standard for how websites should react to them. We continue to evaluate this area as standards evolve.",
+  "legal_content_cookie_doNotTrack_body": "Some browsers send a \"Do Not Track\" (DNT) signal. AirangGo does not currently respond to DNT signals, as there is no universal standard for how websites should react to them. We continue to evaluate this area as standards evolve.",
   "legal_content_cookie_doNotTrack_title": "Do Not Track",
-  "legal_content_cookie_duration_intro": "Cookies on CheapestGo are either:",
+  "legal_content_cookie_duration_intro": "Cookies on AirangGo are either:",
   "legal_content_cookie_duration_items_1_label": "Session cookies",
   "legal_content_cookie_duration_items_1_text": "deleted automatically when you close your browser. Used for login sessions and temporary state.",
   "legal_content_cookie_duration_items_2_label": "Persistent cookies",
@@ -2414,10 +2618,10 @@
   "legal_content_cookie_managing_items_1_label": "Browser settings",
   "legal_content_cookie_managing_items_1_text": "Most browsers allow you to refuse or delete cookies via their settings (usually under Privacy or Security). Note that disabling strictly necessary cookies will break core functionality such as login and checkout.",
   "legal_content_cookie_managing_items_2_label": "Cookie banner",
-  "legal_content_cookie_managing_items_2_text": "When you first visit CheapestGo, you may be presented with a cookie consent banner where you can accept or decline non-essential cookies.",
+  "legal_content_cookie_managing_items_2_text": "When you first visit AirangGo, you may be presented with a cookie consent banner where you can accept or decline non-essential cookies.",
   "legal_content_cookie_managing_items_3_label": "Opt-out tools",
   "legal_content_cookie_managing_items_3_text": "For analytics, you can use browser extensions such as the Google Analytics Opt-out Browser Add-on where applicable.",
-  "legal_content_cookie_managing_note": "Adjusting your cookie settings may affect the functionality of the Platform. Essential cookies cannot be disabled without impacting your ability to use CheapestGo.",
+  "legal_content_cookie_managing_note": "Adjusting your cookie settings may affect the functionality of the Platform. Essential cookies cannot be disabled without impacting your ability to use AirangGo.",
   "legal_content_cookie_managing_title": "Managing Your Cookie Preferences",
   "legal_content_cookie_thirdParty_intro": "Some cookies are set by third-party services that appear on our pages:",
   "legal_content_cookie_thirdParty_outro": "We have no control over third-party cookies. Please review the respective privacy policies of these providers for more information.",
@@ -2444,7 +2648,7 @@
   "legal_content_cookie_types_title": "Types of Cookies We Use",
   "legal_content_cookie_whatAreCookies_body": "Cookies are small text files placed on your device when you visit a website. They are widely used to make websites work efficiently, to remember your preferences, and to provide information to website operators. Similar technologies include web beacons, pixels, local storage, and session storage, all of which we refer to collectively as \"cookies\" in this policy.",
   "legal_content_cookie_whatAreCookies_title": "What Are Cookies?",
-  "legal_content_cookie_whyWeUse_intro": "CheapestGo uses cookies to:",
+  "legal_content_cookie_whyWeUse_intro": "AirangGo uses cookies to:",
   "legal_content_cookie_whyWeUse_items_1": "Keep you signed in and maintain your session securely",
   "legal_content_cookie_whyWeUse_items_2": "Remember your preferences (currency, language, dark/light mode)",
   "legal_content_cookie_whyWeUse_items_3": "Save your recent searches and viewed properties",
@@ -2452,9 +2656,9 @@
   "legal_content_cookie_whyWeUse_items_5": "Measure performance and understand how visitors use our platform",
   "legal_content_cookie_whyWeUse_items_6": "Personalize content and show relevant deals and recommendations",
   "legal_content_cookie_whyWeUse_title": "Why We Use Cookies",
-  "legal_content_privacy_changes_body": "We may update this Privacy Policy from time to time. When we make material changes, we will notify you by email (if you have an account) or by posting a prominent notice on our website. Your continued use of CheapestGo after the effective date of the revised policy constitutes your acceptance of the changes.",
+  "legal_content_privacy_changes_body": "We may update this Privacy Policy from time to time. When we make material changes, we will notify you by email (if you have an account) or by posting a prominent notice on our website. Your continued use of AirangGo after the effective date of the revised policy constitutes your acceptance of the changes.",
   "legal_content_privacy_changes_title": "Changes to This Policy",
-  "legal_content_privacy_childrensPrivacy_body": "CheapestGo is not intended for children under the age of 18. We do not knowingly collect personal information from children. If you believe we have inadvertently collected information from a child, please contact us immediately at support@cheapestgo.com and we will delete such information promptly.",
+  "legal_content_privacy_childrensPrivacy_body": "AirangGo is not intended for children under the age of 18. We do not knowingly collect personal information from children. If you believe we have inadvertently collected information from a child, please contact us immediately at support@cheapestgo.com and we will delete such information promptly.",
   "legal_content_privacy_childrensPrivacy_title": "Children's Privacy",
   "legal_content_privacy_contact_address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA",
   "legal_content_privacy_contact_email": "📧 support@cheapestgo.com",
@@ -2482,11 +2686,11 @@
   "legal_content_privacy_howWeShare_items_4_label": "Amazon Web Services (AWS)",
   "legal_content_privacy_howWeShare_items_4_text": "Our database infrastructure is hosted on Amazon Web Services (AWS). Data is stored with encryption at rest and in transit.",
   "legal_content_privacy_howWeShare_items_5_label": "Legal requirements",
-  "legal_content_privacy_howWeShare_items_5_text": "We may disclose information when required by law, court order, or to protect the rights, property, or safety of CheapestGo or others.",
+  "legal_content_privacy_howWeShare_items_5_text": "We may disclose information when required by law, court order, or to protect the rights, property, or safety of AirangGo or others.",
   "legal_content_privacy_howWeShare_title": "How We Share Your Information",
   "legal_content_privacy_howWeUse_items_1": "To process and confirm your travel bookings and send booking confirmations",
   "legal_content_privacy_howWeUse_items_2": "To process payments and prevent fraud through Stripe",
-  "legal_content_privacy_howWeUse_items_3": "To create and manage your CheapestGo account",
+  "legal_content_privacy_howWeUse_items_3": "To create and manage your AirangGo account",
   "legal_content_privacy_howWeUse_items_4": "To send transactional emails (booking confirmations, receipts, itinerary updates)",
   "legal_content_privacy_howWeUse_items_5": "To send promotional emails and deal alerts — only with your consent, and you may opt out at any time",
   "legal_content_privacy_howWeUse_items_6": "To improve our platform, personalize content, and analyze usage patterns",
@@ -2508,11 +2712,11 @@
   "legal_content_privacy_informationWeCollect_thirdPartyItems_3": "Analytics data from service providers we use to improve our platform",
   "legal_content_privacy_informationWeCollect_thirdPartyLabel": "Information from third parties:",
   "legal_content_privacy_informationWeCollect_title": "Information We Collect",
-  "legal_content_privacy_internationalTransfers_body": "CheapestGo is headquartered in the United States. When you use our services from Southeast Asia or other regions, your data is transferred to and processed in the United States. We ensure appropriate safeguards are in place for international transfers, including standard contractual clauses where required under applicable law (including GDPR and the Philippine Data Privacy Act of 2012, Republic Act No. 10173).",
+  "legal_content_privacy_internationalTransfers_body": "AirangGo is headquartered in the United States. When you use our services from Southeast Asia or other regions, your data is transferred to and processed in the United States. We ensure appropriate safeguards are in place for international transfers, including standard contractual clauses where required under applicable law (including GDPR and the Philippine Data Privacy Act of 2012, Republic Act No. 10173).",
   "legal_content_privacy_internationalTransfers_title": "International Data Transfers",
   "legal_content_privacy_security_body": "We implement industry-standard technical and organizational measures to protect your personal data, including encryption in transit (TLS/HTTPS), encryption at rest, access controls, and regular security reviews. Payment data is handled exclusively by Stripe, which is PCI DSS compliant. However, no method of transmission over the internet is completely secure, and we cannot guarantee absolute security.",
   "legal_content_privacy_security_title": "Security",
-  "legal_content_privacy_whoWeAre_para1": "CheapestGo (\"we,\" \"us,\" or \"our\") is an online travel agency operated by FORHU Inc., located at 30 Wall Street, 8th Floor, New York, NY 10005, United States. We provide hotel booking, flight package, and travel deal services primarily to travelers in Southeast Asia through our website and mobile platform.",
+  "legal_content_privacy_whoWeAre_para1": "AirangGo (\"we,\" \"us,\" or \"our\") is an online travel agency operated by FORHU Inc., located at 30 Wall Street, 8th Floor, New York, NY 10005, United States. We provide hotel booking, flight package, and travel deal services primarily to travelers in Southeast Asia through our website and mobile platform.",
   "legal_content_privacy_whoWeAre_para2After": ".",
   "legal_content_privacy_whoWeAre_para2Before": "For questions regarding this Privacy Policy, contact us at",
   "legal_content_privacy_whoWeAre_title": "Who We Are",
@@ -2541,7 +2745,7 @@
   "legal_content_refund_amendments_title": "Booking Amendments",
   "legal_content_refund_cancellationTypes_free_body": "You may cancel at no charge before the deadline specified at booking. The exact deadline (e.g., \"Free cancellation until 48 hours before check-in\") is shown on the booking page and in your confirmation email.",
   "legal_content_refund_cancellationTypes_free_heading": "Free Cancellation",
-  "legal_content_refund_cancellationTypes_intro": "When you book a hotel through CheapestGo, you will see one of the following rate types:",
+  "legal_content_refund_cancellationTypes_intro": "When you book a hotel through AirangGo, you will see one of the following rate types:",
   "legal_content_refund_cancellationTypes_nonRefundable_body": "No refund is provided if you cancel. These rates are typically lower in price and are clearly labeled \"Non-refundable\" before checkout.",
   "legal_content_refund_cancellationTypes_nonRefundable_heading": "Non-Refundable",
   "legal_content_refund_cancellationTypes_partial_body": "A partial refund applies depending on when you cancel relative to the check-in date. The penalty amount and cutoff dates are displayed before you confirm payment.",
@@ -2552,51 +2756,51 @@
   "legal_content_refund_contact_intro": "For all refund and cancellation queries, please have your booking reference number ready and reach us at:",
   "legal_content_refund_contact_outro": "We aim to respond to all refund requests within 1–2 business days.",
   "legal_content_refund_contact_title": "Contact for Refund Requests",
-  "legal_content_refund_disputes_body": "If you have a concern about a charge, please contact us at support@cheapestgo.com before initiating a chargeback with your bank. Most issues can be resolved quickly. Chargebacks initiated without first contacting CheapestGo may result in account suspension. CheapestGo reserves the right to contest chargebacks that are made in bad faith or that do not comply with our cancellation policy.",
+  "legal_content_refund_disputes_body": "If you have a concern about a charge, please contact us at support@cheapestgo.com before initiating a chargeback with your bank. Most issues can be resolved quickly. Chargebacks initiated without first contacting AirangGo may result in account suspension. AirangGo reserves the right to contest chargebacks that are made in bad faith or that do not comply with our cancellation policy.",
   "legal_content_refund_disputes_title": "Disputes and Chargebacks",
   "legal_content_refund_flightPackages_body": "For all-inclusive flight + hotel packages, cancellation terms depend on both the hotel and airline components. Airline tickets are generally non-refundable or carry significant cancellation fees. The specific terms for your package will be shown during checkout and in your confirmation email. If you need to cancel a package, contact us immediately at support@cheapestgo.com for guidance.",
   "legal_content_refund_flightPackages_title": "Flight Packages",
   "legal_content_refund_howToCancel_emailAfter": "with your booking reference number and we will process the cancellation within 1 business day.",
   "legal_content_refund_howToCancel_emailBefore": "Alternatively, contact us at",
   "legal_content_refund_howToCancel_intro": "To cancel a booking:",
-  "legal_content_refund_howToCancel_steps_1": "Log in to your CheapestGo account and go to My Bookings.",
+  "legal_content_refund_howToCancel_steps_1": "Log in to your AirangGo account and go to My Bookings.",
   "legal_content_refund_howToCancel_steps_2": "Select the booking you wish to cancel and click Cancel Booking.",
   "legal_content_refund_howToCancel_steps_3": "Review the cancellation policy and any applicable fees shown on screen.",
   "legal_content_refund_howToCancel_steps_4": "Confirm the cancellation. You will receive a cancellation confirmation email.",
   "legal_content_refund_howToCancel_title": "How to Cancel a Booking",
-  "legal_content_refund_noShows_body": "If you fail to check in on the scheduled arrival date without cancelling in advance, the booking will be treated as a no-show. No-show policies vary by hotel — most hotels will charge the full booking amount. CheapestGo cannot override hotel no-show policies. We strongly recommend cancelling ahead of time if your plans change.",
+  "legal_content_refund_noShows_body": "If you fail to check in on the scheduled arrival date without cancelling in advance, the booking will be treated as a no-show. No-show policies vary by hotel — most hotels will charge the full booking amount. AirangGo cannot override hotel no-show policies. We strongly recommend cancelling ahead of time if your plans change.",
   "legal_content_refund_noShows_title": "No-Shows",
-  "legal_content_refund_overview_body": "CheapestGo acts as an intermediary between you and travel suppliers (hotels, airlines, and package providers). Cancellation and refund rights are primarily governed by the individual supplier's policies, which vary by property, rate type, and booking dates. This policy explains how we facilitate cancellations and refunds on your behalf.",
+  "legal_content_refund_overview_body": "AirangGo acts as an intermediary between you and travel suppliers (hotels, airlines, and package providers). Cancellation and refund rights are primarily governed by the individual supplier's policies, which vary by property, rate type, and booking dates. This policy explains how we facilitate cancellations and refunds on your behalf.",
   "legal_content_refund_overview_title": "Overview",
   "legal_content_refund_processing_items_1_label": "Eligible refunds",
   "legal_content_refund_processing_items_1_text": "are processed back to the original payment method (credit/debit card or GrabPay) used at checkout via Stripe.",
   "legal_content_refund_processing_items_2_label": "Processing time",
   "legal_content_refund_processing_items_2_text": "Once we initiate the refund, it typically takes 5–10 business days to appear on your statement, depending on your bank or card issuer.",
-  "legal_content_refund_processing_items_3_label": "CheapestGo service fee",
-  "legal_content_refund_processing_items_3_text": "Any applicable platform service fees are non-refundable unless the cancellation is due to a supplier error or CheapestGo system fault.",
+  "legal_content_refund_processing_items_3_label": "AirangGo service fee",
+  "legal_content_refund_processing_items_3_text": "Any applicable platform service fees are non-refundable unless the cancellation is due to a supplier error or AirangGo system fault.",
   "legal_content_refund_processing_items_4_label": "Stripe processing fees",
-  "legal_content_refund_processing_items_4_text": "Payment processing fees charged by Stripe are non-refundable by CheapestGo, in line with Stripe's standard policy.",
+  "legal_content_refund_processing_items_4_text": "Payment processing fees charged by Stripe are non-refundable by AirangGo, in line with Stripe's standard policy.",
   "legal_content_refund_processing_items_5_label": "Currency",
   "legal_content_refund_processing_items_5_text": "Refunds are issued in the same currency as the original payment. Exchange rate differences at the time of refund are not our responsibility.",
   "legal_content_refund_processing_title": "Refund Processing",
   "legal_content_refund_supplierCancellations_intro": "In rare cases, a hotel or travel supplier may cancel your booking due to overbooking, closure, natural disaster, or force majeure events. If this occurs:",
-  "legal_content_refund_supplierCancellations_items_1": "CheapestGo will notify you as soon as we are informed by the supplier",
-  "legal_content_refund_supplierCancellations_items_2": "We will process a full refund of the amount paid to CheapestGo, including our service fee",
+  "legal_content_refund_supplierCancellations_items_1": "AirangGo will notify you as soon as we are informed by the supplier",
+  "legal_content_refund_supplierCancellations_items_2": "We will process a full refund of the amount paid to AirangGo, including our service fee",
   "legal_content_refund_supplierCancellations_items_3": "We will assist you in finding alternative accommodation where possible, though we cannot guarantee a replacement",
-  "legal_content_refund_supplierCancellations_note": "CheapestGo is not liable for losses arising from supplier cancellations, including transportation costs, additional hotel nights booked elsewhere, or consequential losses. We recommend purchasing travel insurance to cover such events.",
+  "legal_content_refund_supplierCancellations_note": "AirangGo is not liable for losses arising from supplier cancellations, including transportation costs, additional hotel nights booked elsewhere, or consequential losses. We recommend purchasing travel insurance to cover such events.",
   "legal_content_refund_supplierCancellations_title": "Supplier Cancellations and Force Majeure",
-  "legal_content_terms_acceptance_body": "By accessing or using the CheapestGo website and services (the \"Platform\"), you agree to be bound by these Terms of Service (\"Terms\") and all applicable laws and regulations. If you do not agree to these Terms, you may not use the Platform. CheapestGo is operated by FORHU Inc., 30 Wall Street, 8th Floor, New York, NY 10005, United States. These Terms constitute a legally binding agreement between you and CheapestGo.",
+  "legal_content_terms_acceptance_body": "By accessing or using the AirangGo website and services (the \"Platform\"), you agree to be bound by these Terms of Service (\"Terms\") and all applicable laws and regulations. If you do not agree to these Terms, you may not use the Platform. AirangGo is operated by FORHU Inc., 30 Wall Street, 8th Floor, New York, NY 10005, United States. These Terms constitute a legally binding agreement between you and AirangGo.",
   "legal_content_terms_acceptance_title": "Acceptance of Terms",
   "legal_content_terms_accountRegistration_intro": "To access certain features of the Platform, you may need to create an account. You agree to:",
   "legal_content_terms_accountRegistration_items_1": "Provide accurate and truthful information during registration",
   "legal_content_terms_accountRegistration_items_2": "Keep your login credentials confidential and not share them with third parties",
   "legal_content_terms_accountRegistration_items_3": "Notify us immediately of any unauthorized use of your account",
   "legal_content_terms_accountRegistration_items_4": "Be responsible for all activity that occurs under your account",
-  "legal_content_terms_accountRegistration_note": "CheapestGo reserves the right to suspend or terminate accounts that violate these Terms or that are inactive for an extended period.",
+  "legal_content_terms_accountRegistration_note": "AirangGo reserves the right to suspend or terminate accounts that violate these Terms or that are inactive for an extended period.",
   "legal_content_terms_accountRegistration_title": "Account Registration",
-  "legal_content_terms_bookingProcess_intro": "When you make a booking through CheapestGo, you are entering into a contract with the travel supplier (hotel, airline, or package provider), not with CheapestGo. CheapestGo acts as an intermediary facilitating the booking.",
+  "legal_content_terms_bookingProcess_intro": "When you make a booking through AirangGo, you are entering into a contract with the travel supplier (hotel, airline, or package provider), not with AirangGo. AirangGo acts as an intermediary facilitating the booking.",
   "legal_content_terms_bookingProcess_items_1_label": "Booking confirmation",
-  "legal_content_terms_bookingProcess_items_1_text": "A booking is confirmed only when you receive a written confirmation email from CheapestGo with a booking reference number.",
+  "legal_content_terms_bookingProcess_items_1_text": "A booking is confirmed only when you receive a written confirmation email from AirangGo with a booking reference number.",
   "legal_content_terms_bookingProcess_items_2_label": "Accuracy",
   "legal_content_terms_bookingProcess_items_2_text": "You are responsible for ensuring all booking details (dates, guest names, room type) are correct before confirming payment.",
   "legal_content_terms_bookingProcess_items_3_label": "Supplier terms",
@@ -2608,40 +2812,40 @@
   "legal_content_terms_cancellations_textAfter": ", which is incorporated into these Terms by reference. Please review it carefully before making a booking, as policies vary by hotel and rate type.",
   "legal_content_terms_cancellations_textBefore": "Cancellations and refunds are governed by our",
   "legal_content_terms_cancellations_title": "Cancellations and Refunds",
-  "legal_content_terms_changes_body": "CheapestGo reserves the right to modify these Terms at any time. We will notify registered users of material changes via email and by posting an updated version on the Platform with a revised \"Last Updated\" date. Your continued use of the Platform after changes take effect constitutes your acceptance of the revised Terms.",
+  "legal_content_terms_changes_body": "AirangGo reserves the right to modify these Terms at any time. We will notify registered users of material changes via email and by posting an updated version on the Platform with a revised \"Last Updated\" date. Your continued use of the Platform after changes take effect constitutes your acceptance of the revised Terms.",
   "legal_content_terms_changes_title": "Changes to These Terms",
   "legal_content_terms_contact_address": "🏢 FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · USA",
   "legal_content_terms_contact_email": "📧 support@cheapestgo.com",
   "legal_content_terms_contact_intro": "For questions about these Terms:",
   "legal_content_terms_contact_title": "Contact",
-  "legal_content_terms_disclaimers_intro": "CheapestGo provides its services on an \"as is\" and \"as available\" basis. We do not guarantee that:",
+  "legal_content_terms_disclaimers_intro": "AirangGo provides its services on an \"as is\" and \"as available\" basis. We do not guarantee that:",
   "legal_content_terms_disclaimers_items_1": "The Platform will be uninterrupted, error-free, or free of viruses",
   "legal_content_terms_disclaimers_items_2": "Hotel descriptions, photos, or amenity lists are fully accurate (these are provided by suppliers)",
   "legal_content_terms_disclaimers_items_3": "Prices displayed will always be the lowest available in the market",
   "legal_content_terms_disclaimers_items_4": "All bookings will be honored by the travel supplier in the event of supplier insolvency or overbooking",
-  "legal_content_terms_disclaimers_note": "CheapestGo is not responsible for the acts, errors, omissions, representations, warranties, or negligence of any travel supplier.",
+  "legal_content_terms_disclaimers_note": "AirangGo is not responsible for the acts, errors, omissions, representations, warranties, or negligence of any travel supplier.",
   "legal_content_terms_disclaimers_title": "Disclaimers",
-  "legal_content_terms_eligibility_intro": "To use CheapestGo, you must:",
+  "legal_content_terms_eligibility_intro": "To use AirangGo, you must:",
   "legal_content_terms_eligibility_items_1": "Be at least 18 years of age",
   "legal_content_terms_eligibility_items_2": "Have the legal capacity to enter into a binding contract",
   "legal_content_terms_eligibility_items_3": "Not be prohibited from using the Platform under applicable laws",
   "legal_content_terms_eligibility_items_4": "Provide accurate, current, and complete information when creating an account or making a booking",
   "legal_content_terms_eligibility_title": "Eligibility",
   "legal_content_terms_governingLaw_para1": "These Terms are governed by the laws of the State of New York, United States, without regard to its conflict of law provisions.",
-  "legal_content_terms_governingLaw_para2": "Any dispute arising from or relating to these Terms or your use of CheapestGo shall first be attempted to be resolved through good-faith negotiation. If unresolved within 30 days, disputes shall be submitted to binding arbitration in New York City, New York, under the rules of the American Arbitration Association (AAA). You waive any right to participate in a class action lawsuit or class-wide arbitration.",
+  "legal_content_terms_governingLaw_para2": "Any dispute arising from or relating to these Terms or your use of AirangGo shall first be attempted to be resolved through good-faith negotiation. If unresolved within 30 days, disputes shall be submitted to binding arbitration in New York City, New York, under the rules of the American Arbitration Association (AAA). You waive any right to participate in a class action lawsuit or class-wide arbitration.",
   "legal_content_terms_governingLaw_title": "Governing Law and Dispute Resolution",
-  "legal_content_terms_indemnification_body": "You agree to indemnify, defend, and hold harmless CheapestGo and FORHU Inc. from and against any claims, liabilities, damages, losses, and expenses (including legal fees) arising out of or in any way connected with your use of the Platform, your violation of these Terms, or your violation of any rights of another person.",
+  "legal_content_terms_indemnification_body": "You agree to indemnify, defend, and hold harmless AirangGo and FORHU Inc. from and against any claims, liabilities, damages, losses, and expenses (including legal fees) arising out of or in any way connected with your use of the Platform, your violation of these Terms, or your violation of any rights of another person.",
   "legal_content_terms_indemnification_title": "Indemnification",
-  "legal_content_terms_intellectualProperty_body": "All content on the CheapestGo Platform — including logos, text, graphics, software, and design — is the property of CheapestGo or its licensors and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from our content without prior written consent. Hotel and flight images and descriptions are provided by our partners (Duffel, TravelgateX) and respective suppliers under license.",
+  "legal_content_terms_intellectualProperty_body": "All content on the AirangGo Platform — including logos, text, graphics, software, and design — is the property of AirangGo or its licensors and is protected by applicable intellectual property laws. You may not reproduce, distribute, or create derivative works from our content without prior written consent. Hotel and flight images and descriptions are provided by our partners (Duffel, TravelgateX) and respective suppliers under license.",
   "legal_content_terms_intellectualProperty_title": "Intellectual Property",
-  "legal_content_terms_liability_body": "To the maximum extent permitted by applicable law, CheapestGo, its officers, directors, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or goodwill, arising out of or in connection with your use of the Platform or any booking made through it. Our total aggregate liability to you for any claim arising out of these Terms shall not exceed the total amount paid by you for the booking giving rise to the claim.",
+  "legal_content_terms_liability_body": "To the maximum extent permitted by applicable law, AirangGo, its officers, directors, employees, and affiliates shall not be liable for any indirect, incidental, special, consequential, or punitive damages, including loss of profits, data, or goodwill, arising out of or in connection with your use of the Platform or any booking made through it. Our total aggregate liability to you for any claim arising out of these Terms shall not exceed the total amount paid by you for the booking giving rise to the claim.",
   "legal_content_terms_liability_title": "Limitation of Liability",
   "legal_content_terms_pricing_items_1_label": "Pricing",
   "legal_content_terms_pricing_items_1_text": "Prices displayed are sourced directly from our travel partners and reflect current wholesale rates. There are no hidden platform fees.",
   "legal_content_terms_pricing_items_2_label": "Currency",
   "legal_content_terms_pricing_items_2_text": "Prices are displayed in the currency of your choosing. Currency conversion rates are provided for reference and may vary at time of payment.",
   "legal_content_terms_pricing_items_3_label": "Payment processing",
-  "legal_content_terms_pricing_items_3_text": "All payments are processed securely by Stripe, Inc. By making a payment, you also agree to Stripe's terms of service. CheapestGo does not store your card details.",
+  "legal_content_terms_pricing_items_3_text": "All payments are processed securely by Stripe, Inc. By making a payment, you also agree to Stripe's terms of service. AirangGo does not store your card details.",
   "legal_content_terms_pricing_items_4_label": "Taxes and fees",
   "legal_content_terms_pricing_items_4_text": "Displayed prices include applicable service fees. Local taxes or tourism fees charged directly by the hotel at check-in are not included unless stated otherwise.",
   "legal_content_terms_pricing_items_5_label": "Price changes",
@@ -2655,29 +2859,29 @@
   "legal_content_terms_prohibitedConduct_items_5": "Resell or redistribute bookings for commercial purposes without our written consent",
   "legal_content_terms_prohibitedConduct_items_6": "Post false or misleading information, reviews, or impersonate any person or entity",
   "legal_content_terms_prohibitedConduct_items_7": "Interfere with the security, integrity, or performance of the Platform",
-  "legal_content_terms_prohibitedConduct_items_8": "Harass, threaten, or harm other users or CheapestGo staff",
+  "legal_content_terms_prohibitedConduct_items_8": "Harass, threaten, or harm other users or AirangGo staff",
   "legal_content_terms_prohibitedConduct_title": "Prohibited Conduct",
-  "legal_cookiePolicy_description": "How CheapestGo uses cookies and similar tracking technologies.",
-  "legal_cookiePolicy_pageSubtitle": "How we use cookies and similar technologies on CheapestGo.",
+  "legal_cookiePolicy_description": "How AirangGo uses cookies and similar tracking technologies.",
+  "legal_cookiePolicy_pageSubtitle": "How we use cookies and similar technologies on AirangGo.",
   "legal_cookiePolicy_pageTitle": "Cookie Policy",
-  "legal_cookiePolicy_title": "Cookie Policy — CheapestGo",
-  "legal_layout_breadcrumb": "CheapestGo · Legal",
+  "legal_cookiePolicy_title": "Cookie Policy — AirangGo",
+  "legal_layout_breadcrumb": "AirangGo · Legal",
   "legal_layout_contact_address": "FORHU Inc. · 30 Wall Street, 8th Floor · New York, NY 10005 · United States",
   "legal_layout_contact_contactLine": "Contact us at",
   "legal_layout_contact_heading": "Questions about this document?",
   "legal_layout_contents": "Contents",
-  "legal_layout_disclaimer_body": "This document is provided for informational purposes. CheapestGo recommends consulting a qualified attorney to review these terms for your specific jurisdiction before publishing to production.",
+  "legal_layout_disclaimer_body": "This document is provided for informational purposes. AirangGo recommends consulting a qualified attorney to review these terms for your specific jurisdiction before publishing to production.",
   "legal_layout_disclaimer_label": "Note:",
   "legal_layout_effective": "Effective:",
   "legal_layout_lastUpdated": "Last updated:",
-  "legal_privacyPolicy_description": "How CheapestGo collects, uses, and protects your personal information.",
+  "legal_privacyPolicy_description": "How AirangGo collects, uses, and protects your personal information.",
   "legal_privacyPolicy_pageSubtitle": "How we collect, use, and protect your personal information.",
   "legal_privacyPolicy_pageTitle": "Privacy Policy",
-  "legal_privacyPolicy_title": "Privacy Policy — CheapestGo",
-  "legal_refundPolicy_description": "Understand how cancellations, refunds, and amendments work on CheapestGo.",
+  "legal_privacyPolicy_title": "Privacy Policy — AirangGo",
+  "legal_refundPolicy_description": "Understand how cancellations, refunds, and amendments work on AirangGo.",
   "legal_refundPolicy_pageSubtitle": "Everything you need to know about cancellations, refunds, and booking changes.",
   "legal_refundPolicy_pageTitle": "Refund & Cancellation Policy",
-  "legal_refundPolicy_title": "Refund & Cancellation Policy — CheapestGo",
+  "legal_refundPolicy_title": "Refund & Cancellation Policy — AirangGo",
   "legal_scrollToContinue": "Scroll to the bottom to continue",
   "legal_termsGate_acceptButton": "Accept and continue",
   "legal_termsGate_checkboxAriaLabel": "I agree to the Terms & Conditions and Privacy Policy",
@@ -2689,19 +2893,19 @@
   "legal_termsGate_checkboxTerms": "Terms & Conditions",
   "legal_termsGate_opensInNewTab": "Opens in a new tab — you won't lose your place.",
   "legal_termsGate_points_1": "You must be at least 18 and able to enter a binding contract.",
-  "legal_termsGate_points_2": "CheapestGo is an intermediary — your booking contract is with the hotel, airline, or package provider, not with us.",
+  "legal_termsGate_points_2": "AirangGo is an intermediary — your booking contract is with the hotel, airline, or package provider, not with us.",
   "legal_termsGate_points_3": "Prices and availability are not guaranteed until payment is processed and you receive a confirmation email.",
   "legal_termsGate_points_4": "Cancellations and refunds follow the supplier's policy and our Refund & Cancellation Policy.",
   "legal_termsGate_points_5": "Payments are processed by Stripe. We never store your card details.",
   "legal_termsGate_points_6": "Disputes are resolved by binding arbitration in New York, and you waive the right to join a class action.",
   "legal_termsGate_privacyLink": "Privacy Policy",
-  "legal_termsGate_subtitle": "Please review and accept our terms to continue using CheapestGo.",
+  "legal_termsGate_subtitle": "Please review and accept our terms to continue using AirangGo.",
   "legal_termsGate_termsLink": "Terms of Service",
   "legal_termsGate_title": "Before you start",
-  "legal_termsOfService_description": "The terms and conditions governing your use of CheapestGo.",
-  "legal_termsOfService_pageSubtitle": "Please read these terms carefully before using CheapestGo.",
+  "legal_termsOfService_description": "The terms and conditions governing your use of AirangGo.",
+  "legal_termsOfService_pageSubtitle": "Please read these terms carefully before using AirangGo.",
   "legal_termsOfService_pageTitle": "Terms of Service",
-  "legal_termsOfService_title": "Terms of Service — CheapestGo",
+  "legal_termsOfService_title": "Terms of Service — AirangGo",
   "map_details": "Map Details",
   "map_fromProperty": "{distance} from property",
   "map_labels": "Labels",
@@ -2710,9 +2914,98 @@
   "map_searchOnMap": "Search on map…",
   "map_viewDeal": "View Deal",
   "map_viewOnGoogleMaps": "View on Google Maps →",
+  "mobile_account_appTheme": "App Theme",
+  "mobile_account_helpLegal": "HELP & LEGAL",
+  "mobile_account_logOut": "Log Out",
+  "mobile_account_member": "MEMBER",
+  "mobile_account_preferences": "PREFERENCES",
+  "mobile_account_savedTrips": "SAVED TRIPS",
+  "mobile_account_tagline": "Stays and golf near your arrival airport",
+  "mobile_account_themeMode": "{mode} mode",
+  "mobile_airports_noStaysYet": "No stays yet",
+  "mobile_airports_notFound": "Airport not found",
+  "mobile_airports_nothingFor": "We have nothing for {code} yet.",
+  "mobile_airports_openMap": "Open the map",
+  "mobile_airports_seeAllStays": "{count, plural, =1{See all 1 stay near {code}} other{See all {count} stays near {code}}}",
+  "mobile_airports_tryAnother": "Try another airport.",
+  "mobile_checkout_doNotPayAgain": "{message} Do not pay again — we will email {email} as soon as the hotel confirms.",
+  "mobile_checkout_egLastName": "e.g. Doe",
+  "mobile_checkout_egPhone": "e.g. 912 345 6789",
+  "mobile_checkout_priceCameDown": "The price came down from {from} to {to}.",
+  "mobile_checkout_priceWentUp": "The price went up from {from} to {to}.",
+  "mobile_checkout_roomSubstituted": "The hotel offered {room} instead of the room you chose.",
+  "mobile_checkout_stayPlusFee": "{total} for the stay, plus {fee} service fee.",
+  "mobile_flights_allShown": "{count, plural, =1{All 1 flight shown} other{All {count} flights shown}}",
+  "mobile_flights_bestValue": "{cabin} · Best Value",
+  "mobile_flights_discoveringMore": "DISCOVERING MORE ({shown} / {total})",
+  "mobile_flights_selectFare": "Select {fare}",
+  "mobile_flights_stopsCount": "{count, plural, one {# stop} other {# stops}}",
+  "mobile_flights_thisFare": "this fare",
+  "mobile_golf_airport": "Airport",
+  "mobile_golf_bookTeeTime": "Book tee time · {price}",
+  "mobile_golf_courseCount": "{count, plural, =1{1 course} other{{count} courses}}",
+  "mobile_golf_coursesWithinDrive": "{count, plural, one {# course} other {# courses}} within {minutes} min of the airport",
+  "mobile_golf_demoBooking": "Demo booking — tee times are not bookable yet",
+  "mobile_golf_holesCount": "{count, plural, one {# hole} other {# holes}}",
+  "mobile_golf_nearAirport": "Golf near {code}",
+  "mobile_golf_noCoursesHere": "No courses here yet",
+  "mobile_golf_parValue": "Par {par}",
+  "mobile_golf_perPlayer": "/player",
+  "mobile_golf_players": "{count, plural, =1{1 player} other{{count} players}}",
+  "mobile_golf_switchAirport": "Switch to another arrival airport to see tee times.",
+  "mobile_golf_testModeNotice": "Test mode: no card is charged in this build.",
+  "mobile_hotels_checkInAt": "Check-in {time}",
+  "mobile_hotels_checkOutAt": "Check-out {time}",
+  "mobile_hotels_freeShuttle": "{distance} · free shuttle",
+  "mobile_hotels_freeUntil": "Free until {date}",
+  "mobile_hotels_noneFoundIn": "We could not find hotels in {place}",
+  "mobile_hotels_nothingNearby": "Nothing of this kind nearby",
+  "mobile_hotels_partnersUnreachable": "We could not reach our hotel partners just now.",
+  "mobile_hotels_readLess": "Read less",
+  "mobile_hotels_removeSavedStay": "Remove from saved stays",
+  "mobile_hotels_reviewsCount": "{count} reviews",
+  "mobile_hotels_saveStay": "Save this stay",
+  "mobile_hotels_searchingPrices": "Checking availability and prices",
+  "mobile_hotels_view": "View",
+  "mobile_hotels_whatThisPlaceOffers": "What this place offers",
+  "mobile_hotels_whatsNearby": "What's nearby",
+  "mobile_map_airports": "Airports",
+  "mobile_map_allGolf": "All golf",
+  "mobile_map_allStays": "All stays",
+  "mobile_map_golfCourse": "golf course",
+  "mobile_map_minFromAirport": "{minutes} min from {code}",
+  "mobile_map_myFlights": "My flights",
+  "mobile_map_nextAirport": "Next airport",
+  "mobile_map_no3dUnsupported": "3D Globe unsupported on device",
+  "mobile_map_no3d_is32Bit": "This phone can't run it (needs 64-bit Android)",
+  "mobile_map_no3d_lowMemory": "This phone can't run it (needs 6 GB of memory)",
+  "mobile_map_no3d_oldAndroid": "This phone can't run it (needs Android 10 or newer)",
+  "mobile_map_no3d_tooSlow": "Turned off: it ran too slowly here",
+  "mobile_map_openTheMap": "Open the map",
+  "mobile_map_previousAirport": "Previous airport",
+  "mobile_map_seeRoomsAndBook": "See rooms & book",
+  "mobile_map_tier2dLite": "2D Lite",
+  "mobile_map_tier2dLiteMap": "2D Lite Map",
+  "mobile_map_tier3dGlobe": "3D Globe",
+  "mobile_nav_stayAndPlay": "Stay & Play",
+  "mobile_shared_photo": "Photo",
+  "mobile_stay_nights": "{count, plural, =1{1 night} other{{count} nights}}",
+  "mobile_tracker_altitude": "Altitude",
+  "mobile_tracker_boarding": "Boarding",
+  "mobile_tracker_inAir": "In the air",
+  "mobile_tracker_landed": "Landed",
+  "mobile_tracker_nextFlight": "Next flight",
+  "mobile_tracker_noFlights": "No flights to track",
+  "mobile_tracker_scheduled": "Scheduled",
+  "mobile_tracker_timeLeft": "Time left",
+  "mobile_trips_awaitingProperty": "Waiting for the property to confirm your booking.",
+  "mobile_trips_awaitingTicket": "Waiting for the airline to issue your ticket.",
+  "mobile_trips_cardStripe": "Card (Stripe)",
+  "mobile_trips_onePlayer": "1 player",
+  "mobile_trips_seatNumber": "Seat {seat}",
   "nav_account": "Account",
   "nav_accountSettings": "Account Settings",
-  "nav_accountWorks": "Your account works across CheapestGo and all partner sites",
+  "nav_accountWorks": "Your account works across AirangGo and all partner sites",
   "nav_bookings": "Bookings",
   "nav_createAccount": "Create an account",
   "nav_membersSave": "Members save 10% or more",
@@ -2898,7 +3191,7 @@
   "property_meta_description": "Book {name} at the cheapest price.",
   "property_meta_descriptionIn": "Book {name} in {location} at the cheapest price.",
   "property_meta_rated": "Rated {rating}/10.",
-  "property_meta_title": "{name} – Cheapest Rates | CheapestGo",
+  "property_meta_title": "{name} – Cheapest Rates | AirangGo",
   "property_mobileCta_checkRoomRates": "Check room rates",
   "property_mobileCta_from": "From",
   "property_mobileCta_perNight": "/night",
@@ -3057,7 +3350,7 @@
   "pwa_installPrompt_body": "Add to your home screen for faster access.",
   "pwa_installPrompt_dismiss": "Not now",
   "pwa_installPrompt_install": "Install",
-  "pwa_installPrompt_title": "Get the CheapestGo app",
+  "pwa_installPrompt_title": "Get the AirangGo app",
   "reviewsSection_aggregatedNote": "Guest score is based on aggregated ratings.",
   "reviewsSection_aggregatedScore": "Aggregated guest score",
   "reviewsSection_anonymous": "Anonymous",
@@ -3187,17 +3480,17 @@
   "search_validation_selectField": "Please select {field}",
   "search_viewStay": "View Stay",
   "search_whenFlying": "When are you flying?",
-  "seo_faq_a1": "CheapestGo searches across multiple airlines and global distribution systems to surface the lowest available fares in real time, letting you compare and book in one place.",
-  "seo_faq_a2": "Yes. CheapestGo supports booking flights, hotels, apartments, and unique stays — all from a single platform.",
-  "seo_faq_a3": "Yes, searching and comparing prices on CheapestGo is completely free. You only pay when you book.",
-  "seo_faq_a4": "CheapestGo supports multiple currencies and automatically converts prices based on your preference so you can always see costs in your local currency.",
-  "seo_faq_q1": "How does CheapestGo find cheap flights?",
-  "seo_faq_q2": "Can I book both flights and hotels on CheapestGo?",
-  "seo_faq_q3": "Is CheapestGo free to use?",
-  "seo_faq_q4": "What currencies does CheapestGo support?",
+  "seo_faq_a1": "AirangGo searches across multiple airlines and global distribution systems to surface the lowest available fares in real time, letting you compare and book in one place.",
+  "seo_faq_a2": "Yes. AirangGo supports booking flights, hotels, apartments, and unique stays — all from a single platform.",
+  "seo_faq_a3": "Yes, searching and comparing prices on AirangGo is completely free. You only pay when you book.",
+  "seo_faq_a4": "AirangGo supports multiple currencies and automatically converts prices based on your preference so you can always see costs in your local currency.",
+  "seo_faq_q1": "How does AirangGo find cheap flights?",
+  "seo_faq_q2": "Can I book both flights and hotels on AirangGo?",
+  "seo_faq_q3": "Is AirangGo free to use?",
+  "seo_faq_q4": "What currencies does AirangGo support?",
   "seo_homeDescription": "Discover the best travel deals globally. Plan your flights and hotels easily, save money, and start exploring the world.",
   "seo_homeTitle": "Discover and Book Your Next Global Journey",
-  "seo_orgDescription": "CheapestGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
+  "seo_orgDescription": "AirangGo is a modern travel booking platform helping travelers find the cheapest flights and hotels worldwide.",
   "support_attach": "Attach a file",
   "support_automated": "Help Centre · automated",
   "support_close": "Close support chat",
@@ -3220,6 +3513,9 @@
   "support_sendFailed": "That message did not send. Try again.",
   "support_showOriginal": "Show original",
   "support_showTranslation": "Show translation",
+  "support_signedOut_body": "We answer in the app, so we need to know who to reply to. Sign in and the chat opens right here — our replies stay in your account, so nothing gets lost.",
+  "support_signedOut_heading": "Sign in to chat with us",
+  "support_signedOut_help": "Browse the Help Centre",
   "support_solvedNote": "Glad that helped. Write to us any time if something else comes up.",
   "support_talkToAPerson": "Talk to a person",
   "support_thatAnsweredIt": "That answered it",
@@ -3575,7 +3871,7 @@
   "trips_tabs_past": "Past",
   "trips_tabs_upcoming": "Upcoming",
   "trips_tabs_wishlist": "Wishlist",
-  "trips_title": "My Trips | CheapestGo",
+  "trips_title": "My Trips | AirangGo",
   "trips_tripMap_away": "{distance} away",
   "trips_tripMap_calculatingDistance": "Calculating distance…",
   "trips_tripMap_centerOnHotel": "Center on hotel",

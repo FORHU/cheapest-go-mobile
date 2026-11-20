@@ -42,7 +42,7 @@ class StripePaymentGateway implements PaymentGateway {
       await Stripe.instance.initPaymentSheet(
         paymentSheetParameters: SetupPaymentSheetParameters(
           paymentIntentClientSecret: clientSecret,
-          merchantDisplayName: 'CheapestGo',
+          merchantDisplayName: brandName,
           billingDetails: BillingDetails(email: email, name: name, phone: phone),
         ),
       );

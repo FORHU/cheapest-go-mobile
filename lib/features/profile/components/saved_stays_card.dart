@@ -113,7 +113,7 @@ class _DeviceSavesNotice extends StatelessWidget {
                     const SizedBox(height: 8),
                     Align(
                         alignment: Alignment.centerLeft,
-                        child: TextButton(onPressed: onDismiss, child: const Text('Got it')),
+                        child: TextButton(onPressed: onDismiss, child: Text(AppLocalizations.of(context)!.tip_done)),
                     ),
                 ],
             ),
@@ -192,7 +192,7 @@ class _SavedRow extends StatelessWidget {
                                     Text(
                                         // The price as it was when this was saved — a rate
                                         // lapses, and this is a shortlist, not a quote.
-                                        '${formatMoney(trip.price!, trip.currency)} /night',
+                                        '${formatMoney(trip.price!, trip.currency)} ${AppLocalizations.of(context)!.hotels_perNight}',
                                         style: TextStyle(
                                             fontSize: 13,
                                             fontWeight: FontWeight.w700,

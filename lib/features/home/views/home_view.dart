@@ -221,6 +221,7 @@ class _Tabs extends StatelessWidget {
 
     @override
     Widget build(BuildContext context) {
+        final t = AppLocalizations.of(context)!;
         return Align(
             // Centred with the hero above it: the three faces are the page's main choice,
             // and a choice reads as one when it sits under the line that offered it.
@@ -233,10 +234,13 @@ class _Tabs extends StatelessWidget {
                     children: [
                         for (final f in _Face.values)
                             _Tab(
+                                // V2's own keys, which were already translated and simply not
+                                // read here. In an app that opens in Korean the three English
+                                // words sat in the middle of a Korean page.
                                 label: switch (f) {
-                                    _Face.stays => 'Stays',
-                                    _Face.flights => 'Flights',
-                                    _Face.golf => 'Golf',
+                                    _Face.stays => t.landing_search_searchMode_stays,
+                                    _Face.flights => t.landing_search_searchMode_flights,
+                                    _Face.golf => t.landing_search_searchMode_golf,
                                 },
                                 selected: f == face,
                                 onTap: () => onChanged(f),

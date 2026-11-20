@@ -1,4 +1,5 @@
 import 'dart:collection';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'dart:ffi';
 import 'package:flutter/services.dart';
 
@@ -40,12 +41,11 @@ enum No3dReason {
 }
 
 /// User-facing explanation matching Gate Closes device ladder.
-String no3dReasonText(No3dReason reason) => switch (reason) {
-      No3dReason.is32Bit => "This phone can't run it (needs 64-bit Android)",
-      No3dReason.lowMemory => "This phone can't run it (needs 6 GB of memory)",
-      No3dReason.oldAndroid =>
-        "This phone can't run it (needs Android 10 or newer)",
-      No3dReason.measuredTooSlow => 'Turned off: it ran too slowly here',
+String no3dReasonText(No3dReason reason, AppLocalizations t) => switch (reason) {
+      No3dReason.is32Bit => t.mobile_map_no3d_is32Bit,
+      No3dReason.lowMemory => t.mobile_map_no3d_lowMemory,
+      No3dReason.oldAndroid => t.mobile_map_no3d_oldAndroid,
+      No3dReason.measuredTooSlow => t.mobile_map_no3d_tooSlow,
     };
 
 /// Whether the map can be shown on this phone.

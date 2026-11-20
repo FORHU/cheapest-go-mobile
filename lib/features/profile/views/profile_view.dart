@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cheapest_go_mobile/shared/lib/demo.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/components/language_picker.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
@@ -62,7 +64,7 @@ class ProfileView extends StatelessWidget {
         leading: Navigator.of(context).canPop()
             ? IconButton(
                 icon: const Icon(Icons.arrow_back),
-                tooltip: 'Back',
+                tooltip: AppLocalizations.of(context)!.checkout_back,
                 onPressed: () => Navigator.of(context).maybePop(),
               )
             : null,
@@ -84,7 +86,7 @@ class ProfileView extends StatelessWidget {
               const SizedBox(height: 24),
 
               // 2. Preferences Section
-              _buildSectionHeader('PREFERENCES', theme),
+              _buildSectionHeader(AppLocalizations.of(context)!.mobile_account_preferences, theme),
               const SizedBox(height: 8),
               _buildPreferencesCard(context, theme),
               const SizedBox(height: 32),
@@ -93,14 +95,14 @@ class ProfileView extends StatelessWidget {
               // Account, and a shortlist does not belong among confirmed bookings. Still
               // device-local — wiring `/saved-trips` is its own ticket, and until then this
               // is not yet the Saved Trip CONTEXT.md describes.
-              _buildSectionHeader('SAVED TRIPS', theme),
+              _buildSectionHeader(AppLocalizations.of(context)!.mobile_account_savedTrips, theme),
               const SizedBox(height: 8),
               const SavedStaysCard(),
               const SizedBox(height: 32),
 
               // 4. Help and the legal documents. V2 reaches these from a footer on every
               // page; an app has no footer, and this is where that material belongs (#44).
-              _buildSectionHeader('HELP & LEGAL', theme),
+              _buildSectionHeader(AppLocalizations.of(context)!.mobile_account_helpLegal, theme),
               const SizedBox(height: 8),
               const LegalLinksCard(),
               const SizedBox(height: 32),
@@ -117,14 +119,14 @@ class ProfileView extends StatelessWidget {
                 child: Column(
                   children: [
                     Text(
-                      'CheapestGo Mobile v${env.appVersion}',
+                      '$brandName Mobile v${env.appVersion}',
                       style: theme.textTheme.bodySmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Stays and golf near your arrival airport',
+                      AppLocalizations.of(context)!.mobile_account_tagline,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       ),
@@ -203,7 +205,7 @@ class ProfileView extends StatelessWidget {
                                   child: Text(
                                     userName?.isNotEmpty == true
                                         ? userName!
-                                        : 'CheapestGo Traveler',
+                                        : '$brandName Traveler',
                                     style: theme.textTheme.titleMedium?.copyWith(
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -222,7 +224,7 @@ class ProfileView extends StatelessWidget {
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
-                                    'MEMBER',
+                                    AppLocalizations.of(context)!.mobile_account_member,
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
@@ -253,7 +255,7 @@ class ProfileView extends StatelessWidget {
                     child: OutlinedButton.icon(
                       onPressed: onSignOutTap,
                       icon: const Icon(Icons.logout, size: 18),
-                      label: const Text('Log Out'),
+                      label: Text(AppLocalizations.of(context)!.mobile_account_logOut),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: colorScheme.error,
                         backgroundColor: Colors.transparent,
@@ -323,7 +325,7 @@ class ProfileView extends StatelessWidget {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: const Text('Sign In'),
+                          child: Text(AppLocalizations.of(context)!.checkout_signIn),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -361,19 +363,58 @@ class ProfileView extends StatelessWidget {
       ),
       child: Column(
         children: [
-          // 1. Theme Mode
+          // 1. Language. First in the card on purpose: in an app that opens in Korean it is
+          // the setting someone is most likely to be hunting for, and the one that makes the
+          // rest of this screen readable. Options are written in their own script.
+          // Only where a build is meant to be tested in. A brand is locked to one language
+          // (ADR-0007), and `kAllowLanguageSwitch` defaults to false so a production build is
+          // right without anyone remembering a flag.
+          if (kAllowLanguageSwitch) ListTile(
+            leading: _buildLeadingIcon(
+              Icons.language_rounded,
+              const Color(0xFF2563EB),
+              theme,
+            ),
+            title: Text(
+              AppLocalizations.of(context)!.account_preferences_language,
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+            ),
+            subtitle: Text(
+              languageLabel(uiSettingsStore.language),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: colorScheme.onSurfaceVariant,
+              ),
+            ),
+            trailing: DropdownButton<String>(
+              value: uiSettingsStore.language,
+              underline: const SizedBox.shrink(),
+              borderRadius: BorderRadius.circular(12),
+              items: [
+                for (final code in UiSettingsStore.supportedLanguages)
+                  DropdownMenuItem(value: code, child: Text(languageLabel(code))),
+              ],
+              onChanged: (v) {
+                if (v != null) uiSettingsStore.setLanguage(v);
+              },
+            ),
+          ),
+          Divider(height: 1, indent: 16, endIndent: 16, color: colorScheme.outlineVariant.withValues(alpha: 0.3)),
+
+          // 2. Theme Mode
           ListTile(
             leading: _buildLeadingIcon(
               Icons.brightness_6_rounded,
               const Color(0xFF6366F1),
               theme,
             ),
-            title: const Text(
-              'App Theme',
+            title: Text(
+              AppLocalizations.of(context)!.mobile_account_appTheme,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
-              '${uiSettingsStore.themeMode.name.toUpperCase()} mode',
+              AppLocalizations.of(context)!.mobile_account_themeMode(uiSettingsStore.themeMode == ThemeMode.light
+                  ? AppLocalizations.of(context)!.common_themeLight
+                  : AppLocalizations.of(context)!.common_themeDark),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurfaceVariant,
               ),
@@ -385,14 +426,14 @@ class ProfileView extends StatelessWidget {
               // Two options, as V2 offers. "System" is deliberately absent: V2 never reads the
               // browser's preference, so mobile does not read the handset's. See
               // UiSettingsStore.setThemeMode.
-              items: const [
+              items: [
                 DropdownMenuItem(
                   value: ThemeMode.light,
-                  child: Text('Light'),
+                  child: Text(AppLocalizations.of(context)!.common_themeLight),
                 ),
                 DropdownMenuItem(
                   value: ThemeMode.dark,
-                  child: Text('Dark'),
+                  child: Text(AppLocalizations.of(context)!.common_themeDark),
                 ),
               ],
               onChanged: (v) {
@@ -414,16 +455,16 @@ class ProfileView extends StatelessWidget {
               const Color(0xFF0EA5E9),
               theme,
             ),
-            title: const Text(
-              'Map',
+            title: Text(
+              AppLocalizations.of(context)!.trips_bookingCard_actions_map,
               style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
             subtitle: Text(
               uiSettingsStore.is3dSupported
                   ? (uiSettingsStore.mapTier == MapTier.standard
                       ? '3D Standard Globe'
-                      : '2D Lite Map')
-                  : (uiSettingsStore.no3dReasonDescription ?? '3D Globe unsupported on device'),
+                      : AppLocalizations.of(context)!.mobile_map_tier2dLiteMap)
+                  : (uiSettingsStore.no3dReasonDescription(AppLocalizations.of(context)!) ?? AppLocalizations.of(context)!.mobile_map_no3dUnsupported),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: !uiSettingsStore.is3dSupported
                     ? const Color(0xFFF59E0B)
@@ -435,9 +476,9 @@ class ProfileView extends StatelessWidget {
               underline: const SizedBox.shrink(),
               borderRadius: BorderRadius.circular(12),
               items: [
-                const DropdownMenuItem(
+                DropdownMenuItem(
                   value: MapTier.lite,
-                  child: Text('2D Lite'),
+                  child: Text(AppLocalizations.of(context)!.mobile_map_tier2dLite),
                 ),
                 DropdownMenuItem(
                   value: MapTier.standard,
@@ -446,7 +487,7 @@ class ProfileView extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                        '3D Globe',
+                        AppLocalizations.of(context)!.mobile_map_tier3dGlobe,
                         style: TextStyle(
                           color: uiSettingsStore.is3dSupported
                               ? null
@@ -507,8 +548,8 @@ class ProfileView extends StatelessWidget {
         title: const Text('Reset demo data?'),
         content: const Text('Bookings made on this phone and saved stays will be removed.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Reset')),
+          TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context)!.trips_bookingCard_actions_cancel)),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(AppLocalizations.of(context)!.flights_filtersPanel_reset)),
         ],
       ),
     );

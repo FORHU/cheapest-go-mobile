@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
@@ -32,8 +33,8 @@ class _AirportHubViewState extends State<AirportHubView> {
         appBar: AppBar(),
         body: EmptyState(
           icon: Icons.flight_land_rounded,
-          title: 'Airport not found',
-          message: 'We have no stays or courses for ${widget.code} yet.',
+          title: AppLocalizations.of(context)!.mobile_airports_notFound,
+          message: AppLocalizations.of(context)!.mobile_airports_nothingFor(widget.code),
         ),
       );
     }
@@ -49,7 +50,7 @@ class _AirportHubViewState extends State<AirportHubView> {
             children: [
               Semantics(
                 button: true,
-                label: 'Open the map',
+                label: AppLocalizations.of(context)!.mobile_airports_openMap,
                 child: GestureDetector(
                   onTap: () {
                     tripSearchStore.setAirport(airport.code);
@@ -67,12 +68,12 @@ class _AirportHubViewState extends State<AirportHubView> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                             decoration: BoxDecoration(color: const Color(0x99020617), borderRadius: BorderRadius.circular(999)),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.public_rounded, size: 16, color: Colors.white),
-                                SizedBox(width: 6),
-                                Text('Open the map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                                const Icon(Icons.public_rounded, size: 16, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(AppLocalizations.of(context)!.mobile_airports_openMap, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                               ],
                             ),
                           ),
@@ -87,7 +88,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                 left: 16,
                 child: CircleIconButton(
                   icon: Icons.chevron_left_rounded,
-                  tooltip: 'Back',
+                  tooltip: AppLocalizations.of(context)!.checkout_back,
                   onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                 ),
               ),
@@ -131,14 +132,14 @@ class _AirportHubViewState extends State<AirportHubView> {
                       const SizedBox(height: 10),
                     ],
                     if (hotels.isEmpty)
-                      const EmptyState(icon: Icons.hotel_outlined, title: 'No stays yet', message: 'Try another airport.')
+                      EmptyState(icon: Icons.hotel_outlined, title: AppLocalizations.of(context)!.mobile_airports_noStaysYet, message: AppLocalizations.of(context)!.mobile_airports_tryAnother)
                     else
                       OutlinedButton(
                         onPressed: () {
                           s.setAirport(airport.code);
                           context.push('/hotels');
                         },
-                        child: Text('See all ${plural(hotels.length, 'stay')} near ${airport.code}'),
+                        child: Text(AppLocalizations.of(context)!.mobile_airports_seeAllStays(hotels.length, airport.code)),
                       ),
                   ] else ...[
                     for (final course in courses) ...[
@@ -152,7 +153,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                       const SizedBox(height: 10),
                     ],
                     if (courses.isEmpty)
-                      const EmptyState(icon: Icons.golf_course_rounded, title: 'No courses yet', message: 'Try another airport.')
+                      EmptyState(icon: Icons.golf_course_rounded, title: AppLocalizations.of(context)!.golf_emptyTitle, message: AppLocalizations.of(context)!.mobile_airports_tryAnother)
                     else
                       OutlinedButton(
                         onPressed: () {
@@ -196,16 +197,16 @@ class _StayRow extends StatelessWidget {
                 children: [
                   Text(hotel.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                   const SizedBox(height: 4),
-                  PinLine(hotel.hasShuttle ? '${hotel.distanceLabel} · free shuttle' : hotel.distanceLabel),
+                  PinLine(hotel.hasShuttle ? AppLocalizations.of(context)!.mobile_hotels_freeShuttle(hotel.distanceLabel) : hotel.distanceLabel),
                   const Spacer(),
                   Row(
                     children: [
                       RatingBadge(hotel.score),
                       const SizedBox(width: 6),
                       Expanded(
-                        child: Text(hotel.scoreLabel, maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textSecondary)),
+                        child: Text(hotel.scoreLabel(AppLocalizations.of(context)!), maxLines: 1, overflow: TextOverflow.ellipsis, style: TextStyle(fontSize: 12, color: c.textSecondary)),
                       ),
-                      PriceText(hotel.fromRate, suffix: '/night', size: 15),
+                      PriceText(hotel.fromRate, suffix: AppLocalizations.of(context)!.hotels_perNight, size: 15),
                     ],
                   ),
                 ],
@@ -239,7 +240,7 @@ class _CourseRow extends StatelessWidget {
               children: [
                 Text(course.name, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700)),
                 const SizedBox(height: 4),
-                PinLine('${course.driveMinutes} min from ${course.airportCode}', icon: Icons.schedule_rounded),
+                PinLine(AppLocalizations.of(context)!.mobile_map_minFromAirport(course.driveMinutes, course.airportCode), icon: Icons.schedule_rounded),
                 const SizedBox(height: 6),
                 PriceText(course.pricePerPlayer, suffix: '/player', size: 15),
               ],

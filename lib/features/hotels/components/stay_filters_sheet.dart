@@ -90,7 +90,7 @@ class _StayFiltersSheetState extends State<StayFiltersSheet> {
                             ),
                         ),
                         const SizedBox(height: 18),
-                        _Heading('Sort By', skin: skin),
+                        _Heading(AppLocalizations.of(context)!.flights_filtersPanel_sortBy, skin: skin),
                         const SizedBox(height: 10),
                         // The five V2 offers, in V2's order.
                         Wrap(

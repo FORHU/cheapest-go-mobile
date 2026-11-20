@@ -1,8 +1,20 @@
 /// Display formatting for prices, dates, and tee times.
 library;
 
-const _months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-const _weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:intl/intl.dart';
+
+// Dates read in the language the app is set to, not in English.
+//
+// These were two const English arrays, so an app rendering Korean still wrote "Nov 28 – 29"
+// beside Korean copy. DateFormat takes its language from `Intl.defaultLocale`, which
+// app.dart sets whenever the language changes; unset, intl falls back to English, which is
+// what the tests run in.
+//
+// Built per call rather than cached: the language can change while the app is running, and a
+// formatter built once would keep writing the old language until the next launch.
+String _month(DateTime d) => DateFormat.MMM(Intl.defaultLocale).format(d);
+String _weekday(DateTime d) => DateFormat.E(Intl.defaultLocale).format(d);
 
 /// `4850` → `₱4,850`.
 String formatPeso(int amount) {
@@ -16,13 +28,13 @@ String formatPeso(int amount) {
 }
 
 /// `Nov 14`.
-String formatShortDate(DateTime d) => '${_months[d.month - 1]} ${d.day}';
+String formatShortDate(DateTime d) => '${_month(d)} ${d.day}';
 
 /// `Thu, Nov 14`.
 String formatDayDate(DateTime d) => '${weekdayShort(d)}, ${formatShortDate(d)}';
 
 /// `Thu`.
-String weekdayShort(DateTime d) => _weekdays[d.weekday - 1];
+String weekdayShort(DateTime d) => _weekday(d);
 
 /// `Nov 14 – 17`, or `Nov 30 – Dec 2` across months.
 String formatDateRange(DateTime start, DateTime end) {
@@ -53,3 +65,16 @@ String plural(int n, String one, [String? many]) => '$n ${n == 1 ? one : (many ?
 
 /// Date with the time of day dropped.
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// "직항" or "1회 경유", in the language the app is rendering.
+///
+/// Shared rather than kept with the flights feature: the flight card and the trips booking
+/// card both show it, and each had its own English literal, so a Korean screen said "Nonstop"
+/// in two different widgets. A helper two features read belongs to neither of them — the
+/// architecture validator refuses the alternative, and is right to.
+///
+/// V2's own `flights_card_direct` carries the nonstop word. The count needs a mobile key
+/// because V2 holds the noun alone (`"stop"` / `"stops"`) and a number cannot be joined to it
+/// the same way in every language: "1 stop" takes a space where "1회 경유" does not.
+String stopsLabel(AppLocalizations t, int stops) =>
+    stops == 0 ? t.flights_card_direct : t.mobile_flights_stopsCount(stops);

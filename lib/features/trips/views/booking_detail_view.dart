@@ -43,10 +43,21 @@ class _BookingDetailViewState extends State<BookingDetailView> {
     @override
     void initState() {
         super.initState();
-        _reload();
+        // Assigned directly rather than through `_reload`: there is nothing on screen yet to
+        // rebuild, and `setState` during `initState` is what the framework objects to.
+        _load = _find();
     }
 
-    void _reload() => setState(() => _load = _find());
+    /// Starts the lookup again and rebuilds once it is under way.
+    ///
+    /// A block body, not an arrow. `setState(() => _load = _find())` returns the value of the
+    /// assignment — a `Future` — and Flutter rejects a callback that returns one outright,
+    /// which took this screen down with a red error every time it opened.
+    void _reload() {
+        setState(() {
+            _load = _find();
+        });
+    }
 
     Future<TripBooking?> _find() async {
         final page = await bookingsSource.myBookings();
@@ -130,7 +141,7 @@ class _Body extends StatelessWidget {
                 // The reference, in mono: the one thing on this page somebody reads aloud.
                 Row(
                     children: [
-                        Text('Ref: ', style: TextStyle(fontSize: 13, color: c.textMuted)),
+                        Text('${AppLocalizations.of(context)!.golf_booking_reference}: ', style: TextStyle(fontSize: 13, color: c.textMuted)),
                         SelectableText(
                             booking.reference,
                             style: TextStyle(
@@ -213,7 +224,7 @@ class _Body extends StatelessWidget {
                 t: t,
                 total: formatMoney(b.totalPaid, b.currency),
                 bookedAt: b.bookedAt,
-                method: 'Card (Stripe)',
+                method: AppLocalizations.of(context)!.mobile_trips_cardStripe,
             ),
         ];
     }
@@ -269,7 +280,7 @@ class _Body extends StatelessWidget {
                                     // than an empty row implying none was asked for.
                                     if (p.seatNumber != null && p.seatNumber!.isNotEmpty)
                                         Text(
-                                            'Seat ${p.seatNumber}',
+                                            AppLocalizations.of(context)!.mobile_trips_seatNumber(p.seatNumber!),
                                             style: TextStyle(fontSize: 12, color: context.colors.textMuted),
                                         ),
                                 ],
@@ -292,12 +303,12 @@ class _Body extends StatelessWidget {
             title: t.trips_sections_stayDetails,
             icon: Icons.golf_course_rounded,
             rows: [
-                _Row('Date', _long(b.startsAt)),
+                _Row(AppLocalizations.of(context)!.golf_booking_date, _long(b.startsAt)),
                 _Row(t.trips_golfCard_teeTime, formatTeeTime(
                     '${b.startsAt.hour.toString().padLeft(2, '0')}:'
                     '${b.startsAt.minute.toString().padLeft(2, '0')}',
                 )),
-                _Row('Players', '${b.players}'),
+                _Row(AppLocalizations.of(context)!.golf_booking_players, '${b.players}'),
                 _Row(t.trips_labels_name, b.leadName),
                 _Row(t.trips_labels_email, b.contactEmail),
             ],
@@ -306,8 +317,8 @@ class _Body extends StatelessWidget {
             title: t.trips_sections_payment,
             icon: Icons.credit_card_rounded,
             rows: [
-                _Row('Green fees', formatMoney(b.greenFee, b.currency)),
-                if (b.serviceFee > 0) _Row('Service fee', formatMoney(b.serviceFee, b.currency)),
+                _Row(AppLocalizations.of(context)!.golf_booking_greenFee, formatMoney(b.greenFee, b.currency)),
+                if (b.serviceFee > 0) _Row(AppLocalizations.of(context)!.checkout_serviceFee, formatMoney(b.serviceFee, b.currency)),
                 // A refunded booking says so here rather than only in the badge.
                 if (b.refundAmount > 0)
                     _Row(t.trips_golfCard_refunded(formatMoney(b.refundAmount, b.currency)), ''),
@@ -547,7 +558,7 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                     maxLines: 3,
                     style: const TextStyle(fontSize: 14),
                     decoration: InputDecoration(
-                        hintText: 'e.g. Late check-in after 10 PM, extra bed, high floor…',
+                        hintText: AppLocalizations.of(context)!.trips_requestsForm_placeholder,
                         hintStyle: TextStyle(fontSize: 14, color: c.textSubtle),
                         filled: true,
                         fillColor: c.surfaceMuted,
@@ -560,7 +571,7 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                    'Requests are passed to the property and are not guaranteed.',
+                    AppLocalizations.of(context)!.documents_voucher_requestsNotGuaranteed,
                     style: TextStyle(fontSize: 11.5, color: c.textMuted),
                 ),
                 if (_error != null) ...[
@@ -573,7 +584,7 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
                 Align(
                     alignment: Alignment.centerLeft,
                     child: AppGradientButton(
-                        label: 'Save request',
+                        label: AppLocalizations.of(context)!.trips_requestsForm_submit,
                         compact: true,
                         isLoading: _busy,
                         onPressed: _busy ? null : _save,
@@ -729,7 +740,7 @@ class _DocumentsPanel extends StatelessWidget {
         if (docs.isEmpty && pending == null) return const SizedBox.shrink();
 
         return _Panel(
-            title: 'Travel documents',
+            title: AppLocalizations.of(context)!.documents_section,
             icon: Icons.description_outlined,
             children: [
                 if (docs.contains(TravelDocument.receipt))
@@ -745,8 +756,8 @@ class _DocumentsPanel extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                             pending == DocumentPending.awaitingTicket
-                                ? 'Waiting for the airline to issue your ticket.'
-                                : 'Waiting for the property to confirm your booking.',
+                                ? AppLocalizations.of(context)!.mobile_trips_awaitingTicket
+                                : AppLocalizations.of(context)!.mobile_trips_awaitingProperty,
                             style: TextStyle(fontSize: 12.5, color: c.textMuted),
                         ),
                     ),

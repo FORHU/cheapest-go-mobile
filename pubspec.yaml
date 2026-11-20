@@ -27,6 +27,10 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # Generates the launcher icons for every density from one source image. A dev dependency:
+  # it runs once to write android/app/src/main/res, and nothing in the app imports it.
+  flutter_launcher_icons: ^0.14.4
+  image: ^4.3.0
 
 flutter:
   uses-material-design: true
@@ -40,6 +44,9 @@ flutter:
     # V2's own destination photography, copied from its public/images/destinations so the
     # landing shows the same places it does. See #38.
     - assets/images/destinations/
+    # AirangGo brand marks: the launcher source and the in-app wordmark.
+    - assets/images/airanggo_mark.png
+    - assets/images/airanggo_wordmark.png
 
   # Bundled rather than fetched at runtime. V2 asks for these two by name in its --font-sans
   # and --font-mono stacks; an app that tracks a flight offline cannot wait on Google to find
@@ -63,3 +70,16 @@ flutter:
           weight: 400
         - asset: assets/fonts/JetBrainsMono-500.ttf
           weight: 500
+
+# The AirangGo launcher icon, generated from assets/images/airanggo_mark.png.
+#
+# The source is 229x203 with a transparent background, so it is padded to square and laid on
+# white first (tool/make_icon.dart): the mark's "A" is black, which disappears against a dark
+# launcher background, and a non-square source would be stretched to fit.
+flutter_launcher_icons:
+  android: true
+  ios: false
+  image_path: "assets/images/airanggo_icon_src.png"
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/images/airanggo_icon_fg.png"
+  min_sdk_android: 21

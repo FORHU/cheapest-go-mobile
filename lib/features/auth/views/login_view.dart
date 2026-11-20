@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/components/language_picker.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/features/auth/components/auth_form_widgets.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
@@ -47,7 +48,12 @@ class _LoginViewState extends State<LoginView> {
     final t = AppLocalizations.of(context)!;
     final theme = Theme.of(context);
     return Scaffold(
-      appBar: AppBar(title: Text(t.auth_signIn_title)),
+      appBar: AppBar(
+        title: Text(t.auth_signIn_title),
+        // The app opens in Korean. Without this, a reader who cannot find their way around
+        // the sign-in form has no way out of it.
+        actions: const [LanguageAction(), SizedBox(width: 4)],
+      ),
       body: ListenableBuilder(
         listenable: authStore,
         builder: (context, _) {
@@ -125,9 +131,13 @@ class _LoginViewState extends State<LoginView> {
                       ),
                       const SizedBox(height: 12),
                       AuthSubmitButton(
-                        // V2's own button text, a literal there too; the page title above is
-                        // the longer 'Sign in to CheapestGo'.
-                        label: 'Sign In',
+                        // V2 hard-codes this one as a literal, which is a defect there rather
+                        // than copy to mirror: Design Parity is V2's own en/ja/ko/zh, and a
+                        // literal is in none of them. Carried across unchanged it left the
+                        // primary action on a Korean screen reading "Sign In" in English.
+                        // `nav_signIn` is V2's own string for this action and is translated in
+                        // all four. The title above stays the longer 'Sign in to {brand}'.
+                        label: t.nav_signIn,
                         isLoading: loading,
                         onPressed: _submit,
                       ),

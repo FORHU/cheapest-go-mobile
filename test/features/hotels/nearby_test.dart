@@ -78,7 +78,11 @@ void main() {
 
         // `POI_FILTERS` in V2: all, restaurant, cafe, attraction, grocery, medical, transit.
         // The strip scrolls, so each is dragged into view rather than assumed to be built.
-        for (final label in ['All', 'Food', 'Cafés', 'Attractions', 'Groceries', 'Pharmacy', 'Transit']) {
+        // V2's own words, read from `categories.<id>` in its locale files — which is what
+        // PlaceStrip renders. The enum's English labels had drifted from them ('Food' for
+        // Dining, 'Pharmacy' for Hospitals & Health); the ids, which are the api-v2
+        // contract, are unchanged.
+        for (final label in ['All', 'Dining', 'Cafés', 'Attractions & Parks', 'Groceries', 'Hospitals & Health', 'Transit']) {
             await tester.scrollUntilVisible(
                 find.text(label),
                 120,

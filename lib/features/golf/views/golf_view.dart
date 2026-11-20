@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/components/airport_picker.dart';
 import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
@@ -38,7 +39,7 @@ class _GolfViewState extends State<GolfView> {
     bookingsStore.addTeeTime(
       airportCode: course.airportCode,
       courseName: course.name,
-      courseMeta: course.meta,
+      courseMeta: course.metaIn(AppLocalizations.of(context)!),
       day: day,
       teeTime: time,
       players: players,
@@ -47,7 +48,7 @@ class _GolfViewState extends State<GolfView> {
     // Not '/trips', and no reference quoted — see the same change in flight checkout and
     // ADR-0003. Nothing here reaches a course, and Trips now shows only confirmed bookings.
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Demo booking — tee times are not bookable yet')),
+      SnackBar(content: Text(AppLocalizations.of(context)!.mobile_golf_demoBooking)),
     );
   }
 
@@ -76,19 +77,28 @@ class _GolfViewState extends State<GolfView> {
                   if (widget.showBack) ...[
                     CircleIconButton(
                       icon: Icons.chevron_left_rounded,
-                      tooltip: 'Back',
+                      tooltip: AppLocalizations.of(context)!.checkout_back,
                       onPressed: () => context.canPop() ? context.pop() : context.go('/'),
                     ),
                     const SizedBox(width: 10),
                   ],
                   Expanded(
-                    child: Text.rich(
-                      TextSpan(children: [
-                        const TextSpan(text: 'Golf near '),
-                        TextSpan(text: s.airportCode, style: TextStyle(color: c.accent)),
-                      ]),
-                      style: text.headlineLarge?.copyWith(fontSize: 26),
-                    ),
+                    // Split around the code rather than concatenated before it: the accent is
+                    // on the airport, and the airport does not sit in the same place in every
+                    // language — "Golf near MNL" against "MNL 근처 골프".
+                    child: Builder(builder: (context) {
+                      final code = s.airportCode;
+                      final whole = AppLocalizations.of(context)!.mobile_golf_nearAirport(code);
+                      final around = whole.split(code);
+                      return Text.rich(
+                        TextSpan(children: [
+                          TextSpan(text: around.first),
+                          TextSpan(text: code, style: TextStyle(color: c.accent)),
+                          if (around.length > 1) TextSpan(text: around.last),
+                        ]),
+                        style: text.headlineLarge?.copyWith(fontSize: 26),
+                      );
+                    }),
                   ),
                   TextButton.icon(
                     onPressed: () async {
@@ -96,15 +106,16 @@ class _GolfViewState extends State<GolfView> {
                       if (code != null) s.setAirport(code);
                     },
                     icon: const Icon(Icons.swap_horiz_rounded, size: 18),
-                    label: const Text('Airport'),
+                    label: Text(AppLocalizations.of(context)!.mobile_golf_airport),
                   ),
                 ],
               ),
               const SizedBox(height: 4),
               Text(
                 courses.isEmpty
-                    ? 'No courses near ${s.airportCode} yet'
-                    : '${plural(courses.length, 'course')} within $maxDrive min of the airport · ${plural(s.players, 'player')}',
+                    ? AppLocalizations.of(context)!.mobile_golf_noCoursesHere
+                    : '${AppLocalizations.of(context)!.mobile_golf_coursesWithinDrive(courses.length, maxDrive)}'
+                        ' · ${AppLocalizations.of(context)!.mobile_golf_players(s.players)}',
                 style: TextStyle(fontSize: 13, color: c.textMuted),
               ),
               const SizedBox(height: 14),
@@ -150,10 +161,10 @@ class _GolfViewState extends State<GolfView> {
               ),
               const SizedBox(height: 16),
               if (courses.isEmpty)
-                const EmptyState(
+                EmptyState(
                   icon: Icons.golf_course_rounded,
-                  title: 'No courses here yet',
-                  message: 'Switch to another arrival airport to see tee times.',
+                  title: AppLocalizations.of(context)!.mobile_golf_noCoursesHere,
+                  message: AppLocalizations.of(context)!.mobile_golf_switchAirport,
                 ),
               for (final course in courses) ...[
                 _CourseCard(course: course, onTime: (t) => _book(course, day, t)),
@@ -192,18 +203,18 @@ class _CourseCard extends StatelessWidget {
                   children: [
                     Text(course.name, style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
                     const SizedBox(height: 3),
-                    Text(course.meta, style: TextStyle(fontSize: 12, color: c.textMuted)),
+                    Text(course.metaIn(AppLocalizations.of(context)!), style: TextStyle(fontSize: 12, color: c.textMuted)),
                     const SizedBox(height: 3),
-                    PinLine('${course.driveMinutes} min from ${course.airportCode}', icon: Icons.schedule_rounded),
+                    PinLine(AppLocalizations.of(context)!.mobile_map_minFromAirport(course.driveMinutes, course.airportCode), icon: Icons.schedule_rounded),
                   ],
                 ),
               ),
               Column(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 children: [
-                  Text('from', style: TextStyle(fontSize: 11, color: c.textMuted)),
+                  Text(AppLocalizations.of(context)!.landing_recentlyViewed_from, style: TextStyle(fontSize: 11, color: c.textMuted)),
                   PriceText(course.pricePerPlayer),
-                  Text('/player', style: TextStyle(fontSize: 11, color: c.textMuted)),
+                  Text(AppLocalizations.of(context)!.mobile_golf_perPlayer, style: TextStyle(fontSize: 11, color: c.textMuted)),
                 ],
               ),
             ],
@@ -269,14 +280,14 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
           children: [
             Text(widget.course.name, style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 4),
-            Text('${formatDayDate(widget.day)} · ${formatTeeTime(widget.time)} · ${widget.course.meta}',
+            Text('${formatDayDate(widget.day)} · ${formatTeeTime(widget.time)} · ${widget.course.metaIn(AppLocalizations.of(context)!)}',
                 style: TextStyle(fontSize: 13, color: c.textMuted)),
             const SizedBox(height: 18),
             Row(
               children: [
-                const Expanded(child: Text('Players', style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
+                Expanded(child: Text(AppLocalizations.of(context)!.golf_booking_players, style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600))),
                 IconButton.outlined(
-                  tooltip: 'Fewer players',
+                  tooltip: AppLocalizations.of(context)!.search_golf_fewer,
                   onPressed: _players > 1 ? () => setState(() => _players--) : null,
                   icon: const Icon(Icons.remove),
                 ),
@@ -285,7 +296,7 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
                   child: Text('$_players', textAlign: TextAlign.center, style: Theme.of(context).textTheme.titleLarge),
                 ),
                 IconButton.outlined(
-                  tooltip: 'More players',
+                  tooltip: AppLocalizations.of(context)!.search_golf_more,
                   onPressed: _players < 4 ? () => setState(() => _players++) : null,
                   icon: const Icon(Icons.add),
                 ),
@@ -301,10 +312,10 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
             const SizedBox(height: 16),
             AppGradientButton(
               onPressed: () => Navigator.pop(context, _players),
-              label: 'Book tee time · ${formatPeso(total)}',
+              label: AppLocalizations.of(context)!.mobile_golf_bookTeeTime(formatPeso(total)),
             ),
             const SizedBox(height: 6),
-            Text('Test mode: no card is charged in this build.',
+            Text(AppLocalizations.of(context)!.mobile_golf_testModeNotice,
                 textAlign: TextAlign.center, style: TextStyle(fontSize: 11, color: c.textMuted)),
           ],
         ),

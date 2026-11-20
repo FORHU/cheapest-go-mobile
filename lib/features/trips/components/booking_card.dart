@@ -99,7 +99,7 @@ class BookingCard extends StatelessWidget {
                     fromLabel: out.origin,
                     toValue: _clock(arrive.arrival),
                     toLabel: arrive.destination,
-                    above: b.stops == 0 ? 'Nonstop' : '${b.stops} stop',
+                    above: stopsLabel(AppLocalizations.of(context)!, b.stops),
                     below: '',
                 ),
             // Trip type and PNR, under the span as V2 has them. The PNR in mono, because it
@@ -138,7 +138,7 @@ class BookingCard extends StatelessWidget {
                 fromLabel: 'Date',
                 toValue: _clock(b.startsAt),
                 toLabel: t.trips_golfCard_teeTime,
-                above: b.players == 1 ? '1 player' : '${b.players} players',
+                above: b.players == 1 ? AppLocalizations.of(context)!.mobile_trips_onePlayer : '${b.players} players',
                 below: b.reference,
             ),
             price: formatMoney(b.totalPaid, b.currency),
@@ -153,21 +153,21 @@ class BookingCard extends StatelessWidget {
     // ── Statuses ──────────────────────────────────────────────────────────────
 
     static _Status _hotelStatus(String status, AppLocalizations t) => switch (status) {
-        'pending' => const _Status('Pending', Color(0xFFB45309), Color(0xFFFEF3C7)),
-        'confirmed' => const _Status('Confirmed', Color(0xFF15803D), Color(0xFFDCFCE7)),
-        'completed' => const _Status('Completed', Color(0xFF475569), Color(0xFFF1F5F9)),
-        'cancelled' => const _Status('Cancelled', Color(0xFFB91C1C), Color(0xFFFEE2E2)),
-        'cancelled_refunded' => const _Status('Refunded', Color(0xFF0F766E), Color(0xFFCCFBF1)),
+        'pending' => _Status(t.trips_status_pending, const Color(0xFFB45309), Color(0xFFFEF3C7)),
+        'confirmed' => _Status(t.checkout_flight_receipt_confirmedBadge, const Color(0xFF15803D), Color(0xFFDCFCE7)),
+        'completed' => _Status(t.trips_status_completed, Color(0xFF475569), Color(0xFFF1F5F9)),
+        'cancelled' => _Status(t.trips_bookingCard_cancelled, const Color(0xFFB91C1C), const Color(0xFFFEE2E2)),
+        'cancelled_refunded' => _Status(t.trips_flightBookingCard_stateChips_refunded, const Color(0xFF0F766E), Color(0xFFCCFBF1)),
         'cancelled_refund_failed' =>
-            const _Status('Refund Failed', Color(0xFFB91C1C), Color(0xFFFEE2E2)),
+            _Status(t.trips_flightBookingCard_stateChips_refundFailed, const Color(0xFFB91C1C), Color(0xFFFEE2E2)),
         _ => _Status(status, const Color(0xFF475569), const Color(0xFFF1F5F9)),
     };
 
     static _Status _flightStatus(String status, AppLocalizations t) => switch (status) {
         'booked' || 'confirmed' || 'ticketed' =>
-            const _Status('Confirmed', Color(0xFF15803D), Color(0xFFDCFCE7)),
-        'cancelled' => const _Status('Cancelled', Color(0xFFB91C1C), Color(0xFFFEE2E2)),
-        'refunded' => const _Status('Refunded', Color(0xFF0F766E), Color(0xFFCCFBF1)),
+            _Status(t.checkout_flight_receipt_confirmedBadge, const Color(0xFF15803D), Color(0xFFDCFCE7)),
+        'cancelled' => _Status(t.trips_bookingCard_cancelled, const Color(0xFFB91C1C), const Color(0xFFFEE2E2)),
+        'refunded' => _Status(t.trips_flightBookingCard_stateChips_refunded, const Color(0xFF0F766E), Color(0xFFCCFBF1)),
         _ => _Status(status, const Color(0xFF475569), const Color(0xFFF1F5F9)),
     };
 

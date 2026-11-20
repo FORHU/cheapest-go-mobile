@@ -7,6 +7,7 @@ library;
 
 import 'dart:math';
 import 'package:cheapest_go_mobile/shared/catalog/api_travel_catalog.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
 import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
@@ -283,11 +284,15 @@ class Hotel {
 
   String get distanceLabel => '${distanceKm.toStringAsFixed(1)} km from $distanceFrom';
 
-  String get scoreLabel {
-    if (score >= 9) return 'Superb';
-    if (score >= 8.5) return 'Excellent';
-    if (score >= 8) return 'Very good';
-    return 'Good';
+  /// The word beside the score, in the reader's language.
+  ///
+  /// Takes [AppLocalizations] rather than reading a context because this is a model: the
+  /// bands are V2's and already translated (`hotels_ratings_*`), they were just never read.
+  String scoreLabel(AppLocalizations t) {
+    if (score >= 9) return t.hotels_ratings_superb;
+    if (score >= 8.5) return t.hotels_ratings_excellent;
+    if (score >= 8) return t.hotels_ratings_veryGood;
+    return t.hotels_ratings_good;
   }
 
   Map<String, dynamic> toJson() => {
@@ -366,9 +371,15 @@ class GolfCourse {
   /// Course photo (mock, see assets/images/README.md).
   String get photo => _pick('golf', 'g', _golfPhotoCount, _seed(id));
 
-  String get meta => [
-        '$holes holes',
-        'Par $par',
+  /// "18홀 · 파 72 · buggy included".
+  ///
+  /// Takes the localisations rather than reading a global, so the model stays something a test
+  /// can build without an app around it. `inclusion` is left as it is written in the fixtures:
+  /// golf has no API, so that text is this repo's own data rather than copy, and it is #48's
+  /// to settle when the screen is rebuilt against V2.
+  String metaIn(AppLocalizations t) => [
+        t.mobile_golf_holesCount(holes),
+        t.mobile_golf_parValue(par),
         ?inclusion,
       ].join(' · ');
 }

@@ -1,7 +1,9 @@
+import 'package:flutter/widgets.dart';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
@@ -137,11 +139,14 @@ void main() {
       expect(toBangkok.arrives, '23:50-1'); // 00:50 in Manila, Bangkok is an hour behind
     });
 
-    test('a hotel is priced from its cheapest room', () {
+    test('a hotel is priced from its cheapest room', () async {
       final h = catalog.hotel('mnl-t3-garden')!;
       expect(h.fromRate, 4400);
       expect(h.hasShuttle, isTrue);
-      expect(h.scoreLabel, 'Excellent');
+      // scoreLabel reads V2's translated bands, so it needs the translations. English here,
+      // as everywhere in these tests; the app itself opens in Korean.
+      final t = await AppLocalizations.delegate.load(const Locale('en'));
+      expect(h.scoreLabel(t), 'Excellent');
     });
   });
 

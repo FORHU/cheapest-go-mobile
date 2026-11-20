@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 
 /// The flight pages' own materials, as V2 states them. See `flight-card.tsx` (the card's
 /// SURFACE / TITLE / TEXT / MUTED / HAIRLINE), `search-chrome.ts` (`sortPalette`, the bar's
@@ -76,7 +77,9 @@ class FlightSkin {
   static FlightSkin of(BuildContext context) => Theme.of(context).brightness == Brightness.dark ? dark : light;
 
   /// Select, a picked chip, the stop marker: V2's brand gradient, blue-600 → cyan-500.
-  static const gradient = LinearGradient(colors: [TwPalette.blue600, TwPalette.cyan500]);
+  /// This was the only one of five that read the palette rather than a hand-typed hex, which
+  /// is why it was the only one showing the right cyan. Now they all share it.
+  static const gradient = kBrandGradient;
 }
 
 /// A pill filled with the brand gradient — the card's Select, the sheet's Done.

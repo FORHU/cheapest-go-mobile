@@ -5,6 +5,8 @@ import 'package:cheapest_go_mobile/features/about/views/about_view.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 
+import '../../../tools/brand.dart';
+
 /// The tracer screen, checked for the three things the slice exists to prove: the copy comes
 /// from V2's own translations, the colours come from the mirrored tokens, and the sections are
 /// V2's in V2's order.
@@ -36,7 +38,8 @@ void main() {
             'What we do',
             'What makes us different',
             'Powered by trusted partners',
-            'Who runs CheapestGo',
+            // V2's heading names V2's brand; this build states its own. See tools/brand.dart.
+            inBrand('Who runs CheapestGo'),
         ];
         var previous = -1.0;
         for (final heading in headings) {

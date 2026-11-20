@@ -1,9 +1,15 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
 void main() {
+  // no3dReasonText now writes its reason in the reader's language, so these tests load
+  // the translations once. English, as every expectation here is in English.
+  late AppLocalizations t;
+  setUpAll(() async => t = await AppLocalizations.delegate.load(const Locale('en')));
   TestWidgetsFlutterBinding.ensureInitialized();
 
   group('MapTierPolicy & Device Ladder Tests', () {
@@ -16,7 +22,7 @@ void main() {
 
       final reason = MapTierPolicy.why3dUnavailable(device);
       expect(reason, No3dReason.is32Bit);
-      expect(no3dReasonText(reason!), contains('64-bit'));
+      expect(no3dReasonText(reason!, t), contains('64-bit'));
 
       final decision = MapTierPolicy.decide(device);
       expect(decision, MapTier.lite);
@@ -31,7 +37,7 @@ void main() {
 
       final reason = MapTierPolicy.why3dUnavailable(device);
       expect(reason, No3dReason.lowMemory);
-      expect(no3dReasonText(reason!), contains('6 GB'));
+      expect(no3dReasonText(reason!, t), contains('6 GB'));
 
       final decision = MapTierPolicy.decide(device);
       expect(decision, MapTier.lite);
@@ -58,7 +64,7 @@ void main() {
 
       final reason = MapTierPolicy.why3dUnavailable(device);
       expect(reason, No3dReason.oldAndroid);
-      expect(no3dReasonText(reason!), contains('Android 10'));
+      expect(no3dReasonText(reason!, t), contains('Android 10'));
 
       final decision = MapTierPolicy.decide(device);
       expect(decision, MapTier.lite);
@@ -73,7 +79,7 @@ void main() {
 
       final reason = MapTierPolicy.why3dUnavailable(device, measuredTooSlow: true);
       expect(reason, No3dReason.measuredTooSlow);
-      expect(no3dReasonText(reason!), contains('slowly'));
+      expect(no3dReasonText(reason!, t), contains('slowly'));
 
       final decision = MapTierPolicy.decide(device, measuredTooSlow: true);
       expect(decision, MapTier.lite);

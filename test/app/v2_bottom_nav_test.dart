@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/chrome_skin.dart';
 import '../test_helpers.dart';
 
@@ -10,6 +11,13 @@ void main() {
     group('the bar itself', () {
         testWidgets('is three slots, named but unlabelled', (tester) async {
             await tester.pumpWidget(MaterialApp(
+                // The bar names its slots from V2's translations, so the harness carries the
+                // delegates the app does. Without them AppLocalizations.of(context) is null and
+                // every slot throws before the bar is drawn. Pinned to English: these tests
+                // assert the English semantic labels, and the app itself opens in Korean.
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: const Locale('en'),
                 home: Scaffold(
                     bottomNavigationBar: V2BottomNav(
                         activeIndex: 0,
@@ -32,6 +40,13 @@ void main() {
         /// `palette.ts` does not carry. See chrome_skin.dart before "correcting" it.
         testWidgets('marks the active slot in the skin\'s bronze', (tester) async {
             await tester.pumpWidget(MaterialApp(
+                // The bar names its slots from V2's translations, so the harness carries the
+                // delegates the app does. Without them AppLocalizations.of(context) is null and
+                // every slot throws before the bar is drawn. Pinned to English: these tests
+                // assert the English semantic labels, and the app itself opens in Korean.
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: const Locale('en'),
                 theme: ThemeData(brightness: Brightness.light),
                 home: Scaffold(
                     bottomNavigationBar: V2BottomNav(
@@ -51,6 +66,13 @@ void main() {
 
         testWidgets('takes its skin from the brightness', (tester) async {
             await tester.pumpWidget(MaterialApp(
+                // The bar names its slots from V2's translations, so the harness carries the
+                // delegates the app does. Without them AppLocalizations.of(context) is null and
+                // every slot throws before the bar is drawn. Pinned to English: these tests
+                // assert the English semantic labels, and the app itself opens in Korean.
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: const Locale('en'),
                 theme: ThemeData(brightness: Brightness.dark),
                 home: Scaffold(
                     bottomNavigationBar: V2BottomNav(
@@ -70,6 +92,13 @@ void main() {
         testWidgets('each slot reports which it is', (tester) async {
             var home = 0, trips = 0, settings = 0;
             await tester.pumpWidget(MaterialApp(
+                // The bar names its slots from V2's translations, so the harness carries the
+                // delegates the app does. Without them AppLocalizations.of(context) is null and
+                // every slot throws before the bar is drawn. Pinned to English: these tests
+                // assert the English semantic labels, and the app itself opens in Korean.
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: const Locale('en'),
                 home: Scaffold(
                     bottomNavigationBar: V2BottomNav(
                         activeIndex: 0,

@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/account/account_preferences.dart';
 
 /// Shared UI & Display Settings Store (mirrors `SettingsContext.tsx` & `ui.store.ts`)
 class UiSettingsStore extends ChangeNotifier {
-  static const String _currencyKey = 'cheapestgo_display_currency';
   static const String _themeModeKey = 'cheapestgo_theme_mode';
   static const String _mapTierKey = 'cheapestgo_map_tier';
   static const String _languageKey = 'cheapestgo_language';
@@ -12,11 +14,16 @@ class UiSettingsStore extends ChangeNotifier {
   /// The languages V2 is translated into, which are the four this app carries copy for.
   static const List<String> supportedLanguages = ['en', 'ja', 'ko', 'zh'];
 
-  String _displayCurrency = 'USD';
-
-  /// English until somebody chooses otherwise, which mirrors V2's own default rather than the
-  /// handset's language. See the comment on `locale:` in `app/app.dart`.
-  String _language = 'en';
+  /// Korean until somebody chooses otherwise.
+  ///
+  /// This app is AirangGo, whose market is Korea, so Korean is the language it opens in — not
+  /// the handset's, which would show a Manila tester English and tell us nothing about how the
+  /// app reads to the people it is for.
+  ///
+  /// The cost lands on the team rather than the traveller: anyone who cannot read Korean sees a
+  /// Korean app from the first frame, before any screen explains itself. That is what the
+  /// language control in the top bar is for, and why it shows language codes rather than words.
+  String _language = 'ko';
 
   /// Light, and not the handset's setting. See [setThemeMode].
   ThemeMode _themeMode = ThemeMode.light;
@@ -24,15 +31,24 @@ class UiSettingsStore extends ChangeNotifier {
   DeviceCapabilities? _deviceCapabilities;
   No3dReason? _no3dReason;
 
-  String get displayCurrency => _displayCurrency;
+  /// The brand's **Charge Currency**, not a setting (ADR-0007). A getter rather than a field
+  /// because nothing may change it: there is no picker, no stored value, and nothing written
+  /// back to the account — a currency chosen in the browser is left exactly as it was.
+  ///
+  /// It opened every traveller in USD while opening the app in Korean, and only ever read its
+  /// own device storage, so the app and the browser could disagree forever with nothing to
+  /// reconcile them.
+  String get displayCurrency => brandCurrency;
   String get language => _language;
   ThemeMode get themeMode => _themeMode;
   MapTier get mapTier => _mapTier;
   DeviceCapabilities? get deviceCapabilities => _deviceCapabilities;
   No3dReason? get no3dReason => _no3dReason;
   bool get is3dSupported => _no3dReason == null;
-  String? get no3dReasonDescription =>
-      _no3dReason != null ? no3dReasonText(_no3dReason!) : null;
+  /// Takes the translations rather than exposing a getter: the reason is shown to a person,
+  /// and a store has no context to resolve one from.
+  String? no3dReasonDescription(AppLocalizations t) =>
+      _no3dReason != null ? no3dReasonText(_no3dReason!, t) : null;
 
   Future<void> init() async {
     try {
@@ -45,10 +61,6 @@ class UiSettingsStore extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedCcy = prefs.getString(_currencyKey);
-      if (savedCcy != null && savedCcy.isNotEmpty) {
-        _displayCurrency = savedCcy;
-      }
       final savedLanguage = prefs.getString(_languageKey);
       if (savedLanguage != null && supportedLanguages.contains(savedLanguage)) {
         _language = savedLanguage;
@@ -75,6 +87,25 @@ class UiSettingsStore extends ChangeNotifier {
     } catch (_) {}
   }
 
+  /// Writes a preference back to the account, best-effort.
+  ///
+  /// The device copy above is what the app renders from; this is what every other surface
+  /// reads. Without it a language chosen on the account screen lived only on the handset: the
+  /// account kept whatever onboarding wrote, so the website and anything the server sends —
+  /// confirmation emails among them — stayed in the old language with nothing to show why.
+  ///
+  /// Failure is ignored on purpose. The control also sits on the sign-in screen, where there
+  /// is no account yet and this is a guaranteed 401; a traveller changing the language must
+  /// not be shown an error for it. The device copy has already been written either way.
+  ///
+  /// [AccountPreferences.update] reads before it writes: the blob is replaced, not merged, so
+  /// sending one key alone would delete every other preference the account holds.
+  Future<void> _rememberOnAccount(Map<String, dynamic> changes) async {
+    try {
+      await accountPreferences.update(changes);
+    } catch (_) {}
+  }
+
   /// The language the app renders in, chosen during onboarding or on the account screen.
   ///
   /// Held here as well as against the account because the app has to render in it before any
@@ -91,18 +122,11 @@ class UiSettingsStore extends ChangeNotifier {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_languageKey, normalized);
     } catch (_) {}
+    await _rememberOnAccount({'language': normalized});
   }
 
-  Future<void> setDisplayCurrency(String currency) async {
-    final normalized = currency.toUpperCase();
-    if (_displayCurrency == normalized) return;
-    _displayCurrency = normalized;
-    notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_currencyKey, normalized);
-    } catch (_) {}
-  }
+  // `setDisplayCurrency` was here. It is gone rather than left unused, because an unused
+  // setter is an invitation to wire a picker back up (ADR-0007). The brand decides.
 
   /// Light or dark, chosen in the app and remembered. Never the handset's setting.
   ///

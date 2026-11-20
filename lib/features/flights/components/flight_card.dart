@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cheapest_go_mobile/features/flights/components/flight_chrome.dart';
 import 'package:cheapest_go_mobile/features/flights/components/flight_itinerary.dart';
 import 'package:cheapest_go_mobile/features/flights/lib/filter_offers.dart';
+import 'package:cheapest_go_mobile/shared/utils/format.dart';
 import 'package:cheapest_go_mobile/features/flights/lib/flight_utils.dart';
 import 'package:cheapest_go_mobile/features/flights/models/flight_fare.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
@@ -77,13 +78,13 @@ class _FlightCardState extends State<FlightCard> {
         ? t.flights_card_freeCancellation
         : penalty != null && penalty > 0
         ? 'Refundable (est. fee: ${widget.money(penalty, policy?.refundPenaltyCurrency ?? 'USD')})'
-        : 'Refundable (fees may apply)';
+        : AppLocalizations.of(context)!.checkout_flight_receipt_refundable;
     final bag = offer.baggage;
     final bagsLine = bag == null
         ? null
         : [
             if (bag.cabinBag != null) bag.cabinBag! ? '1 carry-on' : 'No carry-on',
-            bag.checkedBags > 0 ? '${bag.checkedBags} checked' : 'No checked bag',
+            bag.checkedBags > 0 ? '${bag.checkedBags} checked' : AppLocalizations.of(context)!.checkout_flight_summary_noCheckedBag,
           ].join(' · ');
 
     final timeStyle = TextStyle(
@@ -167,7 +168,7 @@ class _FlightCardState extends State<FlightCard> {
                           const SizedBox(height: 4),
                           RouteLine(stops: stops),
                           const SizedBox(height: 4),
-                          Text(stopsLabel(stops), style: TextStyle(fontSize: 12, color: skin.muted)),
+                          Text(stopsLabel(AppLocalizations.of(context)!, stops), style: TextStyle(fontSize: 12, color: skin.muted)),
                         ],
                       ),
                     ),
@@ -495,7 +496,7 @@ class _FareOptions extends StatelessWidget {
             ),
             const SizedBox(height: 4),
             Text(
-              current ? '${cabinLabel(cabin)} · Best Value' : cabinLabel(cabin),
+              current ? t.mobile_flights_bestValue(cabinLabel(cabin)) : cabinLabel(cabin),
               style: TextStyle(fontSize: 12, color: skin.muted),
             ),
             const SizedBox(height: 8),
@@ -520,7 +521,7 @@ class _FareOptions extends StatelessWidget {
                         height: 32,
                         child: Center(
                           child: Text(
-                            'Select ${o.brandedFare?.label ?? 'this fare'}',
+                            t.mobile_flights_selectFare(o.brandedFare?.label ?? t.mobile_flights_thisFare),
                             style: TextStyle(fontSize: 12, color: skin.text),
                           ),
                         ),

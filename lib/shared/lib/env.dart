@@ -4,6 +4,46 @@
 // Uses compile-time `--dart-define` values with safe defaults for local/staging runs,
 // and validates URL syntax on startup.
 
+/// The storefront this build is. A build-time constant, as ADR-0005 requires: brand is chosen
+/// when the APK is made, never at runtime, so there is no brand conditional to get wrong and no
+/// way for one brand's failure to reach the other.
+///
+/// Most brand-bearing copy comes from the .arb files, which `tools/brand.dart` restates at sync
+/// time. This covers what is NOT translated copy and so cannot be reached that way: the
+/// task-switcher title, the name Stripe prints on its payment sheet, the AI chat's own name and
+/// the settings footer.
+///
+/// The default is the brand this app ships as, matching `tools/brand.dart` and `android:label`.
+/// It used to be `CheapestGo`, and because no env file sets `BRAND_NAME`, every one of those
+/// surfaces said CheapestGo inside an app whose icon says AirangGo — the ARB rewrite could not
+/// reach them. A CheapestGo build passes `--dart-define=BRAND_NAME=CheapestGo` and sets the
+/// same name in `tools/brand.dart`.
+const String brandName = String.fromEnvironment('BRAND_NAME', defaultValue: 'AirangGo');
+
+/// The one currency this brand prices and charges in — its **Charge Currency** (ADR-0007).
+/// KRW for AirangGo, USD for CheapestGo, mirroring the web's `NEXT_PUBLIC_DEFAULT_CURRENCY`
+/// and api-v2, which already calls AirangGo Korea-locked.
+///
+/// Not a display preference: it is what the card is charged in, which is why the brand decides
+/// it and a traveller is not asked. What a supplier quotes may be another currency entirely —
+/// converting that for display is a separate thing and still happens.
+const String brandCurrency = String.fromEnvironment('BRAND_CURRENCY', defaultValue: 'KRW');
+
+/// The country this brand sells from — its **Market** (ADR-0007). Declared to hotel suppliers
+/// as the guest's nationality, which they price against, so it is a commercial statement about
+/// the storefront rather than a fact about whoever is holding the phone.
+///
+/// Not where the hotel is: that is the destination's country, and a search carries both.
+const String brandMarket = String.fromEnvironment('BRAND_MARKET', defaultValue: 'KR');
+
+/// Whether a traveller may change the language. A brand is locked to one (ADR-0007); this
+/// opens the picker for builds made to be tested in.
+///
+/// Defaults to **locked**, so forgetting the flag ships correct behaviour rather than a control
+/// that should not be there. It cannot be `kReleaseMode`: the APKs used for testing here are
+/// release builds, so that would leave the picker in every one of them.
+const bool kAllowLanguageSwitch = bool.fromEnvironment('ALLOW_LANGUAGE_SWITCH');
+
 enum AppEnvironment {
   development,
   staging,

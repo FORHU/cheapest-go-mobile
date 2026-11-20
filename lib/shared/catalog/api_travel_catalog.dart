@@ -11,7 +11,15 @@ import 'package:cheapest_go_mobile/shared/lib/http.dart';
 ///
 /// Falls back to local [SharedPreferences] cache when offline, and marks
 /// queries with [isOfflineData] so views can display the offline saved results notice.
-/// Golf courses delegate to [MockTravelCatalog] until a golf API exists.
+/// Golf courses, airports and origins delegate to [MockTravelCatalog]; those are reference
+/// data this app carries, not inventory a supplier sells.
+///
+/// **Stays are the supplier's or nothing** — the rule [flights] already followed, extended to
+/// hotels in #73. Until then a search the supplier answered with nothing, or could not be
+/// asked at all, was filled with the demo catalogue: on a handset that put Manila fixtures,
+/// priced and with a Book now button under them, on screen as the results for Seoul, with
+/// nothing to say they were not real. A stay shown as bookable has to be one a supplier will
+/// honour, and a search that failed has to look different from one that found nothing.
 class ApiTravelCatalog implements TravelCatalog {
   ApiTravelCatalog({
     HttpClientAdapter? client,
@@ -56,22 +64,16 @@ class ApiTravelCatalog implements TravelCatalog {
   GolfCourse? course(String id) => _mock.course(id);
 
   @override
-  List<Hotel> hotelsNear(String airportCode) {
-    final cached = _hotelsByAirport[airportCode];
-    if (cached != null && cached.isNotEmpty) return cached;
-    return _mock.hotelsNear(airportCode);
-  }
+  List<Hotel> hotelsNear(String airportCode) => _hotelsByAirport[airportCode] ?? const [];
 
   @override
-  Hotel? hotel(String id) {
-    return _hotelById[id] ?? _mock.hotel(id);
-  }
+  Hotel? hotel(String id) => _hotelById[id];
 
   @override
   List<Review> reviewsFor(String hotelId) => _reviewsById[hotelId] ?? const [];
 
-  // Flights are the airline's or nothing: unlike stays, there is no invented fare to fall back
-  // on in API mode. A fare shown as bookable has to be one an airline will sell (#47).
+  // Flights are the airline's or nothing (#47). Stays now follow the same rule (#73); the
+  // asymmetry this comment used to describe is gone.
   @override
   List<FlightOffer> flights(String from, String to) => _flightsByRoute['${from}_$to'] ?? const [];
 
@@ -166,19 +168,25 @@ class ApiTravelCatalog implements TravelCatalog {
         }
       }
 
-      if (list.isNotEmpty) {
-        list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
-        _hotelsByAirport[key] = list;
-        _offlineKeys.remove(key);
+      // The supplier answered. Zero stays is an answer — it had nothing for these dates — and
+      // it is returned as one. Falling through to the cache or the catalogue here is what made
+      // an outage indistinguishable from a sold-out city (#73).
+      list.sort((a, b) => a.distanceKm.compareTo(b.distanceKm));
+      _hotelsByAirport[key] = list;
+      _offlineKeys.remove(key);
 
-        // Persist to local disk cache for offline access
+      if (list.isNotEmpty) {
+        // Persist to local disk cache for offline access. Only a real answer is worth keeping:
+        // caching an empty one would serve "nothing here" back after the supplier recovers.
         final prefs = await _getPrefs();
         final raw = jsonEncode(list.map((h) => h.toJson()).toList());
         await prefs.setString('cheapestgo_cache_hotels_$key', raw);
-        return list;
       }
+      return list;
     } catch (_) {
-      // Network failed or API unavailable: fallback to disk cache
+      // Could not ask at all. Stays saved from an earlier answer to *this same search* are the
+      // one honest substitute, and they are marked offline so the screen can say they are not
+      // live prices.
     }
 
     // Attempt loading from SharedPreferences
@@ -199,11 +207,10 @@ class ApiTravelCatalog implements TravelCatalog {
       } catch (_) {}
     }
 
-    // Final fallback to mock catalog when neither network nor cache is available
-    final mockHotels = _mock.hotelsNear(airportCode);
-    _hotelsByAirport[key] = mockHotels;
-    _offlineKeys.add(key);
-    return mockHotels;
+    // Nothing live and nothing saved. Reported as the failure it is, rather than filled with
+    // the demo catalogue: the screen can say "we could not look", which is true, instead of
+    // "here are ten hotels", which was not (#73).
+    throw StateError('Hotel search is unavailable for $key and nothing is saved offline.');
   }
 
   @override
@@ -226,7 +233,9 @@ class ApiTravelCatalog implements TravelCatalog {
       if (res is Map<String, dynamic>) {
         final content = res['content'] as Map<String, dynamic>?;
         final rawRooms = res['rooms'] as List?;
-        final existing = _hotelById[id] ?? _mock.hotel(id);
+        // What the search already told us about this stay, to fill fields the property call
+        // leaves out. Only what a supplier actually returned — never the demo catalogue (#73).
+        final existing = _hotelById[id];
 
         if (content != null) {
           final images = (content['images'] as List?)?.map((e) => e.toString()).toList() ??
@@ -283,6 +292,16 @@ class ApiTravelCatalog implements TravelCatalog {
                 existing?.reviews ??
                 100,
             tags: existing?.tags ?? const [],
+            // `/hotels/property/:id` states no currency at the top level — it is on the offers,
+            // which is why the room rows were right while the header was not. Rebuilding the
+            // hotel without it fell back to the catalogue's PHP, so the header read a dollar
+            // figure as pesos: ₩1,297 beside rooms priced ₩110,574 (#74).
+            currency: rooms
+                    .expand((r) => r.offers)
+                    .map((o) => o.currency)
+                    .firstOrNull ??
+                existing?.currency ??
+                catalogCurrency,
             rooms: rooms.isNotEmpty
                 ? rooms
                 : [
@@ -319,7 +338,9 @@ class ApiTravelCatalog implements TravelCatalog {
       }
     } catch (_) {}
 
-    return _hotelById[id] ?? _mock.hotel(id);
+    // The property call failed. What the search returned for this stay is the most that can
+    // honestly be shown; a demo property under a real hotel's id is not a fallback (#73).
+    return _hotelById[id];
   }
 
   @override
@@ -424,6 +445,19 @@ class ApiTravelCatalog implements TravelCatalog {
     }
   }
 
+  /// A room's rate for **one night**, from a search row that prices the whole stay.
+  ///
+  /// `/hotels/search` prices each `roomTypes` entry for the entire stay — `price`, `gross` and
+  /// `rates[].retailRate.total` all agree on that — while the hotel's own `price` is already
+  /// per night and `nights` sits beside it on the hotel, **not** on the room. Taking the room's
+  /// figure as a nightly rate put a two-night total on the results card under a `/박` label and
+  /// made [Hotel.fromRate] twice what any room costs (#74).
+  static int _nightlyRate(Map<String, dynamic> room, {required int nights, required int fallback}) {
+    final total = (room['price'] as num?)?.toDouble();
+    if (total == null) return fallback;
+    return (nights > 1 ? total / nights : total).round();
+  }
+
   Hotel _parseHotelFromSearch(Map<String, dynamic> item, Airport airport) {
     final hId = item['hotelId']?.toString() ?? item['id']?.toString() ?? 'hotel_${item.hashCode}';
     final name = item['name']?.toString() ?? 'Hotel';
@@ -459,6 +493,9 @@ class ApiTravelCatalog implements TravelCatalog {
     }
 
     final price = (item['price'] as num?)?.round() ?? 3500;
+    // How many nights the room prices below cover. Stated on the hotel, so it has to be read
+    // here and handed down rather than looked for on each room (#74).
+    final nights = (item['nights'] as num?)?.toInt() ?? 1;
     final rooms = <Room>[];
     if (item['roomTypes'] is List && (item['roomTypes'] as List).isNotEmpty) {
       final rTypes = item['roomTypes'] as List;
@@ -469,7 +506,7 @@ class ApiTravelCatalog implements TravelCatalog {
             id: r['offerId']?.toString() ?? r['roomCode']?.toString() ?? '${hId}_r$i',
             name: r['roomName']?.toString() ?? 'Room ${i + 1}',
             meta: r['boardCode']?.toString() ?? 'Room only',
-            nightlyRate: (r['price'] as num?)?.round() ?? price,
+            nightlyRate: _nightlyRate(r, nights: nights, fallback: price),
             cancellation: r['refundable'] == true
                 ? (r['refundableTag']?.toString() ?? 'Free cancellation')
                 : null,
