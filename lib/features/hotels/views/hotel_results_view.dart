@@ -207,13 +207,13 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                             child: _mapView
                                 ? StayMap(
                                     hotels: shown,
-                                    currency: currency,
                                     selectedId: _selectedId,
+                                    currency: currency,
                                     onSelect: (h) => _select(h, shown),
                                 )
                                 : _StayList(
-                                    hotels: shown,
                                     currency: currency,
+                                    hotels: shown,
                                     onView: _openStay,
                                 ),
                         ),
@@ -228,7 +228,20 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                     lines: const ['Searching for Availability and Prices'],
                                 ),
                             )
-                        else if (_failed || shown.isEmpty)
+                        // A search that could not be made and one that found nothing are
+                        // different answers, and used to read identically (#73). "We couldn't
+                        // find hotels" under a supplier outage tells someone the city is full
+                        // when nobody ever asked it.
+                        else if (_failed)
+                            Positioned.fill(
+                                child: StayStatus(
+                                    title: t.errors_generic,
+                                    lines: ['We couldn’t reach our hotel partners just now.'],
+                                    actionLabel: t.auth_tryAgain,
+                                    action: () => _fetchIfNeeded(force: true),
+                                ),
+                            )
+                        else if (shown.isEmpty)
                             Positioned.fill(
                                 child: StayStatus(
                                     title: t.search_v2_noAccommodations,
@@ -254,7 +267,6 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                     // one control for the two questions the landing asked.
                                     dateLabel: '${formatDateRange(s.checkIn, s.checkOut)}'
                                         ' · ${t.property_bookingWidget_guests(s.adults)}',
-                                    currency: currency,
                                     mapView: _mapView,
                                     showBack: widget.showBack,
                                     filtersActive: _filters.narrowedWithin(_priceFloor, _priceCeiling),
@@ -262,7 +274,6 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                     onEditSearch: () => context.go('/'),
                                     onEditDates: () => context.go('/'),
                                     onFilters: _openFilters,
-                                    onCurrency: uiSettingsStore.setDisplayCurrency,
                                     onToggleTheme: () => uiSettingsStore.setThemeMode(
                                         Theme.of(context).brightness == Brightness.dark
                                             ? ThemeMode.light
@@ -281,8 +292,8 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                 child: TipAnchor(
                                 id: TipAnchors.hotelResult,
                                 child: _Rail(
-                                    hotels: shown,
                                     currency: currency,
+                                    hotels: shown,
                                     controller: _rail,
                                     hidden: _railHidden,
                                     selectedId: _selectedId,

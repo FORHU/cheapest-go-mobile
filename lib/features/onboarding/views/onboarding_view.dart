@@ -7,6 +7,7 @@ import 'package:cheapest_go_mobile/shared/components/auth_form_widgets.dart';
 import 'package:cheapest_go_mobile/features/onboarding/api/onboarding_api.dart';
 import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
 import 'package:cheapest_go_mobile/shared/lib/countries.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
 /// The setup a newly created account completes before reaching the app. See #62, ADR-0005.
@@ -37,7 +38,6 @@ class _OnboardingViewState extends State<OnboardingView> {
   final _nationalityLabel = TextEditingController();
 
   int _step = 0;
-  String _currency = uiSettingsStore.displayCurrency;
   String _language = uiSettingsStore.language;
   bool _emailNotifications = true;
   bool _busy = false;
@@ -84,8 +84,10 @@ class _OnboardingViewState extends State<OnboardingView> {
         );
       }
 
+      // No `displayCurrency`: it is the brand's, not the account's (ADR-0007), and writing it
+      // here would overwrite whatever the traveller chose in the browser with a value this
+      // app never asked them for.
       final done = await onboardingStore.complete({
-        'displayCurrency': _currency,
         'language': _language,
         'emailNotifications': _emailNotifications,
       });
@@ -101,7 +103,6 @@ class _OnboardingViewState extends State<OnboardingView> {
 
       // Applied locally only once the server has it, so the app never renders a preference
       // the account does not actually hold.
-      await uiSettingsStore.setDisplayCurrency(_currency);
       await uiSettingsStore.setLanguage(_language);
 
       // The gate re-reads the store and lets them through; this takes them to the app.
@@ -167,22 +168,20 @@ class _OnboardingViewState extends State<OnboardingView> {
           AuthErrorBanner(message: _failure!),
           const SizedBox(height: 16),
         ],
-        _FieldLabel(t.account_preferences_displayCurrency),
-        _ChoiceRow(
-          // V2's own list, from its CurrencySelector.
-          options: const {'USD': r'$ USD', 'KRW': '₩ KRW', 'PHP': '₱ PHP', 'JPY': '¥ JPY', 'CNY': '¥ CNY'},
-          value: _currency,
-          enabled: !_busy,
-          onChanged: (v) => setState(() => _currency = v),
-        ),
-        const SizedBox(height: 20),
-        _FieldLabel(t.account_preferences_language),
-        _ChoiceRow(
-          options: const {'en': 'English', 'ja': '日本語', 'ko': '한국어', 'zh': '中文'},
-          value: _language,
-          enabled: !_busy,
-          onChanged: (v) => setState(() => _language = v),
-        ),
+        // V2 asks for a currency here, from its CurrencySelector's five. This build does not:
+        // the brand fixes it (ADR-0007), and asking a question whose answer is already decided
+        // is worse than not asking — it offered USD as the default to a Korean storefront.
+        // Asked only where the build is meant to be tested in; a brand is locked to one
+        // language (ADR-0007). `_language` keeps the brand's value when nothing asks.
+        if (kAllowLanguageSwitch) ...[
+          _FieldLabel(t.account_preferences_language),
+          _ChoiceRow(
+            options: const {'en': 'English', 'ja': '日本語', 'ko': '한국어', 'zh': '中文'},
+            value: _language,
+            enabled: !_busy,
+            onChanged: (v) => setState(() => _language = v),
+          ),
+        ],
         const SizedBox(height: 12),
         SwitchListTile(
           contentPadding: EdgeInsets.zero,

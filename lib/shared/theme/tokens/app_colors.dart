@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
+
 /// Hand-written colour roles, kept for the screens that still use them.
 ///
 /// This file once said it was "paired with the v2 web palette (`palette.ts`)". It was not, and
@@ -332,8 +334,26 @@ class AppColors extends ThemeExtension<AppColors> {
 
 /// v2's one brand gradient, blue-600 → cyan-500, for the main action on a
 /// screen (pay, book, select) and nothing else.
+///
+/// One definition, where there were five: `stage_chrome`, `stay_chrome`, `stay_list_card`
+/// and `flight_chrome` each carried their own, and they did not agree.
+///
+/// The end stop is V2's `BRAND_STOPS` — "the brand's one gradient", `#2563eb → #06b6d4` in
+/// `shared/lib/palette.ts` — and **not** `TwPalette.cyan500`, though that is the mirrored
+/// token for the same Tailwind class. V2 renders both: its inline `BRAND.gradient` is
+/// `#06b6d4`, while its seventeen `from-blue-600 to-cyan-500` surfaces resolve through
+/// Tailwind 4.1.18 to `#00B8DB`. V2 drifted when Tailwind 4 restated cyan-500 under it.
+///
+/// `BRAND_STOPS` is the deliberate statement of the brand and the one mobile mirrors. The
+/// split in V2 is reported rather than copied — the Token Authority rule in ADR-0002 is about
+/// a screen contradicting a token, and here it is one of V2's own constants contradicting a
+/// framework upgrade.
+const Color _brandCyan = Color(0xFF06B6D4);
+
 const LinearGradient kBrandGradient = LinearGradient(
-  colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
+  begin: Alignment.centerLeft,
+  end: Alignment.centerRight,
+  colors: [TwPalette.blue600, _brandCyan],
 );
 
 extension AppColorsContextX on BuildContext {

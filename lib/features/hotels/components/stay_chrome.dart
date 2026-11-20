@@ -1,5 +1,6 @@
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter/material.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 
 /// The search screen's own chrome, as V2 draws it. See #39 and `rail-card.tsx`.
 ///
@@ -36,11 +37,7 @@ class StaySkin {
 
     /// What a chip is actually filled with. [chipBg] is its flat stand-in, for the places a
     /// gradient cannot go.
-    static const chipGradient = LinearGradient(
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-        colors: [Color(0xFF2563EB), Color(0xFF06B6D4)],
-    );
+    static const chipGradient = kBrandGradient;
 
     /// `brandTheme('light')`: white surface, slate-900 titles, slate-500 muted, slate-200
     /// hairlines, slate-100 for a control on a surface.

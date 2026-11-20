@@ -89,6 +89,62 @@ void main() {
       expect(cachedRaw, contains('Grand Hyatt Manila Live'));
     });
 
+    // #74, in the shape api-v2 actually answers — captured from a live response, not guessed.
+    // A room's `price` covers the whole stay; `nights` is on the **hotel**, not the room; and
+    // the hotel's own `price` is already per night. Read as a nightly rate, the room's figure
+    // put a two-night total on the card under a "/박" label.
+    //
+    // The first version of this test put `nights` inside the room, so it passed against a
+    // payload the server never sends while the handset was unchanged. Hence the real keys.
+    test('a room priced for the stay is held as a nightly rate, not the total', () async {
+      final mockHttp = HttpClientAdapter(
+        client: MockClient((request) async {
+          if (!request.url.path.contains('/api/v2/hotels/search')) {
+            return http_pkg.Response('Not Found', 404);
+          }
+          return http_pkg.Response(
+            jsonEncode({
+              'data': [
+                {
+                  'hotelId': 'h-nights-01',
+                  'name': 'Two Night Total Inn',
+                  'city': 'Manila',
+                  'lat': 14.5995,
+                  'lng': 120.9842,
+                  // The supplier answers in its own currency whatever was asked for.
+                  'currency': 'USD',
+                  'price': 61.6,
+                  'stayTotal': 123.2,
+                  'nights': 2,
+                  'roomTypes': [
+                    {
+                      'offerId': 'o-1',
+                      'roomName': 'Standard Double',
+                      'price': 123.2,
+                      'gross': 123.2,
+                      'currency': 'USD',
+                    },
+                  ],
+                },
+              ],
+              'totalCount': 1,
+            }),
+            200,
+            headers: {'content-type': 'application/json'},
+          );
+        }),
+      );
+
+      final prefs = await SharedPreferences.getInstance();
+      final catalog = ApiTravelCatalog(client: mockHttp, prefs: prefs);
+      final hotel = (await catalog.fetchHotels('MNL')).single;
+
+      expect(hotel.rooms.single.nightlyRate, 62, reason: '123.2 over 2 nights, not 123');
+      expect(hotel.fromRate, 62);
+      // And the supplier's currency survives, so the figure is converted as dollars.
+      expect(hotel.currency, 'USD');
+    });
+
     test('fetchHotel property details enriches hotel with description and rooms', () async {
       final mockHttp = HttpClientAdapter(
         client: MockClient((request) async {
@@ -301,7 +357,10 @@ void main() {
       expect(catalog.isOfflineData('CEB'), isTrue);
     });
 
-    test('when network fails and cache is empty, falls back to MockTravelCatalog with offline flag', () async {
+    // #73. This used to assert the opposite — that a failed search was filled from the demo
+    // catalogue — which is how Manila fixtures ended up on screen, priced and bookable, as
+    // the results for Seoul. A stay shown as bookable has to be one a supplier will honour.
+    test('when network fails and cache is empty, stays answer nothing — never invented rooms', () async {
       final failingHttp = HttpClientAdapter(
         client: MockClient((request) async {
           throw Exception('Network timeout');
@@ -312,13 +371,57 @@ void main() {
       final prefs = await SharedPreferences.getInstance();
       final catalog = ApiTravelCatalog(client: failingHttp, prefs: prefs);
 
-      final hotels = await catalog.fetchHotels('BKK');
-      expect(hotels, isNotEmpty);
-      expect(catalog.isOfflineData('BKK'), isTrue);
+      await expectLater(catalog.fetchHotels('BKK'), throwsA(isA<StateError>()));
+      expect(catalog.hotelsNear('BKK'), isEmpty);
     });
 
-    // #47: a fare shown as bookable must be one an airline sells. Stays still fall back to the
-    // catalogue above; flights never invent one.
+    // The distinction the screen depends on: a supplier that answered "nothing for these
+    // dates" must not read as a supplier that could not be reached, and must not be papered
+    // over by a cache saved from an earlier search of the same city.
+    test('an empty answer is returned as empty, not replaced by the cache', () async {
+      final emptyHttp = HttpClientAdapter(
+        client: MockClient((request) async {
+          return http_pkg.Response('{"data":[],"allMappable":[],"totalCount":0}', 200,
+              headers: {'content-type': 'application/json'});
+        }),
+      );
+
+      // A stay saved from an earlier, successful search of this same city.
+      final stale = Hotel(
+        id: 'h-stale-01',
+        airportCode: 'CEB',
+        name: 'Crimson Resort & Spa Mactan (Cached)',
+        area: 'Lapu-Lapu City',
+        distanceKm: 4.5,
+        distanceFrom: 'Terminal 2',
+        score: 9.0,
+        reviews: 210,
+        tags: const ['Free airport shuttle'],
+        rooms: const [
+          Room(
+            id: 'room-stale-01',
+            name: 'Deluxe Villa',
+            meta: 'Breakfast included',
+            nightlyRate: 9800,
+            cancellation: 'Free cancellation',
+          ),
+        ],
+      );
+
+      SharedPreferences.setMockInitialValues({
+        'cheapestgo_cache_hotels_CEB': jsonEncode([stale.toJson()]),
+      });
+      final prefs = await SharedPreferences.getInstance();
+      final catalog = ApiTravelCatalog(client: emptyHttp, prefs: prefs);
+
+      final hotels = await catalog.fetchHotels('CEB');
+      expect(hotels, isEmpty);
+      // Answered, so not offline — the screen shows "none found", not stale prices.
+      expect(catalog.isOfflineData('CEB'), isFalse);
+    });
+
+    // #47: a fare shown as bookable must be one an airline sells. Since #73 stays follow the
+    // same rule, so this is no longer the exception it was written as.
     test('when network fails and cache is empty, flights answer nothing — never invented fares', () async {
       final failingHttp = HttpClientAdapter(
         client: MockClient((request) async {
