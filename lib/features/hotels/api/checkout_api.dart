@@ -454,17 +454,6 @@ class CheckoutApi {
         return null;
     }
 
-    /// Where the receipt lives.
-    ///
-    /// api-v2 generates the PDF — the same document the confirmation email links to — and
-    /// takes possession of the booking's id as the authorisation, so this opens whether or not
-    /// the reader is signed in. Stripe's own receipt is not used: it knows a charge, not a
-    /// stay, and a guest claiming expenses needs the property, the nights and the guest name.
-    ///
-    /// V2 prints its confirmation page instead, because a browser can. This is the better
-    /// document: it is the one that was emailed, and it says the same thing on every device.
-    static String receiptUrl(String bookingId) =>
-        '/api/v2/invoices/$bookingId/pdf?type=hotel';
 }
 
 /// The app's instance. Replaced in tests.

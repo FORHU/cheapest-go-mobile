@@ -211,6 +211,7 @@ void main() {
     expect(find.text('You’re all set'), findsOneWidget);
     expect(find.text('QZX7PA'), findsOneWidget);
     expect(find.text('PHP 8,108.79'), findsOneWidget);
+    expect(find.text('Download receipt'), findsOneWidget);
 
     // Paid: back leaves for the trips, never to a payment form that could charge again.
     await tester.binding.handlePopRoute();

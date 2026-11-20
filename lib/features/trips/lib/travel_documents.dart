@@ -1,9 +1,9 @@
 /// Which **travel documents** a booking has earned. V2's `documents.ts`.
 ///
 /// Three documents, because they evidence three different things and they do not become true
-/// at the same moment: a **Payment Receipt** says money was taken, an **E-ticket** says an
-/// airline issued a ticket, a **Hotel Voucher** says a property is holding a room. See
-/// CONTEXT.md.
+/// at the same moment: a **Payment Receipt** combines booking details with proof that money was
+/// taken, an **E-ticket** says an airline issued a ticket, and a **Hotel Voucher** says a
+/// property is holding a room. See CONTEXT.md.
 ///
 /// This is the half of the feature that can mislead somebody at a desk, so the rules live here
 /// rather than inside a widget: a button offered too early promises a document that does not

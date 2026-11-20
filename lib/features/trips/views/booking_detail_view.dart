@@ -10,6 +10,7 @@ import 'package:cheapest_go_mobile/features/trips/models/trip_booking.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
+import 'package:cheapest_go_mobile/shared/lib/receipt_url.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
@@ -734,7 +735,7 @@ class _DocumentsPanel extends StatelessWidget {
                 if (docs.contains(TravelDocument.receipt))
                     _DocButton(
                         icon: Icons.receipt_long_rounded,
-                        label: 'View payment receipt',
+                        label: t.trips_viewReceipt,
                         onTap: () => _openReceipt(context),
                     ),
                 // The voucher and the e-ticket are screens built from the booking, which is
@@ -755,8 +756,11 @@ class _DocumentsPanel extends StatelessWidget {
 
     Future<void> _openReceipt(BuildContext context) async {
         // Addressed by the row's id, which is what api-v2's invoice route takes.
-        final url = Uri.parse('${env.webApiUrl}/api/v2/invoices/${booking.id}/pdf'
-            '?type=${booking is FlightTripBooking ? 'flight' : 'hotel'}');
+        final url = bookingReceiptUri(
+            apiUrl: env.webApiUrl,
+            bookingId: booking.id,
+            type: booking is FlightTripBooking ? ReceiptType.flight : ReceiptType.hotel,
+        );
         await launchUrl(url, mode: LaunchMode.externalApplication);
     }
 }

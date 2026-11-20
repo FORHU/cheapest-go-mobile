@@ -11,6 +11,7 @@ import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
+import 'package:cheapest_go_mobile/shared/lib/receipt_url.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
@@ -306,7 +307,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
     Future<void> _openReceipt() async {
         final id = _receiptId;
         if (id == null) return;
-        final url = Uri.parse('${env.webApiUrl}${CheckoutApi.receiptUrl(id)}');
+        final url = bookingReceiptUri(apiUrl: env.webApiUrl, bookingId: id, type: ReceiptType.hotel);
         if (!await launchUrl(url, mode: LaunchMode.externalApplication)) {
             if (mounted) setState(() => _failure = 'Could not open the receipt.');
         }

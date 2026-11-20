@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import 'package:lucide_icons_flutter/lucide_icons.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import 'package:cheapest_go_mobile/features/flights/api/flights_api.dart';
 import 'package:cheapest_go_mobile/features/flights/components/flight_chrome.dart';
@@ -16,6 +17,7 @@ import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
+import 'package:cheapest_go_mobile/shared/lib/receipt_url.dart';
 import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 
@@ -577,6 +579,25 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
                 ),
               ),
               const SizedBox(height: 24),
+              if (done != null && done.bookingId.isNotEmpty) ...[
+                Center(
+                  child: OutlinedButton.icon(
+                    onPressed: () => _openReceipt(done.bookingId),
+                    icon: const Icon(Icons.download_rounded, size: 15),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: c.title,
+                      side: BorderSide(color: c.cardLine, width: 1.5),
+                      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                      shape: const StadiumBorder(),
+                    ),
+                    label: Text(
+                      t.checkout_success_downloadReceipt,
+                      style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 14),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
               GradientPill(
                 label: t.checkout_success_viewMyTrips,
                 onTap: () => context.go('/trips'),
@@ -596,6 +617,16 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
         ),
       ),
     );
+  }
+
+  Future<void> _openReceipt(String bookingId) async {
+    final opened = await launchUrl(
+      bookingReceiptUri(apiUrl: env.webApiUrl, bookingId: bookingId, type: ReceiptType.flight),
+      mode: LaunchMode.externalApplication,
+    );
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.errors_generic)));
+    }
   }
 
   String get _payLabel {
