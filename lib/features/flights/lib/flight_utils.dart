@@ -54,12 +54,6 @@ String formatDuration(int? minutes) {
   return h > 0 ? '${h}h ${m}m' : '${m}m';
 }
 
-/// The card's words, English literals in V2's card as well.
-String stopsLabel(int stops) => switch (stops) {
-  0 => 'Nonstop',
-  1 => '1 stop',
-  _ => '$stops stops',
-};
 
 String cabinLabel(String? cabinClass) => (cabinClass == null || cabinClass.isEmpty ? 'economy' : cabinClass)
     .replaceAll('_', ' ')

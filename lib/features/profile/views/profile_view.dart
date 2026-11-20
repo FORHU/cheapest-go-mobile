@@ -126,7 +126,7 @@ class ProfileView extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Stays and golf near your arrival airport',
+                      AppLocalizations.of(context)!.mobile_account_tagline,
                       style: theme.textTheme.labelSmall?.copyWith(
                         color: colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                       ),
@@ -366,7 +366,10 @@ class ProfileView extends StatelessWidget {
           // 1. Language. First in the card on purpose: in an app that opens in Korean it is
           // the setting someone is most likely to be hunting for, and the one that makes the
           // rest of this screen readable. Options are written in their own script.
-          ListTile(
+          // Only where a build is meant to be tested in. A brand is locked to one language
+          // (ADR-0007), and `kAllowLanguageSwitch` defaults to false so a production build is
+          // right without anyone remembering a flag.
+          if (kAllowLanguageSwitch) ListTile(
             leading: _buildLeadingIcon(
               Icons.language_rounded,
               const Color(0xFF2563EB),

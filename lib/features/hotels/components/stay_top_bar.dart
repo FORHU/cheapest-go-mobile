@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
-import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 
 /// The toolbar over the search map, as V2's `SearchTopBar` arranges it. See #39.
 ///
@@ -17,14 +16,12 @@ class StayTopBar extends StatelessWidget {
     const StayTopBar({
         required this.query,
         required this.dateLabel,
-        required this.currency,
         required this.mapView,
         this.showBack = true,
         required this.onBack,
         required this.onEditSearch,
         required this.onEditDates,
         required this.onFilters,
-        required this.onCurrency,
         required this.onToggleTheme,
         required this.onToggleView,
         this.filtersActive = false,
@@ -36,7 +33,6 @@ class StayTopBar extends StatelessWidget {
 
     /// The nights, already formatted, or null when none were chosen.
     final String? dateLabel;
-    final String currency;
 
     /// True while the map is showing, which makes the switch offer the list.
     final bool mapView;
@@ -49,7 +45,6 @@ class StayTopBar extends StatelessWidget {
     final VoidCallback onEditSearch;
     final VoidCallback onEditDates;
     final VoidCallback onFilters;
-    final ValueChanged<String> onCurrency;
     final VoidCallback onToggleTheme;
     final VoidCallback onToggleView;
 
@@ -148,11 +143,13 @@ class StayTopBar extends StatelessWidget {
                                 marked: filtersActive,
                             ),
                             // V2 splits this row with a spacer: the map's own tools on the
-                            // left under Back, and what the session is set to — currency,
-                            // theme, view — on the right under the stay.
+                            // left under Back, and what the session is set to — theme and
+                            // view — on the right under the stay.
+                            //
+                            // V2 puts a currency selector here too. This build does not: the
+                            // brand fixes the currency (ADR-0007), so there is nothing to
+                            // select, and every price on the screen already carries its symbol.
                             const Spacer(),
-                            _CurrencyButton(currency: currency, skin: skin, onPick: onCurrency),
-                            const SizedBox(width: 6),
                             _Round(
                                 icon: dark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
                                 tooltip: dark ? t.property_v2_lightMode : t.property_v2_darkMode,
@@ -206,49 +203,6 @@ class _Round extends StatelessWidget {
                         height: 38,
                         child: Icon(icon, size: 17, color: marked ? skin.chipText : skin.title),
                     ),
-                ),
-            ),
-        );
-    }
-}
-
-class _CurrencyButton extends StatelessWidget {
-    const _CurrencyButton({required this.currency, required this.skin, required this.onPick});
-
-    final String currency;
-    final StaySkin skin;
-    final ValueChanged<String> onPick;
-
-    @override
-    Widget build(BuildContext context) {
-        return PopupMenuButton<String>(
-            tooltip: AppLocalizations.of(context)!.account_preferences_displayCurrency,
-            onSelected: onPick,
-            position: PopupMenuPosition.under,
-            itemBuilder: (context) => [
-                for (final c in currencies)
-                    PopupMenuItem(
-                        value: c.code,
-                        child: Text(
-                            '${c.code} · ${c.label}',
-                            style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: c.code == currency ? FontWeight.w700 : FontWeight.w500,
-                            ),
-                        ),
-                    ),
-            ],
-            child: Container(
-                height: 38,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(horizontal: 12),
-                decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(999),
-                    border: Border.all(color: skin.hairline),
-                ),
-                child: Text(
-                    currency,
-                    style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: skin.title),
                 ),
             ),
         );

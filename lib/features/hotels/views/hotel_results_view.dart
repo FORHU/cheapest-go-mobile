@@ -207,13 +207,13 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                             child: _mapView
                                 ? StayMap(
                                     hotels: shown,
-                                    currency: currency,
                                     selectedId: _selectedId,
+                                    currency: currency,
                                     onSelect: (h) => _select(h, shown),
                                 )
                                 : _StayList(
-                                    hotels: shown,
                                     currency: currency,
+                                    hotels: shown,
                                     onView: _openStay,
                                 ),
                         ),
@@ -224,16 +224,31 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                             Positioned.fill(
                                 child: StayStatus(
                                     busy: true,
-                                    title: 'Finding Stays In ${s.destinationLabel}...',
-                                    lines: const ['Searching for Availability and Prices'],
+                                    // V2's own wording, which does not name the place; the
+                                    // toolbar above already says where the search is for.
+                                    title: t.landing_search_searchingStays,
+                                    lines: [t.mobile_hotels_searchingPrices],
                                 ),
                             )
-                        else if (_failed || shown.isEmpty)
+                        // A search that could not be made and one that found nothing are
+                        // different answers, and used to read identically (#73). "We couldn't
+                        // find hotels" under a supplier outage tells someone the city is full
+                        // when nobody ever asked it.
+                        else if (_failed)
+                            Positioned.fill(
+                                child: StayStatus(
+                                    title: t.errors_generic,
+                                    lines: [t.mobile_hotels_partnersUnreachable],
+                                    actionLabel: t.auth_tryAgain,
+                                    action: () => _fetchIfNeeded(force: true),
+                                ),
+                            )
+                        else if (shown.isEmpty)
                             Positioned.fill(
                                 child: StayStatus(
                                     title: t.search_v2_noAccommodations,
                                     lines: [
-                                        'We couldn’t find hotels in ${s.destinationLabel}',
+                                        t.mobile_hotels_noneFoundIn(s.destinationLabel),
                                         if (_filters.narrowedWithin(_priceFloor, _priceCeiling))
                                             t.hotels_filters_clear,
                                     ],
@@ -254,7 +269,6 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                     // one control for the two questions the landing asked.
                                     dateLabel: '${formatDateRange(s.checkIn, s.checkOut)}'
                                         ' · ${t.property_bookingWidget_guests(s.adults)}',
-                                    currency: currency,
                                     mapView: _mapView,
                                     showBack: widget.showBack,
                                     filtersActive: _filters.narrowedWithin(_priceFloor, _priceCeiling),
@@ -262,7 +276,6 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                     onEditSearch: () => context.go('/'),
                                     onEditDates: () => context.go('/'),
                                     onFilters: _openFilters,
-                                    onCurrency: uiSettingsStore.setDisplayCurrency,
                                     onToggleTheme: () => uiSettingsStore.setThemeMode(
                                         Theme.of(context).brightness == Brightness.dark
                                             ? ThemeMode.light
@@ -281,8 +294,8 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                 child: TipAnchor(
                                 id: TipAnchors.hotelResult,
                                 child: _Rail(
-                                    hotels: shown,
                                     currency: currency,
+                                    hotels: shown,
                                     controller: _rail,
                                     hidden: _railHidden,
                                     selectedId: _selectedId,

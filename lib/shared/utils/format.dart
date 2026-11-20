@@ -1,6 +1,7 @@
 /// Display formatting for prices, dates, and tee times.
 library;
 
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
 // Dates read in the language the app is set to, not in English.
@@ -64,3 +65,16 @@ String plural(int n, String one, [String? many]) => '$n ${n == 1 ? one : (many ?
 
 /// Date with the time of day dropped.
 DateTime dateOnly(DateTime d) => DateTime(d.year, d.month, d.day);
+
+/// "직항" or "1회 경유", in the language the app is rendering.
+///
+/// Shared rather than kept with the flights feature: the flight card and the trips booking
+/// card both show it, and each had its own English literal, so a Korean screen said "Nonstop"
+/// in two different widgets. A helper two features read belongs to neither of them — the
+/// architecture validator refuses the alternative, and is right to.
+///
+/// V2's own `flights_card_direct` carries the nonstop word. The count needs a mobile key
+/// because V2 holds the noun alone (`"stop"` / `"stops"`) and a number cannot be joined to it
+/// the same way in every language: "1 stop" takes a space where "1회 경유" does not.
+String stopsLabel(AppLocalizations t, int stops) =>
+    stops == 0 ? t.flights_card_direct : t.mobile_flights_stopsCount(stops);

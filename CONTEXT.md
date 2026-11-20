@@ -81,15 +81,39 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   _Avoid_: "welcome screens" or "intro" — those are something you read, and this is something
   you finish. Nothing here is explanatory; every step stores an answer.
 
-- **Preferences** — display currency, language and email notifications: the three V2 already
-  keeps against the account, which is why their labels are mirrored rather than written. Held
-  server-side and shared with the web, so changing one in the app changes it in the browser.
+- **Brand** — which storefront this build *is*: AirangGo or CheapestGo. Fixed when the APK is
+  made, never chosen and never changed at runtime. It settles the name shown to a traveller,
+  the copy's wording, the **Charge Currency**, and the **Market**. One product under two names,
+  not two products.
+  _Avoid_: offering a traveller anything the brand has already decided. A brand-fixed value
+  has no picker, because there is nothing to pick.
+
+- **Market** — the country a brand sells from: KR for AirangGo, US for CheapestGo. It is what a
+  hotel search declares as the guest's nationality, which suppliers price against, so it is a
+  commercial statement rather than a fact about whoever is holding the phone.
+  _Avoid_: confusing it with where the hotel is — that is the destination's country, and the
+  search carries both. Also avoid reading it off the traveller: see **Traveller Details**.
+
+- **Charge Currency** — the single currency a brand prices and charges in: KRW for AirangGo.
+  api-v2's own term, and api-v2 already treats AirangGo as Korea-locked. Not a display
+  preference and not a conversion target — it is what the card is actually charged in, which
+  is why it is the brand's to decide and not the traveller's.
+  _Avoid_: calling it "display currency". What a supplier quotes may be another currency
+  entirely; converting that for display is a separate thing from what gets charged.
+
+- **Preferences** — language and email notifications: what V2 keeps against the account, which
+  is why their labels are mirrored rather than written. Held server-side and shared with the
+  web, so changing one in the app changes it in the browser.
   _Avoid_: treating these as device settings. Theme and map tier are device settings; these
-  are not.
+  are not. Display currency was listed here until it became a **Brand** matter; it is no
+  longer a preference, and the app neither asks for it nor writes it back.
 
 - **Traveller Details** — birth date, phone and nationality, held against the account so a
   later booking does not ask again. Distinct from the per-passenger details a flight order
   carries: those describe who is flying on one trip, these describe the account holder.
+  _Avoid_: pricing anything from the nationality held here. It fills a booking form; what a
+  search declares to a supplier is the brand's **Market**, which does not move with the
+  traveller.
   _Avoid_: assuming they are present. They are skippable, and most accounts predate them.
 
 - **Grandfathered** — an account created before **Onboarding** existed, recognised by having

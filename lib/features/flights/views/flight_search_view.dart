@@ -395,8 +395,6 @@ class _FlightSearchViewState extends State<FlightSearchView> {
                         filterCount: activeFilterCount(filters),
                         filtersOpen: _filtersOpen,
                         onFilters: () => _openFilters(_offers, filteredNow),
-                        currency: _userCurrency,
-                        onCurrency: uiSettingsStore.setDisplayCurrency,
                         onToggleTheme: () => uiSettingsStore.setThemeMode(dark ? ThemeMode.light : ThemeMode.dark),
                       ),
                       ),

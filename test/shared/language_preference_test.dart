@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 
 /// Changing the language must never fail, even with no account and no network.
@@ -36,12 +37,20 @@ void main() {
         expect(store.language, 'ko', reason: 'unchanged: there is no French copy');
     });
 
-    test('the display currency travels the same path', () async {
+    /// It used to travel the same path as the language, and no longer does (ADR-0007). The
+    /// brand fixes the currency: there is no setter, nothing stored on the device, and nothing
+    /// written to the account — so a currency chosen in the browser survives the app.
+    test('the display currency is the brand\'s, not a stored preference', () async {
         final store = UiSettingsStore();
-        await store.setDisplayCurrency('krw');
+        await store.init();
 
-        expect(store.displayCurrency, 'KRW');
+        expect(store.displayCurrency, brandCurrency);
+
         final prefs = await SharedPreferences.getInstance();
-        expect(prefs.getString('cheapestgo_display_currency'), 'KRW');
+        expect(
+            prefs.getString('cheapestgo_display_currency'),
+            isNull,
+            reason: 'nothing may persist a currency the traveller was never asked for',
+        );
     });
 }

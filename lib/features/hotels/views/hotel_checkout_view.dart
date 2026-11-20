@@ -14,6 +14,7 @@ import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
+import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 import 'package:cheapest_go_mobile/shared/utils/money.dart';
 
@@ -178,12 +179,30 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
 
             // The currency the traveller is shopping in, not the supplier's: api-v2 converts
             // and prices in it, and the figure it answers with is the one that gets charged.
+            //
+            // `expectedTotal` has to be in that same currency. api-v2 compares it against its
+            // own converted total — "the same kind of number", as its comment puts it — so
+            // sending the supplier's figure made every booking look like a price rise: the
+            // payment step announced "₩123 → ₩164,129" on a rate that had not moved (#74).
+            //
+            // Sent only when the conversion actually happened. `convertForDisplay` hands back
+            // the source currency when live rates are missing, and a dollar amount offered as
+            // the expected won total is worse than not answering: it would invent the same
+            // false alarm this is here to stop.
+            final shown = exchangeRates.convertForDisplay(
+                offer.stayTotal,
+                offer.currency,
+                uiSettingsStore.displayCurrency,
+            );
+            final expected =
+                shown.currency == uiSettingsStore.displayCurrency ? shown.amount : null;
+
             final quote = await checkoutApi.prebook(
                 offerId: offer.offerId,
                 currency: uiSettingsStore.displayCurrency,
                 roomName: _room?.name,
                 adults: tripSearchStore.adults,
-                expectedTotal: offer.stayTotal,
+                expectedTotal: expected,
             );
 
             if (!mounted) return;

@@ -15,7 +15,6 @@ import 'package:cheapest_go_mobile/shared/components/ui_kit.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/stores/ui_store.dart';
 import 'package:cheapest_go_mobile/shared/utils/currency.dart';
-import 'package:cheapest_go_mobile/shared/utils/format.dart';
 import 'package:cheapest_go_mobile/shared/utils/money.dart';
 
 /// One property, as V2's `/property/[id]` shows it. See #40.
@@ -211,8 +210,13 @@ class _CheckoutBar extends StatelessWidget {
                                     style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: skin.title),
                                 ),
                                 Text(
-                                    '${plural(nights, 'night')} · ${offer.boardName}'
-                                    '${offer.refundable ? ' · free cancellation' : ''}',
+                                    // `boardName` stays as the supplier sent it — it is their
+                                    // text, like the hotel's name, and inventing a translation
+                                    // for a rate's board basis would be stating terms nobody
+                                    // quoted. The nights and the cancellation are ours.
+                                    '${AppLocalizations.of(context)!.checkout_nightsCount(nights)}'
+                                    ' · ${offer.boardName}'
+                                    '${offer.refundable ? ' · ${AppLocalizations.of(context)!.common_freeCancel}' : ''}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(fontSize: 12, color: skin.muted),

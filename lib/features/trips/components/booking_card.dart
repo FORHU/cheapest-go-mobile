@@ -99,7 +99,7 @@ class BookingCard extends StatelessWidget {
                     fromLabel: out.origin,
                     toValue: _clock(arrive.arrival),
                     toLabel: arrive.destination,
-                    above: b.stops == 0 ? 'Nonstop' : '${b.stops} stop',
+                    above: stopsLabel(AppLocalizations.of(context)!, b.stops),
                     below: '',
                 ),
             // Trip type and PNR, under the span as V2 has them. The PNR in mono, because it

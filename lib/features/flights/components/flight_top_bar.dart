@@ -6,12 +6,12 @@ import 'package:cheapest_go_mobile/features/flights/components/route_picker.dart
 import 'package:cheapest_go_mobile/features/flights/components/trip_sheet.dart';
 import 'package:cheapest_go_mobile/features/flights/lib/flight_search_query.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
-import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 
 /// The flight results toolbar, as V2's `FlightSearchTopBar` lays it out below `lg`.
 ///
 /// Two rows. Back, the route (two airports either side of a swap) and the trip button on the
-/// first; filters on the left of the second, the session's currency and theme on the right.
+/// first; filters on the left of the second, the theme on the right. No currency selector:
+/// the brand fixes the currency (ADR-0007), so there is nothing to select.
 /// It stands in for the app header, as V2's does, so those controls are always drawn.
 ///
 /// Like the hotel bar on mobile, it leaves out V2's language flag and account button: this
@@ -28,8 +28,6 @@ class FlightTopBar extends StatelessWidget {
     required this.filterCount,
     required this.filtersOpen,
     required this.onFilters,
-    required this.currency,
-    required this.onCurrency,
     required this.onToggleTheme,
     super.key,
   });
@@ -45,8 +43,6 @@ class FlightTopBar extends StatelessWidget {
   final int filterCount;
   final bool filtersOpen;
   final VoidCallback onFilters;
-  final String currency;
-  final ValueChanged<String> onCurrency;
   final VoidCallback onToggleTheme;
 
   @override
@@ -186,7 +182,6 @@ class FlightTopBar extends StatelessWidget {
                 dot: filterCount > 0,
               ),
               const Spacer(),
-              _CurrencyButton(currency: currency, onPick: onCurrency),
               const SizedBox(width: 6),
               _Round(
                 icon: dark ? LucideIcons.sun : LucideIcons.moon,
@@ -257,43 +252,3 @@ class _Round extends StatelessWidget {
   }
 }
 
-class _CurrencyButton extends StatelessWidget {
-  const _CurrencyButton({required this.currency, required this.onPick});
-
-  final String currency;
-  final ValueChanged<String> onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final skin = FlightSkin.of(context);
-    return PopupMenuButton<String>(
-      tooltip: AppLocalizations.of(context)!.account_preferences_displayCurrency,
-      onSelected: onPick,
-      position: PopupMenuPosition.under,
-      itemBuilder: (context) => [
-        for (final c in currencies)
-          PopupMenuItem(
-            value: c.code,
-            child: Text(
-              '${c.code} · ${c.label}',
-              style: TextStyle(fontSize: 13, fontWeight: c.code == currency ? FontWeight.w700 : FontWeight.w500),
-            ),
-          ),
-      ],
-      child: Container(
-        height: 36,
-        alignment: Alignment.center,
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        decoration: BoxDecoration(
-          color: skin.control,
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: skin.hairline),
-        ),
-        child: Text(
-          currency,
-          style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w700, color: skin.title),
-        ),
-      ),
-    );
-  }
-}

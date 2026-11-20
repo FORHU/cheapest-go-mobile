@@ -140,7 +140,7 @@ class _Body extends StatelessWidget {
                 // The reference, in mono: the one thing on this page somebody reads aloud.
                 Row(
                     children: [
-                        Text('Ref: ', style: TextStyle(fontSize: 13, color: c.textMuted)),
+                        Text('${AppLocalizations.of(context)!.golf_booking_reference}: ', style: TextStyle(fontSize: 13, color: c.textMuted)),
                         SelectableText(
                             booking.reference,
                             style: TextStyle(
@@ -279,7 +279,7 @@ class _Body extends StatelessWidget {
                                     // than an empty row implying none was asked for.
                                     if (p.seatNumber != null && p.seatNumber!.isNotEmpty)
                                         Text(
-                                            'Seat ${p.seatNumber}',
+                                            AppLocalizations.of(context)!.mobile_trips_seatNumber(p.seatNumber!),
                                             style: TextStyle(fontSize: 12, color: context.colors.textMuted),
                                         ),
                                 ],
@@ -302,7 +302,7 @@ class _Body extends StatelessWidget {
             title: t.trips_sections_stayDetails,
             icon: Icons.golf_course_rounded,
             rows: [
-                _Row('Date', _long(b.startsAt)),
+                _Row(AppLocalizations.of(context)!.golf_booking_date, _long(b.startsAt)),
                 _Row(t.trips_golfCard_teeTime, formatTeeTime(
                     '${b.startsAt.hour.toString().padLeft(2, '0')}:'
                     '${b.startsAt.minute.toString().padLeft(2, '0')}',
@@ -755,8 +755,8 @@ class _DocumentsPanel extends StatelessWidget {
                         padding: const EdgeInsets.only(top: 6),
                         child: Text(
                             pending == DocumentPending.awaitingTicket
-                                ? 'Waiting for the airline to issue your ticket.'
-                                : 'Waiting for the property to confirm your booking.',
+                                ? AppLocalizations.of(context)!.mobile_trips_awaitingTicket
+                                : AppLocalizations.of(context)!.mobile_trips_awaitingProperty,
                             style: TextStyle(fontSize: 12.5, color: c.textMuted),
                         ),
                     ),

@@ -371,9 +371,15 @@ class GolfCourse {
   /// Course photo (mock, see assets/images/README.md).
   String get photo => _pick('golf', 'g', _golfPhotoCount, _seed(id));
 
-  String get meta => [
-        '$holes holes',
-        'Par $par',
+  /// "18홀 · 파 72 · buggy included".
+  ///
+  /// Takes the localisations rather than reading a global, so the model stays something a test
+  /// can build without an app around it. `inclusion` is left as it is written in the fixtures:
+  /// golf has no API, so that text is this repo's own data rather than copy, and it is #48's
+  /// to settle when the screen is rebuilt against V2.
+  String metaIn(AppLocalizations t) => [
+        t.mobile_golf_holesCount(holes),
+        t.mobile_golf_parValue(par),
         ?inclusion,
       ].join(' · ');
 }

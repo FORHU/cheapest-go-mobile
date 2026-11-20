@@ -23,14 +23,20 @@ import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 /// grouping by airport — V2 has neither, and this screen follows V2.
 enum BookingTab { all, hotels, flights, golf }
 
-/// English literals, as in V2's `trips-list.tsx`, which holds the four labels as a constant
-/// rather than in its locale files. The `trips_tabs_*` keys in the ARBs are an older V2's and
-/// name different tabs; translating only here would put the two products out of step.
-const _tabLabels = {
-    BookingTab.all: 'All',
-    BookingTab.hotels: 'Hotels',
-    BookingTab.flights: 'Flights',
-    BookingTab.golf: 'Golf',
+/// The four labels, in the language the app is rendering.
+///
+/// They were English literals, mirroring V2's `trips-list.tsx`, which holds them as a constant
+/// rather than in its locale files — the reasoning being that translating only here would put
+/// the two products out of step. A brand locked to one language (ADR-0007) settles that the
+/// other way: "All / Hotels / Flights / Golf" sitting inside an otherwise Korean screen is V2's
+/// screen contradicting the product, which is the case **Token Authority** covers. The copy is
+/// V2's own — these four keys already carry 전체 / 호텔 / 항공권 / 골프 — so nothing is invented
+/// here; only the decision to use them.
+Map<BookingTab, String> _tabLabels(AppLocalizations t) => {
+    BookingTab.all: t.trips_tabs_all,
+    BookingTab.hotels: t.footer_hotels,
+    BookingTab.flights: t.about_flightsTitle,
+    BookingTab.golf: t.golf_breadcrumb,
 };
 
 class TripsView extends StatefulWidget {
@@ -183,7 +189,7 @@ class _Tabs extends StatelessWidget {
             children: [
                 for (final tab in BookingTab.values)
                     _TabPill(
-                        label: _tabLabels[tab]!,
+                        label: _tabLabels(AppLocalizations.of(context)!)[tab]!,
                         count: counts?[tab],
                         selected: tab == selected,
                         onTap: () => onChanged(tab),

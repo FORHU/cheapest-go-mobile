@@ -1,20 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/account/account_preferences.dart';
 
 /// Shared UI & Display Settings Store (mirrors `SettingsContext.tsx` & `ui.store.ts`)
 class UiSettingsStore extends ChangeNotifier {
-  static const String _currencyKey = 'cheapestgo_display_currency';
   static const String _themeModeKey = 'cheapestgo_theme_mode';
   static const String _mapTierKey = 'cheapestgo_map_tier';
   static const String _languageKey = 'cheapestgo_language';
 
   /// The languages V2 is translated into, which are the four this app carries copy for.
   static const List<String> supportedLanguages = ['en', 'ja', 'ko', 'zh'];
-
-  String _displayCurrency = 'USD';
 
   /// Korean until somebody chooses otherwise.
   ///
@@ -33,7 +31,14 @@ class UiSettingsStore extends ChangeNotifier {
   DeviceCapabilities? _deviceCapabilities;
   No3dReason? _no3dReason;
 
-  String get displayCurrency => _displayCurrency;
+  /// The brand's **Charge Currency**, not a setting (ADR-0007). A getter rather than a field
+  /// because nothing may change it: there is no picker, no stored value, and nothing written
+  /// back to the account — a currency chosen in the browser is left exactly as it was.
+  ///
+  /// It opened every traveller in USD while opening the app in Korean, and only ever read its
+  /// own device storage, so the app and the browser could disagree forever with nothing to
+  /// reconcile them.
+  String get displayCurrency => brandCurrency;
   String get language => _language;
   ThemeMode get themeMode => _themeMode;
   MapTier get mapTier => _mapTier;
@@ -56,10 +61,6 @@ class UiSettingsStore extends ChangeNotifier {
 
     try {
       final prefs = await SharedPreferences.getInstance();
-      final savedCcy = prefs.getString(_currencyKey);
-      if (savedCcy != null && savedCcy.isNotEmpty) {
-        _displayCurrency = savedCcy;
-      }
       final savedLanguage = prefs.getString(_languageKey);
       if (savedLanguage != null && supportedLanguages.contains(savedLanguage)) {
         _language = savedLanguage;
@@ -124,17 +125,8 @@ class UiSettingsStore extends ChangeNotifier {
     await _rememberOnAccount({'language': normalized});
   }
 
-  Future<void> setDisplayCurrency(String currency) async {
-    final normalized = currency.toUpperCase();
-    if (_displayCurrency == normalized) return;
-    _displayCurrency = normalized;
-    notifyListeners();
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_currencyKey, normalized);
-    } catch (_) {}
-    await _rememberOnAccount({'displayCurrency': normalized});
-  }
+  // `setDisplayCurrency` was here. It is gone rather than left unused, because an unused
+  // setter is an invitation to wire a picker back up (ADR-0007). The brand decides.
 
   /// Light or dark, chosen in the app and remembered. Never the handset's setting.
   ///
