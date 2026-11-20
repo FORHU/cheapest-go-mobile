@@ -8,5 +8,6 @@ const Map<String, Object> featureManifest = {
     'HotelResultsView',
     'HotelDetailView',
     'HotelCheckoutView',
+    'BookingStatusView',
   ],
 };

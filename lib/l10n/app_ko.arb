@@ -1649,6 +1649,7 @@
   "mobile_tracker_timeLeft": "남은 시간",
   "mobile_trips_awaitingProperty": "숙소의 예약 확정을 기다리고 있습니다.",
   "mobile_trips_awaitingTicket": "항공사가 항공권을 발권하기를 기다리고 있습니다.",
+  "mobile_trips_bookingStatus": "예약 상태",
   "mobile_trips_cardStripe": "카드 (Stripe)",
   "mobile_trips_onePlayer": "1명",
   "mobile_trips_seatNumber": "좌석 {seat}",

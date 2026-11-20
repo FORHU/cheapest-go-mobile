@@ -3000,6 +3000,7 @@
   "mobile_tracker_timeLeft": "Time left",
   "mobile_trips_awaitingProperty": "Waiting for the property to confirm your booking.",
   "mobile_trips_awaitingTicket": "Waiting for the airline to issue your ticket.",
+  "mobile_trips_bookingStatus": "Booking status",
   "mobile_trips_cardStripe": "Card (Stripe)",
   "mobile_trips_onePlayer": "1 player",
   "mobile_trips_seatNumber": "Seat {seat}",

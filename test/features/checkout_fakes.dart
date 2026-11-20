@@ -152,6 +152,20 @@ class FakeCheckoutApi extends CheckoutApi {
         };
         return ConfirmOutcome.fromJson(_confirm);
     }
+
+    /// What `GET /hotels/bookings/:reference` answers, in turn, repeating the last. Unsettled
+    /// until a test says otherwise.
+    List<Map<String, dynamic>> statuses = [
+        {'status': 'NEEDS_REVIEW', 'bookingStatus': 'pending'},
+    ];
+
+    @override
+    Future<ConfirmOutcome> bookingStatus(String reference) async {
+        final asked = calls.where((c) => c.startsWith('status:')).length;
+        calls.add('status:$reference');
+        final data = statuses[asked.clamp(0, statuses.length - 1)];
+        return ConfirmOutcome.fromStatus({'reference': reference, ...data});
+    }
 }
 
 /// The sheet, without the sheet. [cancel] is the traveller shutting it, which is not a failure.

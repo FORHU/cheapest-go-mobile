@@ -30,6 +30,7 @@ import 'package:cheapest_go_mobile/features/flights/views/flight_search_view.dar
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/features/golf/views/golf_view.dart';
 import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
+import 'package:cheapest_go_mobile/features/hotels/views/booking_status_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_checkout_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_detail_view.dart';
 import 'package:cheapest_go_mobile/features/hotels/views/hotel_results_view.dart';
@@ -185,6 +186,12 @@ GoRouter createAppRouter({bool gate = true}) => GoRouter(
             type: state.uri.queryParameters['type'],
             customerEmail: authStore.user?.email ?? '',
           ),
+        ),
+        // Where a stay booking is (#50), at V2's address. Outside the shell like the checkout
+        // that hands over to it when a confirm has not settled, and reached from a stay in Trips.
+        GoRoute(
+          path: '/booking/:reference',
+          builder: (_, state) => BookingStatusView(reference: state.pathParameters['reference']!),
         ),
         // Saved stays moved to Profile with #42 — V2 keeps them in Account, never among
         // bookings. The old path still lands somewhere sensible.
