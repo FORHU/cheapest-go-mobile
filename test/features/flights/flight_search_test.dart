@@ -6,6 +6,7 @@ import 'package:cheapest_go_mobile/features/flights/api/flights_api.dart';
 import 'package:cheapest_go_mobile/features/flights/components/flight_card.dart';
 import 'package:cheapest_go_mobile/features/flights/views/flight_checkout_view.dart';
 import 'package:cheapest_go_mobile/features/flights/views/flight_search_view.dart';
+import 'package:cheapest_go_mobile/features/flights/components/flight_filters_sheet.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 
 import '../../test_helpers.dart';
@@ -110,8 +111,15 @@ void main() {
     expect(find.text('Select all airlines'), findsOneWidget);
 
     final drawer = find.byType(Scrollable).last;
-    await tester.scrollUntilVisible(find.text('Direct'), 120, scrollable: drawer);
-    await tester.tap(find.text('Direct'));
+    // Scoped to the panel: the cards behind it say "Direct" too, now that the nonstop badge
+    // uses V2's own `flights_card_direct` rather than a literal "Nonstop". A bare
+    // `find.text('Direct')` matches the chip and every card at once.
+    final directChip = find.descendant(
+      of: find.byType(FlightFiltersPanel),
+      matching: find.text('Direct'),
+    );
+    await tester.scrollUntilVisible(directChip, 120, scrollable: drawer);
+    await tester.tap(directChip);
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.text('Show 2 flights'), 300, scrollable: drawer);
     await tester.tap(find.text('Show 2 flights'));

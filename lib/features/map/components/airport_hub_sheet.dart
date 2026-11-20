@@ -366,7 +366,7 @@ class _PlacePreview extends StatelessWidget {
                     ] else ...[
                       PinLine(AppLocalizations.of(context)!.mobile_map_minFromAirport(course!.driveMinutes, course.airportCode), icon: Icons.schedule_rounded),
                       const SizedBox(height: 4),
-                      Text(course.meta, style: TextStyle(fontSize: 12, color: c.textSecondary)),
+                      Text(course.metaIn(AppLocalizations.of(context)!), style: TextStyle(fontSize: 12, color: c.textSecondary)),
                     ],
                     const SizedBox(height: 6),
                     PriceText(place.price, suffix: place.isGolf ? '/player' : AppLocalizations.of(context)!.hotels_perNight),

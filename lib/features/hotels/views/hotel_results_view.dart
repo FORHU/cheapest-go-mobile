@@ -224,8 +224,10 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                             Positioned.fill(
                                 child: StayStatus(
                                     busy: true,
-                                    title: 'Finding Stays In ${s.destinationLabel}...',
-                                    lines: const ['Searching for Availability and Prices'],
+                                    // V2's own wording, which does not name the place; the
+                                    // toolbar above already says where the search is for.
+                                    title: t.landing_search_searchingStays,
+                                    lines: [t.mobile_hotels_searchingPrices],
                                 ),
                             )
                         // A search that could not be made and one that found nothing are
@@ -236,7 +238,7 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                             Positioned.fill(
                                 child: StayStatus(
                                     title: t.errors_generic,
-                                    lines: ['We couldn’t reach our hotel partners just now.'],
+                                    lines: [t.mobile_hotels_partnersUnreachable],
                                     actionLabel: t.auth_tryAgain,
                                     action: () => _fetchIfNeeded(force: true),
                                 ),
@@ -246,7 +248,7 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                 child: StayStatus(
                                     title: t.search_v2_noAccommodations,
                                     lines: [
-                                        'We couldn’t find hotels in ${s.destinationLabel}',
+                                        t.mobile_hotels_noneFoundIn(s.destinationLabel),
                                         if (_filters.narrowedWithin(_priceFloor, _priceCeiling))
                                             t.hotels_filters_clear,
                                     ],

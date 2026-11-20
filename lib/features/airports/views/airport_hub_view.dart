@@ -33,8 +33,8 @@ class _AirportHubViewState extends State<AirportHubView> {
         appBar: AppBar(),
         body: EmptyState(
           icon: Icons.flight_land_rounded,
-          title: 'Airport not found',
-          message: 'We have no stays or courses for ${widget.code} yet.',
+          title: AppLocalizations.of(context)!.mobile_airports_notFound,
+          message: AppLocalizations.of(context)!.mobile_airports_nothingFor(widget.code),
         ),
       );
     }
@@ -50,7 +50,7 @@ class _AirportHubViewState extends State<AirportHubView> {
             children: [
               Semantics(
                 button: true,
-                label: 'Open the map',
+                label: AppLocalizations.of(context)!.mobile_airports_openMap,
                 child: GestureDetector(
                   onTap: () {
                     tripSearchStore.setAirport(airport.code);
@@ -68,12 +68,12 @@ class _AirportHubViewState extends State<AirportHubView> {
                           child: Container(
                             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                             decoration: BoxDecoration(color: const Color(0x99020617), borderRadius: BorderRadius.circular(999)),
-                            child: const Row(
+                            child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.public_rounded, size: 16, color: Colors.white),
-                                SizedBox(width: 6),
-                                Text('Open the map', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
+                                const Icon(Icons.public_rounded, size: 16, color: Colors.white),
+                                const SizedBox(width: 6),
+                                Text(AppLocalizations.of(context)!.mobile_airports_openMap, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white)),
                               ],
                             ),
                           ),
@@ -132,7 +132,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                       const SizedBox(height: 10),
                     ],
                     if (hotels.isEmpty)
-                      EmptyState(icon: Icons.hotel_outlined, title: AppLocalizations.of(context)!.mobile_airports_noStaysYet, message: 'Try another airport.')
+                      EmptyState(icon: Icons.hotel_outlined, title: AppLocalizations.of(context)!.mobile_airports_noStaysYet, message: AppLocalizations.of(context)!.mobile_airports_tryAnother)
                     else
                       OutlinedButton(
                         onPressed: () {
@@ -153,7 +153,7 @@ class _AirportHubViewState extends State<AirportHubView> {
                       const SizedBox(height: 10),
                     ],
                     if (courses.isEmpty)
-                      EmptyState(icon: Icons.golf_course_rounded, title: AppLocalizations.of(context)!.golf_emptyTitle, message: 'Try another airport.')
+                      EmptyState(icon: Icons.golf_course_rounded, title: AppLocalizations.of(context)!.golf_emptyTitle, message: AppLocalizations.of(context)!.mobile_airports_tryAnother)
                     else
                       OutlinedButton(
                         onPressed: () {

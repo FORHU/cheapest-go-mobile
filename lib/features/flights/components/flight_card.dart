@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 import 'package:cheapest_go_mobile/features/flights/components/flight_chrome.dart';
 import 'package:cheapest_go_mobile/features/flights/components/flight_itinerary.dart';
 import 'package:cheapest_go_mobile/features/flights/lib/filter_offers.dart';
+import 'package:cheapest_go_mobile/shared/utils/format.dart';
 import 'package:cheapest_go_mobile/features/flights/lib/flight_utils.dart';
 import 'package:cheapest_go_mobile/features/flights/models/flight_fare.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
@@ -167,7 +168,7 @@ class _FlightCardState extends State<FlightCard> {
                           const SizedBox(height: 4),
                           RouteLine(stops: stops),
                           const SizedBox(height: 4),
-                          Text(stopsLabel(stops), style: TextStyle(fontSize: 12, color: skin.muted)),
+                          Text(stopsLabel(AppLocalizations.of(context)!, stops), style: TextStyle(fontSize: 12, color: skin.muted)),
                         ],
                       ),
                     ),
