@@ -244,6 +244,64 @@ class ConfirmOutcome {
         );
     }
 
+    /// A booking's status as `/booking/[reference]` and its poll read it — V2's
+    /// `outcomeFromStatus`, case for case.
+    ///
+    /// [data] is the `data` block of `GET /hotels/bookings/:reference`: the lifecycle's own
+    /// `status` where there is one, and the sale's `bookingStatus` beside it. `pending` here means
+    /// "not settled yet", which is not a failure — the supplier is being asked, or another caller
+    /// holds the claim — and the caller keeps asking.
+    factory ConfirmOutcome.fromStatus(Map<String, dynamic> data) {
+        final reference = data['reference']?.toString() ?? '';
+        final bookingStatus = data['bookingStatus']?.toString();
+        final failure = data['failure'] is Map ? data['failure'] as Map : null;
+        final failureMessage = failure?['message']?.toString();
+
+        switch (data['status']?.toString()) {
+            // A booking that was made and later cancelled or refunded was still made: the page
+            // says so, and Trips is where its cancellation is told.
+            case 'CONFIRMED':
+            case 'CANCEL_REQUESTED':
+            case 'CANCELLED':
+            case 'REFUND_PENDING':
+            case 'REFUNDED':
+            case 'REFUND_FAILED':
+                return ConfirmOutcome(
+                    state: ConfirmState.confirmed,
+                    reference: reference,
+                    status: bookingStatus ?? 'confirmed',
+                );
+            case 'NEEDS_REVIEW':
+                return ConfirmOutcome(
+                    state: ConfirmState.needsReview,
+                    reference: reference,
+                    message: failureMessage ?? 'We are confirming this booking with the hotel.',
+                );
+            // The lifecycle only reaches these with the authorisation voided, so V2 says the
+            // hold was released here — and only here.
+            case 'FAILED':
+            case 'EXPIRED':
+                return ConfirmOutcome(
+                    state: ConfirmState.failed,
+                    reference: reference,
+                    released: true,
+                    message: failureMessage ?? 'This booking could not be completed.',
+                );
+            case null:
+                // From before the lifecycle: the sale's own status is all there is.
+                if (bookingStatus == 'confirmed') {
+                    return ConfirmOutcome(state: ConfirmState.confirmed, reference: reference, status: 'confirmed');
+                }
+                return ConfirmOutcome(state: ConfirmState.pending, reference: reference, message: 'Checking your booking…');
+            default:
+                return ConfirmOutcome(
+                    state: ConfirmState.pending,
+                    reference: reference,
+                    message: 'Your booking is being confirmed.',
+                );
+        }
+    }
+
     static const _fallback = 'Something went wrong. Please try again.';
 }
 
@@ -388,6 +446,19 @@ class CheckoutApi {
             options: _signedIn,
         );
         return ConfirmOutcome.fromJson(res as Map<String, dynamic>);
+    }
+
+    /// Where a booking is, by the reference a confirm answered with — what the confirmation
+    /// screen asks, and keeps asking while the answer is "not yet".
+    ///
+    /// Signed in: the booking is the traveller's own, and api-v2 answers 404 for anyone else's.
+    Future<ConfirmOutcome> bookingStatus(String reference) async {
+        final res = await _client.get(
+            '/api/v2/hotels/bookings/${Uri.encodeComponent(reference)}',
+            options: _signedIn,
+        );
+        final data = (res as Map<String, dynamic>)['data'];
+        return ConfirmOutcome.fromStatus(data is Map<String, dynamic> ? data : const {});
     }
 
     /// What both create-payment and confirm carry about the stay and who is in it — one shape,

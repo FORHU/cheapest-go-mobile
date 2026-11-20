@@ -295,6 +295,18 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
             }
 
             if (!mounted) return;
+
+            // Paid and not settled, with a reference to ask after: the confirmation screen
+            // takes it from here (#50). V2's checkout polls in place; this one hands over to the
+            // screen that does, so the answer that turns "confirming" into "booked" arrives
+            // without anyone pressing anything — and `go`, not `push`, so back cannot return to
+            // a form whose card has already been charged.
+            final unsettled = outcome.state == ConfirmState.pending || outcome.state == ConfirmState.needsReview;
+            if (unsettled && outcome.reference.isNotEmpty) {
+                context.go('/booking/${Uri.encodeComponent(outcome.reference)}');
+                return;
+            }
+
             setState(() {
                 _charged = intent.chargedTotal;
                 _outcome = outcome;

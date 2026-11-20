@@ -11,6 +11,7 @@ import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/components/app_buttons.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/app_colors.dart';
+import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
 import 'package:cheapest_go_mobile/shared/utils/money.dart';
 
@@ -144,6 +145,11 @@ class _Body extends StatelessWidget {
                         ),
                     ],
                 ),
+                // A stay's confirmation screen (#50), the one it was booked on, is where its
+                // reference is checked with the hotel. Stays only: it asks the hotel booking
+                // status endpoint, which knows nothing of flights or tee times.
+                if (booking is HotelStayBooking && booking.reference.isNotEmpty)
+                    _StatusLink(reference: booking.reference),
                 const SizedBox(height: 14),
 
                 // The same card the list drew, without a link to the page it is already on.
@@ -325,6 +331,40 @@ class _Body extends StatelessWidget {
 }
 
 // ─── Panels ───────────────────────────────────────────────────────────────────
+
+/// "Booking status →", to `/booking/[reference]`.
+class _StatusLink extends StatelessWidget {
+    const _StatusLink({required this.reference});
+
+    final String reference;
+
+    @override
+    Widget build(BuildContext context) {
+        final t = AppLocalizations.of(context)!;
+        final link = Theme.of(context).brightness == Brightness.dark ? TwPalette.blue400 : TwPalette.blue600;
+        return Align(
+            alignment: Alignment.centerLeft,
+            child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => context.push('/booking/${Uri.encodeComponent(reference)}'),
+                child: ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: 44),
+                    child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                            Text(
+                                t.mobile_trips_bookingStatus,
+                                style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: link),
+                            ),
+                            const SizedBox(width: 4),
+                            Icon(Icons.chevron_right_rounded, size: 18, color: link),
+                        ],
+                    ),
+                ),
+            ),
+        );
+    }
+}
 
 class _Row {
     const _Row(this.label, this.value, {this.strong = false});

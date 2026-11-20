@@ -1649,6 +1649,7 @@
   "mobile_tracker_timeLeft": "残り時間",
   "mobile_trips_awaitingProperty": "宿泊施設の予約確定をお待ちしています。",
   "mobile_trips_awaitingTicket": "航空会社による発券をお待ちしています。",
+  "mobile_trips_bookingStatus": "予約状況",
   "mobile_trips_cardStripe": "カード (Stripe)",
   "mobile_trips_onePlayer": "1名",
   "mobile_trips_seatNumber": "座席 {seat}",

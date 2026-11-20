@@ -159,16 +159,59 @@ void main() {
     await pumpApp(tester, location: '/checkout?hotel=mnl-t3-garden&room=twin');
     await _fillGuest(tester);
     await tester.tap(find.text('Pay ₱13,200'));
-    await tester.pumpAndSettle();
+    await tester.pump();
+    await tester.pump();
 
-    // The card was charged and a room may be held, so there is no Pay button to press again
-    // and nothing calls this confirmed. The reference is shown, to quote to support.
-    expect(find.text('Your payment went through'), findsOneWidget);
-    expect(find.text('CG-REV99'), findsOneWidget);
-    expect(find.textContaining('Do not pay again'), findsOneWidget);
+    // The card was charged and a room may be held, so the checkout hands over to the
+    // confirmation screen (#50), which asks after the reference until it settles. There is no
+    // Pay button to press again and nothing calls this confirmed.
+    expect(find.text("We're confirming this with the hotel"), findsOneWidget);
+    expect(find.textContaining("Please don't pay again"), findsOneWidget);
+    expect(find.textContaining('CG-REV99', findRichText: true), findsOneWidget);
     expect(find.textContaining('Pay ₱'), findsNothing);
+    expect((checkoutApi as FakeCheckoutApi).calls.last, 'status:CG-REV99');
     // Not booked, so nothing goes into Trips claiming it was.
     expect(bookingsStore.all.length, before);
+  });
+
+  testWidgets('the confirmation screen turns "confirming" into "booked" by itself', (tester) async {
+    final api = FakeCheckoutApi(confirm: {'success': false, 'pending': true, 'reference': 'CG-PEN01'})
+      ..statuses = [
+        {'status': 'SUPPLIER_BOOKING', 'bookingStatus': 'pending'},
+        {'status': 'CONFIRMED', 'bookingStatus': 'confirmed'},
+      ];
+    checkoutApi = api;
+    paymentGateway = FakePaymentGateway();
+
+    await pumpApp(tester, location: '/checkout?hotel=mnl-t3-garden&room=twin');
+    await _fillGuest(tester);
+    await tester.tap(find.text('Pay ₱13,200'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.text('Confirming your booking'), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 3));
+    expect(find.text('BOOKED'), findsOneWidget);
+    expect(api.calls.where((c) => c.startsWith('status:')), hasLength(2));
+  });
+
+  testWidgets('an unsettled confirm with no reference stays on the checkout, still never asking twice', (tester) async {
+    checkoutApi = FakeCheckoutApi(confirm: {
+      'success': false,
+      'needsReview': true,
+      'error': 'We are confirming this booking with the hotel.',
+    });
+    paymentGateway = FakePaymentGateway();
+
+    await pumpApp(tester, location: '/checkout?hotel=mnl-t3-garden&room=twin');
+    await _fillGuest(tester);
+    await tester.tap(find.text('Pay ₱13,200'));
+    await tester.pumpAndSettle();
+
+    // Nothing to ask after, so nothing to hand over to.
+    expect(find.text('Your payment went through'), findsOneWidget);
+    expect(find.textContaining('Do not pay again'), findsOneWidget);
+    expect(find.textContaining('Pay ₱'), findsNothing);
   });
 
   testWidgets('a quote api-v2 could not price is never charged', (tester) async {
