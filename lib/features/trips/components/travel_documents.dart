@@ -334,7 +334,9 @@ class _Fact extends StatelessWidget {
         child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-                Text(label, style: TextStyle(fontSize: 14, color: _muted(context))),
+                // Up to half the row, then it wraps — a long label in another language must not
+                // push the value off the page.
+                Flexible(child: Text(label, style: TextStyle(fontSize: 14, color: _muted(context)))),
                 const SizedBox(width: 16),
                 Expanded(
                     child: DefaultTextStyle.merge(
@@ -1064,7 +1066,14 @@ class DocumentLinkButtons extends StatelessWidget {
                         children: [
                             Icon(icon, size: 14, color: _text(context)),
                             const SizedBox(width: 6),
-                            Text(label, style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: _text(context))),
+                            Flexible(
+                                child: Text(
+                                    label,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: _text(context)),
+                                ),
+                            ),
                         ],
                     ),
                 ),

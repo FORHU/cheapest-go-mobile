@@ -209,9 +209,13 @@ class _Pill extends StatelessWidget {
                                 else if (icon != null)
                                     Icon(icon, size: 15, color: foreground),
                                 const SizedBox(width: 6),
-                                Text(
-                                    label,
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: foreground),
+                                Flexible(
+                                    child: Text(
+                                        label,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(fontSize: 15, fontWeight: FontWeight.w500, color: foreground),
+                                    ),
                                 ),
                             ],
                         ),

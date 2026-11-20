@@ -224,7 +224,8 @@ class _InvoiceReceipt extends StatelessWidget {
                                     ),
                                 ),
                                 const SizedBox(width: 12),
-                                Column(
+                                Flexible(
+                                  child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.end,
                                     children: [
                                         Text(t.invoice_receipt, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700, color: strong)),
@@ -233,9 +234,11 @@ class _InvoiceReceipt extends StatelessWidget {
                                         if (bookedAt != null)
                                             Text(
                                                 t.invoice_issued(DateFormat('MMMM d, y', 'en_US').format(bookedAt)),
+                                                textAlign: TextAlign.right,
                                                 style: const TextStyle(fontSize: 12, color: TwPalette.slate400),
                                             ),
                                     ],
+                                  ),
                                 ),
                             ],
                         ),

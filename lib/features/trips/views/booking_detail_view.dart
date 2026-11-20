@@ -858,13 +858,17 @@ class _End extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                        Text(
-                            time,
-                            style: TextStyle(
-                                fontSize: 20,
-                                height: 1.1,
-                                fontWeight: FontWeight.w700,
-                                color: c.textPrimary,
+                        // Flexible, so a narrow phone or a large text setting wraps the time
+                        // rather than pushing it off the panel.
+                        Flexible(
+                            child: Text(
+                                time,
+                                style: TextStyle(
+                                    fontSize: 20,
+                                    height: 1.1,
+                                    fontWeight: FontWeight.w700,
+                                    color: c.textPrimary,
+                                ),
                             ),
                         ),
                         if (dayOffset > 0)
