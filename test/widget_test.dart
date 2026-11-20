@@ -6,6 +6,8 @@ import 'package:cheapest_go_mobile/shared/components/language_picker.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
 import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
+import 'package:cheapest_go_mobile/features/auth/components/auth_form_widgets.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/auth/permissions.dart';
 import 'package:cheapest_go_mobile/shared/auth/rbac.dart';
 import 'package:cheapest_go_mobile/shared/auth/roles.dart';
@@ -34,24 +36,29 @@ void main() {
       expect(authRouted.toast, 'Session expired');
     });
 
+    test('invalid sign-in errors and password rules use the selected language', () async {
+      final t = await AppLocalizations.delegate.load(const Locale('ko'));
+      final invalidCredentials = routeError(
+        ApiError('Invalid credentials', category: ErrorCategory.auth, code: 'INVALID_CREDENTIALS'),
+        invalidCredentialsMessage: t.auth_signIn_invalidCredentials,
+      );
+
+      expect(invalidCredentials.toast, '입력하신 정보와 일치하는 계정을 찾을 수 없습니다');
+      expect(passwordRules(t).map((rule) => rule.label), ['8자 이상', '대문자를 하나 이상 포함', '숫자를 하나 이상 포함']);
+    });
+
     test('what a traveller is shown is never the exception itself', () {
       // The screen that prompted this showed, in a red banner on the payment step:
       //   ApiError(ErrorCategory.unknown, status: 200): Hotel booking is switched off…
       // Three checkout screens printed error.toString(), which for an ApiError is a
       // diagnostic. A refusal the server worded for a person must reach them as that wording.
-      final off = ApiError(
-        'Hotel booking is switched off in this environment.',
-        status: 200,
-      );
+      final off = ApiError('Hotel booking is switched off in this environment.', status: 200);
       expect(errorMessage(off), 'Hotel booking is switched off in this environment.');
       expect(errorMessage(off), isNot(contains('ApiError')));
       expect(errorMessage(off), isNot(contains('status:')));
 
       // A category routeError has its own words for keeps them.
-      expect(
-        errorMessage(ApiError('Unauthorized', category: ErrorCategory.auth)),
-        'Session expired',
-      );
+      expect(errorMessage(ApiError('Unauthorized', category: ErrorCategory.auth)), 'Session expired');
 
       // And anything that is not an ApiError is already a sentence: a declined card arrives
       // as Stripe's own, and routing it would replace it with "Unexpected error occurred".
@@ -75,7 +82,9 @@ void main() {
               expect(context.colors.accent, const Color(0xFF2563EB));
               expect(context.colors.background, const Color(0xFFF8FAFC));
               return Scaffold(
-                body: GlassCard(child: AppPrimaryButton(label: 'Book Now', onPressed: () {})),
+                body: GlassCard(
+                  child: AppPrimaryButton(label: 'Book Now', onPressed: () {}),
+                ),
               );
             },
           ),

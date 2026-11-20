@@ -67,7 +67,9 @@ class _FlightCardState extends State<FlightCard> {
         : (slices.length == 1 ? offer.totalDuration : null);
     final arrivalDays = dayOffset(primary.departure?.time, last.arrival?.time);
 
-    final perPerson = offer.price.pricePerAdult > 0 ? offer.price.pricePerAdult : offer.price.total;
+    final perPerson = offer.price.pricePerAdult > 0
+        ? offer.price.pricePerAdult
+        : offer.price.total;
 
     final policy = offer.farePolicy;
     final refundable = policy?.isRefundable ?? offer.refundable;
@@ -83,8 +85,16 @@ class _FlightCardState extends State<FlightCard> {
     final bagsLine = bag == null
         ? null
         : [
-            if (bag.cabinBag != null) bag.cabinBag! ? '1 carry-on' : 'No carry-on',
-            bag.checkedBags > 0 ? '${bag.checkedBags} checked' : AppLocalizations.of(context)!.checkout_flight_summary_noCheckedBag,
+            if (bag.cabinBag != null)
+              bag.cabinBag!
+                  ? t.checkout_flight_receipt_carryOnBag
+                  : t.checkout_flight_summary_noCarryOnBag,
+            bag.checkedBags > 0
+                ? withCount(
+                    t.checkout_flight_receipt_checkedBagsCount(bag.checkedBags),
+                    bag.checkedBags,
+                  )
+                : t.checkout_flight_summary_noCheckedBag,
           ].join(' · ');
 
     final timeStyle = TextStyle(
@@ -94,7 +104,11 @@ class _FlightCardState extends State<FlightCard> {
       letterSpacing: -0.2,
       color: skin.title,
     );
-    final codeStyle = TextStyle(fontSize: 11, letterSpacing: 0.44, color: skin.muted);
+    final codeStyle = TextStyle(
+      fontSize: 11,
+      letterSpacing: 0.44,
+      color: skin.muted,
+    );
 
     return Container(
       decoration: BoxDecoration(
@@ -114,7 +128,11 @@ class _FlightCardState extends State<FlightCard> {
                 // ── The airline's line ──
                 Row(
                   children: [
-                    AirlineBadge(code: primary.airline, name: primary.airlineName, size: 32),
+                    AirlineBadge(
+                      code: primary.airline,
+                      name: primary.airlineName,
+                      size: 32,
+                    ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: Column(
@@ -124,7 +142,12 @@ class _FlightCardState extends State<FlightCard> {
                             primary.airlineName,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: TextStyle(fontSize: 15, height: 1.2, fontWeight: FontWeight.w700, color: skin.title),
+                            style: TextStyle(
+                              fontSize: 15,
+                              height: 1.2,
+                              fontWeight: FontWeight.w700,
+                              color: skin.title,
+                            ),
                           ),
                           const SizedBox(height: 2),
                           Text(
@@ -155,7 +178,10 @@ class _FlightCardState extends State<FlightCard> {
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(formatTime(primary.departure?.time), style: timeStyle),
+                        Text(
+                          formatTime(primary.departure?.time),
+                          style: timeStyle,
+                        ),
                         const SizedBox(height: 4),
                         Text(primary.origin, style: codeStyle),
                       ],
@@ -164,11 +190,17 @@ class _FlightCardState extends State<FlightCard> {
                     Expanded(
                       child: Column(
                         children: [
-                          Text(formatDuration(minutes), style: TextStyle(fontSize: 11, color: skin.text)),
+                          Text(
+                            formatDuration(minutes, t: t),
+                            style: TextStyle(fontSize: 11, color: skin.text),
+                          ),
                           const SizedBox(height: 4),
                           RouteLine(stops: stops),
                           const SizedBox(height: 4),
-                          Text(stopsLabel(AppLocalizations.of(context)!, stops), style: TextStyle(fontSize: 12, color: skin.muted)),
+                          Text(
+                            stopsLabel(AppLocalizations.of(context)!, stops),
+                            style: TextStyle(fontSize: 12, color: skin.muted),
+                          ),
                         ],
                       ),
                     ),
@@ -187,7 +219,11 @@ class _FlightCardState extends State<FlightCard> {
                                     padding: const EdgeInsets.only(left: 2),
                                     child: Text(
                                       '+$arrivalDays',
-                                      style: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: skin.muted),
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                        color: skin.muted,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -211,13 +247,19 @@ class _FlightCardState extends State<FlightCard> {
                     _FactChip(
                       label: refundLabel,
                       color: refundable
-                          ? (skin == FlightSkin.dark ? TwPalette.emerald400 : TwPalette.emerald600)
-                          : (skin == FlightSkin.dark ? TwPalette.slate300 : TwPalette.slate600),
+                          ? (skin == FlightSkin.dark
+                                ? TwPalette.emerald400
+                                : TwPalette.emerald600)
+                          : (skin == FlightSkin.dark
+                                ? TwPalette.slate300
+                                : TwPalette.slate600),
                     ),
                     if (bagsLine != null)
                       _FactChip(
                         label: bagsLine,
-                        color: skin == FlightSkin.dark ? TwPalette.slate300 : TwPalette.slate600,
+                        color: skin == FlightSkin.dark
+                            ? TwPalette.slate300
+                            : TwPalette.slate600,
                       ),
                   ],
                 ),
@@ -247,13 +289,16 @@ class _FlightCardState extends State<FlightCard> {
                             ),
                             const SizedBox(height: 2),
                             GestureDetector(
-                              onTap: () => setState(() => _expanded = !_expanded),
+                              onTap: () =>
+                                  setState(() => _expanded = !_expanded),
                               child: Text(
                                 t.flights_card_flightDetails,
                                 style: TextStyle(
                                   fontSize: 12,
                                   fontWeight: FontWeight.w500,
-                                  color: skin == FlightSkin.dark ? TwPalette.blue400 : TwPalette.blue600,
+                                  color: skin == FlightSkin.dark
+                                      ? TwPalette.blue400
+                                      : TwPalette.blue600,
                                 ),
                               ),
                             ),
@@ -262,9 +307,13 @@ class _FlightCardState extends State<FlightCard> {
                       ),
                       const SizedBox(width: 12),
                       GradientPill(
-                        label: widget.checkingPrice ? 'Checking price…' : t.flights_card_select,
+                        label: widget.checkingPrice
+                            ? t.flights_card_checkingPrice
+                            : t.flights_card_select,
                         busy: false,
-                        onTap: widget.checkingPrice ? null : () => widget.onSelect(offer),
+                        onTap: widget.checkingPrice
+                            ? null
+                            : () => widget.onSelect(offer),
                       ),
                     ],
                   ),
@@ -288,10 +337,17 @@ class _FlightCardState extends State<FlightCard> {
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (offer.alternatives.isNotEmpty)
-                          _FareOptions(offer: offer, money: widget.money, onSelect: widget.onSelect),
+                          _FareOptions(
+                            offer: offer,
+                            money: widget.money,
+                            onSelect: widget.onSelect,
+                          ),
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 20, 20, 24),
-                          child: FlightItinerary(segments: offer.segments, sliceDurations: offer.sliceDurations),
+                          child: FlightItinerary(
+                            segments: offer.segments,
+                            sliceDurations: offer.sliceDurations,
+                          ),
                         ),
                       ],
                     ),
@@ -306,7 +362,12 @@ class _FlightCardState extends State<FlightCard> {
 /// The airline's logo in a white disc — pics.avs.io's square edition, the two-letter code
 /// holding the disc until the image lands and staying if it never does.
 class AirlineBadge extends StatelessWidget {
-  const AirlineBadge({required this.code, required this.name, this.size = 32, super.key});
+  const AirlineBadge({
+    required this.code,
+    required this.name,
+    this.size = 32,
+    super.key,
+  });
 
   final String code;
   final String name;
@@ -316,7 +377,9 @@ class AirlineBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     final iata = code.toUpperCase().substring(0, math.min(3, code.length));
     final fallback = Text(
-      iata.isNotEmpty ? iata : name.substring(0, math.min(2, name.length)).toUpperCase(),
+      iata.isNotEmpty
+          ? iata
+          : name.substring(0, math.min(2, name.length)).toUpperCase(),
       style: TextStyle(
         fontSize: size * 0.32,
         fontWeight: FontWeight.w700,
@@ -331,7 +394,13 @@ class AirlineBadge extends StatelessWidget {
         color: Colors.white,
         shape: BoxShape.circle,
         border: Border.all(color: const Color(0x0D000000)),
-        boxShadow: const [BoxShadow(color: Color(0x0D000000), blurRadius: 2, offset: Offset(0, 1))],
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x0D000000),
+            blurRadius: 2,
+            offset: Offset(0, 1),
+          ),
+        ],
       ),
       alignment: Alignment.center,
       clipBehavior: Clip.antiAlias,
@@ -343,8 +412,9 @@ class AirlineBadge extends StatelessWidget {
               height: size,
               fit: BoxFit.contain,
               semanticLabel: name,
-              loadingBuilder: (context, child, progress) =>
-                  progress == null ? Padding(padding: const EdgeInsets.all(4), child: child) : fallback,
+              loadingBuilder: (context, child, progress) => progress == null
+                  ? Padding(padding: const EdgeInsets.all(4), child: child)
+                  : fallback,
               errorBuilder: (_, _, _) => fallback,
             ),
     );
@@ -378,7 +448,12 @@ class RouteLine extends StatelessWidget {
                 ],
               ),
               boxShadow: [
-                BoxShadow(color: dark ? const Color(0x8C22D3EE) : const Color(0x592563EB), blurRadius: dark ? 8 : 6),
+                BoxShadow(
+                  color: dark
+                      ? const Color(0x8C22D3EE)
+                      : const Color(0x592563EB),
+                  blurRadius: dark ? 8 : 6,
+                ),
               ],
             ),
           ),
@@ -386,7 +461,10 @@ class RouteLine extends StatelessWidget {
             Container(
               width: 7,
               height: 7,
-              decoration: const BoxDecoration(shape: BoxShape.circle, gradient: FlightSkin.gradient),
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: FlightSkin.gradient,
+              ),
             ),
           Align(
             alignment: Alignment.centerLeft,
@@ -397,7 +475,12 @@ class RouteLine extends StatelessWidget {
                 size: 14,
                 color: dark ? TwPalette.cyan300 : TwPalette.blue600,
                 shadows: [
-                  Shadow(color: dark ? const Color(0xE622D3EE) : const Color(0xB32563EB), blurRadius: dark ? 5 : 4),
+                  Shadow(
+                    color: dark
+                        ? const Color(0xE622D3EE)
+                        : const Color(0xB32563EB),
+                    blurRadius: dark ? 5 : 4,
+                  ),
                 ],
               ),
             ),
@@ -417,7 +500,9 @@ class _HighlightBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
-    final base = kind == OfferHighlight.cheapest ? TwPalette.emerald500 : TwPalette.blue500;
+    final base = kind == OfferHighlight.cheapest
+        ? TwPalette.emerald500
+        : TwPalette.blue500;
     final text = switch ((kind, dark)) {
       (OfferHighlight.cheapest, false) => TwPalette.emerald700,
       (OfferHighlight.cheapest, true) => TwPalette.emerald300,
@@ -433,7 +518,13 @@ class _HighlightBadge extends StatelessWidget {
       ),
       child: Text(
         label.toUpperCase(),
-        style: TextStyle(fontSize: 10, height: 1, fontWeight: FontWeight.w700, letterSpacing: 0.8, color: text),
+        style: TextStyle(
+          fontSize: 10,
+          height: 1,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.8,
+          color: text,
+        ),
       ),
     );
   }
@@ -450,7 +541,10 @@ class _FactChip extends StatelessWidget {
     final skin = FlightSkin.of(context);
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(color: skin.chip, borderRadius: BorderRadius.circular(999)),
+      decoration: BoxDecoration(
+        color: skin.chip,
+        borderRadius: BorderRadius.circular(999),
+      ),
       child: Text(label, style: TextStyle(fontSize: 12, color: color)),
     );
   }
@@ -458,7 +552,11 @@ class _FactChip extends StatelessWidget {
 
 /// "Available Fare Options": the offer itself, marked selected, and each alternative brand.
 class _FareOptions extends StatelessWidget {
-  const _FareOptions({required this.offer, required this.money, required this.onSelect});
+  const _FareOptions({
+    required this.offer,
+    required this.money,
+    required this.onSelect,
+  });
 
   final FlightFare offer;
   final MoneyFormatter money;
@@ -471,13 +569,17 @@ class _FareOptions extends StatelessWidget {
 
     Widget option(FlightFare o, {required bool current}) {
       final name = o.brandedFare?.label ?? (current ? 'Standard' : 'Option');
-      final cabin = o.segments.isEmpty ? 'economy' : o.segments.first.cabinClass;
+      final cabin = o.segments.isEmpty
+          ? 'economy'
+          : o.segments.first.cabinClass;
       return Container(
         margin: const EdgeInsets.only(bottom: 8),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: current ? TwPalette.blue500 : skin.hairline),
+          border: Border.all(
+            color: current ? TwPalette.blue500 : skin.hairline,
+          ),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -486,17 +588,26 @@ class _FareOptions extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
-                  child: Text(name.toUpperCase(), style: TextStyle(fontSize: 12, color: skin.text)),
+                  child: Text(
+                    name.toUpperCase(),
+                    style: TextStyle(fontSize: 12, color: skin.text),
+                  ),
                 ),
                 Text(
                   money(o.price.total, o.price.currency),
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: skin.title),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: skin.title,
+                  ),
                 ),
               ],
             ),
             const SizedBox(height: 4),
             Text(
-              current ? t.mobile_flights_bestValue(cabinLabel(cabin)) : cabinLabel(cabin),
+              current
+                  ? t.mobile_flights_bestValue(cabinLabel(cabin))
+                  : cabinLabel(cabin),
               style: TextStyle(fontSize: 12, color: skin.muted),
             ),
             const SizedBox(height: 8),
@@ -521,7 +632,9 @@ class _FareOptions extends StatelessWidget {
                         height: 32,
                         child: Center(
                           child: Text(
-                            t.mobile_flights_selectFare(o.brandedFare?.label ?? t.mobile_flights_thisFare),
+                            t.mobile_flights_selectFare(
+                              o.brandedFare?.label ?? t.mobile_flights_thisFare,
+                            ),
                             style: TextStyle(fontSize: 12, color: skin.text),
                           ),
                         ),
@@ -547,7 +660,11 @@ class _FareOptions extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 t.flights_card_fareOptions.toUpperCase(),
-                style: TextStyle(fontSize: 12, letterSpacing: 1.56, color: skin.muted),
+                style: TextStyle(
+                  fontSize: 12,
+                  letterSpacing: 1.56,
+                  color: skin.muted,
+                ),
               ),
             ],
           ),
@@ -568,9 +685,12 @@ class FlightCardSkeleton extends StatefulWidget {
   State<FlightCardSkeleton> createState() => _FlightCardSkeletonState();
 }
 
-class _FlightCardSkeletonState extends State<FlightCardSkeleton> with SingleTickerProviderStateMixin {
-  late final _pulse = AnimationController(vsync: this, duration: const Duration(milliseconds: 1000))
-    ..repeat(reverse: true);
+class _FlightCardSkeletonState extends State<FlightCardSkeleton>
+    with SingleTickerProviderStateMixin {
+  late final _pulse = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1000),
+  )..repeat(reverse: true);
 
   @override
   void dispose() {
@@ -581,11 +701,16 @@ class _FlightCardSkeletonState extends State<FlightCardSkeleton> with SingleTick
   @override
   Widget build(BuildContext context) {
     final skin = FlightSkin.of(context);
-    final fill = skin == FlightSkin.dark ? const Color(0x1AFFFFFF) : TwPalette.slate200;
+    final fill = skin == FlightSkin.dark
+        ? const Color(0x1AFFFFFF)
+        : TwPalette.slate200;
     Widget bar(double w, double h, {double r = 4}) => Container(
       width: w,
       height: h,
-      decoration: BoxDecoration(color: fill, borderRadius: BorderRadius.circular(r)),
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: BorderRadius.circular(r),
+      ),
     );
 
     return FadeTransition(
@@ -606,7 +731,11 @@ class _FlightCardSkeletonState extends State<FlightCardSkeleton> with SingleTick
                 const SizedBox(width: 10),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [bar(96, 16), const SizedBox(height: 6), bar(56, 12)],
+                  children: [
+                    bar(96, 16),
+                    const SizedBox(height: 6),
+                    bar(56, 12),
+                  ],
                 ),
               ],
             ),
@@ -621,7 +750,13 @@ class _FlightCardSkeletonState extends State<FlightCardSkeleton> with SingleTick
               ],
             ),
             const SizedBox(height: 20),
-            Row(children: [bar(112, 24, r: 12), const SizedBox(width: 6), bar(144, 24, r: 12)]),
+            Row(
+              children: [
+                bar(112, 24, r: 12),
+                const SizedBox(width: 6),
+                bar(144, 24, r: 12),
+              ],
+            ),
             const SizedBox(height: 14),
             Container(
               padding: const EdgeInsets.only(top: 14),
@@ -632,7 +767,11 @@ class _FlightCardSkeletonState extends State<FlightCardSkeleton> with SingleTick
                 children: [
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [bar(64, 24), const SizedBox(height: 6), bar(80, 12)],
+                    children: [
+                      bar(64, 24),
+                      const SizedBox(height: 6),
+                      bar(80, 12),
+                    ],
                   ),
                   const Spacer(),
                   bar(84, 44, r: 12),

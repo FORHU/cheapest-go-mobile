@@ -33,7 +33,7 @@ void main() {
   late int signInAsked;
   late List<String> went;
 
-  Future<void> pump(WidgetTester tester) async {
+  Future<void> pump(WidgetTester tester, {Locale locale = const Locale('en')}) async {
     usePhoneViewport(tester);
     final router = GoRouter(
       initialLocation: '/flight-checkout',
@@ -68,7 +68,7 @@ void main() {
         theme: AppTheme.light,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
         supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('en'),
+        locale: locale,
         routerConfig: router,
       ),
     );
@@ -81,6 +81,12 @@ void main() {
     signedIn = true;
     signInAsked = 0;
     went = [];
+  });
+
+  testWidgets('the checkout trip date follows the selected locale', (tester) async {
+    await pump(tester, locale: const Locale('ko'));
+
+    expect(find.textContaining('12월 3일'), findsWidgets);
   });
 
   Future<void> enter(WidgetTester tester, String label, String text) async {
@@ -320,7 +326,9 @@ void main() {
     expect(api.statusChecks, hasLength(1));
   });
 
-  testWidgets('a booking that lands before its ticket number is shown, without claiming to be ticketed', (tester) async {
+  testWidgets('a booking that lands before its ticket number is shown, without claiming to be ticketed', (
+    tester,
+  ) async {
     // api-v2 writes the booking row before the airline returns a PNR. The row is enough for
     // Trips to show the trip, so this screen must stop implying the booking may not exist —
     // but it is not a ticket, so "All set" would be this screen's word and not the airline's.
@@ -355,9 +363,7 @@ void main() {
 
   testWidgets('a booking that failed outright says so instead of waiting forever', (tester) async {
     api.confirmError = ApiError('processing', code: 'BOOKING_PROCESSING', status: 409, body: {'needsReview': false});
-    api.statusAnswers = [
-      ApiError('Booking failed — your payment has been refunded.', code: 'BOOKING_FAILED'),
-    ];
+    api.statusAnswers = [ApiError('Booking failed — your payment has been refunded.', code: 'BOOKING_FAILED')];
 
     await toPayment(tester);
     await tester.tap(find.text('Pay PHP 8,108.79'));
@@ -421,6 +427,17 @@ void main() {
     final q = Uri.parse(went.single).queryParameters;
     expect(q['origin'], 'Manila (MNL)');
     expect(q['fareGone'], '1');
+  });
+
+  testWidgets('an upstream fare outage shows translated copy, not the English API message', (tester) async {
+    api.bookError = ApiError('UPSTREAM_UNAVAILABLE: Duffel is unavailable', code: 'UPSTREAM_UNAVAILABLE', status: 503);
+    await pump(tester);
+    await fillLead(tester);
+    await tester.tap(find.text('Continue to payment'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("We couldn't reach the airline to check this fare. Please try again shortly."), findsOneWidget);
+    expect(find.textContaining('UPSTREAM_UNAVAILABLE'), findsNothing);
   });
 
   testWidgets('the same-day warning is a dialog naming the clash', (tester) async {

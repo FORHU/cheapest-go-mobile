@@ -6,6 +6,7 @@ import 'package:lucide_icons_flutter/lucide_icons.dart';
 
 import 'package:cheapest_go_mobile/features/flights/components/flight_chrome.dart';
 import 'package:cheapest_go_mobile/features/flights/lib/filter_offers.dart';
+import 'package:cheapest_go_mobile/features/flights/lib/flight_utils.dart';
 import 'package:cheapest_go_mobile/features/flights/models/flight_fare.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
@@ -100,7 +101,7 @@ class _Drawer extends StatelessWidget {
               ),
               const SizedBox(height: 24),
               GradientPill(
-                label: 'Show $count ${count == 1 ? 'flight' : 'flights'}',
+                label: withCount(t.flights_filtersPanel_showCount(count), count),
                 onTap: () => Navigator.of(context).pop(),
                 expand: true,
                 height: 44,

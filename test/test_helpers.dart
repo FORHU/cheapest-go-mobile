@@ -24,31 +24,40 @@ Future<void> pumpApp(
   String location = '/',
   ThemeData? theme,
   bool gate = false,
+  Locale locale = const Locale('en'),
 }) async {
   usePhoneViewport(tester);
   final router = createAppRouter(gate: gate);
   addTearDown(router.dispose);
   router.go(location);
-  await tester.pumpWidget(MaterialApp.router(
-    theme: theme ?? AppTheme.light,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    locale: const Locale('en'),
-    routerConfig: router,
-  ));
+  await tester.pumpWidget(
+    MaterialApp.router(
+      theme: theme ?? AppTheme.light,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: locale,
+      routerConfig: router,
+    ),
+  );
   await tester.pumpAndSettle();
 }
 
 /// One screen, in the app's chrome. For tests that mount a view directly rather than routing
 /// to it — they need the same delegates for the same reason.
-Future<void> pumpScreen(WidgetTester tester, Widget screen, {ThemeData? theme}) async {
+Future<void> pumpScreen(
+  WidgetTester tester,
+  Widget screen, {
+  ThemeData? theme,
+}) async {
   usePhoneViewport(tester);
-  await tester.pumpWidget(MaterialApp(
-    theme: theme ?? AppTheme.light,
-    localizationsDelegates: AppLocalizations.localizationsDelegates,
-    supportedLocales: AppLocalizations.supportedLocales,
-    locale: const Locale('en'),
-    home: Scaffold(body: screen),
-  ));
+  await tester.pumpWidget(
+    MaterialApp(
+      theme: theme ?? AppTheme.light,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      home: Scaffold(body: screen),
+    ),
+  );
   await tester.pumpAndSettle();
 }

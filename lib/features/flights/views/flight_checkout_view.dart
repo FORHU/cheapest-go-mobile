@@ -223,7 +223,14 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
       } else if (e.category == ErrorCategory.auth) {
         widget.onSignIn();
       } else {
-        await _alert(t.checkout_failed_title, e.message.isNotEmpty ? e.message : 'Booking failed. Please try again.');
+        await _alert(
+          t.checkout_failed_title,
+          e.code == 'UPSTREAM_UNAVAILABLE'
+              ? t.flights_errors_upstreamUnavailable
+              : e.message.isNotEmpty
+              ? e.message
+              : 'Booking failed. Please try again.',
+        );
       }
     } finally {
       if (mounted && _submitting) setState(() => _submitting = false);
@@ -442,103 +449,103 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     return TipScope(
       tip: payment ? tipFor(t, TipAnchors.flightCheckout) : null,
       child: PopScope(
-      canPop: !payment,
-      onPopInvokedWithResult: (didPop, _) {
-        // The Android back gesture does what the page's own back does: from payment, to details.
-        if (!didPop && payment) _goTo(_Step.details);
-      },
-      child: Scaffold(
-        backgroundColor: c.bg,
-        body: SafeArea(
-          child: Column(
-            children: [
-              Expanded(
-                child: ListView(
-                  controller: _scroll,
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  children: [
-                    // ── Toolbar ──
-                    Align(
-                      alignment: Alignment.centerLeft,
-                      child: TextButton.icon(
-                        onPressed: _back,
-                        style: TextButton.styleFrom(foregroundColor: c.title, padding: EdgeInsets.zero),
-                        icon: const Icon(LucideIcons.arrowLeft, size: 18),
-                        label: Text(
-                          payment ? t.checkout_backToBookingDetails : t.property_v2_goBack,
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        canPop: !payment,
+        onPopInvokedWithResult: (didPop, _) {
+          // The Android back gesture does what the page's own back does: from payment, to details.
+          if (!didPop && payment) _goTo(_Step.details);
+        },
+        child: Scaffold(
+          backgroundColor: c.bg,
+          body: SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: ListView(
+                    controller: _scroll,
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
+                    children: [
+                      // ── Toolbar ──
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: TextButton.icon(
+                          onPressed: _back,
+                          style: TextButton.styleFrom(foregroundColor: c.title, padding: EdgeInsets.zero),
+                          icon: const Icon(LucideIcons.arrowLeft, size: 18),
+                          label: Text(
+                            payment ? t.checkout_backToBookingDetails : t.property_v2_goBack,
+                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: 16),
-                    // ── Steps: they say where you are before the heading says what to do ──
-                    Center(child: _Steps(active: payment ? 1 : 0)),
-                    const SizedBox(height: 32),
-                    Text(
-                      payment ? t.checkout_paymentDetailsTitle : t.checkout_completeYourBooking,
-                      style: TextStyle(
-                        fontSize: 28,
-                        height: 1.05,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: -0.3,
-                        color: c.title,
+                      const SizedBox(height: 16),
+                      // ── Steps: they say where you are before the heading says what to do ──
+                      Center(child: _Steps(active: payment ? 1 : 0)),
+                      const SizedBox(height: 32),
+                      Text(
+                        payment ? t.checkout_paymentDetailsTitle : t.checkout_completeYourBooking,
+                        style: TextStyle(
+                          fontSize: 28,
+                          height: 1.05,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: -0.3,
+                          color: c.title,
+                        ),
                       ),
-                    ),
-                    if (!payment) ...[
-                      const SizedBox(height: 10),
-                      Text(t.checkout_flight_whosFlying, style: TextStyle(fontSize: 19, height: 1.25, color: c.text)),
+                      if (!payment) ...[
+                        const SizedBox(height: 10),
+                        Text(t.checkout_flight_whosFlying, style: TextStyle(fontSize: 19, height: 1.25, color: c.text)),
+                      ],
+                      const SizedBox(height: 24),
+                      // ── The trip, folded into a bar on a phone ──
+                      _tripBar(t, c),
+                      if (_tripOpen) ...[const SizedBox(height: 8), _summary(t, c)],
+                      SizedBox(height: payment ? 26 : 30),
+                      if (!payment) ..._details(t, c) else ..._payment(t, c),
                     ],
-                    const SizedBox(height: 24),
-                    // ── The trip, folded into a bar on a phone ──
-                    _tripBar(t, c),
-                    if (_tripOpen) ...[const SizedBox(height: 8), _summary(t, c)],
-                    SizedBox(height: payment ? 26 : 30),
-                    if (!payment) ..._details(t, c) else ..._payment(t, c),
-                  ],
-                ),
-              ),
-              // ── The button rides at the foot of the screen while the form scrolls ──
-              Container(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.bottomCenter,
-                    end: Alignment.topCenter,
-                    colors: [c.bg, c.bg, c.bg.withValues(alpha: 0)],
-                    stops: const [0, 0.72, 1],
                   ),
                 ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // What the Tip points at: the charge, and what authorising it means.
-                    TipAnchor(
-                      id: TipAnchors.flightCheckout,
-                      child: GradientPill(
-                      label: payment ? t.checkout_payNow(_payLabel) : t.checkout_continueToPayment,
-                      busy: _submitting,
-                      onTap: payment ? _pay : _submitDetails,
-                      expand: true,
-                      height: 52,
-                      radius: 999,
-                      fontSize: 16,
+                // ── The button rides at the foot of the screen while the form scrolls ──
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [c.bg, c.bg, c.bg.withValues(alpha: 0)],
+                      stops: const [0, 0.72, 1],
                     ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      // The pieces carry their own edges ("Terms ", " and "); trimmed, so the
-                      // sentence has one space between words, as V2's JSX does.
-                      '${[t.checkout_agreePrefix, t.footer_terms, t.legal_termsGate_checkboxConnector, t.footer_privacyMinimal].map((s) => s.trim()).join(' ')}.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(fontSize: 12, color: c.faint),
-                    ),
-                  ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // What the Tip points at: the charge, and what authorising it means.
+                      TipAnchor(
+                        id: TipAnchors.flightCheckout,
+                        child: GradientPill(
+                          label: payment ? t.checkout_payNow(_payLabel) : t.checkout_continueToPayment,
+                          busy: _submitting,
+                          onTap: payment ? _pay : _submitDetails,
+                          expand: true,
+                          height: 52,
+                          radius: 999,
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        // The pieces carry their own edges ("Terms ", " and "); trimmed, so the
+                        // sentence has one space between words, as V2's JSX does.
+                        '${[t.checkout_agreePrefix, t.footer_terms, t.legal_termsGate_checkboxConnector, t.footer_privacyMinimal].map((s) => s.trim()).join(' ')}.',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(fontSize: 12, color: c.faint),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
-      ),
       ),
     );
   }
@@ -693,12 +700,13 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
 
   Widget _tripBar(AppLocalizations t, _Colors c) {
     final price = _price;
+    final locale = Localizations.localeOf(context).toString();
     final total = price != null
         ? checkoutMoney(price.total, price.currency)
         : '$_linkCurrency ${NumberFormat('#,##0.##', 'en_US').format(_totalAmount)}';
     final day = parseIsoDate(_departureDate);
     final details = [
-      if (day != null) DateFormat('MMM d', 'en_US').format(day),
+      if (day != null) DateFormat.MMMd(locale).format(day),
       withCount(t.checkout_flight_receipt_passengersCount(_passengers.length), _passengers.length),
     ].join(' · ');
     return Semantics(
@@ -768,7 +776,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
           style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: c.title),
         ),
         const SizedBox(height: 1),
-        Text(formatDateTime(e?.time), style: row),
+        Text(formatDateTime(e?.time, locale: Localizations.localeOf(context).toString()), style: row),
       ],
     );
 
@@ -787,7 +795,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
             Text(
               parseIsoDate(_departureDate) == null
                   ? _departureDate
-                  : DateFormat('MMM d', 'en_US').format(parseIsoDate(_departureDate)!),
+                  : DateFormat.MMMd(Localizations.localeOf(context).toString()).format(parseIsoDate(_departureDate)!),
               style: row,
             ),
           ],

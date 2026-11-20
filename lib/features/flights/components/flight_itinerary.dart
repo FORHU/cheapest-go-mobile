@@ -48,7 +48,7 @@ class FlightItinerary extends StatelessWidget {
                         text: '${t.flights_itinerary_totalFlightDuration} ',
                         children: [
                           TextSpan(
-                            text: formatDuration(sliceDurations[slices[i].index]),
+                            text: formatDuration(sliceDurations[slices[i].index], t: t),
                             style: TextStyle(color: skin.text),
                           ),
                         ],
@@ -91,7 +91,7 @@ class _LegRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
     final skin = FlightSkin.of(context);
-    final duration = formatDuration(segment.duration);
+    final duration = formatDuration(segment.duration, t: t);
     return LayoutBuilder(
       builder: (context, constraints) {
         // `w-[38%] sm:w-[34%]` — each end takes a fixed share, the duration the rest.
@@ -177,6 +177,7 @@ class _EndColumn extends StatelessWidget {
     final t = AppLocalizations.of(context)!;
     final skin = FlightSkin.of(context);
     final days = right ? dayOffset(departedAt, end?.time) : 0;
+    final locale = Localizations.localeOf(context).toString();
     final align = right ? CrossAxisAlignment.end : CrossAxisAlignment.start;
     final textAlign = right ? TextAlign.right : TextAlign.left;
     final factStyle = TextStyle(fontSize: 12, height: 1.35, color: skin.text);
@@ -192,9 +193,18 @@ class _EndColumn extends StatelessWidget {
           );
 
     final facts = <Widget>[
-      if (formatDateTime(end?.time).isNotEmpty) Text(formatDateTime(end?.time), style: factStyle, textAlign: textAlign),
+      if (formatDateTime(end?.time, locale: locale).isNotEmpty)
+        Text(
+          formatDateTime(end?.time, locale: locale),
+          style: factStyle,
+          textAlign: textAlign,
+        ),
       terminal,
-      Text('${cabinLabel(segment.cabinClass)} ${segment.flightNumber}'.trim(), style: factStyle, textAlign: textAlign),
+      Text(
+        '${cabinName(t, segment.cabinClass)} ${segment.flightNumber}'.trim(),
+        style: factStyle,
+        textAlign: textAlign,
+      ),
       if (segment.aircraft != null && segment.aircraft!.isNotEmpty)
         Text(segment.aircraft!, style: factStyle, textAlign: textAlign),
     ];
@@ -299,7 +309,7 @@ class _LayoverNote extends StatelessWidget {
         ),
         const SizedBox(height: 6),
         Text(
-          t.flights_itinerary_layoverValue(formatDuration(minutes), airport),
+          t.flights_itinerary_layoverValue(formatDuration(minutes, t: t), airport),
           textAlign: TextAlign.center,
           style: TextStyle(fontSize: 12, color: skin.text),
         ),

@@ -276,6 +276,17 @@
       "time": {}
     }
   },
+  "@flights_durationParts_hoursMinutes": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  },
+  "@flights_durationParts_minutesOnly": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "@flights_filtersPanel_rangeFrom": {
     "placeholders": {
       "label": {}
@@ -284,6 +295,13 @@
   "@flights_filtersPanel_rangeTo": {
     "placeholders": {
       "label": {}
+    }
+  },
+  "@flights_filtersPanel_showCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
     }
   },
   "@flights_filtersPanel_underHours": {
@@ -1429,6 +1447,8 @@
   "appBanner_title": "Travel smarter with our app",
   "auth_agreePrefix": "By signing up you agree to our",
   "auth_atLeast8": "At least 8 characters",
+  "auth_atLeastOneNumber": "At least one number",
+  "auth_atLeastOneUppercase": "At least one uppercase letter",
   "auth_backToSignIn": "Back to sign in",
   "auth_checkInbox": "Check your inbox",
   "auth_chooseStrong": "Choose a strong password for your account.",
@@ -1473,6 +1493,7 @@
   "auth_signIn_continueWithGoogle": "Continue with Google",
   "auth_signIn_emailLabel": "Email address",
   "auth_signIn_emailPlaceholder": "you@example.com",
+  "auth_signIn_invalidCredentials": "Those details did not match an account",
   "auth_signIn_orDivider": "or",
   "auth_signIn_privacyLink": "Privacy",
   "auth_signIn_terms": "By signing in you agree to our {terms} and {privacy}.",
@@ -2034,6 +2055,9 @@
   "flights_card_stop": "stop",
   "flights_card_stops": "stops",
   "flights_card_viewDeal": "View deal",
+  "flights_durationParts_hoursMinutes": "{hours}h {minutes}m",
+  "flights_durationParts_minutesOnly": "{minutes}m",
+  "flights_errors_upstreamUnavailable": "We couldn't reach the airline to check this fare. Please try again shortly.",
   "flights_filtersPanel_airlines": "Airlines",
   "flights_filtersPanel_anyStops": "Any Stops",
   "flights_filtersPanel_arrival": "Arrival",
@@ -2060,6 +2084,7 @@
   "flights_filtersPanel_selectAllAirlines": "Select all airlines",
   "flights_filtersPanel_selectAllAirports": "Select all airports",
   "flights_filtersPanel_showAll": "Show all",
+  "flights_filtersPanel_showCount": "Show {count, plural, one {# flight} other {# flights}}",
   "flights_filtersPanel_showLess": "Show less",
   "flights_filtersPanel_sortBy": "Sort By",
   "flights_filtersPanel_stops": "Stops",

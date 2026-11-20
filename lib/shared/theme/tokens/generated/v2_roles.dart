@@ -1,7 +1,7 @@
 // GENERATED — do not edit by hand.
 //
 // V2's semantic roles, as stated in :root and .dark.
-// Mirrored from FORHU/cheapestgo-app-v2 at 2f5c3ac468dce98d4afe6c50529d56aafad57020
+// Mirrored from FORHU/cheapestgo-app-v2 at d36296d15fd39fb0c8376e860bd515cea4fdffc3
 // Regenerate with: dart run tools/sync_design.dart
 // See docs/adr/0002-tokens-and-copy-are-generated-from-a-pinned-v2-commit.md
 

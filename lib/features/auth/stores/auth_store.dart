@@ -118,7 +118,7 @@ class AuthStore extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String email, String password, {String? invalidCredentialsMessage}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -142,7 +142,7 @@ class AuthStore extends ChangeNotifier {
       } catch (_) {}
       return true;
     } catch (err) {
-      final routed = routeError(err);
+      final routed = routeError(err, invalidCredentialsMessage: invalidCredentialsMessage);
       _errorMessage = routed.toast ?? err.toString();
       return false;
     } finally {
@@ -159,13 +159,15 @@ class AuthStore extends ChangeNotifier {
       try {
         input.validate();
         final email = input.email.trim().toLowerCase();
-        await _signIn(AuthUser(
-          id: 'local-$email',
-          email: email,
-          firstName: input.firstName.trim(),
-          lastName: input.lastName.trim(),
-          role: Role.user,
-        ));
+        await _signIn(
+          AuthUser(
+            id: 'local-$email',
+            email: email,
+            firstName: input.firstName.trim(),
+            lastName: input.lastName.trim(),
+            role: Role.user,
+          ),
+        );
         return true;
       } catch (err) {
         _errorMessage = routeError(err).toast ?? err.toString();
@@ -295,16 +297,8 @@ class AuthStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool can(
-    Permission permission, {
-    PermissionContext context = const PermissionContext(),
-  }) {
-    return hasPermission(
-      currentRole,
-      permission,
-      context: context,
-      userId: _user?.id,
-    );
+  bool can(Permission permission, {PermissionContext context = const PermissionContext()}) {
+    return hasPermission(currentRole, permission, context: context, userId: _user?.id);
   }
 }
 

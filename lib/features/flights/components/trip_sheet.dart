@@ -44,13 +44,6 @@ class Trip {
 
 const cabins = ['economy', 'premium_economy', 'business', 'first'];
 
-String cabinName(AppLocalizations t, String cabin) => switch (cabin) {
-  'premium_economy' => t.landing_search_cabinClass_premiumEconomy,
-  'business' => t.landing_search_cabinClass_business,
-  'first' => t.landing_search_cabinClass_first,
-  _ => t.landing_search_cabinClass_economy,
-};
-
 /// "Dec 3 – Dec 10 · 1 adult · Economy" — the trip button's label.
 String tripLabel(AppLocalizations t, Trip trip) {
   String short(String iso) {
@@ -60,8 +53,10 @@ String tripLabel(AppLocalizations t, Trip trip) {
 
   final travellers = [
     withCount(t.flights_passengers_adults(trip.adults), trip.adults),
-    if (trip.children > 0) withCount(t.flights_passengers_children(trip.children), trip.children),
-    if (trip.infants > 0) withCount(t.flights_passengers_infants(trip.infants), trip.infants),
+    if (trip.children > 0)
+      withCount(t.flights_passengers_children(trip.children), trip.children),
+    if (trip.infants > 0)
+      withCount(t.flights_passengers_infants(trip.infants), trip.infants),
   ].join(', ');
   final dates = trip.returnDate != null
       ? '${short(trip.departure)} – ${short(trip.returnDate!)}'
@@ -102,22 +97,32 @@ class _TripSheetState extends State<TripSheet> {
     return DateTime(d.year, d.month);
   }();
 
-  bool get _ready => _draft.departure.isNotEmpty && (!_roundTrip || (_draft.returnDate?.isNotEmpty ?? false));
+  bool get _ready =>
+      _draft.departure.isNotEmpty &&
+      (!_roundTrip || (_draft.returnDate?.isNotEmpty ?? false));
 
   /// One way: any tap is the departure. Round trip: a first tap, or one on or before the
   /// departure, starts over; a later one is the return.
   void _pick(String day) => setState(() {
     final d = _draft;
-    if (_roundTrip && d.departure.isNotEmpty && (d.returnDate?.isEmpty ?? true) && day.compareTo(d.departure) > 0) {
+    if (_roundTrip &&
+        d.departure.isNotEmpty &&
+        (d.returnDate?.isEmpty ?? true) &&
+        day.compareTo(d.departure) > 0) {
       _draft = d.copyWith(returnDate: () => day);
     } else {
-      _draft = d.copyWith(departure: day, returnDate: () => _roundTrip ? '' : null);
+      _draft = d.copyWith(
+        departure: day,
+        returnDate: () => _roundTrip ? '' : null,
+      );
     }
   });
 
   void _setRound(bool round) => setState(() {
     _roundTrip = round;
-    _draft = _draft.copyWith(returnDate: () => round ? (_draft.returnDate ?? '') : null);
+    _draft = _draft.copyWith(
+      returnDate: () => round ? (_draft.returnDate ?? '') : null,
+    );
   });
 
   @override
@@ -140,7 +145,11 @@ class _TripSheetState extends State<TripSheet> {
           child: Center(
             child: Text(
               label,
-              style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: on ? Colors.white : skin.title),
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: on ? Colors.white : skin.title,
+              ),
             ),
           ),
         ),
@@ -149,9 +158,27 @@ class _TripSheetState extends State<TripSheet> {
 
     // An infant flies on an adult's lap, so there can be no more of them than adults.
     final counters = [
-      (key: 'adults', label: t.landing_search_adults, value: _draft.adults, min: 1, max: 9 - _draft.children),
-      (key: 'children', label: t.landing_search_children, value: _draft.children, min: 0, max: 9 - _draft.adults),
-      (key: 'infants', label: t.landing_search_infants, value: _draft.infants, min: 0, max: _draft.adults),
+      (
+        key: 'adults',
+        label: t.landing_search_adults,
+        value: _draft.adults,
+        min: 1,
+        max: 9 - _draft.children,
+      ),
+      (
+        key: 'children',
+        label: t.landing_search_children,
+        value: _draft.children,
+        min: 0,
+        max: 9 - _draft.adults,
+      ),
+      (
+        key: 'infants',
+        label: t.landing_search_infants,
+        value: _draft.infants,
+        min: 0,
+        max: _draft.adults,
+      ),
     ];
 
     void step(String key, int delta) => setState(() {
@@ -161,10 +188,17 @@ class _TripSheetState extends State<TripSheet> {
         _ => _draft.copyWith(infants: _draft.infants + delta),
       };
       // Fewer adults can leave more infants than laps.
-      _draft = next.copyWith(infants: next.infants > next.adults ? next.adults : next.infants);
+      _draft = next.copyWith(
+        infants: next.infants > next.adults ? next.adults : next.infants,
+      );
     });
 
-    Widget stepper(IconData icon, String label, bool enabled, VoidCallback onTap) => Opacity(
+    Widget stepper(
+      IconData icon,
+      String label,
+      bool enabled,
+      VoidCallback onTap,
+    ) => Opacity(
       opacity: enabled ? 1 : 0.3,
       child: Semantics(
         button: true,
@@ -186,7 +220,9 @@ class _TripSheetState extends State<TripSheet> {
     );
 
     return Container(
-      constraints: BoxConstraints(maxHeight: MediaQuery.sizeOf(context).height * 0.9),
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.sizeOf(context).height * 0.9,
+      ),
       decoration: BoxDecoration(
         color: skin.menu,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
@@ -205,7 +241,10 @@ class _TripSheetState extends State<TripSheet> {
               margin: const EdgeInsets.only(top: 10),
               width: 40,
               height: 4,
-              decoration: BoxDecoration(color: skin.hairline, borderRadius: BorderRadius.circular(999)),
+              decoration: BoxDecoration(
+                color: skin.hairline,
+                borderRadius: BorderRadius.circular(999),
+              ),
             ),
           ),
           Padding(
@@ -215,7 +254,11 @@ class _TripSheetState extends State<TripSheet> {
                 Expanded(
                   child: Text(
                     t.flights_topBar_changeTrip,
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700, color: skin.title),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      color: skin.title,
+                    ),
                   ),
                 ),
                 IconButton(
@@ -234,9 +277,21 @@ class _TripSheetState extends State<TripSheet> {
                 children: [
                   Row(
                     children: [
-                      Expanded(child: chip(t.landing_search_tripType_oneWay, !_roundTrip, () => _setRound(false))),
+                      Expanded(
+                        child: chip(
+                          t.landing_search_tripType_oneWay,
+                          !_roundTrip,
+                          () => _setRound(false),
+                        ),
+                      ),
                       const SizedBox(width: 6),
-                      Expanded(child: chip(t.landing_search_tripType_roundTrip, _roundTrip, () => _setRound(true))),
+                      Expanded(
+                        child: chip(
+                          t.landing_search_tripType_roundTrip,
+                          _roundTrip,
+                          () => _setRound(true),
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
@@ -263,19 +318,37 @@ class _TripSheetState extends State<TripSheet> {
                                 Expanded(
                                   child: Text(
                                     c.label,
-                                    style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: skin.title),
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: skin.title,
+                                    ),
                                   ),
                                 ),
-                                stepper(LucideIcons.minus, 'Remove ${c.label}', c.value > c.min, () => step(c.key, -1)),
+                                stepper(
+                                  LucideIcons.minus,
+                                  'Remove ${c.label}',
+                                  c.value > c.min,
+                                  () => step(c.key, -1),
+                                ),
                                 SizedBox(
                                   width: 32,
                                   child: Text(
                                     '${c.value}',
                                     textAlign: TextAlign.center,
-                                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: skin.title),
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w700,
+                                      color: skin.title,
+                                    ),
                                   ),
                                 ),
-                                stepper(LucideIcons.plus, 'Add ${c.label}', c.value < c.max, () => step(c.key, 1)),
+                                stepper(
+                                  LucideIcons.plus,
+                                  'Add ${c.label}',
+                                  c.value < c.max,
+                                  () => step(c.key, 1),
+                                ),
                               ],
                             ),
                           ),
@@ -293,20 +366,32 @@ class _TripSheetState extends State<TripSheet> {
                       children: [
                         Text(
                           t.flights_topBar_cabin,
-                          style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: skin.title),
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: skin.title,
+                          ),
                         ),
                         const SizedBox(height: 8),
                         for (var row = 0; row < cabins.length; row += 2) ...[
                           if (row > 0) const SizedBox(height: 6),
                           Row(
                             children: [
-                              for (var i = row; i < row + 2 && i < cabins.length; i++) ...[
+                              for (
+                                var i = row;
+                                i < row + 2 && i < cabins.length;
+                                i++
+                              ) ...[
                                 if (i > row) const SizedBox(width: 6),
                                 Expanded(
                                   child: chip(
                                     cabinName(t, cabins[i]),
                                     _draft.cabin == cabins[i],
-                                    () => setState(() => _draft = _draft.copyWith(cabin: cabins[i])),
+                                    () => setState(
+                                      () => _draft = _draft.copyWith(
+                                        cabin: cabins[i],
+                                      ),
+                                    ),
                                   ),
                                 ),
                               ],
@@ -322,7 +407,12 @@ class _TripSheetState extends State<TripSheet> {
           ),
           // Done, pinned to the foot so it is never under the keyboard or the fold.
           Container(
-            padding: EdgeInsets.fromLTRB(20, 12, 20, 16 + MediaQuery.paddingOf(context).bottom),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              12,
+              20,
+              16 + MediaQuery.paddingOf(context).bottom,
+            ),
             decoration: BoxDecoration(
               border: Border(top: BorderSide(color: skin.hairline)),
             ),
@@ -333,9 +423,11 @@ class _TripSheetState extends State<TripSheet> {
               fontSize: 15,
               expand: true,
               onTap: _ready
-                  ? () => Navigator.of(
-                      context,
-                    ).pop(_draft.copyWith(returnDate: () => _roundTrip ? _draft.returnDate : null))
+                  ? () => Navigator.of(context).pop(
+                      _draft.copyWith(
+                        returnDate: () => _roundTrip ? _draft.returnDate : null,
+                      ),
+                    )
                   : null,
             ),
           ),
@@ -372,22 +464,28 @@ class RangeCalendar extends StatelessWidget {
     final days = DateUtils.getDaysInMonth(month.year, month.month);
     const weekdays = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
 
-    Widget arrow(IconData icon, String label, bool enabled, DateTime to) => Opacity(
-      opacity: enabled ? 1 : 0.3,
-      child: Material(
-        color: skin.hover,
-        shape: const CircleBorder(),
-        child: InkWell(
-          customBorder: const CircleBorder(),
-          onTap: enabled ? () => onMonth(to) : null,
-          child: SizedBox(
-            width: 40,
-            height: 40,
-            child: Icon(icon, size: 15, color: skin.title, semanticLabel: label),
+    Widget arrow(IconData icon, String label, bool enabled, DateTime to) =>
+        Opacity(
+          opacity: enabled ? 1 : 0.3,
+          child: Material(
+            color: skin.hover,
+            shape: const CircleBorder(),
+            child: InkWell(
+              customBorder: const CircleBorder(),
+              onTap: enabled ? () => onMonth(to) : null,
+              child: SizedBox(
+                width: 40,
+                height: 40,
+                child: Icon(
+                  icon,
+                  size: 15,
+                  color: skin.title,
+                  semanticLabel: label,
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
-    );
+        );
 
     return Column(
       children: [
@@ -403,10 +501,19 @@ class RangeCalendar extends StatelessWidget {
               child: Text(
                 DateFormat('MMMM y', 'en_US').format(month),
                 textAlign: TextAlign.center,
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: skin.title),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: skin.title,
+                ),
               ),
             ),
-            arrow(LucideIcons.chevronRight, 'next month', true, DateTime(month.year, month.month + 1)),
+            arrow(
+              LucideIcons.chevronRight,
+              'next month',
+              true,
+              DateTime(month.year, month.month + 1),
+            ),
           ],
         ),
         const SizedBox(height: 8),
@@ -418,7 +525,13 @@ class RangeCalendar extends StatelessWidget {
           children: [
             for (final w in weekdays)
               Center(
-                child: Text(w, style: TextStyle(fontSize: 12, color: skin.title.withValues(alpha: 0.5))),
+                child: Text(
+                  w,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: skin.title.withValues(alpha: 0.5),
+                  ),
+                ),
               ),
             for (var i = 0; i < lead; i++) const SizedBox.shrink(),
             for (var d = 1; d <= days; d++)
@@ -427,7 +540,10 @@ class RangeCalendar extends StatelessWidget {
                   final day = isoDate(DateTime(month.year, month.month, d));
                   final past = day.compareTo(today) < 0;
                   final edge = day == start || day == end;
-                  final inside = end.isNotEmpty && day.compareTo(start) > 0 && day.compareTo(end) < 0;
+                  final inside =
+                      end.isNotEmpty &&
+                      day.compareTo(start) > 0 &&
+                      day.compareTo(end) < 0;
                   return Opacity(
                     opacity: past ? 0.3 : 1,
                     child: Center(
@@ -449,7 +565,9 @@ class RangeCalendar extends StatelessWidget {
                                 '$d',
                                 style: TextStyle(
                                   fontSize: 15,
-                                  fontWeight: edge ? FontWeight.w700 : FontWeight.w500,
+                                  fontWeight: edge
+                                      ? FontWeight.w700
+                                      : FontWeight.w500,
                                   color: edge ? Colors.white : skin.title,
                                 ),
                               ),
