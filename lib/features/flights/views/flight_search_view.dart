@@ -189,7 +189,7 @@ class _FlightSearchViewState extends State<FlightSearchView> {
         if (result.offers.isEmpty && result.providersFailed) {
           // An outage is not a fact about the route: it gets the error state and a retry.
           _status = _Status.error;
-          _error = 'We could not reach the airlines just now. Your search has not been run — please try again.';
+          _error = AppLocalizations.of(context)!.flights_errors_upstreamUnavailable;
         } else {
           _status = result.offers.isEmpty ? _Status.empty : _Status.success;
         }

@@ -308,7 +308,7 @@ void main() {
       expect(saved, 1);
 
       await tester.pumpWidget(hud(dep.subtract(const Duration(minutes: 20))));
-      expect(find.text('Boarding · departs in 20 min'), findsOneWidget);
+      expect(find.text('Boarding · departs in 20m'), findsOneWidget);
     });
 
     testWidgets('in the air: time left falls, and it says where the position comes from', (tester) async {
@@ -436,7 +436,7 @@ void main() {
         home: Scaffold(body: NoFlightsCard(onFindFlights: () => found++)),
       ));
       expect(find.text('No flights to track'), findsOneWidget);
-      await tester.tap(find.text('Find flights'));
+      await tester.tap(find.text('Search flights'));
       expect(found, 1);
     });
 

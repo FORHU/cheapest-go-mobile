@@ -1,8 +1,8 @@
 {
   "_": "The Design Pin: the exact V2 commit this app's tokens and copy are mirrored from. See docs/adr/0002. Bump it in the same pull request that regenerates, never on its own.",
   "repo": "FORHU/cheapestgo-app-v2",
-  "commit": "2f5c3ac468dce98d4afe6c50529d56aafad57020",
-  "branch": "staging",
+  "commit": "d36296d15fd39fb0c8376e860bd515cea4fdffc3",
+  "branch": "fix/issue-75-localization",
   "tailwind": "4.1.18",
   "path": "../cheapestgo-app-v2"
 }

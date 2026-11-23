@@ -99,7 +99,7 @@ class _StayFiltersSheetState extends State<StayFiltersSheet> {
                             children: [
                                 for (final option in StaySort.values)
                                     _Chip(
-                                        label: option.label,
+                                        label: option.labelIn(AppLocalizations.of(context)!),
                                         selected: _draft.sort == option,
                                         skin: skin,
                                         onTap: () => setState(() => _draft = _draft.copyWith(sort: option)),

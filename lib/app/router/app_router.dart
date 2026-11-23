@@ -57,7 +57,13 @@ GoRouter createAppRouter({bool gate = true}) => GoRouter(
       // The gate: no account, no app. See `auth_gate.dart` and ADR-0005 — this is the one
       // place mobile deliberately parts company with V2, which lets anyone browse signed out.
       redirect: gate ? (context, state) => routerGateRedirect(state.uri.toString()) : null,
-      refreshListenable: GateListenable([authStore, onboardingStore]),
+      // Three now: startup finishing is as much a reason to re-ask the gate as signing in
+      // or the server answering what an account owes.
+      refreshListenable: GateListenable([
+        appStartup,
+        authStore,
+        onboardingStore,
+      ]),
 
       // Counts sheets and dialogs so the Support launcher steps aside under them. Each branch
       // below has its own: a sheet opens on the nearest navigator, which is the branch's.
@@ -254,46 +260,100 @@ String _flightSearchFromStore() {
 class _StartingView extends StatelessWidget {
   const _StartingView();
 
+  /// White in both themes, and the same white `@color/splash_background` paints the Android
+  /// launch window and `windowSplashScreenBackground` the Android 12 one.
+  ///
+  /// This is the whole of the handover now: the system shows the icon, this screen shows the
+  /// background it was shown on, and nothing moves between them. The brand marks are drawn
+  /// dark-on-light anyway, and the app opens light whatever the handset is set to
+  /// (ADR-0037), so one background is the honest answer rather than a compromise.
+  static const _ground = Color(0xFFFFFFFF);
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: _ground,
       body: ListenableBuilder(
-        listenable: onboardingStore,
+        listenable: Listenable.merge([appStartup, onboardingStore]),
         builder: (context, _) {
-          if (!onboardingStore.failed) {
-            return const Center(child: CircularProgressIndicator());
+          final stuck = appStartup.failed || onboardingStore.failed;
+
+          if (stuck) {
+            return SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _stuck(context, t),
+                  ),
+                ),
+              ),
+            );
           }
 
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.cloud_off_rounded, size: 40, color: Theme.of(context).colorScheme.outline),
-                  const SizedBox(height: 16),
-                  Text(t.errors_generic, textAlign: TextAlign.center),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: onboardingStore.isLoading ? null : onboardingStore.load,
-                    child: Text(t.auth_tryAgain),
-                  ),
-                  // The escape hatch for the case retrying cannot fix: a session this device
-                  // still holds that the server will no longer accept. Signing out puts them
-                  // back at the sign-in screen, which is a place they can act from.
-                  TextButton(
-                    onPressed: onboardingStore.isLoading ? null : authStore.logout,
-                    child: Text(t.nav_signOut),
-                  ),
-                ],
-              ),
+          // No logo here. The brand has already been shown — by the launcher animation and
+          // then the launch window — and showing it a third time is not continuity, it is
+          // the logo again at a different size.
+          //
+          // This screen drew it too at first, matched to the launch window at 108dp, on the
+          // theory that identical frames would hand over invisibly. On a handset they did
+          // not read as one frame; they read as the logo twice, the first pass soft and
+          // large from the system's own zoom. Matching two stages we control does nothing
+          // about a third we do not, and the way to stop a logo appearing twice is to draw
+          // it once.
+          //
+          // What is left is the same white the launch window is painted, so the handover is
+          // a background that does not change, and a spinner for the cold start slow enough
+          // to need one.
+          return const Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
             ),
           );
         },
       ),
     );
+  }
+
+  /// Shown when the thing being waited for is not going to arrive.
+  ///
+  /// Not decoration: the gate holds on an unknown status and on an unfinished start, so
+  /// without this a request that fails — an expired token, a dropped connection, an API that
+  /// is not answering — leaves the app on a logo with no route to anywhere, which is exactly
+  /// what it did the first time it ran on a handset.
+  List<Widget> _stuck(BuildContext context, AppLocalizations t) {
+    final busy = appStartup.failed ? false : onboardingStore.isLoading;
+
+    return [
+      Icon(
+        Icons.cloud_off_rounded,
+        size: 40,
+        color: Theme.of(context).colorScheme.outline,
+      ),
+      const SizedBox(height: 16),
+      Text(t.errors_generic, textAlign: TextAlign.center),
+      const SizedBox(height: 24),
+      FilledButton(
+        // Whichever phase failed is the one to run again. Startup first: until it finishes
+        // there is no session for the onboarding question to be about.
+        onPressed: busy
+            ? null
+            : (appStartup.failed ? appStartup.run : onboardingStore.load),
+        child: Text(t.auth_tryAgain),
+      ),
+      // The escape hatch for the case retrying cannot fix: a session this device still holds
+      // that the server will no longer accept. Signing out puts them back at the sign-in
+      // screen, which is a place they can act from.
+      TextButton(
+        onPressed: busy ? null : authStore.logout,
+        child: Text(t.nav_signOut),
+      ),
+    ];
   }
 }
 

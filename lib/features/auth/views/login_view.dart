@@ -34,9 +34,11 @@ class _LoginViewState extends State<LoginView> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
+    final t = AppLocalizations.of(context)!;
     final ok = await authStore.login(
       _emailController.text.trim(),
       _passwordController.text,
+      t: t,
     );
     if (ok && mounted) {
       context.go('/');
@@ -67,10 +69,7 @@ class _LoginViewState extends State<LoginView> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      AuthHeader(
-                        title: t.auth_welcomeBack,
-                        subtitle: t.auth_signInToContinue,
-                      ),
+                      AuthHeader(title: t.auth_welcomeBack, subtitle: t.auth_signInToContinue),
                       const SizedBox(height: 24),
                       if (authStore.errorMessage != null) ...[
                         AuthErrorBanner(message: authStore.errorMessage!),
@@ -95,7 +94,7 @@ class _LoginViewState extends State<LoginView> {
                         _GoogleButton(
                           enabled: !loading,
                           onPressed: () async {
-                            final ok = await authStore.signInWithGoogle();
+                            final ok = await authStore.signInWithGoogle(t: AppLocalizations.of(context)!);
                             if (ok && context.mounted) context.go('/');
                           },
                         ),
@@ -123,9 +122,7 @@ class _LoginViewState extends State<LoginView> {
                       Align(
                         alignment: Alignment.centerRight,
                         child: TextButton(
-                          onPressed: loading
-                              ? null
-                              : () => context.push('/forgot-password'),
+                          onPressed: loading ? null : () => context.push('/forgot-password'),
                           child: Text(t.auth_forgotPasswordQ),
                         ),
                       ),
@@ -151,13 +148,10 @@ class _LoginViewState extends State<LoginView> {
                         children: [
                           Text(
                             t.auth_noAccount,
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
+                            style: theme.textTheme.bodyMedium?.copyWith(color: theme.colorScheme.onSurfaceVariant),
                           ),
                           TextButton(
-                            onPressed:
-                                loading ? null : () => context.push('/register'),
+                            onPressed: loading ? null : () => context.push('/register'),
                             child: Text(t.auth_createOne),
                           ),
                         ],
@@ -186,10 +180,7 @@ class _DemoAccountCard extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     return Container(
       padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: scheme.primaryContainer,
-        borderRadius: BorderRadius.circular(16),
-      ),
+      decoration: BoxDecoration(color: scheme.primaryContainer, borderRadius: BorderRadius.circular(16)),
       child: Row(
         children: [
           Icon(Icons.person_pin_rounded, color: scheme.primary),
@@ -198,7 +189,10 @@ class _DemoAccountCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Demo account', style: TextStyle(fontWeight: FontWeight.w700, color: scheme.onPrimaryContainer)),
+                Text(
+                  'Demo account',
+                  style: TextStyle(fontWeight: FontWeight.w700, color: scheme.onPrimaryContainer),
+                ),
                 Text(
                   '${kDemoUser.email}\nPassword: $kDemoPassword',
                   style: TextStyle(fontSize: 12, color: scheme.onPrimaryContainer),
@@ -245,18 +239,11 @@ class _GoogleButton extends StatelessWidget {
               decoration: const BoxDecoration(shape: BoxShape.circle),
               child: const Text(
                 'G',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Color(0xFF4285F4),
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: Color(0xFF4285F4)),
               ),
             ),
             const SizedBox(width: 10),
-            Text(
-              t.auth_signInWithGoogle,
-              style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600),
-            ),
+            Text(t.auth_signInWithGoogle, style: theme.textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w600)),
           ],
         ),
       ),

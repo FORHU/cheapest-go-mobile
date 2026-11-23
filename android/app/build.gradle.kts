@@ -23,6 +23,21 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        getByName("debug") {
+            // AGP drops v1 (JAR) signing once minSdk is 24, because AOSP has verified v2
+            // since Android 7. The installers on ColorOS and Funtouch have not: handed an
+            // APK carrying only a v2 signature they refuse it as "There was a problem
+            // parsing the package", which reads as a broken build rather than a policy.
+            //
+            // `adb install` goes round that installer, which is why the same file lands
+            // over USB and fails when tapped in Downloads. These APKs are sideloaded for
+            // testing, so the extra signature is the whole point of building them.
+            enableV1Signing = true
+            enableV2Signing = true
+        }
+    }
+
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("debug")
@@ -42,4 +57,9 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // For AppCompatDelegate.setApplicationLocales: the per-app language Android 13 added,
+    // backported here so handsets below it get it too. Stripe's SDK already brings
+    // AppCompat in transitively; naming it here is what makes the version ours to pin.
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }

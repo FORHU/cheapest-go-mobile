@@ -38,15 +38,11 @@ class PasswordRule {
   final bool Function(String) test;
 }
 
-/// English literals, because V2's are: `PASSWORD_RULES` in `register-form.tsx` holds these
-/// three labels as a constant rather than in its locale files, as it does for the sort
-/// options and the booking tabs. Translating them only here would put the two products out
-/// of step, which is the thing this port exists to prevent. They move when V2's move.
 List<PasswordRule> passwordRules(AppLocalizations t) => [
-      PasswordRule('At least 8 characters', (p) => p.length >= 8),
-      PasswordRule('At least one uppercase letter', (p) => RegExp(r'[A-Z]').hasMatch(p)),
-      PasswordRule('At least one number', (p) => RegExp(r'\d').hasMatch(p)),
-    ];
+  PasswordRule(t.auth_atLeast8, (p) => p.length >= 8),
+  PasswordRule(t.auth_atLeastOneUppercase, (p) => RegExp(r'[A-Z]').hasMatch(p)),
+  PasswordRule(t.auth_atLeastOneNumber, (p) => RegExp(r'\d').hasMatch(p)),
+];
 
 /// The password a sign-in asks for: present, and long enough. V2's login checks only these
 /// two — the three rules above are for choosing one, not for typing one you already have.
@@ -54,7 +50,7 @@ List<PasswordRule> passwordRules(AppLocalizations t) => [
 String? validateSignInPassword(AppLocalizations t, String? value) {
   final v = value ?? '';
   if (v.isEmpty) return t.auth_passwordRequired;
-  if (v.length < 8) return 'Password must be at least 8 characters';
+  if (v.length < 8) return t.auth_atLeast8;
   return null;
 }
 
@@ -99,9 +95,7 @@ class PasswordRulesChecklist extends StatelessWidget {
                     rule.label,
                     style: TextStyle(
                       fontSize: 12.5,
-                      color: rule.test(password)
-                          ? scheme.onSurface
-                          : scheme.onSurfaceVariant,
+                      color: rule.test(password) ? scheme.onSurface : scheme.onSurfaceVariant,
                     ),
                   ),
                 ),
@@ -117,4 +111,3 @@ class PasswordRulesChecklist extends StatelessWidget {
 String? Function(String?) requiredField(String message) {
   return (value) => (value == null || value.trim().isEmpty) ? message : null;
 }
-

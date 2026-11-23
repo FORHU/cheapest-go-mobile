@@ -52,9 +52,9 @@ class ProfileView extends StatelessWidget {
     return Scaffold(
       backgroundColor: colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'Profile & Account',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+        title: Text(
+          AppLocalizations.of(context)!.mobile_account_screenTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
         ),
         centerTitle: false,
         elevation: 0,
@@ -297,13 +297,13 @@ class ProfileView extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Traveler Account',
+                              AppLocalizations.of(context)!.mobile_account_guestTitle,
                               style: theme.textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
                             Text(
-                              'Sign in to lock rates & manage bookings',
+                              AppLocalizations.of(context)!.mobile_account_signInPrompt,
                               style: theme.textTheme.bodySmall?.copyWith(
                                 color: colorScheme.onSurfaceVariant,
                               ),
@@ -338,7 +338,7 @@ class ProfileView extends StatelessWidget {
                             ),
                             padding: const EdgeInsets.symmetric(vertical: 12),
                           ),
-                          child: const Text('Create Account'),
+                          child: Text(AppLocalizations.of(context)!.mobile_account_createAccount),
                         ),
                       ),
                     ],
@@ -531,9 +531,9 @@ class ProfileView extends StatelessWidget {
       ),
       child: ListTile(
         leading: _buildLeadingIcon(Icons.restart_alt_rounded, const Color(0xFFF59E0B), theme),
-        title: const Text('Reset demo data', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        title: Text(AppLocalizations.of(context)!.mobile_account_resetDemo, style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
         subtitle: Text(
-          'Removes test bookings and saved stays; keeps the sample past trips.',
+          AppLocalizations.of(context)!.mobile_account_resetDemoHint,
           style: theme.textTheme.bodySmall?.copyWith(color: colorScheme.onSurfaceVariant),
         ),
         onTap: () => _resetDemoData(context),
@@ -545,8 +545,8 @@ class ProfileView extends StatelessWidget {
     final ok = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Reset demo data?'),
-        content: const Text('Bookings made on this phone and saved stays will be removed.'),
+        title: Text(AppLocalizations.of(context)!.mobile_account_resetDemoConfirm),
+        content: Text(AppLocalizations.of(context)!.mobile_account_resetDemoBody),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context, false), child: Text(AppLocalizations.of(context)!.trips_bookingCard_actions_cancel)),
           FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(AppLocalizations.of(context)!.flights_filtersPanel_reset)),
@@ -558,7 +558,7 @@ class ProfileView extends StatelessWidget {
     // phone has no business deleting them. See #43.
     await bookingsStore.resetToDemo();
     if (context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demo data reset')));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(AppLocalizations.of(context)!.mobile_account_resetDemoDone)));
     }
   }
 

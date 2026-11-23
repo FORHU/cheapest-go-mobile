@@ -1,6 +1,7 @@
 import 'package:intl/intl.dart';
 
 import 'package:cheapest_go_mobile/features/flights/models/flight_fare.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 
 /// V2's `flight-utils.ts`, line for line where it matters.
 
@@ -27,14 +28,14 @@ DateTime? offerDay(String? iso) {
 }
 
 /// "Wed, Oct 14, 2026" — `formatFlightDate`.
-String formatFlightDate(String? iso) {
+String formatFlightDate(String? iso, {String? locale}) {
   final d = offerDay(iso);
-  return d == null ? '' : DateFormat('EEE, MMM d, y', 'en_US').format(d);
+  return d == null ? '' : DateFormat.yMMMEd(locale ?? 'en_US').format(d);
 }
 
 /// "Wed, Oct 14, 2026, 18:40" — `formatDateTime`.
-String formatDateTime(String? iso) {
-  final date = formatFlightDate(iso);
+String formatDateTime(String? iso, {String? locale}) {
+  final date = formatFlightDate(iso, locale: locale);
   return date.isEmpty ? '' : '$date, ${formatTime(iso)}';
 }
 
@@ -47,25 +48,36 @@ int dayOffset(String? from, String? to) {
   return days < 0 ? 0 : days;
 }
 
-String formatDuration(int? minutes) {
+String formatDuration(int? minutes, {AppLocalizations? t}) {
   if (minutes == null || minutes <= 0) return '';
   final h = minutes ~/ 60;
   final m = minutes % 60;
+  if (t != null) {
+    return h > 0
+        ? t.flights_durationParts_hoursMinutes(h, m)
+        : t.flights_durationParts_minutesOnly(m);
+  }
   return h > 0 ? '${h}h ${m}m' : '${m}m';
 }
 
+// `cabinLabel` was here: it title-cased the raw cabin code into English, beside this function
+// which says the same thing in the app's own language. Two ways to name one thing is how the
+// flight card came to print "Economy" on a Korean screen. There is one now.
 
-String cabinLabel(String? cabinClass) => (cabinClass == null || cabinClass.isEmpty ? 'economy' : cabinClass)
-    .replaceAll('_', ' ')
-    .split(' ')
-    .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-    .join(' ');
+String cabinName(AppLocalizations t, String cabin) => switch (cabin) {
+  'premium_economy' => t.landing_search_cabinClass_premiumEconomy,
+  'business' => t.landing_search_cabinClass_business,
+  'first' => t.landing_search_cabinClass_first,
+  _ => t.landing_search_cabinClass_economy,
+};
 
 /// "Hamad International Airport (DOH)", or the bare code when the provider named none.
 String airportLabel(SegmentEnd? end, String fallbackCode) {
   final code = (end?.airport.isNotEmpty ?? false) ? end!.airport : fallbackCode;
   final name = end?.airportName;
-  return name != null && name.isNotEmpty && name != code ? '$name ($code)' : code;
+  return name != null && name.isNotEmpty && name != code
+      ? '$name ($code)'
+      : code;
 }
 
 /// Minutes on the ground between two legs, both clocks read at the same airport.
@@ -82,7 +94,9 @@ int? layoverMinutes(String? arrival, String? departure) {
 }
 
 /// The offer's directions in `segmentIndex` order; `index` keys `sliceDurations`.
-List<({int index, List<FlightSegment> segments})> groupSegmentsBySlice(List<FlightSegment> segments) {
+List<({int index, List<FlightSegment> segments})> groupSegmentsBySlice(
+  List<FlightSegment> segments,
+) {
   final map = <int, List<FlightSegment>>{};
   for (final s in segments) {
     map.putIfAbsent(s.segmentIndex, () => []).add(s);
@@ -101,14 +115,22 @@ String withCount(String message, num count) =>
     message.replaceAll('#', NumberFormat.decimalPattern('en_US').format(count));
 
 /// `Intl.NumberFormat('en-US', { style: 'currency', maximumFractionDigits: 0 })`.
-String formatPrice(num amount, String currency) =>
-    NumberFormat.simpleCurrency(locale: 'en_US', name: currency.toUpperCase(), decimalDigits: 0).format(amount);
+String formatPrice(num amount, String currency) => NumberFormat.simpleCurrency(
+  locale: 'en_US',
+  name: currency.toUpperCase(),
+  decimalDigits: 0,
+).format(amount);
 
 /// V2's checkout `formatMoney`: "PHP 8,108.79" — the code, then the figure to the currency's own
 /// minor units (none for yen and won, two for most).
 String checkoutMoney(num amount, String currency) {
   final code = currency.toUpperCase();
-  final digits = NumberFormat.simpleCurrency(locale: 'en_US', name: code).decimalDigits ?? 2;
-  final figure = NumberFormat.decimalPatternDigits(locale: 'en_US', decimalDigits: digits).format(amount);
+  final digits =
+      NumberFormat.simpleCurrency(locale: 'en_US', name: code).decimalDigits ??
+      2;
+  final figure = NumberFormat.decimalPatternDigits(
+    locale: 'en_US',
+    decimalDigits: digits,
+  ).format(amount);
   return '$code $figure';
 }

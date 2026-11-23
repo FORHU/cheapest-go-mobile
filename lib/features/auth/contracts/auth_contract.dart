@@ -1,3 +1,4 @@
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/auth/roles.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
 
@@ -81,15 +82,24 @@ class RegisterInput {
   /// **A last name is not required**, because V2 does not require one: its register form
   /// checks `firstName` alone, which is why no "last name is required" message exists to
   /// mirror. Demanding one here turned somebody away that the web would have let in.
-  void validate() {
+  /// [t] comes from the screen, because a contract has no context of its own. Without it the
+  /// English stands, which is what a caller outside a widget tree gets.
+  ///
+  /// These three reach a traveller: the form's own validators catch most of it, but anything
+  /// that gets past them surfaces as this message on the sign-up screen — in English, on a
+  /// Korean screen, which is what #75 photographed.
+  void validate({AppLocalizations? t}) {
     if (!email.contains('@')) {
-      throw ApiError('Enter a valid email', category: ErrorCategory.validation);
+      throw ApiError(t?.auth_emailInvalid ?? 'Enter a valid email',
+          category: ErrorCategory.validation);
     }
     if (password.length < 8) {
-      throw ApiError('Password must be at least 8 characters', category: ErrorCategory.validation);
+      throw ApiError(t?.auth_atLeast8 ?? 'Password must be at least 8 characters',
+          category: ErrorCategory.validation);
     }
     if (firstName.trim().isEmpty) {
-      throw ApiError('First name is required', category: ErrorCategory.validation);
+      throw ApiError(t?.auth_firstNameRequired ?? 'First name is required',
+          category: ErrorCategory.validation);
     }
   }
 

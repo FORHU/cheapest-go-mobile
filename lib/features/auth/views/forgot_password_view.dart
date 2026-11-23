@@ -30,7 +30,7 @@ class _ForgotPasswordViewState extends State<ForgotPasswordView> {
   Future<void> _submit() async {
     FocusScope.of(context).unfocus();
     if (!(_formKey.currentState?.validate() ?? false)) return;
-    final ok = await authStore.resetPassword(_emailController.text.trim());
+    final ok = await authStore.resetPassword(_emailController.text.trim(), t: AppLocalizations.of(context)!);
     if (ok && mounted) {
       setState(() => _sent = true);
     }

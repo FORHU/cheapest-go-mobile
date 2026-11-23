@@ -49,9 +49,16 @@ void main() {
         await tester.pump();
 
         expect(find.textContaining('No places match'), findsNothing);
-        // Answered, so the step can be left: V2 names the step you are going to.
-        expect(find.text('Next: dates'), findsOneWidget);
-        await tester.tap(find.text('Next: dates'));
+        // Answered, so the step can be left. The action sits at the end of the search
+        // field now rather than on a pill below it (#85), so it is found by its arrow.
+        final action = find
+            .ancestor(
+                of: find.byIcon(Icons.arrow_forward_rounded),
+                matching: find.byType(InkWell),
+            )
+            .first;
+        expect(tester.widget<InkWell>(action).onTap, isNotNull);
+        await tester.tap(action);
         await tester.pump();
 
         // On the dates step, and nothing threw on the way — the footer wraps rather than

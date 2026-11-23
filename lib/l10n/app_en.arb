@@ -276,6 +276,17 @@
       "time": {}
     }
   },
+  "@flights_durationParts_hoursMinutes": {
+    "placeholders": {
+      "hours": {},
+      "minutes": {}
+    }
+  },
+  "@flights_durationParts_minutesOnly": {
+    "placeholders": {
+      "minutes": {}
+    }
+  },
   "@flights_filtersPanel_rangeFrom": {
     "placeholders": {
       "label": {}
@@ -284,6 +295,13 @@
   "@flights_filtersPanel_rangeTo": {
     "placeholders": {
       "label": {}
+    }
+  },
+  "@flights_filtersPanel_showCount": {
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
     }
   },
   "@flights_filtersPanel_underHours": {
@@ -1429,6 +1447,8 @@
   "appBanner_title": "Travel smarter with our app",
   "auth_agreePrefix": "By signing up you agree to our",
   "auth_atLeast8": "At least 8 characters",
+  "auth_atLeastOneNumber": "At least one number",
+  "auth_atLeastOneUppercase": "At least one uppercase letter",
   "auth_backToSignIn": "Back to sign in",
   "auth_checkInbox": "Check your inbox",
   "auth_chooseStrong": "Choose a strong password for your account.",
@@ -1473,6 +1493,7 @@
   "auth_signIn_continueWithGoogle": "Continue with Google",
   "auth_signIn_emailLabel": "Email address",
   "auth_signIn_emailPlaceholder": "you@example.com",
+  "auth_signIn_invalidCredentials": "Those details did not match an account",
   "auth_signIn_orDivider": "or",
   "auth_signIn_privacyLink": "Privacy",
   "auth_signIn_terms": "By signing in you agree to our {terms} and {privacy}.",
@@ -2034,6 +2055,9 @@
   "flights_card_stop": "stop",
   "flights_card_stops": "stops",
   "flights_card_viewDeal": "View deal",
+  "flights_durationParts_hoursMinutes": "{hours}h {minutes}m",
+  "flights_durationParts_minutesOnly": "{minutes}m",
+  "flights_errors_upstreamUnavailable": "We couldn't reach the airline to check this fare. Please try again shortly.",
   "flights_filtersPanel_airlines": "Airlines",
   "flights_filtersPanel_anyStops": "Any Stops",
   "flights_filtersPanel_arrival": "Arrival",
@@ -2060,6 +2084,7 @@
   "flights_filtersPanel_selectAllAirlines": "Select all airlines",
   "flights_filtersPanel_selectAllAirports": "Select all airports",
   "flights_filtersPanel_showAll": "Show all",
+  "flights_filtersPanel_showCount": "Show {count, plural, one {# flight} other {# flights}}",
   "flights_filtersPanel_showLess": "Show less",
   "flights_filtersPanel_sortBy": "Sort By",
   "flights_filtersPanel_stops": "Stops",
@@ -2914,12 +2939,23 @@
   "map_searchOnMap": "Search on map…",
   "map_viewDeal": "View Deal",
   "map_viewOnGoogleMaps": "View on Google Maps →",
+  "mobile_a11y_addOne": "Add one {label}",
+  "mobile_a11y_removeOne": "Remove one {label}",
   "mobile_account_appTheme": "App Theme",
+  "mobile_account_createAccount": "Create account",
+  "mobile_account_guestTitle": "Traveller account",
   "mobile_account_helpLegal": "HELP & LEGAL",
   "mobile_account_logOut": "Log Out",
   "mobile_account_member": "MEMBER",
   "mobile_account_preferences": "PREFERENCES",
+  "mobile_account_resetDemo": "Reset demo data",
+  "mobile_account_resetDemoBody": "Bookings made on this phone and saved stays will be removed.",
+  "mobile_account_resetDemoConfirm": "Reset demo data?",
+  "mobile_account_resetDemoDone": "Demo data reset",
+  "mobile_account_resetDemoHint": "Removes test bookings and saved stays; keeps the sample past trips.",
   "mobile_account_savedTrips": "SAVED TRIPS",
+  "mobile_account_screenTitle": "Profile & account",
+  "mobile_account_signInPrompt": "Sign in to hold rates and manage your bookings",
   "mobile_account_tagline": "Stays and golf near your arrival airport",
   "mobile_account_themeMode": "{mode} mode",
   "mobile_airports_noStaysYet": "No stays yet",
@@ -2928,16 +2964,23 @@
   "mobile_airports_openMap": "Open the map",
   "mobile_airports_seeAllStays": "{count, plural, =1{See all 1 stay near {code}} other{See all {count} stays near {code}}}",
   "mobile_airports_tryAnother": "Try another airport.",
+  "mobile_checkout_currencyUnavailable": "We could not confirm the price in your currency just now. Please try again in a moment.",
   "mobile_checkout_doNotPayAgain": "{message} Do not pay again — we will email {email} as soon as the hotel confirms.",
   "mobile_checkout_egLastName": "e.g. Doe",
   "mobile_checkout_egPhone": "e.g. 912 345 6789",
   "mobile_checkout_priceCameDown": "The price came down from {from} to {to}.",
+  "mobile_checkout_priceChangedReview": "The price changed while we were booking. Our team will confirm the final price with you.",
   "mobile_checkout_priceWentUp": "The price went up from {from} to {to}.",
   "mobile_checkout_roomSubstituted": "The hotel offered {room} instead of the room you chose.",
   "mobile_checkout_stayPlusFee": "{total} for the stay, plus {fee} service fee.",
+  "mobile_errors_accessDenied": "You do not have access to this.",
+  "mobile_errors_network": "Check your connection and try again.",
+  "mobile_errors_sessionExpired": "Your session has expired. Please sign in again.",
   "mobile_flights_allShown": "{count, plural, =1{All 1 flight shown} other{All {count} flights shown}}",
   "mobile_flights_bestValue": "{cabin} · Best Value",
   "mobile_flights_discoveringMore": "DISCOVERING MORE ({shown} / {total})",
+  "mobile_flights_fareOption": "Option",
+  "mobile_flights_fareStandard": "Standard",
   "mobile_flights_selectFare": "Select {fare}",
   "mobile_flights_stopsCount": "{count, plural, one {# stop} other {# stops}}",
   "mobile_flights_thisFare": "this fare",
@@ -2958,6 +3001,7 @@
   "mobile_hotels_checkOutAt": "Check-out {time}",
   "mobile_hotels_freeShuttle": "{distance} · free shuttle",
   "mobile_hotels_freeUntil": "Free until {date}",
+  "mobile_hotels_noRatingYet": "No rating yet",
   "mobile_hotels_noneFoundIn": "We could not find hotels in {place}",
   "mobile_hotels_nothingNearby": "Nothing of this kind nearby",
   "mobile_hotels_partnersUnreachable": "We could not reach our hotel partners just now.",
@@ -2966,6 +3010,11 @@
   "mobile_hotels_reviewsCount": "{count} reviews",
   "mobile_hotels_saveStay": "Save this stay",
   "mobile_hotels_searchingPrices": "Checking availability and prices",
+  "mobile_hotels_sortCheapest": "Cheapest first",
+  "mobile_hotels_sortMostReviewed": "Most reviewed",
+  "mobile_hotels_sortPriceHighLow": "Price: high to low",
+  "mobile_hotels_sortRecommended": "Recommended",
+  "mobile_hotels_sortTopRated": "Top rated",
   "mobile_hotels_view": "View",
   "mobile_hotels_whatThisPlaceOffers": "What this place offers",
   "mobile_hotels_whatsNearby": "What's nearby",
@@ -2981,6 +3030,10 @@
   "mobile_map_no3d_lowMemory": "This phone can't run it (needs 6 GB of memory)",
   "mobile_map_no3d_oldAndroid": "This phone can't run it (needs Android 10 or newer)",
   "mobile_map_no3d_tooSlow": "Turned off: it ran too slowly here",
+  "mobile_map_noCoursesNear": "No courses near {code} yet.",
+  "mobile_map_noStaysNear": "No stays near {code} yet.",
+  "mobile_map_noneYet": "None yet",
+  "mobile_map_openAirportHub": "Open the {code} airport hub",
   "mobile_map_openTheMap": "Open the map",
   "mobile_map_previousAirport": "Previous airport",
   "mobile_map_seeRoomsAndBook": "See rooms & book",
@@ -2990,13 +3043,35 @@
   "mobile_nav_stayAndPlay": "Stay & Play",
   "mobile_shared_photo": "Photo",
   "mobile_stay_nights": "{count, plural, =1{1 night} other{{count} nights}}",
+  "mobile_tracker_airportClock": "{time} {airport} time",
   "mobile_tracker_altitude": "Altitude",
   "mobile_tracker_boarding": "Boarding",
+  "mobile_tracker_boardingDepartsIn": "Boarding · departs in {time}",
+  "mobile_tracker_daysHours": "{days}d {hours}h",
+  "mobile_tracker_departsIn": "Departs in {time}",
+  "mobile_tracker_distanceToGo": "{distance} nm to go",
+  "mobile_tracker_flightOfCount": "{index} of {total}",
+  "mobile_tracker_groundSpeed": "Ground speed",
   "mobile_tracker_inAir": "In the air",
   "mobile_tracker_landed": "Landed",
+  "mobile_tracker_landedAt": "{time} local time · {ago} ago",
+  "mobile_tracker_landedIn": "Landed in {city}",
+  "mobile_tracker_nearbyStaysAndGolf": "Stays & golf near {airport}",
   "mobile_tracker_nextFlight": "Next flight",
   "mobile_tracker_noFlights": "No flights to track",
+  "mobile_tracker_noFlightsBody": "Book a flight and follow it here, even offline in the air.",
+  "mobile_tracker_offlineFailed": "Offline map didn't save",
+  "mobile_tracker_offlineNone": "Save the map for offline use in the air",
+  "mobile_tracker_offlineSaved": "Offline map saved · {size}",
+  "mobile_tracker_offlineSaving": "Saving offline map · {percent}%",
+  "mobile_tracker_saveMap": "Save",
   "mobile_tracker_scheduled": "Scheduled",
+  "mobile_tracker_simulate": "Simulate this flight (demo)",
+  "mobile_tracker_sourceGps": "Your position from GPS",
+  "mobile_tracker_sourceNoPermission": "Estimated from the schedule. Allow location for your exact position.",
+  "mobile_tracker_sourceSchedule": "Estimated from the schedule until GPS gets a fix",
+  "mobile_tracker_stopSimulation": "Stop simulation",
+  "mobile_tracker_stopTracking": "Stop tracking",
   "mobile_tracker_timeLeft": "Time left",
   "mobile_trips_awaitingProperty": "Waiting for the property to confirm your booking.",
   "mobile_trips_awaitingTicket": "Waiting for the airline to issue your ticket.",

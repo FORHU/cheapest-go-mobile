@@ -1,12 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
-<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
+<!-- The Android launch window, which is what is on screen between tapping the icon and
+     Flutter's first frame. It is painted to match `_StartingView`: the same white and the
+     same mark, in the same place, so the handover from the OS to the app is invisible.
 
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+     It used to be plain white, so the brand appeared only once Flutter was up — which on a
+     cold start is the part of the launch that feels longest. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/ic_launcher_foreground" />
+    </item>
 </layer-list>

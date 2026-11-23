@@ -48,6 +48,13 @@ flutter:
     # landing shows the same places it does. See #38.
     - assets/images/destinations/
     # AirangGo brand marks: the launcher source and the in-app wordmark.
+    #
+    # `airanggo_icon_fg.png` is the adaptive icon's foreground, the same artwork Android
+    # draws in the launch window. The splash shows it so the handover from that window is
+    # invisible — which only works if it is bundled, and it was not: declaring the folder's
+    # siblings individually meant the splash asked for a file the APK did not carry, and
+    # the image service threw on every launch.
+    - assets/images/airanggo_icon_fg.png
     - assets/images/airanggo_mark.png
     - assets/images/airanggo_wordmark.png
 
