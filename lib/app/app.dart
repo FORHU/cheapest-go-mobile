@@ -3,7 +3,9 @@ import 'package:intl/intl.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/app/router/app_router.dart';
+import 'package:cheapest_go_mobile/app/support_chat.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
+import 'package:cheapest_go_mobile/features/support/components/support_widget.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_overlay.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/stores/bookings_store.dart';
@@ -32,7 +34,11 @@ class _CheapestGoAppState extends State<CheapestGoApp> with WidgetsBindingObserv
   /// Back in the app (say, the evening before a flight): top up offline maps.
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state == AppLifecycleState.resumed) offlineRouteMaps.refresh(bookingsStore.flights);
+    if (state == AppLifecycleState.resumed) {
+      offlineRouteMaps.refresh(bookingsStore.flights);
+      // The OS has very likely cut the chat's stream while the app was away.
+      supportChatStore.resumed();
+    }
   }
 
   @override
@@ -75,7 +81,7 @@ class _CheapestGoAppState extends State<CheapestGoApp> with WidgetsBindingObserv
           // while still being outside every route.
           builder: (context, child) => TipScope(
             tip: homeTip(AppLocalizations.of(context)!),
-            child: child ?? const SizedBox.shrink(),
+            child: SupportLayer(child: child ?? const SizedBox.shrink()),
           ),
         );
       },
@@ -83,3 +89,33 @@ class _CheapestGoAppState extends State<CheapestGoApp> with WidgetsBindingObserv
   }
 }
 
+
+/// Support Chat over every screen, as V2 mounts its widget in the locale layout (#60).
+///
+/// Here rather than in the tab shell because V2 shows it on every page — a hotel, a checkout,
+/// a booking — not only on the three the bar reaches. Its own [Overlay] because it sits above
+/// the router's, and the composer's text field needs one for its selection handles.
+class SupportLayer extends StatelessWidget {
+  const SupportLayer({required this.child, super.key});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Overlay(
+      initialEntries: [
+        OverlayEntry(
+          builder: (context) => Stack(
+            children: [
+              Positioned.fill(child: child),
+              ValueListenableBuilder<int>(
+                valueListenable: popupsShowing,
+                builder: (context, popups, _) => SupportWidget(store: supportChatStore, visible: popups == 0),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}

@@ -4,6 +4,7 @@ import 'package:flutter_stripe/flutter_stripe.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
 import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
+import 'package:cheapest_go_mobile/app/support_chat.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
@@ -43,6 +44,8 @@ Future<void> main() async {
   // Keeps the gate's onboarding answer in step with who is signed in. Wired before the
   // session is restored, so the sign-in that restoring produces is one this is listening for.
   wireGateToAuth();
+  // Support Chat opens to an account that is through the gate, and forgets it on sign-out.
+  wireSupportChat();
   // Fire-and-forget session validation on startup
   authStore.restoreSession();
   runApp(const CheapestGoApp());
