@@ -135,6 +135,18 @@ class _StepSearchState extends State<StepSearch>
   void _onTyped(String value, {required bool airports}) {
     _debounce?.cancel();
     final ask = ++_ask;
+
+    // The answer belongs to the text that produced it. Changing the text — editing it,
+    // clearing it, typing somewhere else entirely — makes the place that was chosen no
+    // longer the place being asked about, so it is dropped here rather than left behind.
+    //
+    // It used to survive: clear the field after choosing Seoul and `_place` was still
+    // Seoul, so Next advanced and the search ran on a destination the traveller had
+    // visibly removed. See #84. Setting the field from `_pick` does not come through
+    // here — a controller assignment does not call `onChanged` — so choosing a place
+    // cannot clear the choice it has just made.
+    _clearAnswer();
+
     _debounce = Timer(const Duration(milliseconds: 250), () async {
       if (!mounted || ask != _ask) return;
       setState(() => _looking = true);
@@ -147,6 +159,37 @@ class _StepSearchState extends State<StepSearch>
       });
     });
   }
+
+  /// Forgets whichever place this step holds, and redraws so Next follows it.
+  void _clearAnswer() {
+    setState(() {
+      switch (_step) {
+        case _StepId.where:
+          _place = null;
+        case _StepId.from:
+          _origin = null;
+        case _StepId.to:
+          _destination = null;
+        default:
+          break;
+      }
+    });
+  }
+
+  /// The three steps that are answered by naming a place, and so carry a search field.
+  ///
+  /// They are the steps where "is the field empty" is a question with a meaning: the others
+  /// are answered by tapping a card, a day or a counter, and have no text to be empty.
+  bool get _isPlaceStep =>
+      _step == _StepId.where || _step == _StepId.from || _step == _StepId.to;
+
+  /// Whether Next may be pressed at all, which is not the same as whether it will advance.
+  ///
+  /// An empty field means nothing has been asked for yet, so the action is dead (#85). Typed
+  /// text that matches nothing chosen is a different state: the action is live and says what
+  /// it still wants, because a traveller who has typed has asked a question and deserves an
+  /// answer rather than a control that has gone quiet on them (#78).
+  bool get _offered => !_isPlaceStep || _query.text.trim().isNotEmpty;
 
   bool get _answered => switch (_step) {
     _StepId.trip => _roundTrip != null,
@@ -223,11 +266,20 @@ class _StepSearchState extends State<StepSearch>
   ///
   /// V2's `selectDay` still restarts on that third tap. This is a deliberate divergence from
   /// the Design Source rather than an oversight: the same report belongs on the web.
-  DateTimeRange _extendRange(DateTime day) {
+  /// Null when the tap cleared the stay rather than changed it.
+  DateTimeRange? _extendRange(DateTime day) {
+    final current = _dates;
+
+    // Tapping the day the stay starts on takes it back off, whether that day is the whole
+    // selection or one end of a range. Dates are optional here — the note under the step
+    // says so, and skipping them has the app choose — so having chosen a day and changed
+    // your mind, there has to be a way back to none. There was not: every tap replaced the
+    // selection with another one and the only escape was to leave the step. See #83.
+    if (current != null && day == DateUtils.dateOnly(current.start)) return null;
+
     if (widget.mode == StepMode.flights && _roundTrip == false) {
       return DateTimeRange(start: day, end: day);
     }
-    final current = _dates;
     if (current == null || !day.isAfter(current.start)) {
       return DateTimeRange(start: day, end: day);
     }
@@ -296,7 +348,9 @@ class _StepSearchState extends State<StepSearch>
         ),
         SizedBox(height: TwSpace.of(3)),
         _body(context, t, dark),
-        SizedBox(height: TwSpace.of(4)),
+        // Nothing to leave room for on the first place step, where Back has no step to go
+        // back to and Next now sits in the field.
+        if (_index > 0 || !_isPlaceStep) SizedBox(height: TwSpace.of(4)),
         // Wrap, not Row: V2 sets `flexWrap: wrap` on this pair, and it is needed —
         // "Back" beside "Next: travellers" is four pixels too wide for a phone, and a
         // Row answers that with the striped overflow bar rather than a second line.
@@ -314,15 +368,19 @@ class _StepSearchState extends State<StepSearch>
                 icon: Icons.arrow_back_rounded,
                 onPressed: () => setState(() => _index--),
               ),
-            GradientPill(
-              label: _nextLabel(t),
-              icon: _index == _flow.length - 1 ? Icons.search_rounded : null,
-              trailingIcon: _index == _flow.length - 1
-                  ? null
-                  : Icons.arrow_forward_rounded,
-              // Never disabled. See `_shake`: an unanswered step is told, not greyed out.
-              onPressed: _next,
-            ),
+            // On a place step this action lives at the end of the search field instead,
+            // beside the thing it acts on (#85). Back stays here either way: it undoes the
+            // step rather than submitting it, so it does not belong in the field.
+            if (!_isPlaceStep)
+              GradientPill(
+                label: _nextLabel(t),
+                icon: _index == _flow.length - 1 ? Icons.search_rounded : null,
+                trailingIcon: _index == _flow.length - 1
+                    ? null
+                    : Icons.arrow_forward_rounded,
+                // Never disabled. See `_shake`: an unanswered step is told, not greyed out.
+                onPressed: _next,
+              ),
           ],
         ),
         if (_note(t) case final note?) ...[
@@ -474,6 +532,19 @@ class _StepSearchState extends State<StepSearch>
                       hintStyle: const TextStyle(color: Colors.white54),
                       prefixIcon: const Icon(Icons.search_rounded, size: 18),
                       prefixIconColor: Colors.white70,
+                      // The step's own action, at the end of the thing it acts on (#85).
+                      // Dead while there is nothing typed, because an empty field is a
+                      // question nobody has asked yet.
+                      suffixIcon: _FieldAction(
+                        tooltip: _nextLabel(t),
+                        enabled: _offered,
+                        last: _index == _flow.length - 1,
+                        onPressed: _next,
+                      ),
+                      suffixIconConstraints: const BoxConstraints(
+                        minWidth: 56,
+                        minHeight: 40,
+                      ),
                       // The app theme fills every input with the page
                       // surface, which on the Stage is white over the
                       // photograph — the field read as a solid white
@@ -788,6 +859,75 @@ class _PickGrid extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// The step's action, drawn at the end of the search field rather than under the panel.
+///
+/// V2 keeps Back and Next together below the card, and that is what this was. QA asked for
+/// the forward action to sit with the field it submits (#85), which puts the one thing to
+/// press where the answer is being typed. Back stays below: it leaves the step rather than
+/// completing it, and does not belong inside the question.
+///
+/// Disabled is a real state here, unlike on the pill it replaces. An empty field is a
+/// question nobody has asked yet, so there is nothing to carry forward and the control says
+/// so by going quiet. Once there is text it is live even when nothing has been chosen from
+/// the list — pressing it then is answered by the panel's nudge, not by silence (#78).
+class _FieldAction extends StatelessWidget {
+  const _FieldAction({
+    required this.tooltip,
+    required this.enabled,
+    required this.last,
+    required this.onPressed,
+  });
+
+  final String tooltip;
+  final bool enabled;
+
+  /// The final step searches rather than advancing, and carries the magnifier for it.
+  final bool last;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Semantics(
+        button: true,
+        enabled: enabled,
+        label: tooltip,
+        child: Tooltip(
+          message: tooltip,
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: Ink(
+              decoration: BoxDecoration(
+                gradient: enabled ? brandGradient : null,
+                color: enabled ? null : const Color(0x1FFFFFFF),
+                shape: BoxShape.circle,
+              ),
+              child: InkWell(
+                onTap: enabled ? onPressed : null,
+                customBorder: const CircleBorder(),
+                child: SizedBox(
+                  width: 40,
+                  height: 40,
+                  child: Center(
+                    child: Icon(
+                      last ? Icons.search_rounded : Icons.arrow_forward_rounded,
+                      size: 18,
+                      color: enabled ? Colors.white : Colors.white38,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
