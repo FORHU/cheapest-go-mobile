@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
+import 'package:cheapest_go_mobile/app/startup.dart';
 import 'package:cheapest_go_mobile/app/support_chat.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
@@ -354,7 +355,7 @@ class _StartingView extends StatelessWidget {
         child: Text(t.nav_signOut),
       ),
     ];
-  }
+ }
 }
 
 /// The app shell: a shared header, the current branch, and V2's bottom bar.
