@@ -227,13 +227,12 @@ class _StartingView extends StatelessWidget {
   const _StartingView();
 
   /// White in both themes, and the same white `@color/splash_background` paints the Android
-  /// launch window.
+  /// launch window and `windowSplashScreenBackground` the Android 12 one.
   ///
-  /// The brand marks are drawn dark-on-light, so a dark splash would lose half of each. The
-  /// app opens light whatever the handset is set to (ADR-0037), which makes one background
-  /// the honest answer rather than a compromise — and matching the launch window is what
-  /// makes the handover invisible: the icon is already on screen when Flutter takes over,
-  /// in the same place and at the same size, so nothing flashes and nothing jumps.
+  /// This is the whole of the handover now: the system shows the icon, this screen shows the
+  /// background it was shown on, and nothing moves between them. The brand marks are drawn
+  /// dark-on-light anyway, and the app opens light whatever the handset is set to
+  /// (ADR-0037), so one background is the honest answer rather than a compromise.
   static const _ground = Color(0xFFFFFFFF);
 
   @override
@@ -261,46 +260,26 @@ class _StartingView extends StatelessWidget {
             );
           }
 
-          // A Stack so the icon can hold the exact middle of the screen while the spinner
-          // sits under it. In a Column the pair would be centred together, which lifts the
-          // icon off the centre by half the spinner — and the one thing this screen must
-          // get right is that the icon does not move.
-          return Stack(
-            children: [
-              // The same artwork the Android launch window is already showing, at the same
-              // size, in the same place — so when Flutter takes over, nothing changes.
-              //
-              // 108 logical pixels is not a guess and not tuned to one handset: an adaptive
-              // icon's foreground is 108dp square at every density bucket, which is what the
-              // launch window draws at 1:1. Matching it in dp matches it everywhere.
-              //
-              // `airanggo_icon_fg.png` and not `airanggo_mark.png`: the mark is the artwork
-              // cropped to its glyphs, so drawn at 108 it would be noticeably larger than
-              // the launch window's, which carries the icon's safe-zone padding.
-              //
-              // No SafeArea around it. The launch window is the whole window, system bars
-              // included, so its centre is the screen's centre; inset this layer and the
-              // icon would hop down by half the status bar at the handover.
-              Center(
-                child: Image.asset(
-                  'assets/images/airanggo_icon_fg.png',
-                  width: 108,
-                  height: 108,
-                  filterQuality: FilterQuality.medium,
-                ),
-              ),
-              // Below the icon, and the only thing on this screen the launch window does
-              // not have: a sign that something is happening, for the cold start slow
-              // enough to need one.
-              const Align(
-                alignment: Alignment(0, 0.28),
-                child: SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2.4),
-                ),
-              ),
-            ],
+          // No logo here. The brand has already been shown — by the launcher animation and
+          // then the launch window — and showing it a third time is not continuity, it is
+          // the logo again at a different size.
+          //
+          // This screen drew it too at first, matched to the launch window at 108dp, on the
+          // theory that identical frames would hand over invisibly. On a handset they did
+          // not read as one frame; they read as the logo twice, the first pass soft and
+          // large from the system's own zoom. Matching two stages we control does nothing
+          // about a third we do not, and the way to stop a logo appearing twice is to draw
+          // it once.
+          //
+          // What is left is the same white the launch window is painted, so the handover is
+          // a background that does not change, and a spinner for the cold start slow enough
+          // to need one.
+          return const Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(strokeWidth: 2.4),
+            ),
           );
         },
       ),

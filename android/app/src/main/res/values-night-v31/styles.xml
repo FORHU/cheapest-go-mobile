@@ -9,7 +9,7 @@
 <resources>
     <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowSplashScreenBackground">@color/splash_background</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_icon</item>
     </style>
     <!-- See the note in values/styles.xml: the payment sheet needs a Material theme. -->
     <style name="NormalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
