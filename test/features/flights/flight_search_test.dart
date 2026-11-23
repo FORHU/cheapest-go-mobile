@@ -162,12 +162,25 @@ void main() {
       await open(tester);
       expect(find.text('Search Error'), findsOneWidget);
       expect(
-        find.textContaining('We could not reach the airlines'),
+        find.textContaining("We couldn't reach the airline to check this fare"),
         findsOneWidget,
       );
       expect(find.text('No flights found'), findsNothing);
     },
   );
+
+  testWidgets('a provider outage follows the selected locale', (tester) async {
+    api.providersFailed = true;
+    await openKorean(tester);
+
+    expect(
+      find.text(
+        '항공사에 연락해 요금을 확인할 수 없습니다. 잠시 후 다시 시도해 주세요.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('We could not reach the airlines'), findsNothing);
+  });
 
   testWidgets(
     'a route nobody can resolve is refused before the airline is asked',

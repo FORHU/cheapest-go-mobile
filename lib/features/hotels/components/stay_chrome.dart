@@ -75,15 +75,26 @@ class StaySkin {
 /// they are literals here too. Translating them on mobile only would put the two products out
 /// of step, which is the thing this port exists to prevent; they move when V2's move.
 enum StaySort {
-    recommended('Recommended'),
-    priceLow('Cheapest first'),
-    rating('Top Rated'),
-    mostReviewed('Most Reviewed'),
-    priceHigh('Price: High to Low');
+    recommended,
+    priceLow,
+    rating,
+    mostReviewed,
+    priceHigh;
 
-    const StaySort(this.label);
-
-    final String label;
+    /// The words, in the language the app renders in.
+    ///
+    /// They were const English literals mirroring V2's `search-chrome.ts`, on the reasoning
+    /// that translating only here would put the two products out of step. A brand locked to
+    /// one language (ADR-0007) settles it the other way: five English chips inside an
+    /// otherwise Korean sheet is V2's screen contradicting the product, which is what
+    /// **Token Authority** covers.
+    String labelIn(AppLocalizations t) => switch (this) {
+        StaySort.recommended => t.mobile_hotels_sortRecommended,
+        StaySort.priceLow => t.mobile_hotels_sortCheapest,
+        StaySort.rating => t.mobile_hotels_sortTopRated,
+        StaySort.mostReviewed => t.mobile_hotels_sortMostReviewed,
+        StaySort.priceHigh => t.mobile_hotels_sortPriceHighLow,
+    };
 }
 
 /// The words V2 puts to an **aggregate score** or a review's own, so one number is not called

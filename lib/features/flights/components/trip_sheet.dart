@@ -327,7 +327,7 @@ class _TripSheetState extends State<TripSheet> {
                                 ),
                                 stepper(
                                   LucideIcons.minus,
-                                  'Remove ${c.label}',
+                                  AppLocalizations.of(context)!.mobile_a11y_removeOne(c.label),
                                   c.value > c.min,
                                   () => step(c.key, -1),
                                 ),
@@ -345,7 +345,7 @@ class _TripSheetState extends State<TripSheet> {
                                 ),
                                 stepper(
                                   LucideIcons.plus,
-                                  'Add ${c.label}',
+                                  AppLocalizations.of(context)!.mobile_a11y_addOne(c.label),
                                   c.value < c.max,
                                   () => step(c.key, 1),
                                 ),

@@ -95,7 +95,16 @@ class AirportHubSheet extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 10, 16, 4),
               child: SegmentedTabs(
-                labels: [AppLocalizations.of(context)!.legal_content_refund_overview_title, 'Stays ${stays.length}', 'Golf ${courses.length}', AppLocalizations.of(context)!.about_flightsTitle],
+                labels: [
+                  AppLocalizations.of(context)!.legal_content_refund_overview_title,
+                  // The word, then the count, as the tab has always read. V2 has no key
+                  // that pairs them, and its own words for both are already here — the
+                  // same two the home screen's search tabs use, so the map names a stay
+                  // the way the rest of the app does.
+                  '${AppLocalizations.of(context)!.landing_search_searchMode_stays} ${stays.length}',
+                  '${AppLocalizations.of(context)!.landing_search_searchMode_golf} ${courses.length}',
+                  AppLocalizations.of(context)!.about_flightsTitle,
+                ],
                 selected: MapFilter.values.indexOf(filter),
                 onChanged: (i) => onFilterChanged(MapFilter.values[i]),
               ),
@@ -103,8 +112,16 @@ class AirportHubSheet extends StatelessWidget {
             Flexible(
               child: switch (filter) {
                 MapFilter.overview => _Overview(airport: airport, stays: stays, courses: courses, onFilterChanged: onFilterChanged, onOpenHub: onOpenHub),
-                MapFilter.stays => _PlaceList(places: stays, empty: 'No stays near ${airport.code} yet.', onTap: onPlaceSelected),
-                MapFilter.golf => _PlaceList(places: courses, empty: 'No courses near ${airport.code} yet.', onTap: onPlaceSelected),
+                MapFilter.stays => _PlaceList(
+                  places: stays,
+                  empty: AppLocalizations.of(context)!.mobile_map_noStaysNear(airport.code),
+                  onTap: onPlaceSelected,
+                ),
+                MapFilter.golf => _PlaceList(
+                  places: courses,
+                  empty: AppLocalizations.of(context)!.mobile_map_noCoursesNear(airport.code),
+                  onTap: onPlaceSelected,
+                ),
                 MapFilter.flights => _FlightList(offers: flightsInto(catalog, airport), catalog: catalog, onTap: onBookFlight),
               },
             ),
@@ -159,7 +176,12 @@ class _Overview extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          AppGradientButton(label: 'Open the ${airport.code} airport hub', icon: Icons.arrow_forward_rounded, height: 48, onPressed: onOpenHub),
+          AppGradientButton(
+            label: AppLocalizations.of(context)!.mobile_map_openAirportHub(airport.code),
+            icon: Icons.arrow_forward_rounded,
+            height: 48,
+            onPressed: onOpenHub,
+          ),
         ],
       ),
     );
@@ -190,14 +212,20 @@ class _StatTile extends StatelessWidget {
           UiLabel(label),
           const SizedBox(height: 4),
           if (amount == null)
-            Text('None yet', style: TextStyle(fontSize: 14, color: c.textMuted))
+            Text(
+              AppLocalizations.of(context)!.mobile_map_noneYet,
+              style: TextStyle(fontSize: 14, color: c.textMuted),
+            )
           else
             Text.rich(
               TextSpan(
                 children: [
-                  TextSpan(text: 'from ', style: TextStyle(fontSize: 12, color: c.textSecondary)),
+                  // One span, not a grey "from" in front of the figure: Korean puts its
+                  // "부터" after the amount and Japanese its "〜", so a fixed prefix would
+                  // read backwards in two of the four languages. V2's own key already
+                  // carries the figure, which is what lets each language place it.
                   TextSpan(
-                    text: formatPeso(amount),
+                    text: AppLocalizations.of(context)!.landing_journey_strip_from(formatPeso(amount)),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: golf ? c.onGolfSoft : c.onSecondary),
                   ),
                   TextSpan(text: ' $suffix', style: TextStyle(fontSize: 11, color: c.textMuted)),

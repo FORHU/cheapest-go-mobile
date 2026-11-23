@@ -60,12 +60,9 @@ String formatDuration(int? minutes, {AppLocalizations? t}) {
   return h > 0 ? '${h}h ${m}m' : '${m}m';
 }
 
-String cabinLabel(String? cabinClass) =>
-    (cabinClass == null || cabinClass.isEmpty ? 'economy' : cabinClass)
-        .replaceAll('_', ' ')
-        .split(' ')
-        .map((w) => w.isEmpty ? w : '${w[0].toUpperCase()}${w.substring(1)}')
-        .join(' ');
+// `cabinLabel` was here: it title-cased the raw cabin code into English, beside this function
+// which says the same thing in the app's own language. Two ways to name one thing is how the
+// flight card came to print "Economy" on a Korean screen. There is one now.
 
 String cabinName(AppLocalizations t, String cabin) => switch (cabin) {
   'premium_economy' => t.landing_search_cabinClass_premiumEconomy,

@@ -47,6 +47,7 @@ class _ResetPasswordViewState extends State<ResetPasswordView> {
     final ok = await authStore.confirmPasswordReset(
       widget.token,
       _passwordController.text,
+      t: AppLocalizations.of(context)!,
     );
     if (ok && mounted) setState(() => _done = true);
   }

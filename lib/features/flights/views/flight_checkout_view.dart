@@ -229,7 +229,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
               ? t.flights_errors_upstreamUnavailable
               : e.message.isNotEmpty
               ? e.message
-              : 'Booking failed. Please try again.',
+              : t.errors_generic,
         );
       }
     } finally {

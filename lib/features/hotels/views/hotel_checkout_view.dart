@@ -225,6 +225,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
     /// The sheet is Stripe's own: it carries 3-D Secure, which is where a hand-rolled card
     /// form fails, and it never hands the number to this app.
     Future<void> _pay() async {
+        final t = AppLocalizations.of(context)!;
         final quote = _quote;
         final hotel = _hotel;
         if (quote == null || hotel == null) return;
@@ -241,6 +242,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
             // Who is staying goes with this call as well as with confirm, so api-v2 can
             // finish the booking from Stripe's own event if this app dies in between.
             final intent = await checkoutApi.createPayment(
+                t: t,
                 quote: quote,
                 firstName: _firstName.text.trim(),
                 lastName: _lastName.text.trim(),
@@ -265,6 +267,7 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
             // Paid. The booking is made from here — api-v2 reserves with the supplier and
             // sends the confirmation email with the receipt, so nothing on this side has to.
             final outcome = await checkoutApi.confirm(
+                t: t,
                 paymentIntentId: intent.paymentIntentId,
                 quote: quote,
                 firstName: _firstName.text.trim(),

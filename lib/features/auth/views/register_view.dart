@@ -46,6 +46,8 @@ class _RegisterViewState extends State<RegisterView> {
         firstName: _firstNameController.text.trim(),
         lastName: _lastNameController.text.trim(),
       ),
+      // So a failure speaks the screen's language rather than the server's (#75).
+      t: AppLocalizations.of(context)!,
     );
     if (ok && mounted) {
       context.go('/');

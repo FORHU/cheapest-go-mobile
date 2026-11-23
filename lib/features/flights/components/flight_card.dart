@@ -568,7 +568,7 @@ class _FareOptions extends StatelessWidget {
     final skin = FlightSkin.of(context);
 
     Widget option(FlightFare o, {required bool current}) {
-      final name = o.brandedFare?.label ?? (current ? 'Standard' : 'Option');
+      final name = o.brandedFare?.label ?? (current ? t.mobile_flights_fareStandard : t.mobile_flights_fareOption);
       final cabin = o.segments.isEmpty
           ? 'economy'
           : o.segments.first.cabinClass;
@@ -606,8 +606,8 @@ class _FareOptions extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               current
-                  ? t.mobile_flights_bestValue(cabinLabel(cabin))
-                  : cabinLabel(cabin),
+                  ? t.mobile_flights_bestValue(cabinName(t, cabin))
+                  : cabinName(t, cabin),
               style: TextStyle(fontSize: 12, color: skin.muted),
             ),
             const SizedBox(height: 8),

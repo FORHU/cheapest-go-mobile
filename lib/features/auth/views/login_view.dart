@@ -38,7 +38,7 @@ class _LoginViewState extends State<LoginView> {
     final ok = await authStore.login(
       _emailController.text.trim(),
       _passwordController.text,
-      invalidCredentialsMessage: t.auth_signIn_invalidCredentials,
+      t: t,
     );
     if (ok && mounted) {
       context.go('/');
@@ -94,7 +94,7 @@ class _LoginViewState extends State<LoginView> {
                         _GoogleButton(
                           enabled: !loading,
                           onPressed: () async {
-                            final ok = await authStore.signInWithGoogle();
+                            final ok = await authStore.signInWithGoogle(t: AppLocalizations.of(context)!);
                             if (ok && context.mounted) context.go('/');
                           },
                         ),

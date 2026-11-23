@@ -40,10 +40,26 @@ void main() {
       final t = await AppLocalizations.delegate.load(const Locale('ko'));
       final invalidCredentials = routeError(
         ApiError('Invalid credentials', category: ErrorCategory.auth, code: 'INVALID_CREDENTIALS'),
-        invalidCredentialsMessage: t.auth_signIn_invalidCredentials,
+        t: t,
       );
 
       expect(invalidCredentials.toast, '입력하신 정보와 일치하는 계정을 찾을 수 없습니다');
+
+      // #75 asked for the login error, and a wrong password is not the only one a sign-in
+      // screen shows. These three were left in English when only the credentials branch took
+      // an injected message, and a tester with no signal meets the network one first.
+      expect(
+        routeError(ApiError('x', category: ErrorCategory.auth), t: t).toast,
+        '로그인이 만료되었습니다. 다시 로그인해 주세요.',
+      );
+      expect(
+        routeError(ApiError('x', category: ErrorCategory.forbidden), t: t).toast,
+        '이 항목에 접근할 권한이 없습니다.',
+      );
+      expect(
+        routeError(ApiError('x', category: ErrorCategory.network), t: t).toast,
+        '연결 상태를 확인한 뒤 다시 시도해 주세요.',
+      );
       expect(passwordRules(t).map((rule) => rule.label), ['8자 이상', '대문자를 하나 이상 포함', '숫자를 하나 이상 포함']);
     });
 

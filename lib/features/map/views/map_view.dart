@@ -1092,7 +1092,9 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
       onDownloadMap: () => offlineRouteMaps.download(flight.booking),
       onExitTracking: () => _setTracking(false),
       onNextFlight: flights.length > 1 ? _nextFlight : null,
-      flightLabel: flights.length > 1 ? '${i + 1} of ${flights.length}' : null,
+      flightLabel: flights.length > 1
+          ? AppLocalizations.of(context)!.mobile_tracker_flightOfCount(i + 1, flights.length)
+          : null,
       onViewDestinationHub: flight.hasHub(widget.catalog) ? () => _exploreDestination(flight) : null,
       onSimulate: kDemoTools ? () => _toggleSimulation(flight) : null,
       simulating: flightSimulator.isRunning(flight.reference),
@@ -1119,7 +1121,7 @@ class _ModeSwitch extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            for (final (on, label, icon) in [(false, 'Airports', Icons.place_rounded), (true, 'My flights', Icons.flight_rounded)])
+            for (final (on, label, icon) in [(false, AppLocalizations.of(context)!.mobile_map_airports, Icons.place_rounded), (true, AppLocalizations.of(context)!.mobile_map_myFlights, Icons.flight_rounded)])
               Semantics(
                 selected: tracking == on,
                 button: true,
