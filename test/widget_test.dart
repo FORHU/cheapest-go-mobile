@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
+import 'package:cheapest_go_mobile/app/startup.dart';
 import 'package:cheapest_go_mobile/shared/components/language_picker.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
@@ -136,6 +137,15 @@ void main() {
     // before deciding which of the two is the bug.
     usePhoneViewport(tester);
     await tester.pumpWidget(const CheapestGoApp());
+    await tester.pump();
+
+    // The brand first, for as long as starting takes. Every route is held here until then,
+    // the sign-in form included: a session being restored reads as signed out, and the form
+    // is the wrong answer to "not back yet".
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.text('다시 오신 것을 환영합니다'), findsNothing);
+
+    appStartup.markReady();
     await tester.pumpAndSettle();
 
     // Korean, not English: AirangGo opens in its market's language (UiSettingsStore._language).

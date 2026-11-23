@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Android 12 took the launch window over. From API 31 the system draws the splash itself
+     and ignores `android:windowBackground`, so the branded drawable in values/ never gets a
+     look in: without this the app would open on the platform default — the launcher icon on
+     a system colour — and only then reach the brand.
+
+     Same white and same mark as `@drawable/launch_background` and `_StartingView`, so all
+     three stages of a cold start look like one screen. -->
+<resources>
+    <style name="LaunchTheme" parent="@android:style/Theme.Light.NoTitleBar">
+        <item name="android:windowSplashScreenBackground">@color/splash_background</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
+    </style>
+    <!-- See the note in values/styles.xml: the payment sheet needs a Material theme. -->
+    <style name="NormalTheme" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="android:windowBackground">?android:colorBackground</item>
+    </style>
+</resources>

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 
+import 'package:cheapest_go_mobile/app/startup.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/features/onboarding/lib/onboarding_markers.dart';
 import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
@@ -60,8 +61,16 @@ String? gateRedirect(
   String location, {
   required bool isAuthenticated,
   required OnboardingStatus onboarding,
+  bool starting = false,
 }) {
   final path = Uri.parse(location).path;
+
+  // 0. Still starting: the splash, whoever is signed in and whatever they owe. Both of the
+  //    answers below are read from stores that [AppStartup] is still filling — a token not
+  //    yet loaded reads as signed out, and sign-in is the wrong place to send somebody whose
+  //    session is simply not back yet. Defaults to false so the rule can be asked about the
+  //    four states that follow without a running app.
+  if (starting) return path == splashPath ? null : splashPath;
 
   // 1. No account: only the Open Screens, and sign-in is where everything else lands.
   if (!isAuthenticated) {
@@ -96,6 +105,7 @@ String? routerGateRedirect(String location) => gateRedirect(
       location,
       isAuthenticated: authStore.isAuthenticated,
       onboarding: onboardingStore.status,
+      starting: !appStartup.ready,
     );
 
 /// Shown only while the onboarding status is unknown — the moment between a session being

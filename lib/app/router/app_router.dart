@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
+import 'package:cheapest_go_mobile/app/startup.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
@@ -53,7 +54,13 @@ GoRouter createAppRouter({bool gate = true}) => GoRouter(
       // The gate: no account, no app. See `auth_gate.dart` and ADR-0005 — this is the one
       // place mobile deliberately parts company with V2, which lets anyone browse signed out.
       redirect: gate ? (context, state) => routerGateRedirect(state.uri.toString()) : null,
-      refreshListenable: GateListenable([authStore, onboardingStore]),
+      // Three now: startup finishing is as much a reason to re-ask the gate as signing in
+      // or the server answering what an account owes.
+      refreshListenable: GateListenable([
+        appStartup,
+        authStore,
+        onboardingStore,
+      ]),
 
       routes: [
         GoRoute(path: splashPath, builder: (_, _) => const _StartingView()),
@@ -219,46 +226,121 @@ String _flightSearchFromStore() {
 class _StartingView extends StatelessWidget {
   const _StartingView();
 
+  /// White in both themes, and the same white `@color/splash_background` paints the Android
+  /// launch window.
+  ///
+  /// The brand marks are drawn dark-on-light, so a dark splash would lose half of each. The
+  /// app opens light whatever the handset is set to (ADR-0037), which makes one background
+  /// the honest answer rather than a compromise — and matching the launch window is what
+  /// makes the handover invisible: the icon is already on screen when Flutter takes over,
+  /// in the same place and at the same size, so nothing flashes and nothing jumps.
+  static const _ground = Color(0xFFFFFFFF);
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: _ground,
       body: ListenableBuilder(
-        listenable: onboardingStore,
+        listenable: Listenable.merge([appStartup, onboardingStore]),
         builder: (context, _) {
-          if (!onboardingStore.failed) {
-            return const Center(child: CircularProgressIndicator());
+          final stuck = appStartup.failed || onboardingStore.failed;
+
+          if (stuck) {
+            return SafeArea(
+              child: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _stuck(context, t),
+                  ),
+                ),
+              ),
+            );
           }
 
-          return Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.cloud_off_rounded, size: 40, color: Theme.of(context).colorScheme.outline),
-                  const SizedBox(height: 16),
-                  Text(t.errors_generic, textAlign: TextAlign.center),
-                  const SizedBox(height: 24),
-                  FilledButton(
-                    onPressed: onboardingStore.isLoading ? null : onboardingStore.load,
-                    child: Text(t.auth_tryAgain),
-                  ),
-                  // The escape hatch for the case retrying cannot fix: a session this device
-                  // still holds that the server will no longer accept. Signing out puts them
-                  // back at the sign-in screen, which is a place they can act from.
-                  TextButton(
-                    onPressed: onboardingStore.isLoading ? null : authStore.logout,
-                    child: Text(t.nav_signOut),
-                  ),
-                ],
+          // A Stack so the icon can hold the exact middle of the screen while the spinner
+          // sits under it. In a Column the pair would be centred together, which lifts the
+          // icon off the centre by half the spinner — and the one thing this screen must
+          // get right is that the icon does not move.
+          return Stack(
+            children: [
+              // The same artwork the Android launch window is already showing, at the same
+              // size, in the same place — so when Flutter takes over, nothing changes.
+              //
+              // 108 logical pixels is not a guess and not tuned to one handset: an adaptive
+              // icon's foreground is 108dp square at every density bucket, which is what the
+              // launch window draws at 1:1. Matching it in dp matches it everywhere.
+              //
+              // `airanggo_icon_fg.png` and not `airanggo_mark.png`: the mark is the artwork
+              // cropped to its glyphs, so drawn at 108 it would be noticeably larger than
+              // the launch window's, which carries the icon's safe-zone padding.
+              //
+              // No SafeArea around it. The launch window is the whole window, system bars
+              // included, so its centre is the screen's centre; inset this layer and the
+              // icon would hop down by half the status bar at the handover.
+              Center(
+                child: Image.asset(
+                  'assets/images/airanggo_icon_fg.png',
+                  width: 108,
+                  height: 108,
+                  filterQuality: FilterQuality.medium,
+                ),
               ),
-            ),
+              // Below the icon, and the only thing on this screen the launch window does
+              // not have: a sign that something is happening, for the cold start slow
+              // enough to need one.
+              const Align(
+                alignment: Alignment(0, 0.28),
+                child: SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2.4),
+                ),
+              ),
+            ],
           );
         },
       ),
     );
+  }
+
+  /// Shown when the thing being waited for is not going to arrive.
+  ///
+  /// Not decoration: the gate holds on an unknown status and on an unfinished start, so
+  /// without this a request that fails — an expired token, a dropped connection, an API that
+  /// is not answering — leaves the app on a logo with no route to anywhere, which is exactly
+  /// what it did the first time it ran on a handset.
+  List<Widget> _stuck(BuildContext context, AppLocalizations t) {
+    final busy = appStartup.failed ? false : onboardingStore.isLoading;
+
+    return [
+      Icon(
+        Icons.cloud_off_rounded,
+        size: 40,
+        color: Theme.of(context).colorScheme.outline,
+      ),
+      const SizedBox(height: 16),
+      Text(t.errors_generic, textAlign: TextAlign.center),
+      const SizedBox(height: 24),
+      FilledButton(
+        // Whichever phase failed is the one to run again. Startup first: until it finishes
+        // there is no session for the onboarding question to be about.
+        onPressed: busy
+            ? null
+            : (appStartup.failed ? appStartup.run : onboardingStore.load),
+        child: Text(t.auth_tryAgain),
+      ),
+      // The escape hatch for the case retrying cannot fix: a session this device still holds
+      // that the server will no longer accept. Signing out puts them back at the sign-in
+      // screen, which is a place they can act from.
+      TextButton(
+        onPressed: busy ? null : authStore.logout,
+        child: Text(t.nav_signOut),
+      ),
+    ];
   }
 }
 
