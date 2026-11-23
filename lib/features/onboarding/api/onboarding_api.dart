@@ -1,3 +1,4 @@
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/http.dart';
 import 'package:cheapest_go_mobile/features/onboarding/lib/onboarding_markers.dart';
 
@@ -14,7 +15,14 @@ class OnboardingApi {
   static const _signedIn = HttpRequestOptions(useMobileApiKey: true, requiresAuth: true);
 
   /// Everything stored under preferences, markers included.
+  ///
+  /// Nothing to ask for in a mock build: the demo user is signed in on the handset alone, so
+  /// there is no account on any server to hold preferences. The request cannot succeed, and
+  /// the startup gate reads a failure here as "the app cannot start" — which is how a demo
+  /// APK came to dead-end on the very sign-in it had just completed, with a retry that could
+  /// never work and a sign-out that led back to the same wall.
   Future<Map<String, dynamic>> getPreferences() async {
+    if (kMockAuth) return <String, dynamic>{};
     final res = await _client.get('/api/v2/users/preferences', options: _signedIn);
     final prefs = (res as Map<String, dynamic>?)?['preferences'];
     return prefs is Map<String, dynamic> ? prefs : <String, dynamic>{};
@@ -27,6 +35,10 @@ class OnboardingApi {
   /// This is why [saveOnboarding] re-reads before writing: sending only the markers would
   /// silently delete the display currency somebody chose in the browser.
   Future<Map<String, dynamic>> savePreferences(Map<String, dynamic> preferences) async {
+    // Accepted and kept in hand, for the same reason the read is skipped: there is nowhere
+    // to write. Returning what was asked for keeps onboarding finishing rather than failing
+    // on its last step.
+    if (kMockAuth) return preferences;
     final res = await _client.patch(
       '/api/v2/users/preferences',
       body: preferences,
@@ -56,6 +68,7 @@ class OnboardingApi {
 
   /// Birth date, phone and nationality held against the account.
   Future<Map<String, dynamic>> getDetails() async {
+    if (kMockAuth) return <String, dynamic>{};
     final res = await _client.get('/api/v2/users/details', options: _signedIn);
     final details = (res as Map<String, dynamic>?)?['details'];
     return details is Map<String, dynamic> ? details : <String, dynamic>{};
@@ -69,8 +82,9 @@ class OnboardingApi {
       if (nationality != null && nationality.isNotEmpty) 'nationality': nationality,
     };
     // Nothing filled in is a legitimate outcome: the details step may be skipped. The server
-    // refuses an empty update, so there is nothing to send.
-    if (body.isEmpty) return;
+    // refuses an empty update, so there is nothing to send. Nor is there anywhere to send it
+    // in a mock build, where the account exists only on this handset.
+    if (body.isEmpty || kMockAuth) return;
 
     await _client.patch('/api/v2/users/details', body: body, options: _signedIn);
   }

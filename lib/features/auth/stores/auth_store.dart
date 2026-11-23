@@ -11,12 +11,8 @@ import 'package:cheapest_go_mobile/shared/auth/rbac.dart';
 import 'package:cheapest_go_mobile/shared/auth/roles.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
 import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/token.dart';
-
-/// While the app runs on mock data, auth stays on the device: a demo user is
-/// signed in by default and nothing calls the API. Build with
-/// `--dart-define=MOCK_AUTH=false` to use the real `/api/v2/auth` endpoints.
-const bool kMockAuth = bool.fromEnvironment('MOCK_AUTH', defaultValue: true);
 
 /// The default account in the mock build.
 const AuthUser kDemoUser = AuthUser(
