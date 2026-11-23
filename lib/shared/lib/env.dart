@@ -44,6 +44,17 @@ const String brandMarket = String.fromEnvironment('BRAND_MARKET', defaultValue: 
 /// release builds, so that would leave the picker in every one of them.
 const bool kAllowLanguageSwitch = bool.fromEnvironment('ALLOW_LANGUAGE_SWITCH');
 
+/// Whether auth is answered on the device instead of by the server: a demo user signs in and
+/// nothing calls `/api/v2/auth`. Build with `--dart-define=MOCK_AUTH=false` for the real
+/// endpoints.
+///
+/// Here rather than in the auth feature, where it used to live, because it is not only auth's
+/// business: anything that asks the server about *the signed-in account* is asking about an
+/// account the server has never heard of, and has to know that. Feature isolation means
+/// `features/onboarding` cannot read a constant out of `features/auth`, so the one fact both
+/// need lives in the one place both may import.
+const bool kMockAuth = bool.fromEnvironment('MOCK_AUTH', defaultValue: true);
+
 enum AppEnvironment {
   development,
   staging,

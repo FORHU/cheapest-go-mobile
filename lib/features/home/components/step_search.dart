@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
@@ -78,7 +79,8 @@ class StepSearch extends StatefulWidget {
   State<StepSearch> createState() => _StepSearchState();
 }
 
-class _StepSearchState extends State<StepSearch> {
+class _StepSearchState extends State<StepSearch>
+    with SingleTickerProviderStateMixin {
   int _index = 0;
 
   DestinationSuggestion? _place;
@@ -91,10 +93,22 @@ class _StepSearchState extends State<StepSearch> {
   int _children = 0;
 
   final _query = TextEditingController();
+  final _queryFocus = FocusNode();
   List<DestinationSuggestion> _options = const [];
   Timer? _debounce;
   bool _looking = false;
   bool _searched = false;
+
+  /// The nudge an unanswered step gives when Next is pressed, as V2's `setShake` does.
+  ///
+  /// The button used to be disabled instead, which is how #78 was raised: a greyed-out
+  /// primary action with nothing saying what it wants reads as a broken button, and a
+  /// disabled control cannot tell you why it is disabled. V2 leaves it live and moves the
+  /// panel, so the answer arrives where the reader is already looking.
+  late final AnimationController _shake = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 450),
+  );
 
   /// Which ask is the current one. Incremented by every keystroke and by a pick, so a reply
   /// to an older ask is dropped instead of overwriting a newer state.
@@ -107,6 +121,8 @@ class _StepSearchState extends State<StepSearch> {
   void dispose() {
     _debounce?.cancel();
     _query.dispose();
+    _queryFocus.dispose();
+    _shake.dispose();
     super.dispose();
   }
 
@@ -143,6 +159,17 @@ class _StepSearchState extends State<StepSearch> {
   };
 
   void _next() {
+    // Pressed before the step has an answer: say so and put the cursor where the answer
+    // goes, rather than sitting there greyed out. V2's `next()` does exactly this.
+    if (!_answered) {
+      _shake.forward(from: 0);
+      if (_step == _StepId.where ||
+          _step == _StepId.from ||
+          _step == _StepId.to) {
+        _queryFocus.requestFocus();
+      }
+      return;
+    }
     if (_index < _flow.length - 1) {
       setState(() {
         _index++;
@@ -182,19 +209,26 @@ class _StepSearchState extends State<StepSearch> {
     return chosen == null ? null : t.search_steps_selected(chosen.name);
   }
 
-  /// Tapping a day either starts a stay or closes one.
+  /// Tapping a day either starts a stay or moves the day it ends.
   ///
-  /// The first tap sets both ends, so a single night is a single tap; a later tap after that
-  /// day extends to it, and a tap before it starts again from there. A traveller picking
-  /// dates rarely means "clear what I chose", so nothing here clears.
+  /// The first tap sets both ends, so a single night is a single tap. Every later tap after
+  /// that day moves the check-out to it — further out to stay longer, back towards the start
+  /// to stay less — and a tap on or before the start begins again from there. A traveller
+  /// picking dates rarely means "clear what I chose", so nothing here clears.
+  ///
+  /// It used to stop once both ends were set: with a range already chosen, the next tap threw
+  /// it away and started over. Two taps is how most stays are picked, so the third tap landed
+  /// on anyone correcting themselves — and because the obvious correction is one day further
+  /// out, it read as a cap. See #76, reported as "limited to 2 days".
+  ///
+  /// V2's `selectDay` still restarts on that third tap. This is a deliberate divergence from
+  /// the Design Source rather than an oversight: the same report belongs on the web.
   DateTimeRange _extendRange(DateTime day) {
     if (widget.mode == StepMode.flights && _roundTrip == false) {
       return DateTimeRange(start: day, end: day);
     }
     final current = _dates;
-    if (current == null ||
-        !day.isAfter(current.start) ||
-        current.end != current.start) {
+    if (current == null || !day.isAfter(current.start)) {
       return DateTimeRange(start: day, end: day);
     }
     return DateTimeRange(start: current.start, end: day);
@@ -228,6 +262,23 @@ class _StepSearchState extends State<StepSearch> {
     // the stage, not on the page, so its chrome is light-on-dark either way.
     const dark = true;
 
+    return AnimatedBuilder(
+      animation: _shake,
+      // Built once, not per frame: the shake moves the panel, it does not rebuild it.
+      child: _panel(context, t, dark),
+      builder: (context, panel) => Transform.translate(
+        // Three passes left and right that die away, so the panel settles rather than
+        // stopping dead. Still at rest, where `_shake.value` is 0.
+        offset: Offset(
+          math.sin(_shake.value * math.pi * 6) * 10 * (1 - _shake.value),
+          0,
+        ),
+        child: panel,
+      ),
+    );
+  }
+
+  Widget _panel(BuildContext context, AppLocalizations t, bool dark) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -269,7 +320,8 @@ class _StepSearchState extends State<StepSearch> {
               trailingIcon: _index == _flow.length - 1
                   ? null
                   : Icons.arrow_forward_rounded,
-              onPressed: _answered ? _next : null,
+              // Never disabled. See `_shake`: an unanswered step is told, not greyed out.
+              onPressed: _next,
             ),
           ],
         ),
@@ -411,6 +463,7 @@ class _StepSearchState extends State<StepSearch> {
                 children: [
                   TextField(
                     controller: _query,
+                    focusNode: _queryFocus,
                     autocorrect: false,
                     style: const TextStyle(color: Colors.white),
                     decoration: InputDecoration(

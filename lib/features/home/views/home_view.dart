@@ -60,7 +60,10 @@ class _HomeViewState extends State<HomeView> {
                                     TwSpace.of(2),
                                     TwSpace.of(4),
                                     // Clear of the bar, which the body now runs under.
-                                    TwSpace.of(8) + V2BottomNav.barHeight +
+                                    // A bar's height was only just enough: scrolled to the
+                                    // end, Next sat against the bar with nothing under it,
+                                    // which is what #78 shows. The extra gap lifts it off.
+                                    TwSpace.of(14) + V2BottomNav.barHeight +
                                         MediaQuery.viewPaddingOf(context).bottom,
                                 ),
                                 child: Column(
