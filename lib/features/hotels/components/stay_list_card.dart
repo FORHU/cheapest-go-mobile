@@ -109,7 +109,7 @@ class StayListCard extends StatelessWidget {
                                                             // different stay entirely.
                                                             hotel.score > 0
                                                                 ? '${hotel.score.toStringAsFixed(1)} / 10 ${t.hotels_description_rating}'
-                                                                : 'No rating yet',
+                                                                : AppLocalizations.of(context)!.mobile_hotels_noRatingYet,
                                                             style: TextStyle(fontSize: 14, color: skin.muted),
                                                         ),
                                                     ],

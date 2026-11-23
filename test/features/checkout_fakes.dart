@@ -1,3 +1,4 @@
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/features/hotels/api/checkout_api.dart';
 import 'package:cheapest_go_mobile/shared/payments/payment_gateway.dart';
 
@@ -85,6 +86,7 @@ class FakeCheckoutApi extends CheckoutApi {
 
     @override
     Future<PaymentIntentHandle> createPayment({
+        AppLocalizations? t,
         required PrebookQuote quote,
         required String firstName,
         required String lastName,
@@ -128,6 +130,7 @@ class FakeCheckoutApi extends CheckoutApi {
 
     @override
     Future<ConfirmOutcome> confirm({
+        AppLocalizations? t,
         required String paymentIntentId,
         required PrebookQuote quote,
         required String firstName,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/map_tier.dart';
+import 'package:cheapest_go_mobile/shared/lib/platform_locale.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/account/account_preferences.dart';
 
@@ -85,6 +86,11 @@ class UiSettingsStore extends ChangeNotifier {
       }
       notifyListeners();
     } catch (_) {}
+
+    // Outside the try, and unconditional: when nothing was saved the language is still the
+    // brand's, and Android has to be told that as much as a chosen one. Every launch sets
+    // it, which is also what saves keeping a second copy of it on the Android side.
+    await applyPlatformLocale(_language);
   }
 
   /// Writes a preference back to the account, best-effort.
@@ -118,6 +124,7 @@ class UiSettingsStore extends ChangeNotifier {
     if (_language == normalized) return;
     _language = normalized;
     notifyListeners();
+    await applyPlatformLocale(normalized);
     try {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(_languageKey, normalized);

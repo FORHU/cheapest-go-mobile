@@ -1,3 +1,4 @@
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/lib/http.dart';
 
 /// The three calls a booking is made of. See #41.
@@ -204,7 +205,7 @@ class ConfirmOutcome {
         state == ConfirmState.needsReview ||
         (state == ConfirmState.failed && !released);
 
-    factory ConfirmOutcome.fromJson(Map<String, dynamic> json) {
+    factory ConfirmOutcome.fromJson(Map<String, dynamic> json, {AppLocalizations? t}) {
         final data = json['data'] is Map<String, dynamic> ? json['data'] as Map<String, dynamic> : null;
         final bookingId = data?['bookingId']?.toString() ?? '';
         final reference = json['reference']?.toString() ?? '';
@@ -231,8 +232,11 @@ class ConfirmOutcome {
             return ConfirmOutcome(
                 state: ConfirmState.needsReview,
                 reference: reference,
-                message: 'The price changed while we were booking. '
-                    'Our team will confirm the final price with you.',
+                // The screen's localisations, handed down: this layer has no context of its
+                // own, and a traveller meets this sentence at the payment step (#75).
+                message: t?.mobile_checkout_priceChangedReview ??
+                    'The price changed while we were booking. '
+                        'Our team will confirm the final price with you.',
             );
         }
 
@@ -351,6 +355,7 @@ class CheckoutApi {
     /// Throws when the quote has no `display`: charging a figure the client made up is exactly
     /// what this flow exists to stop.
     Future<PaymentIntentHandle> createPayment({
+        AppLocalizations? t,
         required PrebookQuote quote,
         required String firstName,
         required String lastName,
@@ -367,8 +372,9 @@ class CheckoutApi {
     }) async {
         final display = quote.display;
         if (display == null) {
-            throw Exception('We could not confirm the price in your currency just now. '
-                'Please try again in a moment.');
+            throw Exception(t?.mobile_checkout_currencyUnavailable ??
+                'We could not confirm the price in your currency just now. '
+                    'Please try again in a moment.');
         }
 
         final res = await _client.post(
@@ -406,6 +412,7 @@ class CheckoutApi {
     ///
     /// The answer is a [ConfirmOutcome], not a success: see its doc.
     Future<ConfirmOutcome> confirm({
+        AppLocalizations? t,
         required String paymentIntentId,
         required PrebookQuote quote,
         required String firstName,
@@ -445,7 +452,7 @@ class CheckoutApi {
             },
             options: _signedIn,
         );
-        return ConfirmOutcome.fromJson(res as Map<String, dynamic>);
+        return ConfirmOutcome.fromJson(res as Map<String, dynamic>, t: t);
     }
 
     /// Where a booking is, by the reference a confirm answered with — what the confirmation

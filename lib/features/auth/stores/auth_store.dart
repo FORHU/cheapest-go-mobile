@@ -1,3 +1,4 @@
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -118,7 +119,7 @@ class AuthStore extends ChangeNotifier {
     } catch (_) {}
   }
 
-  Future<bool> login(String email, String password) async {
+  Future<bool> login(String email, String password, {AppLocalizations? t}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -142,7 +143,7 @@ class AuthStore extends ChangeNotifier {
       } catch (_) {}
       return true;
     } catch (err) {
-      final routed = routeError(err);
+      final routed = routeError(err, t: t);
       _errorMessage = routed.toast ?? err.toString();
       return false;
     } finally {
@@ -151,24 +152,26 @@ class AuthStore extends ChangeNotifier {
     }
   }
 
-  Future<bool> register(RegisterInput input) async {
+  Future<bool> register(RegisterInput input, {AppLocalizations? t}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
     if (mock) {
       try {
-        input.validate();
+        input.validate(t: t);
         final email = input.email.trim().toLowerCase();
-        await _signIn(AuthUser(
-          id: 'local-$email',
-          email: email,
-          firstName: input.firstName.trim(),
-          lastName: input.lastName.trim(),
-          role: Role.user,
-        ));
+        await _signIn(
+          AuthUser(
+            id: 'local-$email',
+            email: email,
+            firstName: input.firstName.trim(),
+            lastName: input.lastName.trim(),
+            role: Role.user,
+          ),
+        );
         return true;
       } catch (err) {
-        _errorMessage = routeError(err).toast ?? err.toString();
+        _errorMessage = routeError(err, t: t).toast ?? err.toString();
         return false;
       } finally {
         _isLoading = false;
@@ -184,7 +187,7 @@ class AuthStore extends ChangeNotifier {
       } catch (_) {}
       return true;
     } catch (err) {
-      final routed = routeError(err);
+      final routed = routeError(err, t: t);
       _errorMessage = routed.toast ?? err.toString();
       return false;
     } finally {
@@ -193,7 +196,7 @@ class AuthStore extends ChangeNotifier {
     }
   }
 
-  Future<bool> resetPassword(String email) async {
+  Future<bool> resetPassword(String email, {AppLocalizations? t}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -207,7 +210,7 @@ class AuthStore extends ChangeNotifier {
       await authApi.resetPassword(email);
       return true;
     } catch (err) {
-      final routed = routeError(err);
+      final routed = routeError(err, t: t);
       _errorMessage = routed.toast ?? err.toString();
       return false;
     } finally {
@@ -217,7 +220,7 @@ class AuthStore extends ChangeNotifier {
   }
 
   /// Sets a new password from an emailed token. See #45.
-  Future<bool> confirmPasswordReset(String token, String password) async {
+  Future<bool> confirmPasswordReset(String token, String password, {AppLocalizations? t}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -230,7 +233,7 @@ class AuthStore extends ChangeNotifier {
       await authApi.confirmPasswordReset(token, password);
       return true;
     } catch (err) {
-      final routed = routeError(err);
+      final routed = routeError(err, t: t);
       _errorMessage = routed.toast ?? err.toString();
       return false;
     } finally {
@@ -247,7 +250,7 @@ class AuthStore extends ChangeNotifier {
   ///
   /// Available in a mock build too: unlike a password, there is no fake Google to stand in
   /// for, so this always goes to api-v2. A build without a client id has no button at all.
-  Future<bool> signInWithGoogle() async {
+  Future<bool> signInWithGoogle({AppLocalizations? t}) async {
     _isLoading = true;
     _errorMessage = null;
     notifyListeners();
@@ -267,7 +270,7 @@ class AuthStore extends ChangeNotifier {
       _errorMessage = 'Google sign-in is not configured in this build.';
       return false;
     } catch (err) {
-      _errorMessage = routeError(err).toast ?? err.toString();
+      _errorMessage = routeError(err, t: t).toast ?? err.toString();
       return false;
     } finally {
       _isLoading = false;
@@ -295,16 +298,8 @@ class AuthStore extends ChangeNotifier {
     notifyListeners();
   }
 
-  bool can(
-    Permission permission, {
-    PermissionContext context = const PermissionContext(),
-  }) {
-    return hasPermission(
-      currentRole,
-      permission,
-      context: context,
-      userId: _user?.id,
-    );
+  bool can(Permission permission, {PermissionContext context = const PermissionContext()}) {
+    return hasPermission(currentRole, permission, context: context, userId: _user?.id);
   }
 }
 

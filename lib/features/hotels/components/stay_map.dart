@@ -111,7 +111,28 @@ class _StayMapState extends State<StayMap> {
     void didUpdateWidget(StayMap old) {
         super.didUpdateWidget(old);
         _redraw();
+
+        // Frame again when the stays themselves change.
+        //
+        // `_onMapCreated` frames once, and the map is routinely created before the search has
+        // answered — so it framed an empty list, returned, and left the camera wherever Mapbox
+        // opened. A Manila search was shown over New York: the markers were in the right place,
+        // the camera was not. Against a fast local API the stays usually arrived first and the
+        // race was invisible, which is why this only showed against dev.
+        //
+        // Keyed on which stays are placed, not on every rebuild: selecting a pin or redrawing
+        // must not yank the camera back from wherever the traveller has panned to.
+        if (_mapKeyOf(old.hotels) != _mapKeyOf(widget.hotels) && _placed.isNotEmpty) {
+            _frameHotels();
+        }
     }
+
+    /// The placed stays, as one comparable value. Two lists with the same stays in the same
+    /// order are the same view, however many times the widget rebuilds around them.
+    static String _mapKeyOf(List<Hotel> hotels) => hotels
+        .where((h) => h.latitude != null && h.longitude != null)
+        .map((h) => h.id)
+        .join(',');
 
     @override
     void dispose() {

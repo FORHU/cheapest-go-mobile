@@ -107,7 +107,11 @@ class FlightTelemetryHud extends StatelessWidget {
               ),
               if (onNextFlight != null)
                 IconButton(tooltip: AppLocalizations.of(context)!.mobile_tracker_nextFlight, onPressed: onNextFlight, icon: Icon(Icons.skip_next_rounded, color: c.accent)),
-              CircleIconButton(icon: Icons.close_rounded, tooltip: 'Stop tracking', onPressed: onExitTracking),
+              CircleIconButton(
+                icon: Icons.close_rounded,
+                tooltip: AppLocalizations.of(context)!.mobile_tracker_stopTracking,
+                onPressed: onExitTracking,
+              ),
             ],
           ),
           const SizedBox(height: 14),
@@ -122,7 +126,11 @@ class FlightTelemetryHud extends StatelessWidget {
               child: TextButton.icon(
                 onPressed: onSimulate,
                 icon: Icon(simulating ? Icons.stop_rounded : Icons.fast_forward_rounded, size: 18),
-                label: Text(simulating ? 'Stop simulation' : 'Simulate this flight (demo)'),
+                label: Text(
+                  simulating
+                      ? AppLocalizations.of(context)!.mobile_tracker_stopSimulation
+                      : AppLocalizations.of(context)!.mobile_tracker_simulate,
+                ),
               ),
             ),
         ],
@@ -132,6 +140,7 @@ class FlightTelemetryHud extends StatelessWidget {
 
   List<Widget> _phaseBody(BuildContext context) {
     final c = context.colors;
+    final t = AppLocalizations.of(context)!;
     final f = flight.flight;
     final depLocal = f.departureUtc.add(flight.origin.utcOffset);
     final arrLocal = f.arrivalUtc.add(flight.destination.utcOffset);
@@ -142,12 +151,18 @@ class FlightTelemetryHud extends StatelessWidget {
       case FlightPhase.boarding:
         return [
           Text(
-            status.phase == FlightPhase.boarding ? 'Boarding · departs in ${_span(status.untilDeparture)}' : 'Departs in ${_span(status.untilDeparture)}',
+            status.phase == FlightPhase.boarding
+                ? t.mobile_tracker_boardingDepartsIn(_span(t, status.untilDeparture))
+                : t.mobile_tracker_departsIn(_span(t, status.untilDeparture)),
             style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 2),
           Text(
-            '${formatDayDate(depLocal)} · ${clock(depLocal)} ${flight.origin.code} time → ${clock(arrLocal)} ${flight.destination.code} time',
+            // gen_l10n orders a message's arguments alphabetically by placeholder name,
+            // not by where they appear in the sentence: airport comes before time.
+            '${formatDayDate(depLocal)} · '
+            '${t.mobile_tracker_airportClock(flight.origin.code, clock(depLocal))} → '
+            '${t.mobile_tracker_airportClock(flight.destination.code, clock(arrLocal))}',
             style: TextStyle(fontSize: 12, color: c.textSecondary),
           ),
         ];
@@ -156,9 +171,11 @@ class FlightTelemetryHud extends StatelessWidget {
         return [
           Row(
             children: [
-              _Stat(label: AppLocalizations.of(context)!.mobile_tracker_altitude, value: '${_thousands(flight.cruiseFeet)} ft'),
-              _Stat(label: 'Ground speed', value: '${flight.groundSpeedKnots} kts', sub: '${(flight.groundSpeedKnots * 1.852).round()} km/h'),
-              _Stat(label: AppLocalizations.of(context)!.mobile_tracker_timeLeft, value: _span(status.untilArrival), sub: '$remainingNm nm to go'),
+              // The units stay as they are: ft, kts, km/h and nm are what a cockpit, a
+              // boarding pass and every other tracker print, in any language.
+              _Stat(label: t.mobile_tracker_altitude, value: '${_thousands(flight.cruiseFeet)} ft'),
+              _Stat(label: t.mobile_tracker_groundSpeed, value: '${flight.groundSpeedKnots} kts', sub: '${(flight.groundSpeedKnots * 1.852).round()} km/h'),
+              _Stat(label: t.mobile_tracker_timeLeft, value: _span(t, status.untilArrival), sub: t.mobile_tracker_distanceToGo(remainingNm)),
             ],
           ),
           const SizedBox(height: 8),
@@ -166,15 +183,19 @@ class FlightTelemetryHud extends StatelessWidget {
         ];
       case FlightPhase.landed:
         return [
-          Text('Landed in ${flight.destination.city}', style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(t.mobile_tracker_landedIn(flight.destination.city), style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 2),
-          Text('${clock(arrLocal)} local time · ${_span(status.sinceArrival)} ago', style: TextStyle(fontSize: 12, color: c.textSecondary)),
+          Text(
+            // Alphabetical again: ago, then time.
+            t.mobile_tracker_landedAt(_span(t, status.sinceArrival), clock(arrLocal)),
+            style: TextStyle(fontSize: 12, color: c.textSecondary),
+          ),
           if (onViewDestinationHub != null) ...[
             const SizedBox(height: 12),
             SizedBox(
               width: double.infinity,
               child: AppGradientButton(
-                label: 'Stays & golf near ${flight.destination.code}',
+                label: t.mobile_tracker_nearbyStaysAndGolf(flight.destination.code),
                 icon: Icons.flight_land_rounded,
                 height: 44,
                 onPressed: onViewDestinationHub,
@@ -195,12 +216,23 @@ class FlightTelemetryHud extends StatelessWidget {
         FlightPhase.landed => t.mobile_tracker_landed,
       };
 
-  /// `2d 4h`, `3h 05m` or `25 min`.
-  static String _span(Duration d) {
+  /// `2d 4h`, `3h 05m` or `25 min`, in whichever language the app is being read in.
+  ///
+  /// The hours and minutes come from `flights_durationParts_*`, which the flight list has
+  /// always used for exactly this: one flight's length should not read two ways depending
+  /// on which screen you are looking at.
+  static String _span(AppLocalizations t, Duration d) {
     final m = d.inMinutes.abs();
-    if (m >= 24 * 60) return '${m ~/ (24 * 60)}d ${(m % (24 * 60)) ~/ 60}h';
-    if (m >= 60) return '${m ~/ 60}h ${(m % 60).toString().padLeft(2, '0')}m';
-    return '$m min';
+    if (m >= 24 * 60) {
+      return t.mobile_tracker_daysHours(m ~/ (24 * 60), (m % (24 * 60)) ~/ 60);
+    }
+    if (m >= 60) {
+      return t.flights_durationParts_hoursMinutes(
+        m ~/ 60,
+        (m % 60).toString().padLeft(2, '0'),
+      );
+    }
+    return t.flights_durationParts_minutesOnly(m);
   }
 
   static String _thousands(int n) => n >= 1000 ? '${n ~/ 1000},${(n % 1000).toString().padLeft(3, '0')}' : '$n';
@@ -255,10 +287,14 @@ class _SourceLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final t = AppLocalizations.of(context)!;
     final (icon, text) = switch (source) {
-      PositionSource.gps => (Icons.my_location_rounded, 'Your position from GPS'),
-      PositionSource.schedule => (Icons.schedule_rounded, 'Estimated from the schedule until GPS gets a fix'),
-      PositionSource.scheduleNoPermission => (Icons.location_disabled_rounded, 'Estimated from the schedule. Allow location for your exact position.'),
+      PositionSource.gps => (Icons.my_location_rounded, t.mobile_tracker_sourceGps),
+      PositionSource.schedule => (Icons.schedule_rounded, t.mobile_tracker_sourceSchedule),
+      PositionSource.scheduleNoPermission => (
+        Icons.location_disabled_rounded,
+        t.mobile_tracker_sourceNoPermission,
+      ),
     };
     return Row(
       children: [
@@ -279,11 +315,30 @@ class _OfflineMapRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final t = AppLocalizations.of(context)!;
     final (icon, text, action) = switch (status.state) {
-      OfflineMapState.ready => (Icons.download_done_rounded, 'Offline map saved · ${status.sizeLabel}', null),
-      OfflineMapState.downloading => (Icons.downloading_rounded, 'Saving offline map · ${(status.progress * 100).round()}%', null),
-      OfflineMapState.failed => (Icons.error_outline_rounded, "Offline map didn't save", 'Retry'),
-      OfflineMapState.none => (Icons.cloud_download_outlined, 'Save the map for offline use in the air', 'Save'),
+      OfflineMapState.ready => (
+        Icons.download_done_rounded,
+        t.mobile_tracker_offlineSaved(status.sizeLabel),
+        null,
+      ),
+      OfflineMapState.downloading => (
+        Icons.downloading_rounded,
+        t.mobile_tracker_offlineSaving((status.progress * 100).round()),
+        null,
+      ),
+      OfflineMapState.failed => (
+        Icons.error_outline_rounded,
+        t.mobile_tracker_offlineFailed,
+        // V2's own word for trying a failed thing again, rather than a second one of our
+        // own that a translator would have to render twice.
+        t.common_retry,
+      ),
+      OfflineMapState.none => (
+        Icons.cloud_download_outlined,
+        t.mobile_tracker_offlineNone,
+        t.mobile_tracker_saveMap,
+      ),
     };
     return Row(
       children: [
@@ -329,6 +384,7 @@ class NoFlightsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final c = context.colors;
+    final t = AppLocalizations.of(context)!;
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(color: c.surfaceElevated, borderRadius: AppRadius.brSheet, border: Border.all(color: c.border)),
@@ -336,13 +392,18 @@ class NoFlightsCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(AppLocalizations.of(context)!.mobile_tracker_noFlights, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
+          Text(t.mobile_tracker_noFlights, style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700)),
           const SizedBox(height: 4),
-          Text('Book a flight and follow it here, even offline in the air.', style: TextStyle(fontSize: 13, color: c.textSecondary)),
+          Text(t.mobile_tracker_noFlightsBody, style: TextStyle(fontSize: 13, color: c.textSecondary)),
           const SizedBox(height: 12),
           SizedBox(
             width: double.infinity,
-            child: AppGradientButton(label: 'Find flights', icon: Icons.flight_rounded, height: 44, onPressed: onFindFlights),
+            child: AppGradientButton(
+              label: t.landing_hero_searchFlights,
+              icon: Icons.flight_rounded,
+              height: 44,
+              onPressed: onFindFlights,
+            ),
           ),
         ],
       ),

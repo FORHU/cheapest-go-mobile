@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:flutter/widgets.dart';
+import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http_pkg;
 import 'package:http/testing.dart';
@@ -64,10 +66,13 @@ void main() {
       expect(layoverMinutes('2026-12-03T04:10:00', '2026-12-03T03:00:00'), isNull);
     });
 
-    test('durations, cabins and airports as V2 prints them', () {
+    test('durations, cabins and airports as V2 prints them', () async {
+      // , not the deleted : one way to name a cabin, in the app's
+      // own language rather than title-cased English.
+      final t = await AppLocalizations.delegate.load(const Locale('en'));
       expect(formatDuration(225), '3h 45m');
       expect(formatDuration(45), '45m');
-      expect(cabinLabel('premium_economy'), 'Premium Economy');
+      expect(cabinName(t, 'premium_economy'), 'Premium economy');
       expect(
         airportLabel(const SegmentEnd(airport: 'SIN', airportName: 'Singapore Changi Airport'), 'SIN'),
         'Singapore Changi Airport (SIN)',

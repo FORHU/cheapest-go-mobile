@@ -42,4 +42,9 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+
+    // For AppCompatDelegate.setApplicationLocales: the per-app language Android 13 added,
+    // backported here so handsets below it get it too. Stripe's SDK already brings
+    // AppCompat in transitively; naming it here is what makes the version ours to pin.
+    implementation("androidx.appcompat:appcompat:1.7.0")
 }
