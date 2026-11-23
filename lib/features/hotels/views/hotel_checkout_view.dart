@@ -334,7 +334,11 @@ class _HotelCheckoutViewState extends State<HotelCheckoutView> {
         }
     }
 
-    static String _readable(Object error) => errorMessage(error);
+    /// Takes the translations: `errorMessage` falls back to its English literals when it is
+    /// handed none, which is how a Korean checkout came to say "Session expired" (#75 again).
+    /// Not static any more for the same reason — it needs this screen's context.
+    String _readable(Object error) =>
+        errorMessage(error, t: AppLocalizations.of(context)!);
 
     @override
     Widget build(BuildContext context) {

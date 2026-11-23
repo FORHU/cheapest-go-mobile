@@ -10,11 +10,20 @@ import 'package:cheapest_go_mobile/shared/utils/format.dart';
 
 void main() {
   group('format', () {
-    test('pesos get thousands separators', () {
-      expect(formatPeso(0), '₱0');
-      expect(formatPeso(980), '₱980');
-      expect(formatPeso(4850), '₱4,850');
-      expect(formatPeso(1234567), '₱1,234,567');
+    /// The catalogue is priced in pesos and the app charges in the brand's currency. With no
+    /// rates loaded — which is this test, and a cold start — the amount stays in the currency
+    /// it was quoted in rather than being relabelled, so a peso figure never appears with a
+    /// won sign in front of it. See `convertForDisplay`.
+    test('catalogue prices keep their own currency until rates arrive', () {
+      expect(formatCatalogPrice(0), '₱0');
+      expect(formatCatalogPrice(980), '₱980');
+      expect(formatCatalogPrice(4850), '₱4,850');
+      expect(formatCatalogPrice(1234567), '₱1,234,567');
+    });
+
+    test('the map pin form carries the figure without a symbol', () {
+      expect(formatCatalogAmount(4850), '4,850');
+      expect(formatCatalogAmount(1234567), '1,234,567');
     });
 
     test('tee times read as 12-hour clock', () {

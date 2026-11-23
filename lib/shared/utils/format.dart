@@ -4,6 +4,10 @@ library;
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:intl/intl.dart';
 
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
+import 'package:cheapest_go_mobile/shared/utils/currency.dart';
+import 'package:cheapest_go_mobile/shared/utils/money.dart';
+
 // Dates read in the language the app is set to, not in English.
 //
 // These were two const English arrays, so an app rendering Korean still wrote "Nov 28 – 29"
@@ -16,15 +20,39 @@ import 'package:intl/intl.dart';
 String _month(DateTime d) => DateFormat.MMM(Intl.defaultLocale).format(d);
 String _weekday(DateTime d) => DateFormat.E(Intl.defaultLocale).format(d);
 
-/// `4850` → `₱4,850`.
-String formatPeso(int amount) {
-  final digits = amount.abs().toString();
-  final buf = StringBuffer();
-  for (var i = 0; i < digits.length; i++) {
-    if (i > 0 && (digits.length - i) % 3 == 0) buf.write(',');
-    buf.write(digits[i]);
-  }
-  return '${amount < 0 ? '-' : ''}₱$buf';
+/// A catalogue price in the currency the brand charges: `4850` → `₩119,000`.
+///
+/// The catalogue is priced in pesos — `catalogCurrency` is PHP — and this used to print the
+/// number with a ₱ in front of it and no conversion at all. On AirangGo, which charges in
+/// won and says so everywhere else, the golf list quoted every green fee in a currency the
+/// traveller is never billed in and the hotel beside it quoted won.
+///
+/// Converted rather than relabelled: writing ₩ in front of 6,200 would have been worse than
+/// the peso, because it would have been wrong by a factor of twenty rather than merely
+/// foreign. When the rates are not loaded `convertForDisplay` returns the amount in its
+/// original currency and this prints that, which is the honest answer while it waits.
+String formatCatalogPrice(num amount) {
+  final shown = exchangeRates.convertForDisplay(
+    amount,
+    catalogCurrency,
+    brandCurrency,
+  );
+  return formatMoney(shown.amount, shown.currency);
+}
+
+/// The same figure with no currency symbol, for a map pin that has no room for one.
+///
+/// The two callers used to take [formatCatalogPrice] and strip the `₱` back off with a
+/// `replaceFirst`. That worked only while the symbol was always a peso: the moment the price
+/// is converted the symbol is a won, the strip finds nothing, and the pin reads "₩119,000"
+/// in a label sized for five digits.
+String formatCatalogAmount(num amount) {
+  final shown = exchangeRates.convertForDisplay(
+    amount,
+    catalogCurrency,
+    brandCurrency,
+  );
+  return NumberFormat.decimalPattern('en_US').format(shown.amount.round());
 }
 
 /// `Nov 14`.
@@ -44,13 +72,27 @@ String formatDateRange(DateTime start, DateTime end) {
   return '${formatShortDate(start)} – ${formatShortDate(end)}';
 }
 
-/// `06:40` → `6:40 AM`, `13:10` → `1:10 PM`.
+/// `06:40` → `6:40 AM` in English, `오전 6:40` in Korean.
+///
+/// The AM and PM were written here as English literals, so a Korean golf screen listed every
+/// tee time as "6:40 AM" — and in Korean the marker goes *before* the clock, which no amount
+/// of translating the two words would have fixed. `DateFormat.jm` knows both the words and
+/// where they belong, and takes its language from `Intl.defaultLocale` like the dates above.
 String formatTeeTime(String hhmm) {
   final parts = hhmm.split(':');
   final h = int.parse(parts[0]);
-  final suffix = h < 12 ? 'AM' : 'PM';
-  final h12 = h % 12 == 0 ? 12 : h % 12;
-  return '$h12:${parts[1]} $suffix';
+  final m = int.tryParse(parts.length > 1 ? parts[1] : '') ?? 0;
+  // The date is a carrier for the clock and never read: only hour and minute are formatted.
+  final formatted = DateFormat.jm(
+    Intl.defaultLocale,
+  ).format(DateTime(2000, 1, 1, h, m));
+
+  // CLDR separates the clock from AM/PM with a narrow no-break space (U+202F). It looks the
+  // same on screen and is not the same character, which makes every `find.text('6:40 AM')`
+  // and every string comparison fail for a reason nothing in the diff shows — the expected
+  // and the actual print identically. Normalised to a plain space so what is on the screen
+  // is what the code can be written against.
+  return formatted.replaceAll(' ', ' ').replaceAll(' ', ' ');
 }
 
 /// Like [formatTeeTime], keeping a day marker: `01:10+1` → `1:10 AM +1`,

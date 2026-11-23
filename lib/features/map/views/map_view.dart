@@ -691,7 +691,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
               ? PointAnnotationOptions(
                   geometry: at,
                   // Map fonts have no ₱ glyph; every price in the app is in pesos.
-                  textField: formatPeso(p.price).replaceFirst('₱', ''),
+                  textField: formatCatalogAmount(p.price),
                   textSize: selected ? 12.5 : 11.0,
                   textColor: text,
                   textHaloColor: halo,
@@ -722,7 +722,7 @@ class _MapViewState extends State<MapView> with WidgetsBindingObserver {
         ),
         label: PointAnnotationOptions(
           geometry: at,
-          textField: '${offer.origin} ${formatPeso(offer.price).replaceFirst('₱', '')}',
+          textField: '${offer.origin} ${formatCatalogAmount(offer.price)}',
           textSize: 11.5,
           textColor: text,
           textHaloColor: halo,

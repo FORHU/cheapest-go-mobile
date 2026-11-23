@@ -8,6 +8,7 @@ library;
 import 'dart:math';
 import 'package:cheapest_go_mobile/shared/catalog/api_travel_catalog.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
 import 'package:cheapest_go_mobile/shared/utils/currency.dart';
 import 'package:cheapest_go_mobile/shared/utils/format.dart';
@@ -371,17 +372,40 @@ class GolfCourse {
   /// Course photo (mock, see assets/images/README.md).
   String get photo => _pick('golf', 'g', _golfPhotoCount, _seed(id));
 
-  /// "18홀 · 파 72 · buggy included".
+  /// "18홀 · 파 72 · 카트 포함".
   ///
   /// Takes the localisations rather than reading a global, so the model stays something a test
-  /// can build without an app around it. `inclusion` is left as it is written in the fixtures:
-  /// golf has no API, so that text is this repo's own data rather than copy, and it is #48's
-  /// to settle when the screen is rebuilt against V2.
+  /// can build without an app around it.
   String metaIn(AppLocalizations t) => [
         t.mobile_golf_holesCount(holes),
         t.mobile_golf_parValue(par),
-        ?inclusion,
+        ?inclusionIn(t),
       ].join(' · ');
+
+  /// What the green fee covers, in the app's language.
+  ///
+  /// The fixtures write this six ways — "buggy included", "cart included", "caddy included",
+  /// "buggy + caddy", "caddy + buggy", "cart + caddy" — which is three meanings spelled
+  /// inconsistently, in English, straight onto a Korean screen. It was left alone on the
+  /// grounds that golf has no API and this is our own data rather than supplier copy; that
+  /// explains where the English came from but not why a reader should see it.
+  ///
+  /// Matched on what the string contains rather than on the exact wording, so a seventh
+  /// spelling is read correctly rather than falling through. A string naming neither is
+  /// returned as written: unknown data shown plainly beats a wrong guess.
+  String? inclusionIn(AppLocalizations t) {
+    final raw = inclusion?.toLowerCase();
+    if (raw == null || raw.isEmpty) return null;
+
+    // "buggy" and "cart" are the same vehicle; the fixtures use both words.
+    final hasCart = raw.contains('cart') || raw.contains('buggy');
+    final hasCaddy = raw.contains('caddy');
+
+    if (hasCart && hasCaddy) return t.mobile_golf_inclusionCartCaddy;
+    if (hasCart) return t.mobile_golf_inclusionCart;
+    if (hasCaddy) return t.mobile_golf_inclusionCaddy;
+    return inclusion;
+  }
 }
 
 class FlightOffer {
@@ -681,8 +705,9 @@ class DefaultTravelCatalog implements TravelCatalog {
   static set delegate(TravelCatalog c) => _delegate = c;
 
   static TravelCatalog _createDefaultCatalog() {
-    const mode = String.fromEnvironment('CATALOG', defaultValue: 'mock');
-    if (mode == 'api') {
+    // One reading of the flag, shared with kMockAuth so the two cannot disagree about
+    // whether this build talks to a server.
+    if (kCatalogMode == 'api') {
       return ApiTravelCatalog();
     }
     return const MockTravelCatalog();

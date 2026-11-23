@@ -162,7 +162,15 @@ class _OnboardingViewState extends State<OnboardingView> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        AuthHeader(title: t.onboarding_preferences_title, subtitle: t.onboarding_preferences_subtitle),
+        // Not `onboarding_preferences_title`. That is V2's wording — "How should we show
+        // prices?" — and it belongs to the currency selector this build removed (ADR-0007).
+        // Left in place it asked a Korean traveller how to display prices and then offered
+        // nothing but an email toggle: a question the screen cannot answer is worse than no
+        // heading at all. The subtitle still fits, because it is about the step, not prices.
+        AuthHeader(
+          title: t.mobile_onboarding_preferencesTitle,
+          subtitle: t.onboarding_preferences_subtitle,
+        ),
         const SizedBox(height: 24),
         if (_failure != null) ...[
           AuthErrorBanner(message: _failure!),
