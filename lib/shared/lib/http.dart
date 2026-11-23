@@ -255,6 +255,139 @@ class HttpClientAdapter {
     }
   }
 
+  /// The signed-in headers [request] sends, minus `Content-Type`, which a multipart body and a
+  /// stream each set for themselves.
+  Map<String, String> _authHeaders(HttpRequestOptions options) {
+    final token = tokenStorage.getAccessToken();
+    final cookie = tokenStorage.getSessionCookie();
+    return {
+      'X-Requested-By': 'cheapestgo-client',
+      if (token != null && token.isNotEmpty && options.requiresAuth)
+        'Authorization': 'Bearer $token',
+      if (cookie != null && cookie.isNotEmpty && options.requiresAuth)
+        'Cookie': cookie,
+      if (options.useMobileApiKey && env.mobileApiKey.isNotEmpty)
+        'X-Mobile-Api-Key': env.mobileApiKey,
+      ...?options.headers,
+    };
+  }
+
+  Uri _uri(String url) => Uri.parse(url.startsWith('http')
+      ? url
+      : '${env.webApiUrl}${url.startsWith('/') ? url : '/$url'}');
+
+  /// One file as `multipart/form-data` under [field] — a Support Chat attachment. Answers the
+  /// decoded JSON, and fails the way [request] does, so a caller reads one kind of error.
+  Future<dynamic> postFile(
+    String url, {
+    required String field,
+    required List<int> bytes,
+    required String fileName,
+    HttpRequestOptions options = const HttpRequestOptions(timeout: Duration(seconds: 60)),
+  }) async {
+    final req = http_pkg.MultipartRequest('POST', _uri(url))
+      ..headers.addAll(_authHeaders(options))
+      ..files.add(http_pkg.MultipartFile.fromBytes(field, bytes, filename: fileName));
+    try {
+      final streamed = await _client.send(req).timeout(options.timeout);
+      final res = await http_pkg.Response.fromStream(streamed);
+      Map<String, dynamic>? payload;
+      try {
+        final decoded = jsonDecode(res.body);
+        if (decoded is Map<String, dynamic>) payload = decoded;
+      } catch (_) {}
+      if (res.statusCode < 200 || res.statusCode >= 300) {
+        throw ApiError(
+          (payload?['message'] ?? 'Request failed (HTTP ${res.statusCode})').toString(),
+          category: _classify(res.statusCode),
+          status: res.statusCode,
+          code: payload?['code']?.toString() ?? payload?['error']?.toString(),
+          body: payload,
+        );
+      }
+      return payload;
+    } on TimeoutException {
+      throw ApiError(
+        'Request timed out. Please check your connection and try again.',
+        category: ErrorCategory.network,
+      );
+    } on ApiError {
+      rethrow;
+    } catch (_) {
+      throw ApiError('Network error', category: ErrorCategory.network);
+    }
+  }
+
+  /// Where a signed-in GET redirects to, without following it.
+  ///
+  /// For a route that checks who is asking and then hands over a short-lived URL — a Support
+  /// Chat attachment. Following the redirect here would download the file into memory; the
+  /// caller wants the address, to open it.
+  Future<String> redirectTarget(
+    String url, {
+    HttpRequestOptions options = const HttpRequestOptions(),
+  }) async {
+    final req = http_pkg.Request('GET', _uri(url))
+      ..followRedirects = false
+      ..headers.addAll(_authHeaders(options));
+    try {
+      final res = await _client.send(req).timeout(options.timeout);
+      await res.stream.drain<void>();
+      final location = res.headers['location'];
+      if (res.isRedirect && location != null && location.isNotEmpty) {
+        return _uri(location).toString();
+      }
+      throw ApiError(
+        'Request failed (HTTP ${res.statusCode})',
+        category: _classify(res.statusCode),
+        status: res.statusCode,
+      );
+    } on TimeoutException {
+      throw ApiError(
+        'Request timed out. Please check your connection and try again.',
+        category: ErrorCategory.network,
+      );
+    } on ApiError {
+      rethrow;
+    } catch (_) {
+      throw ApiError('Network error', category: ErrorCategory.network);
+    }
+  }
+
+  /// A signed-in `text/event-stream`, as the lines it sends.
+  ///
+  /// Flutter has no EventSource, so this is the part of one that matters: open the response and
+  /// read it as it arrives. Parsing the frames and reconnecting are the caller's business. A
+  /// status other than 200 is answered with an [ApiError] carrying it — a 204 in particular means
+  /// "nothing to follow yet", which is not a failure to retry.
+  Future<EventLines> openEventStream(
+    String url, {
+    HttpRequestOptions options = const HttpRequestOptions(),
+  }) async {
+    final client = http_pkg.Client();
+    final req = http_pkg.Request('GET', _uri(url))
+      ..headers.addAll({..._authHeaders(options), 'Accept': 'text/event-stream', 'Cache-Control': 'no-cache'});
+    try {
+      final res = await client.send(req).timeout(options.timeout);
+      if (res.statusCode != 200) {
+        await res.stream.drain<void>();
+        client.close();
+        throw ApiError('Stream refused (HTTP ${res.statusCode})',
+            category: _classify(res.statusCode), status: res.statusCode);
+      }
+      final lines = res.stream.transform(utf8.decoder).transform(const LineSplitter());
+      return EventLines(lines, client.close);
+    } on TimeoutException {
+      client.close();
+      throw ApiError('Request timed out.', category: ErrorCategory.network);
+    } on ApiError {
+      rethrow;
+    } catch (_) {
+      client.close();
+      throw ApiError('Network error', category: ErrorCategory.network);
+    }
+  }
+
   Future<dynamic> post(
     String url, {
     Object? body,
@@ -282,6 +415,15 @@ class HttpClientAdapter {
     HttpRequestOptions options = const HttpRequestOptions(),
   }) =>
       request('DELETE', url, body: body, options: options);
+}
+
+/// An open event stream: its lines, and the way to hang up. Its own client, so closing it ends
+/// only this connection and never a request that happens to share the app's client.
+class EventLines {
+  EventLines(this.lines, this.close);
+
+  final Stream<String> lines;
+  final void Function() close;
 }
 
 final HttpClientAdapter http = HttpClientAdapter();

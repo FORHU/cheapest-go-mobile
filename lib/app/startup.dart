@@ -4,6 +4,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart';
 
 import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
+import 'package:cheapest_go_mobile/app/support_chat.dart';
 import 'package:cheapest_go_mobile/features/auth/stores/auth_store.dart';
 import 'package:cheapest_go_mobile/shared/flights/offline_route_maps.dart';
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
@@ -86,6 +87,10 @@ class AppStartup extends ChangeNotifier {
       // session is restored, so the sign-in that restoring produces is one this is listening
       // for.
       wireGateToAuth();
+
+      // Support Chat opens to an account that is through the gate, and forgets it on
+      // sign-out. Wired here for the same reason: before the restore it has to hear.
+      wireSupportChat();
 
       // Neither is awaited, and neither may be: a session is validated against a server that
       // might be slow or absent, and offline maps are a download. Holding the splash on

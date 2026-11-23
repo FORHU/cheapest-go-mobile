@@ -56,6 +56,24 @@ void main() {
       expect(find.text('App Theme'), findsOneWidget);
       expect(find.text('Display Currency'), findsNothing, reason: 'prices are always in pesos');
     });
+
+    // V2's settings panel carries Support (app-v2#41); so does the sheet here (#60). Choosing
+    // it closes the sheet, which sits where the chat panel opens.
+    testWidgets('the settings sheet offers Support, and choosing it closes the sheet', (tester) async {
+      await pumpApp(tester, location: '/trips');
+      await tester.tap(find.descendant(
+        of: find.byType(V2BottomNav),
+        matching: find.bySemanticsLabel('Settings'),
+      ));
+      await tester.pumpAndSettle();
+
+      final support = find.byKey(const ValueKey('settings-support'));
+      expect(find.descendant(of: support, matching: find.text('Support')), findsOneWidget);
+
+      await tester.tap(support);
+      await tester.pumpAndSettle();
+      expect(find.text('App Theme'), findsNothing);
+    });
   });
 
   testWidgets('Profile › Reset demo data asks first, then clears test bookings', (tester) async {

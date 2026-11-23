@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/app/router/auth_gate.dart';
 import 'package:cheapest_go_mobile/app/startup.dart';
+import 'package:cheapest_go_mobile/app/support_chat.dart';
 import 'package:cheapest_go_mobile/shared/tips/tip_anchor.dart';
 import 'package:cheapest_go_mobile/app/router/v2_bottom_nav.dart';
 import 'package:cheapest_go_mobile/features/onboarding/stores/onboarding_store.dart';
@@ -65,14 +66,19 @@ GoRouter createAppRouter({bool gate = true}) => GoRouter(
         onboardingStore,
       ]),
 
+      // Counts sheets and dialogs so the Support launcher steps aside under them. Each branch
+      // below has its own: a sheet opens on the nearest navigator, which is the branch's.
+      observers: [PopupTracker()],
+
       routes: [
         GoRoute(path: splashPath, builder: (_, _) => const _StartingView()),
         GoRoute(path: onboardingPath, builder: (_, _) => const OnboardingView()),
         StatefulShellRoute.indexedStack(
           builder: (context, state, navigationShell) => MainScaffoldShell(navigationShell: navigationShell),
           branches: [
-            StatefulShellBranch(routes: [GoRoute(path: '/', builder: (_, _) => const HomeView())]),
+            StatefulShellBranch(observers: [PopupTracker()], routes: [GoRoute(path: '/', builder: (_, _) => const HomeView())]),
             StatefulShellBranch(
+              observers: [PopupTracker()],
               routes: [
                 GoRoute(
                   path: '/stay',
@@ -81,14 +87,16 @@ GoRouter createAppRouter({bool gate = true}) => GoRouter(
               ],
             ),
             StatefulShellBranch(
+              observers: [PopupTracker()],
               routes: [GoRoute(path: '/map', builder: (_, _) => const MapView())],
             ),
             // Kept as a branch so the shell's indexes do not move, but `/flights` is no longer a
             // screen of its own: it opens V2's search for the trip being planned (#47).
             StatefulShellBranch(
+              observers: [PopupTracker()],
               routes: [GoRoute(path: '/flights', redirect: (_, _) => _flightSearchFromStore(), builder: (_, _) => const SizedBox.shrink())],
             ),
-            StatefulShellBranch(routes: [GoRoute(path: '/trips', builder: (_, _) => const TripsView())]),
+            StatefulShellBranch(observers: [PopupTracker()], routes: [GoRoute(path: '/trips', builder: (_, _) => const TripsView())]),
           ],
         ),
         // The same hotel and golf lists, opened as pages from Home, the airport
@@ -347,7 +355,7 @@ class _StartingView extends StatelessWidget {
         child: Text(t.nav_signOut),
       ),
     ];
-  }
+ }
 }
 
 /// The app shell: a shared header, the current branch, and V2's bottom bar.
@@ -500,6 +508,30 @@ class _SettingsSheet extends StatelessWidget {
                   icon: Icon(LucideIcons.x, size: 20, color: TwPalette.slate500),
                 ),
               ],
+            ),
+          ),
+          // Support, as V2's settings panel carries it (app-v2#41): the phone's way in from the
+          // bottom bar. The sheet closes first, since it sits where the panel opens.
+          Padding(
+            padding: EdgeInsets.fromLTRB(TwSpace.of(6), TwSpace.of(4), TwSpace.of(6), 0),
+            child: SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                key: const ValueKey('settings-support'),
+                onPressed: () {
+                  Navigator.of(context).pop();
+                  supportChatStore.requestOpen();
+                },
+                icon: const Icon(LucideIcons.messageCircle, size: 16),
+                label: Text(AppLocalizations.of(context)!.nav_support),
+                style: OutlinedButton.styleFrom(
+                  alignment: Alignment.centerLeft,
+                  padding: EdgeInsets.symmetric(horizontal: TwSpace.of(4), vertical: TwSpace.of(3)),
+                  foregroundColor: dark ? Colors.white : TwPalette.slate700,
+                  side: BorderSide(color: dark ? TwPalette.slate800 : TwPalette.slate200),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+                ),
+              ),
             ),
           ),
           Flexible(
