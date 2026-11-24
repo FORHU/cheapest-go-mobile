@@ -10,7 +10,7 @@ import 'package:cheapest_go_mobile/shared/saved/saved_trips_store.dart';
 import 'package:cheapest_go_mobile/shared/auth/rbac.dart';
 import 'package:cheapest_go_mobile/shared/auth/roles.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
-import 'package:cheapest_go_mobile/shared/errors/error_router.dart';
+import 'package:cheapest_go_mobile/shared/errors/error_router.dart' as errors;
 import 'package:cheapest_go_mobile/shared/lib/env.dart';
 import 'package:cheapest_go_mobile/shared/lib/token.dart';
 
@@ -139,8 +139,7 @@ class AuthStore extends ChangeNotifier {
       } catch (_) {}
       return true;
     } catch (err) {
-      final routed = routeError(err, t: t);
-      _errorMessage = routed.toast ?? err.toString();
+      _errorMessage = errors.errorMessage(err, t: t);
       return false;
     } finally {
       _isLoading = false;
@@ -167,7 +166,7 @@ class AuthStore extends ChangeNotifier {
         );
         return true;
       } catch (err) {
-        _errorMessage = routeError(err, t: t).toast ?? err.toString();
+        _errorMessage = errors.errorMessage(err, t: t);
         return false;
       } finally {
         _isLoading = false;
@@ -183,8 +182,7 @@ class AuthStore extends ChangeNotifier {
       } catch (_) {}
       return true;
     } catch (err) {
-      final routed = routeError(err, t: t);
-      _errorMessage = routed.toast ?? err.toString();
+      _errorMessage = errors.errorMessage(err, t: t);
       return false;
     } finally {
       _isLoading = false;
@@ -206,8 +204,7 @@ class AuthStore extends ChangeNotifier {
       await authApi.resetPassword(email);
       return true;
     } catch (err) {
-      final routed = routeError(err, t: t);
-      _errorMessage = routed.toast ?? err.toString();
+      _errorMessage = errors.errorMessage(err, t: t);
       return false;
     } finally {
       _isLoading = false;
@@ -229,8 +226,7 @@ class AuthStore extends ChangeNotifier {
       await authApi.confirmPasswordReset(token, password);
       return true;
     } catch (err) {
-      final routed = routeError(err, t: t);
-      _errorMessage = routed.toast ?? err.toString();
+      _errorMessage = errors.errorMessage(err, t: t);
       return false;
     } finally {
       _isLoading = false;
@@ -263,10 +259,13 @@ class AuthStore extends ChangeNotifier {
       } catch (_) {}
       return true;
     } on GoogleNotConfigured {
-      _errorMessage = 'Google sign-in is not configured in this build.';
+      // The build has no client id, which is a deployment fact and not something the person
+      // holding the phone can do anything about — so they get the app's general sentence, in
+      // their own language, rather than a note about configuration in English.
+      _errorMessage = t?.errors_generic ?? 'Something went wrong. Please try again.';
       return false;
     } catch (err) {
-      _errorMessage = routeError(err, t: t).toast ?? err.toString();
+      _errorMessage = errors.errorMessage(err, t: t);
       return false;
     } finally {
       _isLoading = false;

@@ -81,6 +81,28 @@ void main() {
       // as Stripe's own, and routing it would replace it with "Unexpected error occurred".
       expect(errorMessage(Exception('Your card was declined.')), 'Your card was declined.');
     });
+
+    /// The server's wording is kept when it is a refusal addressed to a person, and dropped
+    /// when the server is reporting its own fault. A 5xx means the deployment is wrong, and
+    /// what api-v2 writes for those is addressed to whoever runs it: a Korean sign-in form
+    /// carried "Native Google sign-in is not configured", in English, naming an environment
+    /// setting to somebody who only wanted to log in.
+    test('a server fault is reported in the traveller\'s language, not the server\'s', () {
+      final t = lookupAppLocalizations(const Locale('ko'));
+
+      final misconfigured = ApiError(
+        'Native Google sign-in is not configured',
+        code: 'OAUTH_NOT_CONFIGURED',
+        status: 500,
+      );
+      expect(errorMessage(misconfigured, t: t), '오류가 발생했습니다. 다시 시도해 주세요.');
+      expect(errorMessage(misconfigured, t: t), isNot(contains('configured')));
+
+      // Not a 5xx: the server refused something and worded it for a person, so it is kept.
+      final off = ApiError('Hotel booking is switched off in this environment.', status: 200);
+      expect(errorMessage(off, t: t), 'Hotel booking is switched off in this environment.');
+    });
+
     test('RBAC engine enforces role permissions', () {
       expect(hasPermission(Role.admin, Permission.adminAccess), isTrue);
       expect(hasPermission(Role.user, Permission.adminAccess), isFalse);

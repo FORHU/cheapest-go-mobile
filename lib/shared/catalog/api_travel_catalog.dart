@@ -314,8 +314,8 @@ class ApiTravelCatalog implements TravelCatalog {
                   ],
             badge: existing?.badge,
             images: images,
-            latitude: (content['lat'] as num?)?.toDouble() ?? existing?.latitude,
-            longitude: (content['lng'] as num?)?.toDouble() ?? existing?.longitude,
+            latitude: _coordinates(content['lat'], content['lng']).$1 ?? existing?.latitude,
+            longitude: _coordinates(content['lat'], content['lng']).$2 ?? existing?.longitude,
             amenities: (content['amenities'] as List?)?.map((e) => e.toString()).toList() ??
                 existing?.amenities ??
                 const [],
@@ -458,14 +458,35 @@ class ApiTravelCatalog implements TravelCatalog {
     return (nights > 1 ? total / nights : total).round();
   }
 
+  /// One coordinate, or null when the supplier does not know it.
+  ///
+  /// Zero is not a place. A hotel whose content has never been geocoded comes back as
+  /// `lat: 0, lng: 0`, and read literally that is a point in the Atlantic off West Africa —
+  /// so a Seoul search framed its map on a box reaching from Korea to the Gulf of Guinea,
+  /// drew an empty ocean, and collapsed every stay into one cluster in the middle of it.
+  /// 283 of 317 Seoul stays answered that way the first time this was pointed at the live
+  /// supplier; the mock catalogue never produced a zero, which is why it took real data.
+  ///
+  /// Both axes are tested together, because a genuine zero on one of them exists — the
+  /// equator runs through Kenya and Indonesia, the prime meridian through Ghana — and it is
+  /// only the pair being zero that means "not known".
+  static (double?, double?) _coordinates(Object? lat, Object? lng) {
+    final latitude = (lat as num?)?.toDouble();
+    final longitude = (lng as num?)?.toDouble();
+    if (latitude == null || longitude == null) return (null, null);
+    if (latitude == 0 && longitude == 0) return (null, null);
+    return (latitude, longitude);
+  }
+
   Hotel _parseHotelFromSearch(Map<String, dynamic> item, Airport airport) {
     final hId = item['hotelId']?.toString() ?? item['id']?.toString() ?? 'hotel_${item.hashCode}';
     final name = item['name']?.toString() ?? 'Hotel';
     final city = item['city']?.toString() ?? item['address']?.toString() ?? airport.city;
-    final lat = (item['lat'] as num?)?.toDouble() ??
-        ((item['coordinates'] as Map<String, dynamic>?)?['lat'] as num?)?.toDouble();
-    final lng = (item['lng'] as num?)?.toDouble() ??
-        ((item['coordinates'] as Map<String, dynamic>?)?['lng'] as num?)?.toDouble();
+    final nested = item['coordinates'] as Map<String, dynamic>?;
+    final (lat, lng) = switch (_coordinates(item['lat'], item['lng'])) {
+      (final double a, final double b) => (a, b),
+      _ => _coordinates(nested?['lat'], nested?['lng']),
+    };
 
     double distance = (item['distanceKm'] as num?)?.toDouble() ?? 2.5;
     if (lat != null && lng != null) {

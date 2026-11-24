@@ -143,6 +143,34 @@ void main() {
       expect(card.hotel, isNull);
       expect(card.photos, isEmpty);
     });
+
+    /// Closing is what the map asks for, and it has to be answered even mid-gallery.
+    ///
+    /// The card is painted into the map, which takes a few milliseconds, and the gallery
+    /// repaints itself every 3.4 seconds. A press landing in that window closed the card and
+    /// the in-flight paint put it straight back — leaving a card on the map with no stay
+    /// behind it, which nothing could then close. The map checks this before it draws; what
+    /// the model owes is that the stay is gone the instant it is asked, not after a frame.
+    test('closing takes effect immediately, even while the gallery is turning', () {
+      final card = StayCardModel()
+        ..show(_stay(photos: const [
+          'https://example.test/1.jpg',
+          'https://example.test/2.jpg',
+          'https://example.test/3.jpg',
+        ]));
+      addTearDown(card.dispose);
+
+      card.page(1);
+      expect(card.shown, 1, reason: 'the gallery has moved on');
+
+      card.show(null);
+      expect(card.hotel, isNull, reason: 'nothing is left for a paint to draw');
+      expect(card.photos, isEmpty);
+
+      // And it stays gone: a repeat close is not an error and does not revive anything.
+      card.show(null);
+      expect(card.hotel, isNull);
+    });
   });
 
   group('the picture the map carries', () {

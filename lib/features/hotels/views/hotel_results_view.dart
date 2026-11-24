@@ -182,8 +182,14 @@ class _HotelResultsViewState extends State<HotelResultsView> {
         setState(() => _selectedId = hotel.id);
     }
 
+    /// Closes the card, from the map or from the card's own close control.
+    ///
+    /// Asks the card as well as the selection, rather than the selection alone. The two are
+    /// set together and cleared together, so they should never disagree — but when they did,
+    /// a dismissal guarded only by the selection returned without doing anything and the card
+    /// could not be closed at all. Whatever is still showing is what has to go.
     void _dismiss() {
-        if (_selectedId == null) return;
+        if (_selectedId == null && _card.hotel == null) return;
         _card.show(null);
         setState(() => _selectedId = null);
     }
@@ -201,6 +207,16 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                 final shown = _apply(_filters);
                 final currency = uiSettingsStore.displayCurrency;
 
+                // A map of stays none of which has a place on it is not a map.
+                //
+                // Where a stay is comes from this app's own hotel content, and a supplier can
+                // answer with stays we hold no content for — a live Seoul search returned 287
+                // of them and not one carried a coordinate. The map then framed nothing, left
+                // the camera wherever Mapbox opens it, and showed an empty New York under a
+                // plate reading 287 stays. The list says the same thing and says it truthfully,
+                // so it is what gets drawn; the view switch still works and still says Map.
+                final mappable = _mapView && shown.any((h) => h.latitude != null && h.longitude != null);
+
                 // The Tip waits for stays to actually be there: one over a spinner, describing
                 // cards that have not arrived, teaches nothing. See #62 and ADR-0006.
                 return TipScope(
@@ -209,7 +225,7 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                     child: Stack(
                     children: [
                         Positioned.fill(
-                            child: _mapView
+                            child: mappable
                                 ? StayMap(
                                     hotels: shown,
                                     selectedId: _selectedId,
@@ -305,7 +321,7 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                         // rail's first card, which left it pointing at nothing once the rail
                         // went, and a painted card cannot hold it either. This plate is on the
                         // screen whether or not a card is open. See ADR-0006.
-                        if (_mapView && !_loading)
+                        if (mappable && !_loading)
                             Positioned(
                                 left: mapGutter,
                                 bottom: mapGutter,
