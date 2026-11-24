@@ -402,7 +402,11 @@ class _GolfPanel extends StatelessWidget {
                         // No trailing icon: V2's own copy for this one ends in an arrow, so
                         // adding the usual one drew it twice.
                         label: t.search_golf_allCourses,
-                        onPressed: () => context.go('/golf'),
+                        // push, not go. `go` replaces the stack, so the golf list arrived
+                        // with nothing behind it and the hardware back button closed the
+                        // app instead of returning here. Every other way into /golf — the
+                        // airport hub, the map — already pushes.
+                        onPressed: () => context.push('/golf'),
                     ),
                 ),
             ],

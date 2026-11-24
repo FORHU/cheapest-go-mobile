@@ -44,16 +44,35 @@ const String brandMarket = String.fromEnvironment('BRAND_MARKET', defaultValue: 
 /// release builds, so that would leave the picker in every one of them.
 const bool kAllowLanguageSwitch = bool.fromEnvironment('ALLOW_LANGUAGE_SWITCH');
 
+/// Where travel data comes from: `mock` is the catalogue compiled into the app, `api` is
+/// api-v2. Switched by `--dart-define=CATALOG=mock|api`. See ADR-0003.
+const String kCatalogMode = String.fromEnvironment(
+  'CATALOG',
+  defaultValue: 'mock',
+);
+
 /// Whether auth is answered on the device instead of by the server: a demo user signs in and
-/// nothing calls `/api/v2/auth`. Build with `--dart-define=MOCK_AUTH=false` for the real
-/// endpoints.
+/// nothing calls `/api/v2/auth`. Overridable with `--dart-define=MOCK_AUTH=`.
 ///
 /// Here rather than in the auth feature, where it used to live, because it is not only auth's
 /// business: anything that asks the server about *the signed-in account* is asking about an
 /// account the server has never heard of, and has to know that. Feature isolation means
 /// `features/onboarding` cannot read a constant out of `features/auth`, so the one fact both
 /// need lives in the one place both may import.
-const bool kMockAuth = bool.fromEnvironment('MOCK_AUTH', defaultValue: true);
+///
+/// It follows the catalogue rather than defaulting to true on its own, because mock auth and
+/// a real API is a build that cannot work and nothing stopped anyone making one. `.env.devapi`
+/// sets `CATALOG=api` and says nothing about auth, so every QA build signed a demo user in on
+/// the handset and then asked dev about them: no token was ever stored, Trips reported
+/// "sign in required" to somebody who just had, and hotel and flight checkout both died on a
+/// 401 after the traveller had filled the whole form in. Three bug reports, one missing flag.
+///
+/// Mocking one and not the other is still reachable — pass `MOCK_AUTH` explicitly — but it is
+/// now something you have to ask for rather than something you get by forgetting.
+const bool kMockAuth = bool.fromEnvironment(
+  'MOCK_AUTH',
+  defaultValue: kCatalogMode == 'mock',
+);
 
 enum AppEnvironment {
   development,

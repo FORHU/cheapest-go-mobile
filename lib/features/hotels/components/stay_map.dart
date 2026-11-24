@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' hide Size;
 import 'package:mapbox_maps_flutter/mapbox_maps_flutter.dart' as mb show Position;
 
+import 'package:cheapest_go_mobile/features/hotels/components/stay_card_painter.dart';
+import 'package:cheapest_go_mobile/features/hotels/components/stay_map_card.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_pin_painter.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_pins.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
@@ -34,7 +36,11 @@ class StayMap extends StatefulWidget {
         required this.hotels,
         required this.currency,
         required this.onSelect,
+        required this.onOpen,
         this.selectedId,
+        this.card,
+        this.onMapTap,
+        this.topInset = 0,
         super.key,
     });
 
@@ -43,7 +49,25 @@ class StayMap extends StatefulWidget {
 
     /// A pin was pressed: one stay, or the cheapest of a cluster.
     final ValueChanged<Hotel> onSelect;
+
+    /// The **Stay Card** was pressed, or the pin of the stay already showing. Open the stay.
+    final ValueChanged<Hotel> onOpen;
+
     final String? selectedId;
+
+    /// The card's own state — its gallery, and the photograph ready to be painted. The map
+    /// draws the card itself (ADR-0008), so it needs the thing to draw, not a widget.
+    final StayCardModel? card;
+
+    /// The map was pressed, away from any pin and away from the card. The selected stay is
+    /// dismissed on this, as is the card's own close control; a second press on the stay's own
+    /// pin opens the property instead of closing the card (client decision, 2026-11-23).
+    final VoidCallback? onMapTap;
+
+    /// How much of the map's top edge is covered by the screen's search bar. The camera eases
+    /// a newly selected card clear of it, since a **Map-Locked** card cannot be nudged out of
+    /// the way afterwards without the drift that being map-locked exists to remove.
+    final double topInset;
 
     @override
     State<StayMap> createState() => _StayMapState();
@@ -56,6 +80,14 @@ const double _clusterRadius = 80;
 /// V2's `CLUSTER_MAX_ZOOM`: past this, every stay stands on its own however close they are.
 const double _clusterMaxZoom = 16;
 
+/// Where the stand-in map puts one coordinate along one axis.
+///
+/// A plain linear fit of the bounds into the box with a 60px inset, which is enough for a
+/// test to tell one pin from another and to find the card over the right one. Top level so
+/// the stand-in map and the anchor it reports are provably the same projection.
+double _headlessPlace(double v, double min, double max, double extent) =>
+    max == min ? extent / 2 : 60 + (v - min) / (max - min) * (extent - 160);
+
 /// Mapbox's tiles are 512 wide, so this is the ground resolution at the equator for zoom 0.
 const double _metresPerPixelAtZoom0 = 78271.516;
 
@@ -63,8 +95,21 @@ class _StayMapState extends State<StayMap> {
     MapboxMap? _map;
     PointAnnotationManager? _pins;
 
+    /// The **Stay Card**, as the map's own annotation. Its own manager so that replacing the
+    /// card as the gallery advances never disturbs the pins.
+    PointAnnotationManager? _cards;
+    PointAnnotation? _card;
+
     /// Which group each annotation stands for, so a tap can name the stay.
     final _byAnnotation = <String, _Marker>{};
+
+    /// The markers as last drawn, with where each one was painted, so a press can be answered
+    /// without asking the map anything.
+    List<({_Marker marker, Size size})> _hit = const [];
+
+    /// The camera as the map last reported it. Every press is answered against this: the card
+    /// and the pins are projected from it, which is the same arithmetic that put them there.
+    CameraState? _camera;
 
     /// Drawn for the headless case only; on a device the map holds the markers.
     List<_Marker> _flat = const [];
@@ -82,7 +127,7 @@ class _StayMapState extends State<StayMap> {
 
     /// Painted pins, by what is drawn on them. However far a map of eight stays is zoomed it
     /// shows a dozen distinct pills at most, so this stays small and saves every repaint.
-    final _pinCache = <String, Uint8List>{};
+    final _pinCache = <String, ({Uint8List bytes, Size size})>{};
 
     /// Tests have no Mapbox: no token, no platform view, no camera to ask. The pins are still
     /// drawn, on a plain ground, from a straight projection of the bounds — so a test sees
@@ -105,6 +150,7 @@ class _StayMapState extends State<StayMap> {
         // and then only when the stays change. Scheduling it from build instead looped: the
         // draw set state, the state rebuilt, and the rebuild scheduled another draw.
         if (_headless) WidgetsBinding.instance.addPostFrameCallback((_) => _redraw());
+        widget.card?.addListener(_repaintCard);
     }
 
     @override
@@ -125,6 +171,15 @@ class _StayMapState extends State<StayMap> {
         if (_mapKeyOf(old.hotels) != _mapKeyOf(widget.hotels) && _placed.isNotEmpty) {
             _frameHotels();
         }
+
+        if (old.card != widget.card) {
+            old.card?.removeListener(_repaintCard);
+            widget.card?.addListener(_repaintCard);
+        }
+
+        // A newly chosen stay gets its card eased into view; the same stay staying chosen does
+        // not, or every repaint of the gallery would nudge the camera.
+        if (old.selectedId != widget.selectedId) _revealCard();
     }
 
     /// The placed stays, as one comparable value. Two lists with the same stays in the same
@@ -136,7 +191,9 @@ class _StayMapState extends State<StayMap> {
 
     @override
     void dispose() {
+        widget.card?.removeListener(_repaintCard);
         _pins?.deleteAll();
+        _cards?.deleteAll();
         super.dispose();
     }
 
@@ -144,13 +201,121 @@ class _StayMapState extends State<StayMap> {
         _map = map;
         await map.scaleBar.updateSettings(ScaleBarSettings(enabled: false));
         await map.compass.updateSettings(CompassSettings(enabled: false));
+        // Flat and north-up, always. The card over the selected pin is placed by projecting
+        // the stay's coordinate here (see `_projectWith`), and that projection is only exact
+        // on a map with no bearing and no pitch. Neither gesture does anything for a search
+        // map — the pins are flat pills, and a tilted city hides the ones behind it — so they
+        // are turned off rather than carried through the arithmetic.
+        await map.gestures.updateSettings(
+            GesturesSettings(rotateEnabled: false, pitchEnabled: false),
+        );
+        // The pins' manager is created first so the card's sits above it. The card is one
+        // stay's answer and it covers whatever it covers, as V2's popup does over its markers
+        // — a neighbour's pin punching through the middle of a photograph reads as a fault.
+        // The press order below matches: the card is tested before the pins, so what looks
+        // topmost is what answers.
         _pins = await map.annotations.createPointAnnotationManager();
-        _pins!.tapEvents(onTap: (annotation) {
-            final marker = _byAnnotation[annotation.id];
-            if (marker != null) _onMarkerTap(marker);
-        });
+        _cards = await map.annotations.createPointAnnotationManager();
+
+        // One handler answers every press on this map.
+        //
+        // Neither manager is given a tap listener of its own. An annotation that has one
+        // swallows the press and reports only *which* annotation it was, and the card needs to
+        // know *where* on itself it was pressed — the close disc and the gallery arrows are
+        // regions of a picture now, not buttons (ADR-0008). With no listener to swallow it,
+        // every press arrives here carrying its position, and the hit test below answers it
+        // against the same projection that drew the things being pressed.
+        map.addInteraction(
+            TapInteraction.onMap((context) => _onPress(
+                Offset(
+                    context.touchPosition.x.toDouble(),
+                    context.touchPosition.y.toDouble(),
+                ),
+            )),
+        );
+
         await _frameHotels();
         await _redraw();
+        await _repaintCard();
+    }
+
+    /// Answers a press at [at], in the map's own logical pixels.
+    ///
+    /// In front-to-back order, which is the order they are drawn in: the card first, because it
+    /// stands over the pins; then the pins; then the ground, which dismisses.
+    void _onPress(Offset at) {
+        final card = widget.card?.hotel;
+        if (card != null) {
+            final rect = _cardRect(card);
+            if (rect != null && rect.contains(at)) {
+                switch (StayCardGeometry(photos: widget.card!.photos.length)
+                    .hitTest(at - rect.topLeft)) {
+                    case StayCardPress.open:
+                        widget.onOpen(card);
+                    case StayCardPress.close:
+                        widget.onMapTap?.call();
+                    case StayCardPress.previous:
+                        widget.card!.page(-1);
+                    case StayCardPress.next:
+                        widget.card!.page(1);
+                }
+                return;
+            }
+        }
+
+        // The nearest pin whose painted pill holds the press. Nearest rather than first,
+        // because pins overlap and the one a traveller means is the one they pressed closest
+        // to the middle of.
+        _Marker? pressed;
+        var closest = double.infinity;
+        for (final drawn in _hit) {
+            final rect = _pinRect(drawn.marker, drawn.size);
+            if (rect == null || !rect.contains(at)) continue;
+            final away = (rect.center - at).distanceSquared;
+            if (away < closest) {
+                closest = away;
+                pressed = drawn.marker;
+            }
+        }
+
+        if (pressed != null) {
+            _onMarkerTap(pressed);
+            return;
+        }
+        widget.onMapTap?.call();
+    }
+
+    /// Where the card is drawn, in the map's own logical pixels, or null when there is none or
+    /// the camera has not been reported yet.
+    Rect? _cardRect(Hotel hotel) {
+        final camera = _camera;
+        if (camera == null || hotel.latitude == null) return null;
+
+        final at = _projectWith(camera, hotel);
+        if (at == null) return null;
+        return Rect.fromLTWH(
+            at.dx - stayMapCardWidth / 2,
+            at.dy - stayMapCardPinClearance - stayMapCardHeight,
+            stayMapCardWidth,
+            stayMapCardHeight,
+        );
+    }
+
+    /// Where a pin's pill is drawn. Mapbox anchors these at the bottom, so the coordinate is
+    /// the middle of the pill's foot.
+    Rect? _pinRect(_Marker marker, Size size) {
+        final camera = _camera;
+        if (camera == null) return null;
+
+        final at = offsetOnMap(
+            longitude: marker.longitude,
+            latitude: marker.latitude,
+            centreLongitude: camera.center.coordinates.lng.toDouble(),
+            centreLatitude: camera.center.coordinates.lat.toDouble(),
+            zoom: camera.zoom,
+            view: _size,
+        );
+        return Rect.fromLTWH(at.dx - size.width / 2, at.dy - size.height, size.width, size.height);
     }
 
     /// Metres to a logical pixel at a given zoom and latitude. Mapbox's tiles are 512 wide,
@@ -276,6 +441,9 @@ class _StayMapState extends State<StayMap> {
 
         try {
             final camera = await map.getCameraState();
+            // Kept for the hit test, which has nothing else to go on until the camera first
+            // moves — and a press that lands before any pan still has to find its pin.
+            _camera = camera;
             final markers = _cluster(
                 placed,
                 // Past the max zoom nothing is clustered, as V2 has it: at that scale two
@@ -300,6 +468,10 @@ class _StayMapState extends State<StayMap> {
             if (signature == _drawn) return;
 
             final options = <PointAnnotationOptions>[];
+            // What was painted where, so that a press can be answered without asking the map
+            // which annotation it landed on. The sizes are the painter's own, in logical
+            // pixels, and they are what the press is tested against.
+            final hit = <({_Marker marker, Size size})>[];
             for (final marker in markers) {
                 final badge = marker.hotels.length > 1 ? '${marker.hotels.length}' : '';
                 final lines = _linesFor(marker, t);
@@ -309,11 +481,13 @@ class _StayMapState extends State<StayMap> {
                 // every step — a price does not change because the camera moved — and encoding
                 // each one again is what made a tap take a visible moment to answer.
                 final key = '$badge|${lines.join('~')}|$chosen|$brightness';
-                final drawn = _pinCache[key] ??= (await painter.paint(
+                final painted = _pinCache[key] ??= await painter.paint(
                     badge: badge,
                     lines: lines,
                     selected: chosen,
-                )).bytes;
+                );
+                final drawn = painted.bytes;
+                hit.add((marker: marker, size: painted.size));
                 options.add(PointAnnotationOptions(
                     geometry: Point(coordinates: mb.Position(marker.longitude, marker.latitude)),
                     image: drawn,
@@ -333,6 +507,7 @@ class _StayMapState extends State<StayMap> {
                 final annotation = created[i];
                 if (annotation != null) _byAnnotation[annotation.id] = markers[i];
             }
+            _hit = hit;
             _drawn = signature;
         } finally {
             _drawing = false;
@@ -384,6 +559,142 @@ class _StayMapState extends State<StayMap> {
             ? const Color(0xFF1A1A1A)
             : const Color(0xFFFFFFFF);
 
+    /// Paints the **Stay Card** and hands it to the map, or clears it.
+    ///
+    /// Called whenever the card's state says something has changed: a stay selected, its
+    /// photograph decoded, the gallery advanced. The card is one annotation standing on the
+    /// stay's own coordinate with the picture lifted clear of the pin, so from here on the map
+    /// moves it and nothing in Dart has an opinion about where it is.
+    Future<void> _repaintCard() async {
+        final cards = _cards;
+        if (cards == null || _headless) return;
+
+        final model = widget.card;
+        final hotel = model?.hotel;
+        if (model == null || hotel == null || hotel.latitude == null) {
+            if (_card != null) {
+                await cards.deleteAll();
+                _card = null;
+            }
+            return;
+        }
+
+        // One paint at a time. A photograph decoding while the gallery advances would
+        // otherwise create two cards and delete neither.
+        if (_painting) {
+            _paintAgain = true;
+            return;
+        }
+        _painting = true;
+
+        try {
+            final t = AppLocalizations.of(context)!;
+            final ratio = MediaQuery.devicePixelRatioOf(context);
+            final shown = exchangeRates.convertForDisplay(
+                hotel.fromRate,
+                hotel.currency,
+                widget.currency,
+            );
+
+            final painted = await StayCardPainter(ratio: ratio).paint(
+                name: hotel.name,
+                address: (hotel.address?.isNotEmpty ?? false) ? hotel.address! : hotel.area,
+                price: '${formatMoney(shown.amount, shown.currency)}${t.hotels_perNight}',
+                rating: hotel.score > 0
+                    ? '${hotel.score.toStringAsFixed(1)} ${t.hotels_description_rating}'
+                    : null,
+                photo: model.photo,
+                photos: model.photos.length,
+                shown: model.shown,
+            );
+            if (!mounted) return;
+
+            await cards.deleteAll();
+            _card = await cards.create(PointAnnotationOptions(
+                geometry: Point(coordinates: mb.Position(hotel.longitude!, hotel.latitude!)),
+                image: painted.bytes,
+                // Anchored at its foot on the stay's coordinate. The picture carries the pin's
+                // clearance as empty space below the card, so the card itself stands above the
+                // pin — see the painter, and why `iconOffset` is not used for this.
+                iconAnchor: IconAnchor.BOTTOM,
+                iconSize: 1.0,
+            ));
+        } finally {
+            _painting = false;
+            if (_paintAgain) {
+                _paintAgain = false;
+                unawaited(_repaintCard());
+            }
+        }
+    }
+
+    bool _painting = false;
+    bool _paintAgain = false;
+
+    /// Eases the camera until the whole card is in view.
+    ///
+    /// A **Map-Locked** card cannot be nudged out from under the search bar after the fact —
+    /// nudging it is the drift that locking it to the map removes. So the map moves instead,
+    /// once, by exactly as much as it takes, and then holds still. Nothing happens when the
+    /// card already fits, which is most presses.
+    Future<void> _revealCard() async {
+        await _repaintCard();
+
+        final map = _map;
+        final camera = _camera;
+        final hotel = widget.card?.hotel;
+        if (map == null || camera == null || hotel == null || _headless) return;
+
+        final rect = _cardRect(hotel);
+        if (rect == null) return;
+
+        // What the card needs clearing on each side, in logical pixels: the search bar at the
+        // top, the gutter everywhere else.
+        var dx = 0.0;
+        var dy = 0.0;
+        if (rect.top < widget.topInset + mapGutter) dy = rect.top - widget.topInset - mapGutter;
+        if (rect.left < mapGutter) dx = rect.left - mapGutter;
+        if (rect.right > _size.width - mapGutter) dx = rect.right - _size.width + mapGutter;
+        if (dx == 0 && dy == 0) return;
+
+        // Moving the camera by a screen offset: the centre takes the place of the point that
+        // many pixels away from it, which is the same projection read backwards.
+        final world = 512 * math.pow(2, camera.zoom).toDouble();
+        final centre = camera.center.coordinates;
+        final lng = centre.lng.toDouble() + dx / world * 360;
+
+        final y = (0.5 -
+                math.log((1 + math.sin(centre.lat.toDouble() * math.pi / 180)) /
+                        (1 - math.sin(centre.lat.toDouble() * math.pi / 180))) /
+                    (4 * math.pi)) *
+            world;
+        final lat = math.atan(_sinh(math.pi * (1 - 2 * (y + dy) / world))) * 180 / math.pi;
+
+        await map.flyTo(
+            CameraOptions(center: Point(coordinates: mb.Position(lng, lat))),
+            MapAnimationOptions(duration: 220),
+        );
+    }
+
+    static double _sinh(double x) => (math.exp(x) - math.exp(-x)) / 2;
+
+    /// Where a coordinate sits on screen, worked out from a camera already in hand.
+    ///
+    /// Web Mercator, which is what the map itself draws with. Exact while bearing and pitch
+    /// are zero, which `_onMapCreated` makes certain of.
+    Offset? _projectWith(CameraState camera, Hotel hotel) {
+        if (_size == Size.zero) return null;
+        final centre = camera.center.coordinates;
+        return offsetOnMap(
+            longitude: hotel.longitude!,
+            latitude: hotel.latitude!,
+            centreLongitude: centre.lng.toDouble(),
+            centreLatitude: centre.lat.toDouble(),
+            zoom: camera.zoom,
+            view: _size,
+        );
+    }
+
     Color _pinForeground(BuildContext context) =>
         Theme.of(context).brightness == Brightness.dark
             ? const Color(0xFFF8FAFC)
@@ -403,9 +714,15 @@ class _StayMapState extends State<StayMap> {
                     key: ValueKey('stay-map-${dark ? 'dark' : 'light'}'),
                     styleUri: dark ? MapboxStyles.DARK : MapboxStyles.LIGHT,
                     onMapCreated: _onMapCreated,
-                    // Only when it stops. The pins hold their place on the map while it moves,
-                    // so there is nothing to recompute until the grouping could have changed.
+                    // Regrouping only when it stops. The pins and the card hold their place on
+                    // the map while it moves — they are all the map's own annotations now — so
+                    // the only thing a camera change alters is which stays are close enough to
+                    // be drawn as one.
                     onMapIdleListener: (_) => _redraw(),
+                    // Nothing is drawn from this: it is kept only so that a press can be
+                    // answered. The card and the pins are already where they belong, and the
+                    // hit test needs the camera they were last drawn against.
+                    onCameraChangeListener: (event) => _camera = event.cameraState,
                 );
             },
         );
@@ -430,8 +747,7 @@ class _HeadlessMap extends StatelessWidget {
         final minLng = lngs.isEmpty ? 0.0 : lngs.reduce(math.min);
         final maxLng = lngs.isEmpty ? 0.0 : lngs.reduce(math.max);
 
-        double place(double v, double min, double max, double extent) =>
-            max == min ? extent / 2 : 60 + (v - min) / (max - min) * (extent - 160);
+        const place = _headlessPlace;
 
         return Stack(
             children: [
@@ -466,9 +782,20 @@ class _HeadlessPin extends StatelessWidget {
         final lines = map._linesFor(marker, AppLocalizations.of(context)!);
         final active = marker.hotels.any((h) => h.id == map.widget.selectedId);
 
-        return marker.hotels.length > 1
-            ? ClusterPin(count: marker.hotels.length, priceLabel: lines.last, active: active)
-            : HotelPin(name: marker.hotels.first.name, priceLabel: lines.first, active: active);
+        // Tappable, because the card over a pin is now what this screen is for and a stand-in
+        // map that cannot be tapped leaves that whole interaction — open, swap, route — with
+        // no automated cover. On a device the annotation carries the tap; here the widget
+        // does, and both end at `onSelect`.
+        //
+        // A cluster selects its cheapest rather than zooming: there is no camera here to fly,
+        // and `_onMarkerTap` already falls back to exactly that when stays share a point.
+        return GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: () => map.widget.onSelect(marker.hotels.first),
+            child: marker.hotels.length > 1
+                ? ClusterPin(count: marker.hotels.length, priceLabel: lines.last, active: active)
+                : HotelPin(name: marker.hotels.first.name, priceLabel: lines.first, active: active),
+        );
     }
 }
 
@@ -511,6 +838,45 @@ List<List<Hotel>> groupNearbyStays(List<Hotel> stays, {required double radiusMet
     }
 
     return groups;
+}
+
+/// Where a coordinate falls on a map of [view] pointed at a centre, in logical pixels from
+/// the view's top left.
+///
+/// Web Mercator, which is what the map itself draws with: the world is 512 logical pixels
+/// square at zoom 0 and doubles with every zoom level, so a coordinate's distance from the
+/// camera's centre in that square is its distance from the middle of the view. Exact for a
+/// north-up map with no pitch, which is the only kind this screen allows.
+///
+/// Public because it is the whole of the card's placement during a pan, and a projection that
+/// is a pixel out is a card that does not sit on its pin.
+Offset offsetOnMap({
+    required double longitude,
+    required double latitude,
+    required double centreLongitude,
+    required double centreLatitude,
+    required double zoom,
+    required Size view,
+}) {
+    final world = 512 * math.pow(2, zoom).toDouble();
+
+    double atLng(double lng) => (lng + 180) / 360 * world;
+    double atLat(double lat) {
+        // Mercator runs to infinity at the poles; the map stops where the square does.
+        final sin = math.sin(lat.clamp(-85.05112878, 85.05112878) * math.pi / 180);
+        return (0.5 - math.log((1 + sin) / (1 - sin)) / (4 * math.pi)) * world;
+    }
+
+    var dx = atLng(longitude) - atLng(centreLongitude);
+    // The short way round. Without this a stay on the far side of the antimeridian from the
+    // camera is a world away instead of a few pixels.
+    if (dx > world / 2) dx -= world;
+    if (dx < -world / 2) dx += world;
+
+    return Offset(
+        view.width / 2 + dx,
+        view.height / 2 + (atLat(latitude) - atLat(centreLatitude)),
+    );
 }
 
 /// Metres between two stays, flat-earth — accurate enough at the distances a cluster cares

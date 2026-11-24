@@ -225,7 +225,7 @@ class _StatTile extends StatelessWidget {
                   // read backwards in two of the four languages. V2's own key already
                   // carries the figure, which is what lets each language place it.
                   TextSpan(
-                    text: AppLocalizations.of(context)!.landing_journey_strip_from(formatPeso(amount)),
+                    text: AppLocalizations.of(context)!.landing_journey_strip_from(formatCatalogPrice(amount)),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: golf ? c.onGolfSoft : c.onSecondary),
                   ),
                   TextSpan(text: ' $suffix', style: TextStyle(fontSize: 11, color: c.textMuted)),

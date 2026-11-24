@@ -396,7 +396,12 @@ class _StepSearchState extends State<StepSearch>
     _StepId.where => t.search_steps_askStay,
     _StepId.from => t.search_steps_askFrom,
     _StepId.to => t.search_steps_askTo,
-    _StepId.when => t.search_steps_askStayDates,
+    // A flight is not a stay. This asked "언제 묵으세요?" — when are you staying — on the
+    // date step of a flight search, because both modes took the stay question. V2 picks
+    // between them on mode and `search_whenFlying` was already translated here, unused.
+    _StepId.when => widget.mode == StepMode.flights
+        ? t.search_whenFlying
+        : t.search_steps_askStayDates,
     _StepId.who => t.search_steps_who,
   };
 

@@ -569,9 +569,12 @@ class _SpecialRequestsPanelState extends State<_SpecialRequestsPanel> {
             widget.onSaved();
         } catch (error) {
             if (!mounted) return;
+            final t = AppLocalizations.of(context)!;
             setState(() {
                 _busy = false;
-                _error = errorMessage(error);
+                // With the translations: without them `errorMessage` answers in English,
+                // which is how "Session expired" reached a Korean screen. See #75.
+                _error = errorMessage(error, t: t);
             });
         }
     }

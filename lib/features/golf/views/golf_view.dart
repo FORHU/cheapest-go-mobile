@@ -305,14 +305,23 @@ class _TeeTimeSheetState extends State<_TeeTimeSheet> {
             const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(child: Text('${formatPeso(widget.course.pricePerPlayer)} × ${plural(_players, 'player')}', style: TextStyle(color: c.textSecondary))),
+                // `mobile_golf_players` and not the English `plural()` helper: that one
+                // bolts an "s" onto a noun, which is a rule only English has, and it put
+                // "× 2 players" under a Korean heading. The key already existed.
+                Expanded(
+                  child: Text(
+                    '${formatCatalogPrice(widget.course.pricePerPlayer)} × '
+                    '${AppLocalizations.of(context)!.mobile_golf_players(_players)}',
+                    style: TextStyle(color: c.textSecondary),
+                  ),
+                ),
                 PriceText(total, size: 18),
               ],
             ),
             const SizedBox(height: 16),
             AppGradientButton(
               onPressed: () => Navigator.pop(context, _players),
-              label: AppLocalizations.of(context)!.mobile_golf_bookTeeTime(formatPeso(total)),
+              label: AppLocalizations.of(context)!.mobile_golf_bookTeeTime(formatCatalogPrice(total)),
             ),
             const SizedBox(height: 6),
             Text(AppLocalizations.of(context)!.mobile_golf_testModeNotice,

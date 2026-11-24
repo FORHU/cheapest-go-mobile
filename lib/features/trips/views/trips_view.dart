@@ -456,8 +456,10 @@ class _SignInPrompt extends StatelessWidget {
         // mirrored string to take. Pushing a login screen at somebody who only tapped a tab
         // is harsher on a phone than on the web, where a redirect is the usual answer.
         title: t.flights_priceAlert_signInRequired,
-        message: 'Your bookings are kept with your account, so they are on every device you '
-            'sign in to.',
+        // It was written here as an English literal because V2 has no string for it. That is
+        // a reason to add one of our own, not a reason to ship English into a Korean app:
+        // the heading above it was translated and this line was not, which is what QA saw.
+        message: t.mobile_trips_signInBody,
         action: AppGradientButton(label: t.nav_signIn, compact: true, onPressed: onSignIn),
     );
 }

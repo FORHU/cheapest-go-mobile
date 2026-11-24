@@ -153,6 +153,25 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
 
 ## Hotel domain
 
+- **Stay Pin** — the marker standing on a stay's coordinate on the results map, carrying its
+  nightly price; several stays too close to tell apart are drawn as one, which is a **Cluster
+  Pin** and carries a count instead. Unrelated to **Design Pin**, which is a commit: when the
+  distinction could be read either way, say "stay pin" rather than "pin".
+  _Avoid_: "marker" and "annotation" — the first is vague and the second names how it is drawn.
+
+- **Stay Card** — the preview that opens over a **Stay Pin**: the stay's photography, its name
+  and address, what a night costs and its aggregate score. One at a time, belonging to the pin
+  it stands over, and the way through to the stay's own page.
+  _Avoid_: "popup", "callout", "rail card" — the last was a different object, a strip of cards
+  along the foot of the map, which no longer exists on mobile.
+
+- **Map-Locked** — drawn by the map itself, so it holds its place on the ground through a pan
+  or a zoom with nothing to catch up. **Stay Pins** have always been Map-Locked; the **Stay
+  Card** now is too. The opposite is screen-drawn: placed over the map from outside it, and so
+  always a moment behind what the map has already drawn.
+  _Avoid_: calling a screen-drawn thing "anchored" — it is placed, repeatedly, and that is the
+  difference a traveller sees as drift.
+
 - **Saved Trip** — a hotel or flight a user has marked with the heart icon to revisit later.
   Held against the account on the server, so it survives a reinstall and appears on the web as
   well. **Favorite** is the act of marking one; the stored item is a Saved Trip.

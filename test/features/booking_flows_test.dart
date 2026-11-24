@@ -290,7 +290,9 @@ void main() {
   testWidgets('Stay & Play switches between hotels and golf', (tester) async {
     await pumpApp(tester, location: '/stay');
     await tester.pumpAndSettle();
-    expect(find.text('Terminal 3 Garden Hotel'), findsOneWidget);
+    // The count proves the stays are there; the map draws no pins for mock stays, which
+    // carry no coordinates.
+    expect(find.text('10 Stays'), findsOneWidget);
     expect(find.byTooltip('Back'), findsNothing);
 
     await tester.tap(find.text('Golf'));
@@ -303,7 +305,14 @@ void main() {
     // results screen landed on the router's not-found page. Nothing caught it: the tests
     // reached the property from the airport hub and from Trips, never from a search result.
     await pumpApp(tester, location: '/hotels');
-    await tester.tap(find.text('View').first);
+
+    // Read from the list rather than the map. The strip of cards along the bottom is gone on
+    // mobile (the client asked for it), and the mock catalogue gives its stays no
+    // coordinates, so the map has no pins to press here. `stay_map_card_test.dart` covers the
+    // pin and the card it opens, with stays that do carry coordinates.
+    await tester.tap(find.byTooltip('List View'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Book Now').first);
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Page not found'), findsNothing);
@@ -328,6 +337,11 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('2 Stays'), findsOneWidget);
+
+    // Which two, read off the list: the map's strip of cards is gone and the mock stays
+    // carry no coordinates, so there is no pin here to press.
+    await tester.tap(find.byTooltip('List View'));
+    await tester.pumpAndSettle();
     expect(find.text('Transit Pods NAIA'), findsOneWidget);
   });
 

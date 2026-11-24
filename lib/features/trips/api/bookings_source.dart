@@ -9,6 +9,7 @@ library;
 import 'package:cheapest_go_mobile/features/trips/api/api_bookings_source.dart';
 import 'package:cheapest_go_mobile/features/trips/api/mock_bookings_source.dart';
 import 'package:cheapest_go_mobile/features/trips/models/trip_booking.dart';
+import 'package:cheapest_go_mobile/shared/lib/env.dart';
 
 /// What came back, and whether all of it came back.
 ///
@@ -60,6 +61,9 @@ BookingsSource get bookingsSource => _delegate ??= _createDefault();
 set bookingsSource(BookingsSource source) => _delegate = source;
 
 BookingsSource _createDefault() {
-    const mode = String.fromEnvironment('CATALOG', defaultValue: 'mock');
-    return mode == 'api' ? ApiBookingsSource() : const MockBookingsSource();
+    // One reading of the flag, shared with kMockAuth so the two cannot disagree about
+    // whether this build talks to a server.
+    return kCatalogMode == 'api'
+        ? ApiBookingsSource()
+        : const MockBookingsSource();
 }

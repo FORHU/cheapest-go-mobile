@@ -5,7 +5,7 @@ import 'package:cheapest_go_mobile/features/hotels/components/stay_chrome.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_filters_sheet.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_list_card.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_map.dart';
-import 'package:cheapest_go_mobile/features/hotels/components/stay_rail_card.dart';
+import 'package:cheapest_go_mobile/features/hotels/components/stay_map_card.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_status.dart';
 import 'package:cheapest_go_mobile/features/hotels/components/stay_top_bar.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
@@ -41,12 +41,13 @@ class HotelResultsView extends StatefulWidget {
 class _HotelResultsViewState extends State<HotelResultsView> {
     StayFilters _filters = const StayFilters();
     bool _mapView = true;
-    bool _railHidden = false;
+    /// The **Stay Card**'s own state. The map draws the card (ADR-0008), so this screen's part
+    /// is to say which stay it stands for and to let the map have it.
+    late final _card = StayCardModel(catalog: widget.catalog);
     bool _loading = false;
     bool _failed = false;
     String? _selectedId;
 
-    final _rail = ScrollController();
 
     String? _lastLoadedCode;
     DateTime? _lastCheckIn;
@@ -64,7 +65,7 @@ class _HotelResultsViewState extends State<HotelResultsView> {
 
     @override
     void dispose() {
-        _rail.dispose();
+        _card.dispose();
         super.dispose();
     }
 
@@ -165,24 +166,28 @@ class _HotelResultsViewState extends State<HotelResultsView> {
         if (chosen != null && mounted) setState(() => _filters = chosen);
     }
 
-    /// One card plus the gap between two.
-    double _cardStep(BuildContext context) =>
-        (MediaQuery.sizeOf(context).width - railGutter * 2).clamp(0.0, railCardMaxWidth) + 12;
-
-    void _select(Hotel hotel, List<Hotel> shown) {
-        setState(() {
-            _selectedId = hotel.id;
-            _railHidden = false;
-        });
-        final index = shown.indexWhere((h) => h.id == hotel.id);
-        if (index < 0 || !_rail.hasClients) return;
-        _rail.animateTo(
-            // One card plus the gap, which is what a step along this strip is.
-            (index * (_cardStep(context))).clamp(0, _rail.position.maxScrollExtent),
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-        );
+    /// A pin was pressed.
+    ///
+    /// Pressing the pin of the stay already showing opens it, rather than closing the card.
+    /// That is the client's own wording — "if clicked again will route to the property page"
+    /// — and it is the one place this screen deliberately parts from V2, where a second click
+    /// toggles the popup shut (`search/page.tsx:1060`). The map tap below is what dismisses,
+    /// so nothing is unreachable.
+    void _select(Hotel hotel) {
+        if (_selectedId == hotel.id) {
+            _openStay(hotel);
+            return;
+        }
+        _card.show(hotel);
+        setState(() => _selectedId = hotel.id);
     }
+
+    void _dismiss() {
+        if (_selectedId == null) return;
+        _card.show(null);
+        setState(() => _selectedId = null);
+    }
+
 
     @override
     Widget build(BuildContext context) {
@@ -209,7 +214,13 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                                     hotels: shown,
                                     selectedId: _selectedId,
                                     currency: currency,
-                                    onSelect: (h) => _select(h, shown),
+                                    card: _card,
+                                    onSelect: _select,
+                                    onOpen: _openStay,
+                                    onMapTap: _dismiss,
+                                    // What the search bar covers, so the map can ease a card
+                                    // out from under it rather than drawing it there.
+                                    topInset: MediaQuery.paddingOf(context).top + 120,
                                 )
                                 : _StayList(
                                     currency: currency,
@@ -286,23 +297,31 @@ class _HotelResultsViewState extends State<HotelResultsView> {
                             ),
                         ),
 
-                        if (_mapView && shown.isNotEmpty && !_loading)
+                        // How many stays the map is showing. Was the rail's header; now its own
+                        // plate, bottom left, where V2 puts it too — the rail itself is gone
+                        // and the one card left is drawn by the map. See ADR-0008.
+                        //
+                        // It also carries this screen's Tip. The Tip used to point at the
+                        // rail's first card, which left it pointing at nothing once the rail
+                        // went, and a painted card cannot hold it either. This plate is on the
+                        // screen whether or not a card is open. See ADR-0006.
+                        if (_mapView && !_loading)
                             Positioned(
-                                left: 0,
-                                right: 0,
-                                bottom: 0,
+                                left: mapGutter,
+                                bottom: mapGutter,
                                 child: TipAnchor(
-                                id: TipAnchors.hotelResult,
-                                child: _Rail(
-                                    currency: currency,
-                                    hotels: shown,
-                                    controller: _rail,
-                                    hidden: _railHidden,
-                                    selectedId: _selectedId,
-                                    onHiddenChanged: (v) => setState(() => _railHidden = v),
-                                    onSelect: (h) => _select(h, shown),
-                                    onView: _openStay,
-                                ),
+                                    id: TipAnchors.hotelResult,
+                                    child: _Pill(
+                                        skin: StaySkin.of(context),
+                                        child: Text(
+                                            t.search_v2_staysCount(shown.length),
+                                            style: TextStyle(
+                                                fontSize: 12.5,
+                                                fontWeight: FontWeight.w700,
+                                                color: StaySkin.of(context).title,
+                                            ),
+                                        ),
+                                    ),
                                 ),
                             ),
                     ],
@@ -319,129 +338,6 @@ class _HotelResultsViewState extends State<HotelResultsView> {
 }
 
 /// The count, the handle that puts the cards away, and the cards themselves.
-class _Rail extends StatelessWidget {
-    const _Rail({
-        required this.hotels,
-        required this.currency,
-        required this.controller,
-        required this.hidden,
-        required this.selectedId,
-        required this.onHiddenChanged,
-        required this.onSelect,
-        required this.onView,
-    });
-
-    final List<Hotel> hotels;
-    final String currency;
-    final ScrollController controller;
-    final bool hidden;
-    final String? selectedId;
-    final ValueChanged<bool> onHiddenChanged;
-    final ValueChanged<Hotel> onSelect;
-    final ValueChanged<Hotel> onView;
-
-    @override
-    Widget build(BuildContext context) {
-        final t = AppLocalizations.of(context)!;
-        final skin = StaySkin.of(context);
-
-        return Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-                Padding(
-                    padding: const EdgeInsets.fromLTRB(railGutter, 0, railGutter, 8),
-                    child: Row(
-                        children: [
-                            _Pill(
-                                skin: skin,
-                                child: Text(
-                                    t.search_v2_staysCount(hotels.length),
-                                    style: TextStyle(
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w700,
-                                        color: skin.title,
-                                    ),
-                                ),
-                            ),
-                            const Spacer(),
-                            Tooltip(
-                                message: hidden ? t.search_v2_hideStayCards : t.search_v2_hideCards,
-                                child: GestureDetector(
-                                    onTap: () => onHiddenChanged(!hidden),
-                                    child: _Pill(
-                                        skin: skin,
-                                        child: Icon(
-                                            hidden ? Icons.expand_less_rounded : Icons.expand_more_rounded,
-                                            size: 18,
-                                            color: skin.title,
-                                        ),
-                                    ),
-                                ),
-                            ),
-                        ],
-                    ),
-                ),
-                AnimatedSize(
-                    duration: const Duration(milliseconds: 220),
-                    curve: Curves.easeOutCubic,
-                    alignment: Alignment.topCenter,
-                    child: hidden
-                        ? const SizedBox(width: double.infinity)
-                        : SizedBox(
-                            // Headroom for the chosen card, which grows rather than being
-                            // clipped by the strip it sits in.
-                            // The card, the room it needs to grow into when chosen, and the
-                            // gesture bar underneath.
-                            height: railCardHeight * 1.08 + 20 + MediaQuery.viewPaddingOf(context).bottom,
-                            child: ListView.separated(
-                                controller: controller,
-                                scrollDirection: Axis.horizontal,
-                                // Clear of the gesture bar: the rail is docked to the very
-                                // bottom, so without the inset the cards are cut by it.
-                                padding: EdgeInsets.fromLTRB(
-                                    railGutter, 10, railGutter,
-                                    4 + MediaQuery.viewPaddingOf(context).bottom,
-                                ),
-                                itemCount: hotels.length,
-                                separatorBuilder: (_, _) => const SizedBox(width: 12),
-                                itemBuilder: (context, i) => Align(
-                                    alignment: Alignment.bottomCenter,
-                                    child: StayRailCard(
-                                        hotel: hotels[i],
-                                        currency: currency,
-                                        selected: hotels[i].id == selectedId,
-                                        onSelect: () => onSelect(hotels[i]),
-                                        onView: () => onView(hotels[i]),
-                                    ),
-                                ),
-                            ),
-                        ),
-                ),
-            ],
-        );
-    }
-}
-
-class _Pill extends StatelessWidget {
-    const _Pill({required this.child, required this.skin});
-
-    final Widget child;
-    final StaySkin skin;
-
-    @override
-    Widget build(BuildContext context) => Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        decoration: BoxDecoration(
-            color: skin.surface,
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: const [BoxShadow(color: Color(0x24000000), blurRadius: 12, offset: Offset(0, 3))],
-        ),
-        child: child,
-    );
-}
-
-/// The same stays without the map, for when a person would rather read them than place them.
 class _StayList extends StatelessWidget {
     const _StayList({required this.hotels, required this.currency, required this.onView});
 
@@ -475,4 +371,27 @@ class _StayList extends StatelessWidget {
             ),
         );
     }
+}
+
+/// The small rounded plate the stay count sits on, over the map.
+///
+/// It used to be part of the rail's header, which is why removing the rail took the count
+/// with it — the client asked for the strip of cards gone, not for the screen to stop saying
+/// how many stays it found. Now placed on its own, where V2 also has it.
+class _Pill extends StatelessWidget {
+    const _Pill({required this.child, required this.skin});
+
+    final Widget child;
+    final StaySkin skin;
+
+    @override
+    Widget build(BuildContext context) => Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+            color: skin.surface,
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [BoxShadow(color: Color(0x24000000), blurRadius: 12, offset: Offset(0, 3))],
+        ),
+        child: child,
+    );
 }

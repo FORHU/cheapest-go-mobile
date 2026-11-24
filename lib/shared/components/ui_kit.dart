@@ -362,7 +362,7 @@ class PriceText extends StatelessWidget {
       TextSpan(
         children: [
           TextSpan(
-            text: formatPeso(amount),
+            text: formatCatalogPrice(amount),
             style: TextStyle(fontSize: size, fontWeight: FontWeight.w700, color: c.accent),
           ),
           if (suffix != null)

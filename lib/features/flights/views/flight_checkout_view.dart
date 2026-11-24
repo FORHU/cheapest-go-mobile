@@ -343,7 +343,7 @@ class _FlightCheckoutViewState extends State<FlightCheckoutView> {
     } catch (error) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      await _alert(t.checkout_alert_paymentTitle, errorMessage(error));
+      await _alert(t.checkout_alert_paymentTitle, errorMessage(error, t: t));
       return;
     }
 
