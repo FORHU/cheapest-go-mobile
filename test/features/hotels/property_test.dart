@@ -146,4 +146,76 @@ void main() {
         expect(find.text('Standard Room'), findsOneWidget);
         expect(find.textContaining('4,400'), findsOneWidget);
     });
+
+    /// Each card shows its own room's photographs.
+    ///
+    /// The supplier's pictures reach a Room through `content.gallery` on the property
+    /// response, matched to the offer by room name. Where a room has none the card falls back
+    /// to the hotel's own picture — so a property whose catalogue carries no room content
+    /// shows the identical photograph on every card. That is what an unseeded catalogue looks
+    /// like, and it is worth being able to tell apart from the cards failing to use what they
+    /// were given.
+    group('room photography', () {
+        Room pictured(String id, String name, List<String> images) => Room(
+            id: id,
+            name: name,
+            meta: 'Room only',
+            nightlyRate: 16000,
+            images: images,
+            offers: [offer(id: '$id-o', price: 16000)],
+        );
+
+        testWidgets('two rooms show their own pictures, not the hotel\'s', (tester) async {
+            await pump(tester, [
+                pictured('r1', 'Deluxe Double', const ['https://cdn.test/deluxe-1.jpg']),
+                pictured('r2', 'Standard Twin', const ['https://cdn.test/twin-1.jpg']),
+            ]);
+
+            final shown = tester
+                .widgetList<Image>(find.byType(Image))
+                .map((i) => (i.image as NetworkImage).url)
+                .toSet();
+
+            expect(shown, contains('https://cdn.test/deluxe-1.jpg'));
+            expect(shown, contains('https://cdn.test/twin-1.jpg'));
+            expect(shown, isNot(contains('https://cdn.test/hotel-cover.jpg')),
+                reason: 'a room with pictures of its own never falls back');
+        });
+
+        testWidgets('a room with no pictures falls back to the hotel\'s one', (tester) async {
+            tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+            tester.view.devicePixelRatio = 3;
+            addTearDown(tester.view.reset);
+
+            await tester.pumpWidget(MaterialApp(
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                locale: const Locale('en'),
+                theme: AppTheme.light,
+                home: Scaffold(
+                    body: SingleChildScrollView(
+                        child: RoomSelection(
+                            rooms: [
+                                pictured('r1', 'Deluxe Double', const []),
+                                pictured('r2', 'Standard Twin', const []),
+                            ],
+                            currency: 'PHP',
+                            fallbackPhoto: 'https://cdn.test/hotel-cover.jpg',
+                            selectedOfferId: null,
+                            onSelect: (_) {},
+                        ),
+                    ),
+                ),
+            ));
+            await tester.pump();
+
+            final shown = tester
+                .widgetList<Image>(find.byType(Image))
+                .map((i) => (i.image as NetworkImage).url)
+                .toList();
+
+            expect(shown, everyElement('https://cdn.test/hotel-cover.jpg'),
+                reason: 'this is what "every room looks the same" actually is');
+        });
+    });
 }

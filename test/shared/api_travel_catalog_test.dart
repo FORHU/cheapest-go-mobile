@@ -457,4 +457,171 @@ void main() {
       expect(travelCatalog.isOfflineData('MNL'), isFalse);
     });
   });
+
+  /// Zero is not a place.
+  ///
+  /// A stay whose content has never been geocoded comes back from the live supplier as
+  /// `lat: 0, lng: 0`. Read literally that is a point in the Atlantic off West Africa, and
+  /// the results map frames itself on the stays it is given — so one ungeocoded stay in a
+  /// Seoul search stretched the camera from Korea to the Gulf of Guinea, drew open ocean,
+  /// and collapsed every pin into a single cluster in the middle of it. 283 of 317 Seoul
+  /// stays answered that way the first time this app was pointed at the live supplier.
+  ///
+  /// The mock catalogue never produced a zero, which is why only real data found this.
+  group('ApiTravelCatalog - ungeocoded stays', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    Future<List<Hotel>> search(List<Map<String, dynamic>> rows) async {
+      final mockHttp = HttpClientAdapter(
+        client: MockClient((request) async {
+          if (request.url.path.contains('/api/v2/hotels/search')) {
+            return http_pkg.Response(jsonEncode({'data': rows}), 200,
+                headers: {'content-type': 'application/json'});
+          }
+          return http_pkg.Response('{}', 404);
+        }),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      return ApiTravelCatalog(client: mockHttp, prefs: prefs).fetchHotels('ICN');
+    }
+
+    Map<String, dynamic> row(String id, Object? lat, Object? lng) => {
+          'hotelId': id,
+          'name': 'Stay $id',
+          'lat': lat,
+          'lng': lng,
+          'coordinates': {'lat': lat, 'lng': lng},
+          'roomTypes': [
+            {'offerId': 'o-$id', 'roomName': 'Room', 'price': 90000, 'currency': 'KRW'},
+          ],
+        };
+
+    test('a stay at 0,0 is unplaced rather than dropped into the Atlantic', () async {
+      final hotels = await search([row('a', 0, 0)]);
+
+      expect(hotels, hasLength(1), reason: 'it is still a bookable stay');
+      expect(hotels.first.latitude, isNull);
+      expect(hotels.first.longitude, isNull);
+    });
+
+    test('a real coordinate still comes through', () async {
+      final hotels = await search([row('b', 37.481, 126.89)]);
+
+      expect(hotels.first.latitude, 37.481);
+      expect(hotels.first.longitude, 126.89);
+    });
+
+    /// Only the pair means "not known". The equator runs through Kenya and Indonesia, and
+    /// the prime meridian through Ghana, so a single zero is a place somebody can stay.
+    test('a stay on the equator keeps its coordinates', () async {
+      final hotels = await search([row('c', 0, 109.33)]);
+
+      expect(hotels.first.latitude, 0);
+      expect(hotels.first.longitude, 109.33);
+    });
+
+    test('the map is framed only on the stays that have a place', () async {
+      final hotels = await search([row('d', 0, 0), row('e', 37.56, 126.97)]);
+
+      final placed = hotels.where((h) => h.latitude != null && h.longitude != null);
+      expect(hotels, hasLength(2));
+      expect(placed, hasLength(1), reason: 'the ungeocoded one must not reach the map');
+    });
+  });
+
+  /// Each room shows its own photographs, as the property page on the web does.
+  ///
+  /// api-v2 matches every offer's room name to the supplier's room group and hands back that
+  /// group's pictures on `content.gallery` — nine rooms of one Manila property come back with
+  /// six distinct galleries, the repeats being two rates of the same physical room. Where a
+  /// room has none, the card falls back to the hotel's own photograph, which is why a property
+  /// with no room content at all shows the same picture on every card. That is an empty
+  /// catalogue, not a parsing fault, and this is what proves the difference.
+  group('ApiTravelCatalog - room photography', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+
+    Future<Hotel?> property(List<Map<String, dynamic>> rooms) async {
+      final mockHttp = HttpClientAdapter(
+        client: MockClient((request) async {
+          if (request.url.path.contains('/api/v2/hotels/property/h-rooms')) {
+            return http_pkg.Response(
+              jsonEncode({
+                'content': {
+                  'name': 'Victoria Mansions',
+                  'city': 'Manila',
+                  'images': ['https://cdn.test/hotel-1.jpg', 'https://cdn.test/hotel-2.jpg'],
+                },
+                'rooms': rooms,
+              }),
+              200,
+              headers: {'content-type': 'application/json'},
+            );
+          }
+          return http_pkg.Response('Not Found', 404);
+        }),
+      );
+      final prefs = await SharedPreferences.getInstance();
+      return ApiTravelCatalog(client: mockHttp, prefs: prefs).fetchHotel('h-rooms');
+    }
+
+    Map<String, dynamic> offer(String id, String name, List<String> gallery) => {
+          'offerId': id,
+          'roomName': name,
+          'price': 16000,
+          'content': {'gallery': gallery, 'matchedRoomName': name},
+        };
+
+    test('two rooms keep two galleries', () async {
+      final hotel = await property([
+        offer('r1', 'Deluxe Double', ['https://cdn.test/deluxe-1.jpg', 'https://cdn.test/deluxe-2.jpg']),
+        offer('r2', 'Standard Twin', ['https://cdn.test/twin-1.jpg']),
+      ]);
+
+      expect(hotel!.rooms, hasLength(2));
+      expect(hotel.rooms[0].images, ['https://cdn.test/deluxe-1.jpg', 'https://cdn.test/deluxe-2.jpg']);
+      expect(hotel.rooms[1].images, ['https://cdn.test/twin-1.jpg']);
+      expect(hotel.rooms[0].images, isNot(hotel.rooms[1].images),
+          reason: 'the whole point: two rooms, two sets of pictures');
+    });
+
+    /// The supplier sells the same physical room under more than one name — "Double Studio
+    /// (full double bed)" and "Studio" are one room group — so matching galleries here are
+    /// the truth, not a bug. The app passes them through rather than inventing a difference.
+    test('two rates of one room type legitimately share a gallery', () async {
+      final shared = ['https://cdn.test/studio-1.jpg', 'https://cdn.test/studio-2.jpg'];
+      final hotel = await property([
+        offer('r1', 'Double Studio (full double bed)', shared),
+        offer('r2', 'Studio', shared),
+      ]);
+
+      expect(hotel!.rooms[0].images, shared);
+      expect(hotel.rooms[1].images, shared);
+    });
+
+    /// What a property with no room content looks like. The room carries nothing, so the card
+    /// falls back to the hotel's own picture — every card the same, which is exactly what an
+    /// unseeded catalogue produces and must not be mistaken for a parsing fault.
+    test('a room with no pictures of its own carries none', () async {
+      final hotel = await property([
+        {'offerId': 'r1', 'roomName': 'Standard Triple', 'price': 16000},
+      ]);
+
+      expect(hotel!.rooms.single.images, isEmpty);
+      expect(hotel.photos, isNotEmpty, reason: 'the hotel still has its own, for the fallback');
+    });
+
+    /// The older wire name, still sent by some responses.
+    test('roomPhotos is read as well as content.gallery', () async {
+      final hotel = await property([
+        {
+          'offerId': 'r1',
+          'roomName': 'Standard Triple',
+          'price': 16000,
+          'roomPhotos': ['https://cdn.test/triple-1.jpg'],
+        },
+      ]);
+
+      expect(hotel!.rooms.single.images, ['https://cdn.test/triple-1.jpg']);
+    });
+  });
 }

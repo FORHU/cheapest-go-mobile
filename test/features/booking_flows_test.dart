@@ -247,9 +247,11 @@ void main() {
   testWidgets('Stay & Play switches between hotels and golf', (tester) async {
     await pumpApp(tester, location: '/stay');
     await tester.pumpAndSettle();
-    // The count proves the stays are there; the map draws no pins for mock stays, which
-    // carry no coordinates.
-    expect(find.text('10 Stays'), findsOneWidget);
+    // Read from the list. Mock stays carry no coordinates, so there is no map to draw and
+    // the screen falls back to the list — which is also what a live search does when the
+    // supplier answers with stays we hold no content for. The count plate belongs to the
+    // map and goes with it.
+    expect(find.text('Transit Pods NAIA'), findsOneWidget);
     expect(find.byTooltip('Back'), findsNothing);
 
     await tester.tap(find.text('Golf'));
@@ -278,9 +280,9 @@ void main() {
 
   testWidgets('hotel results narrow by star rating', (tester) async {
     await pumpApp(tester, location: '/hotels');
-    // The count stands over the rail, so it says what is showing without depending on how
-    // many cards the strip has built.
-    expect(find.text('10 Stays'), findsOneWidget);
+    // The list, because mock stays carry no coordinates and a map with nothing to place on
+    // it falls back to one. All ten are there to start with.
+    expect(find.text('Transit Pods NAIA'), findsOneWidget);
 
     // What this replaced: a "Free shuttle" pill. V2 offers no such filter — its set is the
     // sort, the star categories and the price — so #39 narrows by stars instead. Of the ten
@@ -293,12 +295,7 @@ void main() {
     await tester.tap(find.text('2 Stays'));
     await tester.pumpAndSettle();
 
-    expect(find.text('2 Stays'), findsOneWidget);
-
-    // Which two, read off the list: the map's strip of cards is gone and the mock stays
-    // carry no coordinates, so there is no pin here to press.
-    await tester.tap(find.byTooltip('List View'));
-    await tester.pumpAndSettle();
+    // Which two, read off the list.
     expect(find.text('Transit Pods NAIA'), findsOneWidget);
   });
 

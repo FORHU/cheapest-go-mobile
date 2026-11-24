@@ -76,8 +76,25 @@ RoutedError routeError(Object? error, {AppLocalizations? t}) {
     case ErrorCategory.notFound:
     case ErrorCategory.server:
     case ErrorCategory.unknown:
-      // api-v2's own sentence, which it writes in English. Translating it here would mean
-      // guessing at a message this app did not compose; the server is where that belongs.
+      // api-v2's own sentence, which it writes in English — except when the server is
+      // reporting its own fault.
+      //
+      // A refusal the server worded for a person is the better message and is kept: "Hotel
+      // booking is switched off in this environment" tells a traveller why their booking did
+      // not go through, and this app cannot compose that for itself.
+      //
+      // A 5xx is different. It means the deployment is wrong, not that the traveller asked
+      // for something unavailable, and what the server writes for those is addressed to
+      // whoever runs it: a Korean sign-in form carried "Native Google sign-in is not
+      // configured" in English, naming an environment variable to somebody who only wanted to
+      // log in. There is nothing there to act on, so they get this app's general sentence in
+      // their own language and the server's words go to the log — which `log` already does.
+      if ((error.status ?? 0) >= 500) {
+        return RoutedError(
+          toast: t?.errors_generic ?? 'Something went wrong. Please try again.',
+          action: ErrorRouteAction.log,
+        );
+      }
       return RoutedError(toast: error.message, action: ErrorRouteAction.log);
   }
 }

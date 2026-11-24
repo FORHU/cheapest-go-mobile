@@ -609,6 +609,19 @@ class _StayMapState extends State<StayMap> {
             );
             if (!mounted) return;
 
+            // The card may have been closed while this was being painted.
+            //
+            // Painting takes a few milliseconds and the gallery repaints itself every 3.4
+            // seconds, so a press that lands in that window is answered — the stay is
+            // deselected and the annotation deleted — while this call is still holding the
+            // stay it started with. Without this check it then deletes nothing and creates
+            // that card again, leaving a card on the map with no stay selected behind it.
+            // Every later press on the map then reached a dismissal that had nothing to
+            // dismiss, and the card could not be closed by any means: not the map, not its
+            // own close button. It only ever happened to a card left open long enough for
+            // the gallery to turn, which is why it survived the first round of testing.
+            if (widget.card?.hotel?.id != hotel.id) return;
+
             await cards.deleteAll();
             _card = await cards.create(PointAnnotationOptions(
                 geometry: Point(coordinates: mb.Position(hotel.longitude!, hotel.latitude!)),

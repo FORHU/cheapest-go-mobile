@@ -28,12 +28,18 @@ void main() {
     expect(store.isAuthenticated, isFalse);
   });
 
-  test('a build with no client id says so rather than failing at the sheet', () async {
+  /// A build with no client id is a deployment fact, and the person holding the phone can do
+  /// nothing with it. They are told something went wrong — in their own language — rather than
+  /// being handed the name of a setting. It used to say "not configured" in English, under a
+  /// Korean heading, which is how this was noticed.
+  test('a build with no client id reports it in the traveller\'s language', () async {
     googleIdentity = _FakeGoogle(notConfigured: true);
     final store = AuthStore(mock: false);
 
     expect(await store.signInWithGoogle(), isFalse);
-    expect(store.errorMessage, contains('not configured'));
+    expect(store.errorMessage, isNotNull, reason: 'the attempt failed and must say so');
+    expect(store.errorMessage, isNot(contains('configured')),
+        reason: 'no deployment vocabulary in front of a traveller');
   });
 
   test('signing out lets go of the Google account too', () async {
