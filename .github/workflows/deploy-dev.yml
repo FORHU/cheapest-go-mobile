@@ -16,9 +16,17 @@ name: Deploy Dev
 # a 10-minute build. It is written to RUNNER_TEMP, never the workspace — this repository is
 # public and `env.json` is not in .gitignore.
 #
-# BEFORE THE FIRST RUN, in the `staging` environment:
-#   secrets   MAPBOX_PUBLIC_TOKEN, STRIPE_PUBLISHABLE_KEY, GOOGLE_SERVER_CLIENT_ID
-#   variable  API_URL  (defaults to https://dev.cheapestgo.com)
+# BEFORE THE FIRST RUN — the `staging` environment.
+# The React Native app left its secrets behind in this environment under EXPO_PUBLIC_*
+# names, and lib/shared/lib/env.dart still reads several of them as fallbacks. So each
+# name below falls back to its Expo-era equivalent: two of the three are already set and
+# nothing has to be created for this to go green. Adding the clean name later wins.
+#
+#   MAPBOX_PUBLIC_TOKEN      <- EXPO_PUBLIC_MAPBOX_TOKEN            (already set)
+#   STRIPE_PUBLISHABLE_KEY   <- EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY  (already set)
+#   GOOGLE_SERVER_CLIENT_ID  <- no equivalent. Native Google sign-in stays off without
+#                               it rather than failing when somebody taps the button.
+#   variable API_URL         <- defaults to https://dev.cheapestgo.com
 
 on:
   push:
@@ -46,7 +54,7 @@ jobs:
       # Mapbox token does not fail the build — it ships an app whose map tab is empty.
       - name: Preflight
         env:
-          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN || secrets.EXPO_PUBLIC_MAPBOX_TOKEN }}
         run: |
           case "$MAPBOX_PUBLIC_TOKEN" in
             pk.*) ;;
@@ -86,8 +94,8 @@ jobs:
       - name: Compose env.json
         env:
           API_URL: ${{ vars.API_URL || 'https://dev.cheapestgo.com' }}
-          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
-          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN || secrets.EXPO_PUBLIC_MAPBOX_TOKEN }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY || secrets.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
         run: |
           jq -n \
