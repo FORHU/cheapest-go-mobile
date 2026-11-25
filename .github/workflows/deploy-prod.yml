@@ -177,6 +177,18 @@ jobs:
             --dart-define-from-file="$RUNNER_TEMP/env.json" \
             --build-number=$(( 1000 + ${{ github.run_number }} )) $BUILD_NAME
 
+      # BEFORE the Play upload, deliberately. This used to sit after it, so when Play refused
+      # the release on 2026-11-25 ("The caller does not have permission") this step was
+      # skipped and a correctly built, correctly signed bundle went in the bin with it — the
+      # one file needed for the manual first upload that Play requires before its API will
+      # accept anything for a new app. Keep the bundle whatever Play says about it.
+      - name: Keep the bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ github.run_number }}-${{ github.ref_name }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
         with:
@@ -185,12 +197,6 @@ jobs:
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: ${{ env.TRACK }}
           status: completed
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app-release-${{ github.run_number }}-${{ github.ref_name }}
-          path: build/app/outputs/bundle/release/app-release.aab
-          retention-days: 90
 
       - name: Clean up secrets
         if: always()
