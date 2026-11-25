@@ -40,8 +40,20 @@ name: Deploy Prod
 #   keytool -genkey -v -keystore upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
 #   base64 -w0 upload.jks | gh secret set ANDROID_KEYSTORE_BASE64 -R FORHU/cheapest-go-mobile --env play-store
 
+# A merge to main publishes to the internal track on its own. Nothing has to be tagged and
+# nobody has to remember anything: a release that depends on someone running `git tag` is a
+# release that silently does not happen, which is the failure this trigger removes.
+#
+# Tags are still here, but they are now a RECORD rather than a trigger. The job creates
+# v<pubspec version> after a successful upload, the first time it sees a version with no tag,
+# so you can always point at the commit a given version shipped from.
+#
+# Higher tracks stay deliberate, which is the normal split: everything reaches internal
+# automatically, and alpha/beta/production are promoted by hand through Run workflow. Play
+# enforces that anyway — those tracks refuse a release until the Console checklist is done.
 on:
   push:
+    branches: [main]
     tags: ['v*']
   workflow_dispatch:
     inputs:
@@ -60,8 +72,31 @@ jobs:
     name: Build and release (production)
     runs-on: ubuntu-latest
     environment: play-store
+    # Needed to push the record tag below. Nothing else in this job writes to the repository.
+    permissions:
+      contents: write
     env:
-      TRACK: ${{ inputs.track || 'internal' }}
+      # A push to main never carries inputs, so it lands on internal. Anything above that is
+      # a deliberate Run workflow with the track picked.
+      # Which Play tracks this build is published to, in precedence order:
+      #
+      #   1. the Run workflow picker, when someone chose a single track by hand
+      #   2. variable PLAY_TRACKS in the play-store environment
+      #   3. internal
+      #
+      # Production is turned on by setting the VARIABLE, not by editing this file:
+      #
+      #   gh variable set PLAY_TRACKS -R FORHU/cheapest-go-mobile --env play-store \
+      #     --body "internal,production"
+      #
+      # Do that only once Play will accept it — the Console checklist has to be complete and
+      # the first production release has to have passed review. Until then production returns
+      # "Precondition check failed" and no amount of automation changes that.
+      #
+      # When you do turn it on, consider a staged rollout rather than 100% on every merge:
+      # add `status: inProgress` and `userFraction: 0.1` to the upload step, which puts each
+      # build in front of a tenth of users first.
+      TRACKS: ${{ inputs.track || vars.PLAY_TRACKS || 'internal' }}
     steps:
       - uses: actions/checkout@v4
 
@@ -195,8 +230,29 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.forhu.airanggo
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          track: ${{ env.TRACK }}
+          # `track` (singular) is deprecated by the action. `tracks` takes a comma-separated
+          # list, and one upload is assigned to all of them in a single edit — which is the
+          # only way to reach two tracks, since a versionCode can be uploaded to Play once.
+          tracks: ${{ env.TRACKS }}
           status: completed
+
+      # The record tag: only on a main push, only when this version has none yet, and only
+      # after Play accepted the build — a tag for a release that never shipped is a lie.
+      #
+      # Pushed with GITHUB_TOKEN, which deliberately does NOT start another workflow run.
+      # That is what stops this looping back through the `tags: ['v*']` trigger above, and it
+      # is the whole reason the tag can be a record instead of something to remember.
+      - name: Tag what shipped
+        if: github.ref == 'refs/heads/main'
+        run: |
+          TAG="v$(sed -n 's/^version: *\([^+]*\).*/\1/p' pubspec.yaml | tr -d '[:space:]')"
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "$TAG already exists — bump 'version:' in pubspec.yaml to cut a new one."
+            exit 0
+          fi
+          git tag "$TAG"
+          git push origin "$TAG"
+          echo "tagged $TAG"
 
       - name: Clean up secrets
         if: always()
