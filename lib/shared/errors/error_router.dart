@@ -1,3 +1,6 @@
+import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/services.dart' show PlatformException;
+
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/errors/api_error.dart';
 
@@ -21,7 +24,19 @@ class RoutedError {
 /// against the field. A screen with nowhere to put it still has to say something, so the error's
 /// own message is used rather than nothing at all.
 String errorMessage(Object? error, {AppLocalizations? t}) {
-  // Anything that is not an ApiError already carries words worth showing — a declined card
+  // A plugin's exception is a diagnostic, for the same reason ApiError.toString() is. A Korean
+  // sign-in screen carried "PlatformException(sign_in_failed, d8.e: 10: , null, null)" in a red
+  // banner — not in the reader's language, and naming nothing they could act on. The rule below
+  // assumes anything that is not an ApiError is a sentence; a method channel's failure is not.
+  //
+  // Printed rather than dropped: nothing consumes ErrorRouteAction.log, so this line is the
+  // only place the code that says *which* native failure it was survives.
+  if (error is PlatformException) {
+    debugPrint('shown to the traveller as the generic message: $error');
+    return t?.errors_generic ?? 'Something went wrong. Please try again.';
+  }
+
+  // Anything else that is not an ApiError already carries words worth showing — a declined card
   // arrives as Stripe's own sentence, and routeError would replace it with "Unexpected error
   // occurred". Only an ApiError gets routed.
   if (error is! ApiError) return error.toString().replaceFirst('Exception: ', '');
