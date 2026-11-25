@@ -1,0 +1,58 @@
+name: Release Please
+
+# Works out the next version number so nobody has to.
+#
+# It reads the Conventional Commit prefixes already used in this repository — `fix:` is a
+# patch, `feat:` is a minor, `feat!:` or a BREAKING CHANGE footer is a major, and chore/
+# refactor/docs/test release nothing on their own — then opens a pull request titled
+# "chore(main): release X.Y.Z" that edits pubspec.yaml and writes CHANGELOG.md from those
+# commit messages.
+#
+# Nobody picks a version. A developer writes `feat:` or `fix:`, which they do anyway, and the
+# proposed version shows up in a pull request to review before anything ships.
+#
+# HOW IT MEETS THE DEPLOY
+#   Merging the release pull request is a push to main, which is what deploy-prod.yml
+#   triggers on — so the release goes to Play without anything else happening. This is the
+#   reason no personal access token is needed here. The usual advice is that release-please
+#   requires a PAT, and that is true when the deploy hangs off the *tag* it creates: a tag
+#   pushed with GITHUB_TOKEN deliberately starts no workflow. Ours hangs off the merge
+#   instead, so GITHUB_TOKEN is enough.
+#
+#   deploy-prod.yml also has a "Tag what shipped" step. It checks whether the tag exists
+#   first, so on a release-please merge it simply finds v<version> already there and skips.
+#   It stays for the case where somebody edits pubspec.yaml by hand.
+#
+# BEFORE THE FIRST RUN
+#   Settings → Actions → General → Workflow permissions → tick "Allow GitHub Actions to
+#   create and approve pull requests". Without it this fails with "GitHub Actions is not
+#   permitted to create or approve pull requests" and no release pull request ever appears.
+#   The setting can be locked at organisation level, in which case an owner has to do it.
+#
+# The Dart strategy also increments the build suffix in pubspec.yaml — `1.0.0+1` becomes
+# `1.1.0+2`. That number is irrelevant to us: the Play versionCode comes from
+# `--build-number=1000 + run_number` in deploy-prod.yml, never from pubspec.
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: release-please
+  cancel-in-progress: false
+
+jobs:
+  release-please:
+    name: Propose the next version
+    runs-on: ubuntu-latest
+    steps:
+      # Configured by release-please-config.json and .release-please-manifest.json beside
+      # this repository's root, rather than by inputs here. The manifest records the version
+      # release-please believes is current; it is seeded with 1.0.0, which is what shipped to
+      # Play on 2026-11-25, so the next release is computed from the commits after that tag.
+      - uses: googleapis/release-please-action@v4
