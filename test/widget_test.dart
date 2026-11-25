@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart' show PlatformException;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:cheapest_go_mobile/app/app.dart';
@@ -101,6 +102,24 @@ void main() {
       // Not a 5xx: the server refused something and worded it for a person, so it is kept.
       final off = ApiError('Hotel booking is switched off in this environment.', status: 200);
       expect(errorMessage(off, t: t), 'Hotel booking is switched off in this environment.');
+    });
+
+    /// The same leak as ApiError.toString(), through the other door.
+    ///
+    /// A build installed from Play met Google's DEVELOPER_ERROR — the package name and signing
+    /// certificate had no Android OAuth client — and the sign-in screen printed the method
+    /// channel's own words: "PlatformException(sign_in_failed, d8.e: 10: , null, null)". That
+    /// is addressed to whoever registered the client, in English, on a Korean screen.
+    test('a plugin\'s failure is not a sentence a traveller was written', () {
+      final t = lookupAppLocalizations(const Locale('ko'));
+      final native = PlatformException(code: 'sign_in_failed', message: 'd8.e: 10: ');
+
+      expect(errorMessage(native, t: t), '오류가 발생했습니다. 다시 시도해 주세요.');
+      expect(errorMessage(native, t: t), isNot(contains('PlatformException')));
+      expect(errorMessage(native, t: t), isNot(contains('sign_in_failed')));
+
+      // Still true of an ordinary exception: Stripe's decline is already a sentence.
+      expect(errorMessage(Exception('Your card was declined.'), t: t), 'Your card was declined.');
     });
 
     test('RBAC engine enforces role permissions', () {
