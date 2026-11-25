@@ -70,15 +70,27 @@ jobs:
           MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          PLAY_JSON: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
         run: |
+          # Every check below is for an EMPTY value, not an absent one. A secret that exists
+          # and holds "" reads here exactly like one that was never created, and that is the
+          # failure that actually happens: `gh secret set` pasted after a piped command gets
+          # EOF instead of a prompt and stores an empty string without complaining. It cost a
+          # tag on 2026-11-25, when ANDROID_KEYSTORE_PASSWORD was created empty one second
+          # after ANDROID_KEYSTORE_BASE64.
           ok=1
           case "$MAPBOX_PUBLIC_TOKEN" in
             pk.*) ;;
-            "") echo "::error::Secret MAPBOX_PUBLIC_TOKEN is missing from the 'production' environment. The map tab renders blank without it."; ok=0 ;;
+            "") echo "::error::Secret MAPBOX_PUBLIC_TOKEN is missing or empty in the 'play-store' environment. The map tab renders blank without it."; ok=0 ;;
             *) echo "::error::MAPBOX_PUBLIC_TOKEN does not start with pk. — a secret token (sk.) must never be built into an app."; ok=0 ;;
           esac
-          [ -n "$KEYSTORE_BASE64" ]  || { echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing. Without it the release is signed with the debug key and Play rejects the upload."; ok=0; }
-          [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Secret ANDROID_KEYSTORE_PASSWORD is missing."; ok=0; }
+          [ -n "$KEYSTORE_BASE64" ]   || { echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing or empty. Without it the release is signed with the debug key and Play rejects the upload."; ok=0; }
+          [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Secret ANDROID_KEYSTORE_PASSWORD is missing or empty."; ok=0; }
+          # Checked here rather than discovered by the upload step eight minutes in.
+          [ -n "$PLAY_JSON" ]         || { echo "::error::Secret PLAY_SERVICE_ACCOUNT_JSON is missing or empty."; ok=0; }
+          # A warning, not an error: the app is built to ship with sign-in off rather than fail.
+          [ -n "$GOOGLE_CLIENT_ID" ]  || echo "::warning::GOOGLE_SERVER_CLIENT_ID is empty — this release ships with Google sign-in disabled."
           [ "$ok" = 1 ] || { echo "Nothing was built."; exit 1; }
 
       - name: Setup Java
