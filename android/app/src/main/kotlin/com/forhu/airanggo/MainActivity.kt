@@ -1,4 +1,4 @@
-package com.forhu.cheapestgo.cheapest_go_mobile
+package com.forhu.airanggo
 
 import android.app.ActivityManager
 import android.content.Context

@@ -15,7 +15,7 @@ val keystoreProperties = Properties().apply {
 }
 
 android {
-    namespace = "com.forhu.cheapestgo.cheapest_go_mobile"
+    namespace = "com.forhu.airanggo"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -26,7 +26,12 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.forhu.cheapestgo.cheapest_go_mobile"
+        // The identity of the Play listing, and the one thing here that can never be changed:
+        // after the first upload a different id is a different app, with its own installs and
+        // reviews and no upgrade path from this one. Named for the brand that ships (AirangGo,
+        // ADR-0009), not for this repository, which is called cheapest-go-mobile for historical
+        // reasons. A CheapestGo listing, if there is ever one, is `com.forhu.cheapestgo`.
+        applicationId = "com.forhu.airanggo"
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode

@@ -58,6 +58,17 @@ A shared vocabulary for this codebase. Definitions only — no implementation de
   motion; on mobile it is the default rendering, not a fallback.
   _Avoid_: calling it "the reduced-motion version" here — on mobile it is simply the Journey.
 
+- **Listing** — one app as the Play Store holds it: a name, a page, its installs and reviews,
+  and an **Application Id** that names it forever. One brand ships as one Listing; a second
+  brand is a second Listing, never a setting inside the first.
+  _Avoid_: "the app" when the question is which brand — this repository builds more than one.
+
+- **Application Id** — the string that identifies a **Listing** to Android and to Play, and the
+  only thing about an app that cannot be changed after it is first published. Named for the
+  brand that ships, not for the repository that builds it.
+  _Avoid_: treating it as the same thing as the repository name, the package of the Kotlin
+  sources, or the brand's domain — they are free to differ and here they do.
+
 ## Access
 
 - **Gate** — the rule that nothing but the **Open Screens** is reachable without an account.

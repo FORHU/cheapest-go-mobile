@@ -151,7 +151,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
-          packageName: com.forhu.cheapestgo.cheapest_go_mobile
+          packageName: com.forhu.airanggo
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
           track: ${{ env.TRACK }}
           status: completed
