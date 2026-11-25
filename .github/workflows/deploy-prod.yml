@@ -12,10 +12,16 @@ name: Deploy Prod
 # A CheapestGo-branded release is a separate workflow, not a flag here: it needs the ARB
 # rewrite as well as the defines, which is what tool/build_airanggo.sh does in reverse.
 #
-# BEFORE THE FIRST RUN, in the `production` environment:
-#   secrets   MAPBOX_PUBLIC_TOKEN, STRIPE_PUBLISHABLE_KEY, GOOGLE_SERVER_CLIENT_ID,
-#             ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, PLAY_SERVICE_ACCOUNT_JSON
-#   variable  API_URL  (defaults to https://cheapestgo.com)
+# BEFORE THE FIRST RUN — the `production` environment.
+# The React Native app left its secrets behind in this environment under EXPO_PUBLIC_*
+# names, so the two below fall back to their Expo-era equivalents and are already set.
+# The Android ones are not: nothing in the Expo era signed an AAB from CI.
+#
+#   MAPBOX_PUBLIC_TOKEN      <- EXPO_PUBLIC_MAPBOX_TOKEN            (already set)
+#   STRIPE_PUBLISHABLE_KEY   <- EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY  (already set)
+#   GOOGLE_SERVER_CLIENT_ID  <- no equivalent. Native Google sign-in stays off without it.
+#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, PLAY_SERVICE_ACCOUNT_JSON  <- new
+#   variable API_URL         <- defaults to https://cheapestgo.com
 #
 # The keystore is the one irreplaceable secret here: lose it and this applicationId can never
 # be updated on Play again. Back it up somewhere that is not only this repository.
@@ -50,7 +56,7 @@ jobs:
 
       - name: Preflight
         env:
-          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN || secrets.EXPO_PUBLIC_MAPBOX_TOKEN }}
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
@@ -112,8 +118,8 @@ jobs:
       - name: Compose env.json
         env:
           API_URL: ${{ vars.API_URL || 'https://cheapestgo.com' }}
-          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
-          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN || secrets.EXPO_PUBLIC_MAPBOX_TOKEN }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY || secrets.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
         run: |
           jq -n \
