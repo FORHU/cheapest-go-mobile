@@ -1,0 +1,128 @@
+name: Deploy Dev
+
+# The APK testers sideload. Pushes to `staging` build one; `workflow_dispatch` builds one
+# from any branch.
+#
+# Modelled on FORHU/mapvot-mobile's release-android.yml, with two deliberate differences:
+#
+#   * No keystore. These are release builds signed with the DEBUG key, which is what
+#     android/app/build.gradle.kts already does and is deliberate — see the enableV1Signing
+#     note there. Sideloaded APKs need the v1 signature that Play builds drop, so the dev
+#     build and the production build are signed by different keys on purpose.
+#   * No Play upload. The artifact is the deliverable: download it from the run summary.
+#
+# env.json is composed from this environment's secrets rather than being one opaque ENV_JSON
+# blob, so API_URL stays a readable variable and the Mapbox token can be shape-checked before
+# a 10-minute build. It is written to RUNNER_TEMP, never the workspace — this repository is
+# public and `env.json` is not in .gitignore.
+#
+# BEFORE THE FIRST RUN, in the `staging` environment:
+#   secrets   MAPBOX_PUBLIC_TOKEN, STRIPE_PUBLISHABLE_KEY, GOOGLE_SERVER_CLIENT_ID
+#   variable  API_URL  (defaults to https://dev.cheapestgo.com)
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+    inputs:
+      demo:
+        description: Include the demo tools (flight simulator, Reset demo data)
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-dev
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build Android (dev)
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - uses: actions/checkout@v4
+
+      # Fail before 10 minutes of build time if a first-run prerequisite is missing. A blank
+      # Mapbox token does not fail the build — it ships an app whose map tab is empty.
+      - name: Preflight
+        env:
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+        run: |
+          case "$MAPBOX_PUBLIC_TOKEN" in
+            pk.*) ;;
+            "") echo "::error::Secret MAPBOX_PUBLIC_TOKEN is missing from the 'staging' environment. The map tab renders blank without it."; exit 1 ;;
+            *) echo "::error::MAPBOX_PUBLIC_TOKEN does not start with pk. — a secret token (sk.) must never be built into an app."; exit 1 ;;
+          esac
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # Pinned to the same version ci.yml checks against. `channel: stable` alone installs
+      # whatever stable shipped that morning, which is how an SDK release turns a green
+      # pipeline red without a line of code changing — see the note in ci.yml.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.47.9'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Validate FAOS architecture
+        run: dart run tools/validate_architecture.dart
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      # jq builds the JSON, so a quote or backslash in any value cannot break the file.
+      - name: Compose env.json
+        env:
+          API_URL: ${{ vars.API_URL || 'https://dev.cheapestgo.com' }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+        run: |
+          jq -n \
+            --arg api_url "$API_URL" \
+            --arg mapbox "$MAPBOX_PUBLIC_TOKEN" \
+            --arg stripe "$STRIPE_PUBLISHABLE_KEY" \
+            --arg google "$GOOGLE_SERVER_CLIENT_ID" \
+            '{
+               API_URL: $api_url,
+               CATALOG: "api",
+               APP_ENV: "staging",
+               MAPBOX_PUBLIC_TOKEN: $mapbox,
+               STRIPE_PUBLISHABLE_KEY: $stripe,
+               GOOGLE_SERVER_CLIENT_ID: $google
+             }' > "$RUNNER_TEMP/env.json"
+          # Names only. This repository is public and the log is public with it.
+          jq -r 'keys[]' "$RUNNER_TEMP/env.json"
+
+      # A release build, not a debug one: that is what testers are given and what the
+      # presentation builds in README.md are. ALLOW_LANGUAGE_SWITCH opens the language picker,
+      # which is locked in a shipping build (ADR-0007) and wanted in one made to be tested.
+      - name: Build APK
+        run: |
+          flutter build apk --release \
+            --dart-define-from-file="$RUNNER_TEMP/env.json" \
+            --dart-define=ALLOW_LANGUAGE_SWITCH=true \
+            --dart-define=DEMO=${{ inputs.demo && 'true' || 'false' }} \
+            --build-number=${{ github.run_number }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-dev-${{ github.run_number }}-${{ github.sha }}
+          path: build/app/outputs/flutter-apk/app-release.apk
+          retention-days: 14
+
+      - name: Clean up secrets
+        if: always()
+        run: rm -f "$RUNNER_TEMP/env.json"
