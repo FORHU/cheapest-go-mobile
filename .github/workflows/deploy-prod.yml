@@ -154,9 +154,16 @@ jobs:
       # language (ADR-0007) and carries none of the demo tooling.
       - name: Build app bundle
         run: |
+          # Without this the version name comes from pubspec.yaml, so tagging v1.2.0 would
+          # ship a build that tells users it is 1.0.0. A tag run takes its name from the tag
+          # (v1.2.0 -> 1.2.0); a manual dispatch has no tag to read, so pubspec's stands.
+          BUILD_NAME=""
+          [ "$GITHUB_REF_TYPE" = tag ] && BUILD_NAME="--build-name=${GITHUB_REF_NAME#v}"
+          echo "version name: ${BUILD_NAME:-from pubspec.yaml}"
+
           flutter build appbundle --release \
             --dart-define-from-file="$RUNNER_TEMP/env.json" \
-            --build-number=$(( 1000 + ${{ github.run_number }} ))
+            --build-number=$(( 1000 + ${{ github.run_number }} )) $BUILD_NAME
 
       - name: Upload to Google Play
         uses: r0adkll/upload-google-play@v1
