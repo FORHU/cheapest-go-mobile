@@ -1,7 +1,17 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+// android/key.properties — the upload keystore, written by .github/workflows/deploy-prod.yml
+// and git-ignored. Empty when the file is absent, which is every local build and every dev
+// APK, so those keep the debug signing the sideload note below explains.
+val keystoreProperties = Properties().apply {
+    val propsFile = rootProject.file("key.properties")
+    if (propsFile.exists()) propsFile.inputStream().use { load(it) }
 }
 
 android {
@@ -36,11 +46,23 @@ android {
             enableV1Signing = true
             enableV2Signing = true
         }
+
+        if (keystoreProperties.isNotEmpty()) {
+            create("upload") {
+                storeFile = file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
     }
 
     buildTypes {
         release {
-            signingConfig = signingConfigs.getByName("debug")
+            // The upload key when android/key.properties exists, the debug key otherwise. A
+            // release signed with the debug key builds cleanly and is rejected by Play at the
+            // moment of upload, which is why deploy-prod.yml refuses to run without the keystore.
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
         }
     }
 }

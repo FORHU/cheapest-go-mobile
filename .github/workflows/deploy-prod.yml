@@ -1,0 +1,161 @@
+name: Deploy Prod
+
+# The signed app bundle that goes to Google Play. Push a tag like v1.0.1, or run it by hand
+# and pick a track.
+#
+# Modelled on FORHU/mapvot-mobile's release-android.yml. A tag rather than a push to `main`:
+# `main` here is an unrelated history from the pre-Flutter app, and a release should be a
+# thing somebody named anyway.
+#
+# This build ships as AirangGo — the brand in android:label, tools/brand.dart and the
+# BRAND_NAME default, all three agreeing (ADR-0005: brand is chosen when the APK is made).
+# A CheapestGo-branded release is a separate workflow, not a flag here: it needs the ARB
+# rewrite as well as the defines, which is what tool/build_airanggo.sh does in reverse.
+#
+# BEFORE THE FIRST RUN, in the `production` environment:
+#   secrets   MAPBOX_PUBLIC_TOKEN, STRIPE_PUBLISHABLE_KEY, GOOGLE_SERVER_CLIENT_ID,
+#             ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, PLAY_SERVICE_ACCOUNT_JSON
+#   variable  API_URL  (defaults to https://cheapestgo.com)
+#
+# The keystore is the one irreplaceable secret here: lose it and this applicationId can never
+# be updated on Play again. Back it up somewhere that is not only this repository.
+#
+#   keytool -genkey -v -keystore upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
+#   base64 -w0 upload.jks | gh secret set ANDROID_KEYSTORE_BASE64 -R FORHU/cheapest-go-mobile --env production
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      track:
+        description: Play track
+        type: choice
+        options: [internal, alpha, beta, production]
+        default: internal
+
+concurrency:
+  group: deploy-prod
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Build and release (production)
+    runs-on: ubuntu-latest
+    environment: production
+    env:
+      TRACK: ${{ inputs.track || 'internal' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Preflight
+        env:
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+        run: |
+          ok=1
+          case "$MAPBOX_PUBLIC_TOKEN" in
+            pk.*) ;;
+            "") echo "::error::Secret MAPBOX_PUBLIC_TOKEN is missing from the 'production' environment. The map tab renders blank without it."; ok=0 ;;
+            *) echo "::error::MAPBOX_PUBLIC_TOKEN does not start with pk. — a secret token (sk.) must never be built into an app."; ok=0 ;;
+          esac
+          [ -n "$KEYSTORE_BASE64" ]  || { echo "::error::Secret ANDROID_KEYSTORE_BASE64 is missing. Without it the release is signed with the debug key and Play rejects the upload."; ok=0; }
+          [ -n "$KEYSTORE_PASSWORD" ] || { echo "::error::Secret ANDROID_KEYSTORE_PASSWORD is missing."; ok=0; }
+          [ "$ok" = 1 ] || { echo "Nothing was built."; exit 1; }
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      # The same pin ci.yml checks against — see the note there. A release is the last place
+      # to find out the app was never tried against the SDK that built it.
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          flutter-version: '3.47.9'
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Validate FAOS architecture
+        run: dart run tools/validate_architecture.dart
+
+      - name: Static analysis
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      # android/key.properties is read by android/app/build.gradle.kts, which falls back to
+      # the debug key when the file is absent. That is why this step has to come before the
+      # build and why the preflight above refuses to run without the keystore: a release
+      # signed with the debug key builds perfectly and is rejected at upload.
+      - name: Write the signing key
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ vars.ANDROID_KEY_ALIAS || 'upload' }}
+        run: |
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/upload.jks"
+          cat > android/key.properties <<PROPS
+          storePassword=$KEYSTORE_PASSWORD
+          keyPassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          storeFile=$RUNNER_TEMP/upload.jks
+          PROPS
+
+      - name: Compose env.json
+        env:
+          API_URL: ${{ vars.API_URL || 'https://cheapestgo.com' }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
+          GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
+        run: |
+          jq -n \
+            --arg api_url "$API_URL" \
+            --arg mapbox "$MAPBOX_PUBLIC_TOKEN" \
+            --arg stripe "$STRIPE_PUBLISHABLE_KEY" \
+            --arg google "$GOOGLE_SERVER_CLIENT_ID" \
+            '{
+               API_URL: $api_url,
+               CATALOG: "api",
+               APP_ENV: "production",
+               MAPBOX_PUBLIC_TOKEN: $mapbox,
+               STRIPE_PUBLISHABLE_KEY: $stripe,
+               GOOGLE_SERVER_CLIENT_ID: $google
+             }' > "$RUNNER_TEMP/env.json"
+          jq -r 'keys[]' "$RUNNER_TEMP/env.json"
+
+      # Play needs a strictly higher versionCode on every upload, and will not take one it has
+      # seen before. 1000 + run number stays clear of anything uploaded by hand from a laptop.
+      # No ALLOW_LANGUAGE_SWITCH and no DEMO: a shipping build is locked to its brand's
+      # language (ADR-0007) and carries none of the demo tooling.
+      - name: Build app bundle
+        run: |
+          flutter build appbundle --release \
+            --dart-define-from-file="$RUNNER_TEMP/env.json" \
+            --build-number=$(( 1000 + ${{ github.run_number }} ))
+
+      - name: Upload to Google Play
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: com.forhu.cheapestgo.cheapest_go_mobile
+          releaseFiles: build/app/outputs/bundle/release/app-release.aab
+          track: ${{ env.TRACK }}
+          status: completed
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: app-release-${{ github.run_number }}-${{ github.ref_name }}
+          path: build/app/outputs/bundle/release/app-release.aab
+          retention-days: 90
+
+      - name: Clean up secrets
+        if: always()
+        run: rm -f "$RUNNER_TEMP/upload.jks" "$RUNNER_TEMP/env.json" android/key.properties
