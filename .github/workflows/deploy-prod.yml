@@ -12,22 +12,33 @@ name: Deploy Prod
 # A CheapestGo-branded release is a separate workflow, not a flag here: it needs the ARB
 # rewrite as well as the defines, which is what tool/build_airanggo.sh does in reverse.
 #
-# BEFORE THE FIRST RUN — the `production` environment.
-# The React Native app left its secrets behind in this environment under EXPO_PUBLIC_*
-# names, so the two below fall back to their Expo-era equivalents and are already set.
-# The Android ones are not: nothing in the Expo era signed an AAB from CI.
+# BEFORE THE FIRST RUN — create a `play-store` environment in this repository.
 #
-#   MAPBOX_PUBLIC_TOKEN      <- EXPO_PUBLIC_MAPBOX_TOKEN            (already set)
-#   STRIPE_PUBLISHABLE_KEY   <- EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY  (already set)
-#   GOOGLE_SERVER_CLIENT_ID  <- no equivalent. Native Google sign-in stays off without it.
-#   ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, PLAY_SERVICE_ACCOUNT_JSON  <- new
-#   variable API_URL         <- defaults to https://cheapestgo.com
+# Its own environment, not `production`. This repository is PUBLIC and its `production`
+# environment still holds the Expo-era backend credentials — TRAVELGATEX_*, RATEHAWK_*,
+# ETG_* and DATABASE_URL. A job that signs an app bundle has no business being able to
+# read a supplier API key, and running here means it cannot. FORHU/mapvot-mobile splits
+# it the same way.
+#
+# Unlike deploy-dev.yml, nothing here falls back to an EXPO_PUBLIC_* name: a fresh
+# environment has none, and the shipping build should not inherit the old app's.
+#
+#   MAPBOX_PUBLIC_TOKEN         starts pk. — copy the value from production
+#   STRIPE_PUBLISHABLE_KEY      the LIVE key, not the test one
+#   GOOGLE_SERVER_CLIENT_ID     the WEB OAuth client id; sign-in stays off without it
+#   ANDROID_KEYSTORE_BASE64     the upload key
+#   ANDROID_KEYSTORE_PASSWORD   used as both store and key password
+#   PLAY_SERVICE_ACCOUNT_JSON   Play Console service account, release-manager rights
+#   variable API_URL            optional, defaults to https://cheapestgo.com
+#
+# Set the environment's deployment branch rule to the tag pattern v* , so only a release
+# tag can reach the signing key.
 #
 # The keystore is the one irreplaceable secret here: lose it and this applicationId can never
 # be updated on Play again. Back it up somewhere that is not only this repository.
 #
 #   keytool -genkey -v -keystore upload.jks -keyalg RSA -keysize 2048 -validity 10000 -alias upload
-#   base64 -w0 upload.jks | gh secret set ANDROID_KEYSTORE_BASE64 -R FORHU/cheapest-go-mobile --env production
+#   base64 -w0 upload.jks | gh secret set ANDROID_KEYSTORE_BASE64 -R FORHU/cheapest-go-mobile --env play-store
 
 on:
   push:
@@ -48,7 +59,7 @@ jobs:
   release:
     name: Build and release (production)
     runs-on: ubuntu-latest
-    environment: production
+    environment: play-store
     env:
       TRACK: ${{ inputs.track || 'internal' }}
     steps:
@@ -56,7 +67,7 @@ jobs:
 
       - name: Preflight
         env:
-          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN || secrets.EXPO_PUBLIC_MAPBOX_TOKEN }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
           KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
         run: |
@@ -118,8 +129,8 @@ jobs:
       - name: Compose env.json
         env:
           API_URL: ${{ vars.API_URL || 'https://cheapestgo.com' }}
-          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN || secrets.EXPO_PUBLIC_MAPBOX_TOKEN }}
-          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY || secrets.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
+          MAPBOX_PUBLIC_TOKEN: ${{ secrets.MAPBOX_PUBLIC_TOKEN }}
+          STRIPE_PUBLISHABLE_KEY: ${{ secrets.STRIPE_PUBLISHABLE_KEY }}
           GOOGLE_SERVER_CLIENT_ID: ${{ secrets.GOOGLE_SERVER_CLIENT_ID }}
         run: |
           jq -n \
