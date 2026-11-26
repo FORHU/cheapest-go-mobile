@@ -80,7 +80,7 @@ class StepSearch extends StatefulWidget {
 }
 
 class _StepSearchState extends State<StepSearch>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _index = 0;
 
   DestinationSuggestion? _place;
@@ -94,6 +94,10 @@ class _StepSearchState extends State<StepSearch>
 
   final _query = TextEditingController();
   final _queryFocus = FocusNode();
+
+  /// The panel holding the field and the places under it, so it can be scrolled into view.
+  final _panelKey = GlobalKey();
+
   List<DestinationSuggestion> _options = const [];
   Timer? _debounce;
   bool _looking = false;
@@ -118,12 +122,53 @@ class _StepSearchState extends State<StepSearch>
   _StepId get _step => _flow[_index];
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _queryFocus.addListener(_revealPanel);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _queryFocus.removeListener(_revealPanel);
     _debounce?.cancel();
     _query.dispose();
     _queryFocus.dispose();
     _shake.dispose();
     super.dispose();
+  }
+
+  /// The keyboard arrived, left, or changed size.
+  ///
+  /// This is the signal, not the focus change: focus fires while the keyboard is still on its
+  /// way up, so a scroll computed there is measured against a viewport that is about to
+  /// shrink by half. `didChangeMetrics` fires again once the inset is real.
+  @override
+  void didChangeMetrics() => _revealPanel();
+
+  /// Puts the field at the top of what is left of the screen.
+  ///
+  /// The places a traveller is choosing between are drawn inside the same panel as the field,
+  /// below it — so with the keyboard up and the panel where the page happens to have left it,
+  /// the suggestions are behind the keyboard and typing "Manila" appears to do nothing. There
+  /// is no scrollbar hint either; the screen simply looks like it has stopped working.
+  ///
+  /// Aligned to the very top rather than merely nudged into view: at three suggestions the
+  /// panel is short, and the room above the keyboard is the scarce thing. The question and the
+  /// step dots scroll away, which is the right trade while someone is mid-answer.
+  void _revealPanel() {
+    if (!_queryFocus.hasFocus) return;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final ctx = _panelKey.currentContext;
+      if (!mounted || ctx == null) return;
+      Scrollable.ensureVisible(
+        ctx,
+        alignment: 0,
+        duration: const Duration(milliseconds: 240),
+        curve: Curves.easeOut,
+      );
+    });
   }
 
   /// Typing does not ask on every keystroke: the destinations endpoint reaches a supplier.
@@ -157,6 +202,9 @@ class _StepSearchState extends State<StepSearch>
         _looking = false;
         _searched = value.trim().length >= 2;
       });
+      // The panel just grew by up to three rows. Those rows are the answer to what was typed,
+      // so they are the part that has to be above the keyboard, not merely the field.
+      _revealPanel();
     });
   }
 
@@ -520,6 +568,7 @@ class _StepSearchState extends State<StepSearch>
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             GlassPanel(
+              key: _panelKey,
               padding: EdgeInsets.all(TwSpace.of(3)),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,

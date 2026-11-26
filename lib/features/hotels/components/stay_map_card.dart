@@ -8,10 +8,23 @@ import 'package:flutter/painting.dart'
 import 'package:cheapest_go_mobile/shared/catalog/travel_catalog.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 
-/// `CARD_W` and `CARD_H`, from V2's 234 × 268 artboard. The height is fixed because the photo
-/// is the card: there is no panel for it to size itself to.
-const double stayMapCardWidth = 234;
-const double stayMapCardHeight = 268;
+/// V2's artboard is 234 × 268 and this is that shape, drawn larger.
+///
+/// The web card sits beside a list; on a handset it is the only thing on the map and it was
+/// read as small — a photograph that size shows a lobby, not a room. Everything on the card is
+/// derived from [stayMapCardScale] rather than re-typed, so the proportions stay V2's and the
+/// size is one number to argue about.
+///
+/// Why not larger still: the card is **Map-Locked** to its pin, so its width is what the
+/// camera must ease sideways to reveal when a stay sits near the edge of the screen. At 286 on
+/// a 390-wide phone that is already most of the screen, and every point past it is more of the
+/// map moving under someone who only tapped a pin.
+const double stayMapCardScale = 286 / 234;
+
+/// `CARD_W` and `CARD_H`. The height is fixed because the photo is the card: there is no panel
+/// for it to size itself to.
+const double stayMapCardWidth = 234 * stayMapCardScale;
+const double stayMapCardHeight = 268 * stayMapCardScale;
 
 /// `PIN_CLEARANCE`. How far above its coordinate the card floats: the selected pin stands about
 /// 56 logical pixels tall, plus a little air.
