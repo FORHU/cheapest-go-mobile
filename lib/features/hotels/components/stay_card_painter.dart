@@ -26,9 +26,17 @@ class StayCardPainter {
     static const _onPhoto = Color(0xFFFFFFFF);
     static const _onPhotoMuted = Color(0xB8FFFFFF);
 
-    static const _radius = 16.0;
-    static const _padX = 13.0;
-    static const _padBottom = 11.0;
+    /// Every measurement below is V2's, multiplied by this.
+    ///
+    /// Written as `16 * _k` rather than as the product, so the artboard's number stays legible
+    /// beside V2's own stylesheet. Changing [stayMapCardScale] moves the whole card together —
+    /// type, discs, dots and corners — which is the only way a bigger card still looks like
+    /// the same card rather than a stretched one.
+    static const _k = stayMapCardScale;
+
+    static const _radius = 16.0 * _k;
+    static const _padX = 13.0 * _k;
+    static const _padBottom = 11.0 * _k;
 
     /// Paints the card showing [photo], or the stand-in ground when there is none yet.
     Future<({Uint8List bytes, Size size})> paint({
@@ -91,7 +99,7 @@ class StayCardPainter {
         final geometry = StayCardGeometry(photos: photos);
 
         _disc(canvas, geometry.close, const Color(0x8C000000));
-        _glyph(canvas, Icons.close_rounded, 13, _onPhoto, geometry.close.center);
+        _glyph(canvas, Icons.close_rounded, 13 * _k, _onPhoto, geometry.close.center);
 
         if (photos > 1) {
             for (final (control, icon) in [
@@ -99,7 +107,7 @@ class StayCardPainter {
                 (geometry.next!, Icons.chevron_right_rounded),
             ]) {
                 _disc(canvas, control, const Color(0x73000000));
-                _glyph(canvas, icon, 17, _onPhoto, control.center);
+                _glyph(canvas, icon, 17 * _k, _onPhoto, control.center);
             }
         }
 
@@ -108,34 +116,39 @@ class StayCardPainter {
         var y = height - _padBottom;
 
         if (photos > 1) {
-            y -= 5;
-            var x = (width - (photos.clamp(0, _maxDots) * 5 + (photos.clamp(0, _maxDots) - 1) * 5)) / 2;
+            const dot = 5.0 * _k, lit = 13.0 * _k, gap = 5.0 * _k;
+            y -= dot;
+            final count = photos.clamp(0, _maxDots);
+            var x = (width - (count * dot + (count - 1) * gap)) / 2;
             for (var i = 0; i < photos && i < _maxDots; i++) {
-                final lit = i == shown;
+                final current = i == shown;
                 canvas.drawRRect(
                     RRect.fromRectAndRadius(
-                        Rect.fromLTWH(x, y, lit ? 13 : 5, 5),
+                        Rect.fromLTWH(x, y, current ? lit : dot, dot),
                         const Radius.circular(100),
                     ),
-                    Paint()..color = lit ? _onPhoto : const Color(0x8CFFFFFF),
+                    Paint()..color = current ? _onPhoto : const Color(0x8CFFFFFF),
                 );
-                x += (lit ? 13 : 5) + 5;
+                x += (current ? lit : dot) + gap;
             }
-            y -= 10;
+            y -= 10 * _k;
         }
 
         if (rating != null) {
-            y -= _paintUp(canvas, y, rating, size: 10, weight: FontWeight.w400, color: _onPhotoMuted);
-            y -= 2;
+            y -= _paintUp(canvas, y, rating, size: 10 * _k, weight: FontWeight.w400, color: _onPhotoMuted);
+            y -= 2 * _k;
         }
-        y -= _paintUp(canvas, y, price, size: 12, weight: FontWeight.w700, color: _onPhoto);
-        y -= 6;
+        y -= _paintUp(canvas, y, price, size: 12 * _k, weight: FontWeight.w700, color: _onPhoto);
+        y -= 6 * _k;
         if (address.isNotEmpty) {
             y -= _paintUp(canvas, y, address,
-                size: 10, weight: FontWeight.w400, color: _onPhotoMuted, maxLines: 2);
-            y -= 3;
+                size: 10 * _k, weight: FontWeight.w400, color: _onPhotoMuted, maxLines: 2);
+            y -= 3 * _k;
         }
-        _paintUp(canvas, y, name, size: 13.5, weight: FontWeight.w700, color: _onPhoto);
+        // The name is set tighter than the rest: it is the one line allowed to wrap, and at
+        // this size V2's 1.35 opens a visible gap between its two halves.
+        _paintUp(canvas, y, name,
+            size: 13.5 * _k, weight: FontWeight.w700, color: _onPhoto, lineHeight: 1.25);
 
         canvas.restore();
 
@@ -168,6 +181,7 @@ class StayCardPainter {
         required FontWeight weight,
         required Color color,
         int maxLines = 1,
+        double lineHeight = 1.35,
     }) {
         final painter = TextPainter(
             text: TextSpan(
@@ -176,7 +190,7 @@ class StayCardPainter {
                     // The app's own face, so the card reads as part of the product.
                     fontFamily: 'Plus Jakarta Sans',
                     fontSize: size,
-                    height: size == 13.5 ? 1.25 : 1.35,
+                    height: lineHeight,
                     fontWeight: weight,
                     color: color,
                 ),
@@ -238,20 +252,22 @@ class StayCardGeometry {
     /// arrows at all rather than two controls that do nothing.
     final int photos;
 
-    static const _discClose = 24.0;
-    static const _discArrow = 30.0;
+    static const _discClose = 24.0 * stayMapCardScale;
+    static const _discArrow = 30.0 * stayMapCardScale;
+    static const _inset = 8.0 * stayMapCardScale;
 
     Rect get close => const Rect.fromLTWH(
-        stayMapCardWidth - 8 - _discClose, 8, _discClose, _discClose);
+        stayMapCardWidth - _inset - _discClose, _inset, _discClose, _discClose);
 
     /// Centred on the clear part of the photograph rather than on the card: halfway down would
     /// put them on the stay's name.
     Rect? get previous => photos > 1
-        ? const Rect.fromLTWH(8, stayMapCardHeight * 0.32 - _discArrow / 2, _discArrow, _discArrow)
+        ? const Rect.fromLTWH(
+            _inset, stayMapCardHeight * 0.32 - _discArrow / 2, _discArrow, _discArrow)
         : null;
 
     Rect? get next => photos > 1
-        ? const Rect.fromLTWH(stayMapCardWidth - 8 - _discArrow,
+        ? const Rect.fromLTWH(stayMapCardWidth - _inset - _discArrow,
             stayMapCardHeight * 0.32 - _discArrow / 2, _discArrow, _discArrow)
         : null;
 
