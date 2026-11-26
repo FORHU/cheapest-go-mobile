@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.2.0](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.1.0...cheapest_go_mobile-v1.2.0) (2026-11-26)
+
+
+### Features
+
+* implement multi-step search flow component and destination sele… ([61d00f8](https://github.com/FORHU/cheapest-go-mobile/commit/61d00f8bf1dd8741ea3660f791606cad2425155f))
+
 ## [1.1.0](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.0.0...cheapest_go_mobile-v1.1.0) (2026-11-26)
 
 
