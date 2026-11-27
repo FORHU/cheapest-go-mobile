@@ -8,6 +8,7 @@ import 'package:cheapest_go_mobile/features/home/components/stage_chrome.dart';
 import 'package:cheapest_go_mobile/features/home/components/step_parts.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
+import 'package:cheapest_go_mobile/shared/search/recent_destinations.dart';
 import 'package:cheapest_go_mobile/shared/stores/trip_search_store.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_scale.dart';
@@ -115,6 +116,26 @@ class _StepSearchState extends State<StepSearch>
   bool _looking = false;
   bool _searched = false;
 
+  /// Offered on the "where" step while the field is empty. See [_loadQuickPicks].
+  List<String> _recent = const [];
+  List<String> _trending = const [];
+
+  /// Theirs first, then everyone else's, and nowhere twice.
+  ///
+  /// Seeded with the tiles below so a chip reading "Seoul" never sits directly above a
+  /// photograph of Seoul — two answers to one question, in the same panel.
+  List<String> get _quickPicks {
+    final seen = <String>{for (final p in _picks) p.city.toLowerCase()};
+    final out = <String>[];
+    for (final city in [..._recent, ..._trending]) {
+      final name = city.trim();
+      if (name.isEmpty || !seen.add(name.toLowerCase())) continue;
+      out.add(name);
+      if (out.length == 6) break;
+    }
+    return out;
+  }
+
   /// The nudge an unanswered step gives when Next is pressed, as V2's `setShake` does.
   ///
   /// The button used to be disabled instead, which is how #78 was raised: a greyed-out
@@ -138,6 +159,23 @@ class _StepSearchState extends State<StepSearch>
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     _queryFocus.addListener(_revealPanel);
+    _loadQuickPicks();
+  }
+
+  /// What to offer before anything is typed.
+  ///
+  /// Both are best-effort and neither blocks the field: the photograph tiles are already
+  /// there, so a trending call that fails or a device with nothing remembered simply shows
+  /// what it always showed. Fetched once on arrival rather than per keystroke — this is the
+  /// answer to "I don't know where yet", and it does not change while somebody decides.
+  Future<void> _loadQuickPicks() async {
+    final remembered = await recentDestinations.read();
+    if (mounted && remembered.isNotEmpty) setState(() => _recent = remembered);
+
+    final popular = await destinationsApi.trending();
+    if (mounted && popular.isNotEmpty) {
+      setState(() => _trending = popular.map((d) => d.name).toList());
+    }
   }
 
   @override
@@ -210,9 +248,15 @@ class _StepSearchState extends State<StepSearch>
       final found = await destinationsApi.search(value, forFlights: airports);
       if (!mounted || ask != _ask) return;
       setState(() {
-        _options = found.take(_maxOptions).toList();
+        // `null` is "we could not find out" — a dropped request, not an answer. The places
+        // already listed stand, because emptying the panel on one lost connection turns a
+        // flaky signal into a field that looks broken. `_searched` is left alone with them,
+        // so "no places match" is never shown over a list that still has places in it.
+        if (found != null) {
+          _options = found.take(_maxOptions).toList();
+          _searched = value.trim().length >= 2;
+        }
         _looking = false;
-        _searched = value.trim().length >= 2;
       });
       // The panel just grew by up to three rows. Those rows are the answer to what was typed,
       // so they are the part that has to be above the keyboard, not merely the field.
@@ -346,11 +390,33 @@ class _StepSearchState extends State<StepSearch>
     return DateTimeRange(start: current.start, end: day);
   }
 
+  /// Choose a place by name alone, as the tiles and the chips both do.
+  ///
+  /// Set outright, never looked up. Searching for it instead made a promoted place depend on
+  /// the destinations endpoint answering a second time, and when it did not, the tile just
+  /// tapped came back as "No places match Seoul".
+  void _pickCity(String city) => _pick(
+        DestinationSuggestion(
+          id: city,
+          kind: DestinationKind.city,
+          name: city,
+        ),
+      );
+
   void _pick(DestinationSuggestion option) {
     // The question is answered, so nothing may still be asking it: the timer is dropped
     // and the counter moved on, which makes any reply already on its way stale.
     _debounce?.cancel();
     _ask++;
+    // Only a stay: an airport is picked on the way to somewhere, and offering someone the
+    // airport they left from as a place to stay is not a memory worth keeping.
+    if (_step == _StepId.where && !option.isAirport) {
+      // Not awaited — writing it down must not sit between the tap and the next step.
+      recentDestinations.remember(option.name).then((saved) {
+        if (mounted) setState(() => _recent = saved);
+      });
+    }
+
     setState(() {
       switch (_step) {
         case _StepId.where:
@@ -673,6 +739,43 @@ class _StepSearchState extends State<StepSearch>
                 ],
               ),
             ),
+            // Where this person was looking, and where everyone else is going. Chips rather
+            // than a second grid: the stage has to keep the question, the field and the
+            // button on one screen with the keyboard up, which is the same reason the
+            // suggestion list is capped and bounded.
+            if (_step == _StepId.where &&
+                _options.isEmpty &&
+                _query.text.isEmpty &&
+                _quickPicks.isNotEmpty) ...[
+              SizedBox(height: TwSpace.of(4)),
+              Wrap(
+                spacing: TwSpace.of(2),
+                runSpacing: TwSpace.of(2),
+                children: [
+                  for (final city in _quickPicks)
+                    ActionChip(
+                      // Set outright, never looked up — the same reasoning as the tiles
+                      // below: a place offered here must not depend on the destinations
+                      // endpoint answering a second time to be choosable.
+                      onPressed: () => _pickCity(city),
+                      avatar: Icon(
+                        _recent.any((r) => r.toLowerCase() == city.toLowerCase())
+                            ? Icons.history
+                            : Icons.trending_up,
+                        size: 15,
+                        color: Colors.white70,
+                      ),
+                      label: Text(city),
+                      labelStyle: TextStyle(
+                        color: Colors.white,
+                        fontSize: TwText.sm.size,
+                      ),
+                      backgroundColor: const Color(0x14FFFFFF),
+                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
+                    ),
+                ],
+              ),
+            ],
             // Before anything is typed, the places we promote — as V2 offers them.
             if (_step == _StepId.where &&
                 _options.isEmpty &&
@@ -688,20 +791,9 @@ class _StepSearchState extends State<StepSearch>
                 ),
               ),
               SizedBox(height: TwSpace.of(2)),
-              _PickGrid(
-                // V2's `pickTile` sets the destination outright and marks the
-                // field as untyped — it never looks the city up. Searching for
-                // it instead made a promoted place depend on the destinations
-                // endpoint answering, and when it did not the tile a person had
-                // just tapped came back as "No places match Seoul".
-                onPick: (city) => _pick(
-                  DestinationSuggestion(
-                    id: city,
-                    kind: DestinationKind.city,
-                    name: city,
-                  ),
-                ),
-              ),
+              // V2's `pickTile` sets the destination outright and marks the field
+              // as untyped — see `_pickCity`, which the chips above share.
+              _PickGrid(onPick: _pickCity),
             ],
           ],
         );

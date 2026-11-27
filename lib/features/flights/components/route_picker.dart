@@ -120,6 +120,10 @@ class _AirportPickerState extends State<AirportPicker> {
       if (!mounted || ask != _asked) return;
       setState(() {
         _loading = false;
+        // `null` is a lookup that failed, not an answer. The airports already listed are
+        // still the best thing to show — clearing them turns a dropped request into an
+        // empty list that reads as "no such airport".
+        if (found == null) return;
         _results = [
           for (final s in found)
             if (s.iata != null)

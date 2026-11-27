@@ -63,7 +63,13 @@ class DestinationsApi {
 
     static const _options = HttpRequestOptions(useMobileApiKey: true, requiresAuth: false);
 
-    Future<List<DestinationSuggestion>> search(
+    /// Suggestions for what was typed, or `null` if we could not find out.
+    ///
+    /// The difference matters to whoever is drawing the list. An empty list is an answer — we
+    /// looked and there is no such place — and saying so is correct. A dropped request is not
+    /// an answer, and both used to arrive here as `[]`, so one lost connection emptied a
+    /// perfectly good list of places and the field read as broken.
+    Future<List<DestinationSuggestion>?> search(
         String query, {
         bool forFlights = false,
         int limit = 8,
@@ -90,7 +96,38 @@ class DestinationsApi {
                 .toList();
         } catch (_) {
             // A failed lookup leaves the field as the person typed it rather than clearing
-            // what they were doing. The caller decides whether to say anything.
+            // what they were doing. `null`, not empty, so the caller can tell the two apart.
+            return null;
+        }
+    }
+
+    /// Where people are going, for the step before anything is typed.
+    ///
+    /// api-v2 builds this from what was actually searched for in the last fortnight and tops
+    /// it up from a curated list when there is not enough signal, so there is nothing to
+    /// choose or maintain here. Same endpoint the web stepper reads.
+    ///
+    /// Empty on failure rather than `null`: nobody is waiting on this and there is nothing to
+    /// preserve — the tiles below it are still there.
+    Future<List<DestinationSuggestion>> trending() async {
+        try {
+            final res  = await _client.get('/api/v2/hotels/trending', options: _options);
+            final rows = _rowsOf(res);
+            return rows
+                .map((r) {
+                    final city = r['city']?.toString().trim() ?? '';
+                    if (city.isEmpty) return null;
+                    return DestinationSuggestion(
+                        id: city,
+                        kind: DestinationKind.city,
+                        name: city,
+                        city: (r['countryName'] ?? r['countryCode'] ?? '').toString(),
+                        countryCode: (r['countryCode'] ?? '').toString(),
+                    );
+                })
+                .whereType<DestinationSuggestion>()
+                .toList();
+        } catch (_) {
             return const [];
         }
     }
