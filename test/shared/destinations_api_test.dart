@@ -65,7 +65,7 @@ void main() {
             ],
         });
 
-        final found = await DestinationsApi(client: client).search('manila');
+        final found = (await DestinationsApi(client: client).search('manila'))!;
 
         expect(found, hasLength(1));
         expect(found.single.name, 'Manila', reason: 'not the Mapbox id');
@@ -90,7 +90,7 @@ void main() {
             ],
         }));
 
-        final [seoul] = await api.search('seoul');
+        final [seoul] = (await api.search('seoul'))!;
         expect(seoul.kind, DestinationKind.city);
         expect(seoul.name, 'Seoul');
         expect(seoul.countryCode, 'KR');
@@ -104,7 +104,7 @@ void main() {
             ],
         }));
 
-        final [icn] = await api.search('incheon', forFlights: true);
+        final [icn] = (await api.search('incheon', forFlights: true))!;
         expect(icn.isAirport, isTrue);
         expect(icn.id, 'ICN');
         expect(icn.iata, 'ICN');
@@ -116,7 +116,7 @@ void main() {
             {'id': 'tokyo', 'type': 'city', 'name': 'Tokyo'},
         ]));
 
-        expect((await api.search('tokyo')).single.name, 'Tokyo');
+        expect((await api.search('tokyo'))!.single.name, 'Tokyo');
     });
 
     test('drops a row with nothing to point a search at', () async {
@@ -127,11 +127,52 @@ void main() {
             ],
         }));
 
-        expect((await api.search('ba')).map((d) => d.id), ['bali']);
+        expect((await api.search('ba'))!.map((d) => d.id), ['bali']);
     });
 
-    test('a failed lookup is empty, not an exception in the middle of typing', () async {
+    /// Still no exception — a caller mid-keystroke has nothing useful to do with one — but
+    /// null rather than empty, because the two mean opposite things to whoever draws the list.
+    /// Empty is an answer: we looked, there is no such place, and saying so is correct. A
+    /// dropped request is not an answer, and reporting it as one emptied a list of perfectly
+    /// good places every time a connection wobbled.
+    test('a failed lookup is null, not an empty list and not an exception', () async {
         final api = DestinationsApi(client: _FakeClient(Exception('offline')));
-        expect(await api.search('seoul'), isEmpty);
+
+        expect(await api.search('seoul'), isNull);
+    });
+
+    test('a genuine miss is still an empty list, and distinguishable from a failure', () async {
+        final api = DestinationsApi(client: _FakeClient({'success': true, 'data': []}));
+
+        expect(await api.search('zzqqxx'), isEmpty);
+    });
+
+    group('trending, for the step before anything is typed', () {
+        test('reads the cities api-v2 promotes', () async {
+            final api = DestinationsApi(client: _FakeClient({
+                'success': true,
+                'data': [
+                    {'city': 'Seoul', 'countryCode': 'KR', 'countryName': 'South Korea'},
+                    {'city': 'Boracay', 'countryCode': 'PH', 'countryName': 'Philippines'},
+                    // No city is nothing to offer, whatever else the row carries.
+                    {'countryCode': 'JP', 'countryName': 'Japan'},
+                ],
+            }));
+
+            final found = await api.trending();
+
+            expect(found.map((d) => d.name), ['Seoul', 'Boracay']);
+            expect(found.first.city, 'South Korea', reason: 'the subtitle a chip reads');
+            expect(found.first.kind, DestinationKind.city);
+        });
+
+        /// Empty rather than null here, and deliberately the other way round from `search`:
+        /// nothing is waiting on this and nothing is being preserved. The photograph tiles
+        /// are already on screen, so the step is complete without it.
+        test('is empty when it cannot be fetched, never an exception', () async {
+            final api = DestinationsApi(client: _FakeClient(Exception('offline')));
+
+            expect(await api.trending(), isEmpty);
+        });
     });
 }
