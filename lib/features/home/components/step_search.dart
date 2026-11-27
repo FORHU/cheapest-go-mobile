@@ -766,25 +766,20 @@ class _StepSearchState extends State<StepSearch>
                 runSpacing: TwSpace.of(2),
                 children: [
                   for (final city in _quickPicks)
-                    ActionChip(
+                    // The Stage's own pill, not Material's chip: a chip paints the app's
+                    // `canvasColor` under whatever colour it is given, and on the photograph
+                    // that is the white page background — the row came out as blank white
+                    // pills with white text on them.
+                    GlassPill(
+                      dense: true,
+                      label: city,
+                      icon: _recent.any((r) => r.toLowerCase() == city.toLowerCase())
+                          ? Icons.history
+                          : Icons.trending_up,
                       // Set outright, never looked up — the same reasoning as the tiles
                       // below: a place offered here must not depend on the destinations
                       // endpoint answering a second time to be choosable.
                       onPressed: () => _pickCity(city),
-                      avatar: Icon(
-                        _recent.any((r) => r.toLowerCase() == city.toLowerCase())
-                            ? Icons.history
-                            : Icons.trending_up,
-                        size: 15,
-                        color: Colors.white70,
-                      ),
-                      label: Text(city),
-                      labelStyle: TextStyle(
-                        color: Colors.white,
-                        fontSize: TwText.sm.size,
-                      ),
-                      backgroundColor: const Color(0x14FFFFFF),
-                      side: BorderSide(color: Colors.white.withValues(alpha: 0.12)),
                     ),
                 ],
               ),

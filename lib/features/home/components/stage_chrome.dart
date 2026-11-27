@@ -131,12 +131,29 @@ class GradientPill extends StatelessWidget {
 }
 
 /// Going back is not the thing to press, so it is glass rather than gradient.
+///
+/// Also what a row of small choices on the Stage is made of. Material's own `ActionChip` is
+/// not: a chip's surface is a `MaterialType.canvas` with no colour of its own, so it paints
+/// `canvasColor` — which this app sets to the page background. On the photograph that came out
+/// as a solid white pill with white text on it, and nothing a chip exposes can reach that
+/// Material: `backgroundColor` is painted *over* it. The same trap the search field's
+/// `fillColor` exists to dodge, in a widget that gives no way to dodge it.
 class GlassPill extends StatelessWidget {
-    const GlassPill({required this.label, required this.onPressed, this.icon, super.key});
+    const GlassPill({
+        required this.label,
+        required this.onPressed,
+        this.icon,
+        this.dense = false,
+        super.key,
+    });
 
     final String label;
     final VoidCallback onPressed;
     final IconData? icon;
+
+    /// Tighter, for several side by side rather than one on its own: the Stage has to hold the
+    /// question, the field and the button on one screen with the keyboard up.
+    final bool dense;
 
     @override
     Widget build(BuildContext context) {
@@ -147,8 +164,8 @@ class GlassPill extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
                 child: Container(
                     padding: EdgeInsets.symmetric(
-                        horizontal: TwSpace.of(4),
-                        vertical: TwSpace.of(3),
+                        horizontal: TwSpace.of(dense ? 3 : 4),
+                        vertical: TwSpace.of(dense ? 2 : 3),
                     ),
                     decoration: BoxDecoration(
                         color: const Color(0x3D0B1222),
@@ -159,8 +176,8 @@ class GlassPill extends StatelessWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                             if (icon != null) ...[
-                                Icon(icon, size: 16, color: Colors.white),
-                                SizedBox(width: TwSpace.of(2)),
+                                Icon(icon, size: dense ? 14 : 16, color: Colors.white),
+                                SizedBox(width: TwSpace.of(dense ? 1 : 2)),
                             ],
                             Text(
                                 label,

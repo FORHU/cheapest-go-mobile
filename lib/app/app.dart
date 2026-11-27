@@ -108,9 +108,13 @@ class SupportLayer extends StatelessWidget {
           builder: (context) => Stack(
             children: [
               Positioned.fill(child: child),
-              ValueListenableBuilder<int>(
-                valueListenable: popupsShowing,
-                builder: (context, popups, _) => SupportWidget(store: supportChatStore, visible: popups == 0),
+              ListenableBuilder(
+                listenable: Listenable.merge([popupsShowing, bottomBarHeight]),
+                builder: (context, _) => SupportWidget(
+                  store: supportChatStore,
+                  visible: popupsShowing.value == 0,
+                  bottomBar: bottomBarHeight.value,
+                ),
               ),
             ],
           ),

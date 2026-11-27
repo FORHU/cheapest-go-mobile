@@ -20,13 +20,28 @@ import 'package:cheapest_go_mobile/shared/theme/tokens/chrome_skin.dart';
 import 'package:cheapest_go_mobile/shared/theme/tokens/generated/tw_palette.dart';
 
 class SupportWidget extends StatelessWidget {
-  const SupportWidget({required this.store, required this.visible, super.key});
+  const SupportWidget({
+    required this.store,
+    required this.visible,
+    this.bottomBar = 0,
+    super.key,
+  });
 
   final SupportChatStore store;
   final bool visible;
 
-  /// V2's `bottom-[calc(env(safe-area-inset-bottom)+92px)]`.
-  static const clearOfBar = 92.0;
+  /// How tall the bottom bar is on the screen underneath, or zero where there is none. The
+  /// launcher sits above every route and cannot see the Scaffold it floats over, so it is
+  /// told — see `bottomBarHeight` in `app/support_chat.dart`.
+  final double bottomBar;
+
+  /// The gap between the launcher and whatever is below it: the bar, or the edge.
+  ///
+  /// With a bar this comes to V2's `bottom-[calc(env(safe-area-inset-bottom)+92px)]`, since
+  /// the bar is 68 — stated as the sum rather than as 92, because mobile has screens with no
+  /// bar at all and on those the constant left the button floating in open space.
+  static const overBar = 24.0;
+  static const overEdge = 16.0;
   static const launcherSize = 56.0;
 
   @override
@@ -40,7 +55,8 @@ class SupportWidget extends StatelessWidget {
         final safeBottom = media.viewPadding.bottom;
         final keyboard = media.viewInsets.bottom;
         // With the keyboard up the panel rides on it rather than under it.
-        final bottom = keyboard > 0 ? keyboard + 8 : safeBottom + clearOfBar;
+        final clear = bottomBar > 0 ? bottomBar + overBar : overEdge;
+        final bottom = keyboard > 0 ? keyboard + 8 : safeBottom + clear;
         final right = media.viewPadding.right > 16 ? media.viewPadding.right : 16.0;
         final width = (media.size.width - 32).clamp(0.0, 352.0);
         // Above the launcher and the gap under it, below the status bar.

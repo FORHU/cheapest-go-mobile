@@ -51,6 +51,16 @@ void wireSupportChat() {
 /// any is, rather than floating over a sheet's own buttons.
 final ValueNotifier<int> popupsShowing = ValueNotifier<int>(0);
 
+/// How tall the bottom bar is on the screen showing now, or zero where there is none.
+///
+/// The launcher is mounted once above every route, so it cannot see the Scaffold it is
+/// floating over and cannot ask whether that Scaffold has a bar. V2 never had to: on the web
+/// the bar is on every page, so a constant 92px clearance was always right. Mobile pushes
+/// `/hotels`, `/hotel/:id` and the whole checkout outside the shell, where that constant left
+/// the button hanging in the middle of nothing — reported as "it should sit bottom right
+/// whatever the device". The shell sets this; everything else leaves it at zero.
+final ValueNotifier<double> bottomBarHeight = ValueNotifier<double>(0);
+
 /// One per navigator — an observer can only watch one — all counting into [popupsShowing].
 class PopupTracker extends NavigatorObserver {
   void _bump(Route<dynamic>? route, int by) {
