@@ -22,10 +22,21 @@ class PlaceRow extends StatelessWidget {
     @override
     Widget build(BuildContext context) {
         final code = option.iata;
-        final detail = [
-            option.name,
-            if (option.countryCode.isNotEmpty) option.countryCode,
-        ].join(' · ');
+
+        // A place leads with where it is — "Manila, Philippines" — because that is what tells
+        // three Manilas apart, and its own name below adds the country code.
+        //
+        // A property leads with itself. The endpoint sends the thing in `title` and where it
+        // is in `subtitle`, which for a hotel means the headline read "Baguio, PH" with
+        // "Casa La El Baguio" as the small grey line underneath: the one word the person
+        // typed, in the least prominent place on the row.
+        final headline = option.isHotel ? option.name : (option.city ?? option.name);
+        final detail = option.isHotel
+            ? (option.city ?? '')
+            : [
+                option.name,
+                if (option.countryCode.isNotEmpty) option.countryCode,
+              ].join(' · ');
 
         return InkWell(
             onTap: onTap,
@@ -58,7 +69,7 @@ class PlaceRow extends StatelessWidget {
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                     Text(
-                                        option.city ?? option.name,
+                                        headline,
                                         style: TextStyle(
                                             fontSize: TwText.sm.size,
                                             fontWeight: FontWeight.w700,

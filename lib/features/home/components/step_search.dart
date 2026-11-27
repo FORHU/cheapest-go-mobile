@@ -408,9 +408,22 @@ class _StepSearchState extends State<StepSearch>
     // and the counter moved on, which makes any reply already on its way stale.
     _debounce?.cancel();
     _ask++;
-    // Only a stay: an airport is picked on the way to somewhere, and offering someone the
-    // airport they left from as a place to stay is not a memory worth keeping.
-    if (_step == _StepId.where && !option.isAirport) {
+
+    // A property is not a "where" — it is the answer to the whole search.
+    //
+    // Somebody who types a hotel's name has already chosen; sending them to a results page
+    // for a town of that name answers a question they did not ask. The endpoint began
+    // offering properties beside places, and mobile kept treating every row as somewhere to
+    // search, so "Casa La El Baguio" ran a stay search for a place called Casa La El Baguio.
+    // app-v2 has opened the property page for this case all along.
+    if (option.isHotel) {
+      context.go('/hotel/${option.id}');
+      return;
+    }
+
+    // Only a stay, and only a place: an airport is picked on the way to somewhere, and a
+    // property is not a destination to offer back as a chip that would search for its name.
+    if (_step == _StepId.where && option.kind == DestinationKind.city) {
       // Not awaited — writing it down must not sit between the tap and the next step.
       recentDestinations.remember(option.name).then((saved) {
         if (mounted) setState(() => _recent = saved);

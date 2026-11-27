@@ -7,7 +7,12 @@ import 'package:cheapest_go_mobile/shared/lib/http.dart';
 /// come from different places and carry different things — hotels from the destination
 /// autocomplete, which knows a city's granularity and bounding box, and flights from the
 /// airport index. See `destinations.api.ts` in the web repo, and ADR-0017 there.
-enum DestinationKind { city, country, airport }
+/// What a suggestion points at.
+///
+/// `hotel` is a named property rather than a place, and it is not searched for — it is opened.
+/// app-v2 has routed one straight to its property page since before the endpoint ever returned
+/// one; this is the same answer on mobile.
+enum DestinationKind { city, country, airport, hotel }
 
 class DestinationSuggestion {
     const DestinationSuggestion({
@@ -42,15 +47,31 @@ class DestinationSuggestion {
     /// stays destination from a flight endpoint without inspecting [kind].
     bool get isAirport => kind == DestinationKind.airport;
 
+    /// A named property, which is opened rather than searched for. [id] is the catalogue's
+    /// `hotel_id`, which is what `/hotel/:id` takes.
+    bool get isHotel => kind == DestinationKind.hotel;
+
     @override
     String toString() => 'DestinationSuggestion($kind, $id, $name)';
 }
 
-DestinationKind _kindOf(String? raw) => switch (raw) {
+/// What a row is, from the two fields that describe it.
+///
+/// `rung` decides for a place, because it is the more specific of the two: a district arrives
+/// as `type: city, rung: district` and the rung is what says how much of the map to search.
+///
+/// A property is the exception and has to be checked first. It arrives as `type: hotel,
+/// rung: poi`, and with the rung deciding alone, `poi` matched nothing and fell through to the
+/// `city` default — so a hotel was offered as though it were a town, and tapping it ran a
+/// search for a town by that name instead of opening the property.
+DestinationKind _kindOf({String? type, String? rung}) {
+    if (type == 'hotel') return DestinationKind.hotel;
+    return switch (rung ?? type) {
         'airport' => DestinationKind.airport,
         'country' => DestinationKind.country,
         _ => DestinationKind.city,
     };
+}
 
 /// Suggestions for the "where" step.
 ///
@@ -165,7 +186,7 @@ class DestinationsApi {
         if (id == null || id.isEmpty || name == null || name.isEmpty) return null;
         return DestinationSuggestion(
             id: id,
-            kind: _kindOf((r['rung'] ?? r['type'])?.toString()),
+            kind: _kindOf(type: r['type']?.toString(), rung: r['rung']?.toString()),
             name: name,
             city: (r['subtitle'] ?? r['city'])?.toString(),
             countryCode: (r['countryCode'] ?? '').toString(),

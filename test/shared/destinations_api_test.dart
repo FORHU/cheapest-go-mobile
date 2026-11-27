@@ -141,6 +141,52 @@ void main() {
         expect(await api.search('seoul'), isNull);
     });
 
+    /// A property arrives as `type: hotel` with `rung: poi`. The rung used to decide alone,
+    /// `poi` matched none of the cases, and it fell through to the `city` default — so a hotel
+    /// was offered as a town and tapping it searched for a town of that name.
+    test('reads a property as a property, not as a town', () async {
+        final api = DestinationsApi(client: _FakeClient({
+            'success': true,
+            'data': [
+                {
+                    'type': 'hotel',
+                    'rung': 'poi',
+                    'title': 'Casa La El Baguio',
+                    'subtitle': 'Baguio, PH',
+                    'countryCode': 'PH',
+                    'id': '13143275',
+                    'lat': 16.391531,
+                    'lng': 120.590195,
+                },
+            ],
+        }));
+
+        final hotel = (await api.search('baguio'))!.single;
+
+        expect(hotel.kind, DestinationKind.hotel);
+        expect(hotel.isHotel, isTrue);
+        // The catalogue id, because that is what `/hotel/:id` takes.
+        expect(hotel.id, '13143275');
+        expect(hotel.name, 'Casa La El Baguio');
+    });
+
+    /// The rung still decides for a place: a district is `type: city, rung: district`, and the
+    /// rung is the part that says how much of the map to search.
+    test('still reads a place by its rung', () async {
+        final api = DestinationsApi(client: _FakeClient({
+            'success': true,
+            'data': [
+                {'type': 'country', 'rung': 'country', 'title': 'Japan', 'id': 'JP'},
+                {'type': 'city', 'rung': 'district', 'title': 'Gangnam', 'id': 'd1'},
+            ],
+        }));
+
+        final found = (await api.search('anywhere'))!;
+
+        expect(found[0].kind, DestinationKind.country);
+        expect(found[1].kind, DestinationKind.city);
+    });
+
     test('a genuine miss is still an empty list, and distinguishable from a failure', () async {
         final api = DestinationsApi(client: _FakeClient({'success': true, 'data': []}));
 
