@@ -41,9 +41,21 @@ const _steps = <StepMode, List<_StepId>>{
 
 enum _StepId { trip, where, from, to, when, who }
 
-/// Enough to choose from, few enough that the heading, tabs, question, list and the button
-/// under it still fit the screen. V2 caps it at the same number for the same reason.
-const _maxOptions = 3;
+/// How many rows the list holds.
+///
+/// Three was chosen so the heading, tabs, question, list and the button under it still fit the
+/// screen. Now that properties are offered beside places, three rows stopped being a tidy list
+/// and became a filter: "new york" matched three hotels named after the city and New York
+/// itself never reached the screen. The panel is bounded and scrolls instead, so what keeps
+/// the stage on screen is its height rather than how few things it is allowed to know about.
+/// V2 caps it at the same number for the same reason.
+const _maxOptions = 8;
+
+/// The tallest the suggestion panel may be, in logical pixels — about five rows.
+///
+/// A list that grows with its contents pushes the field it belongs to up behind the keyboard,
+/// which is the fault `_revealPanel` exists to undo. Bounding it is cheaper than reacting to it.
+const _maxListHeight = 272.0;
 
 /// The places offered before anything is typed, as `stages.ts` lists them. The country names
 /// sit beside the cities there too — labels on a constant, not translated copy.
@@ -616,13 +628,30 @@ class _StepSearchState extends State<StepSearch>
                     ),
                     onChanged: (v) => _onTyped(v, airports: airports),
                   ),
-                  for (final option in _options) ...[
-                    Divider(
-                      color: Colors.white.withValues(alpha: 0.08),
-                      height: 1,
+                  if (_options.isNotEmpty)
+                    ConstrainedBox(
+                      constraints: const BoxConstraints(
+                        maxHeight: _maxListHeight,
+                      ),
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: _options.length,
+                        itemBuilder: (_, i) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Divider(
+                              color: Colors.white.withValues(alpha: 0.08),
+                              height: 1,
+                            ),
+                            PlaceRow(
+                              option: _options[i],
+                              onTap: () => _pick(_options[i]),
+                            ),
+                          ],
+                        ),
+                      ),
                     ),
-                    PlaceRow(option: option, onTap: () => _pick(option)),
-                  ],
                   if (_looking)
                     Padding(
                       padding: EdgeInsets.only(top: TwSpace.of(3)),
