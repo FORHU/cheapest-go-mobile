@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.4.1](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.4.0...cheapest_go_mobile-v1.4.1) (2026-11-27)
+
+
+### Bug Fixes
+
+* white quick-pick chips, launcher clearance, supplier timeout ([3cea42e](https://github.com/FORHU/cheapest-go-mobile/commit/3cea42e6d87fafeb9da746bb994ce3daeb5065a3))
+* white quick-pick chips, launcher clearance, supplier timeout ([03d3d71](https://github.com/FORHU/cheapest-go-mobile/commit/03d3d718119526f537fd8549804a956b1cdde8c1))
+
 ## [1.4.0](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.3.0...cheapest_go_mobile-v1.4.0) (2026-11-27)
 
 
