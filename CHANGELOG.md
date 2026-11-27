@@ -1,5 +1,14 @@
 # Changelog
 
+## [1.4.0](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.3.0...cheapest_go_mobile-v1.4.0) (2026-11-27)
+
+
+### Features
+
+* add home step search components and destinations api ([a482820](https://github.com/FORHU/cheapest-go-mobile/commit/a482820b6ef4f2ca4bf904312d4c23e520838957))
+* add home step search components and destinations api ([2012480](https://github.com/FORHU/cheapest-go-mobile/commit/201248030f5f899cbaeb528bb5337e62d7d8e3bb))
+* add route picker and destinations api for flight search ([727a886](https://github.com/FORHU/cheapest-go-mobile/commit/727a8866f4d28926ff1e30892ac6bfd54aaf90df))
+
 ## [1.3.0](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.2.0...cheapest_go_mobile-v1.3.0) (2026-11-27)
 
 
