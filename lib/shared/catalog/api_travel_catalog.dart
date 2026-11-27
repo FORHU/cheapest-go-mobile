@@ -20,6 +20,24 @@ import 'package:cheapest_go_mobile/shared/lib/http.dart';
 /// priced and with a Book now button under them, on screen as the results for Seoul, with
 /// nothing to say they were not real. A stay shown as bookable has to be one a supplier will
 /// honour, and a search that failed has to look different from one that found nothing.
+/// How long to wait on a call that goes out to a supplier.
+///
+/// The default thirty seconds is a sane wait for our own database; it is not one for a live
+/// availability search. Measured against production, a cold Manila search took 20.5s, 21.4s
+/// and 32.6s — so the third of those was cut off by the client while the server was still
+/// working. The answer then landed in the server's cache, which is why pressing **Try again**
+/// came back in under a second with 250 stays: nothing had been wrong except the clock. That
+/// is the "nothing found, then found" on the released build — a timeout wearing the
+/// supplier-outage screen, which is the one message that was definitely not true.
+///
+/// Ninety seconds, under the hundred the edge allows, so the wait that gives up is the
+/// network's rather than one we chose too tight.
+const _supplierTimeout = HttpRequestOptions(
+  useMobileApiKey: true,
+  requiresAuth: false,
+  timeout: Duration(seconds: 90),
+);
+
 class ApiTravelCatalog implements TravelCatalog {
   ApiTravelCatalog({
     HttpClientAdapter? client,
@@ -154,7 +172,7 @@ class ApiTravelCatalog implements TravelCatalog {
       final res = await _client.post(
         '/api/v2/hotels/search',
         body: body,
-        options: const HttpRequestOptions(useMobileApiKey: true, requiresAuth: false),
+        options: _supplierTimeout,
       );
 
       final list = <Hotel>[];
@@ -227,7 +245,7 @@ class ApiTravelCatalog implements TravelCatalog {
     try {
       final res = await _client.get(
         '/api/v2/hotels/property/$id?checkIn=${_formatDate(inDate)}&checkOut=${_formatDate(outDate)}&adults=${adults ?? 2}',
-        options: const HttpRequestOptions(useMobileApiKey: true, requiresAuth: false),
+        options: _supplierTimeout,
       );
 
       if (res is Map<String, dynamic>) {
@@ -369,7 +387,7 @@ class ApiTravelCatalog implements TravelCatalog {
       final res = await _client.post(
         '/api/v2/flights/search',
         body: body,
-        options: const HttpRequestOptions(useMobileApiKey: true, requiresAuth: false),
+        options: _supplierTimeout,
       );
 
       final list = <FlightOffer>[];

@@ -389,6 +389,29 @@ class _MainScaffoldShellState extends State<MainScaffoldShell> {
 
   bool _settingsOpen = false;
 
+  /// The support launcher floats above every route and cannot see which Scaffold is under it,
+  /// so the shell says that a bar is there and how tall it is. Routes outside the shell —
+  /// `/hotels`, `/hotel/:id`, the checkouts — tear it down and the launcher drops to the edge.
+  ///
+  /// After the frame, never during it: the launcher's builder is an ancestor of this route, so
+  /// writing to the notifier while the shell is being built or torn down would mark a widget
+  /// dirty that has already been built this frame.
+  static void _reportBar(double height) {
+    WidgetsBinding.instance.addPostFrameCallback((_) => bottomBarHeight.value = height);
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _reportBar(V2BottomNav.barHeight);
+  }
+
+  @override
+  void dispose() {
+    _reportBar(0);
+    super.dispose();
+  }
+
   void _goBranch(int branch) {
     final shell = widget.navigationShell;
     shell.goBranch(branch, initialLocation: branch == shell.currentIndex);

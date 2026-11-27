@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:cheapest_go_mobile/app/theme/app_theme.dart';
+import 'package:cheapest_go_mobile/features/home/components/stage_chrome.dart';
 import 'package:cheapest_go_mobile/features/home/views/home_view.dart';
 import 'package:cheapest_go_mobile/l10n/generated/app_localizations.dart';
 import 'package:cheapest_go_mobile/shared/search/destinations_api.dart';
@@ -77,8 +78,8 @@ void main() {
 
         await openWhere(tester);
 
-        expect(find.widgetWithText(ActionChip, 'Osaka'), findsOneWidget);
-        expect(find.widgetWithText(ActionChip, 'Hanoi'), findsOneWidget);
+        expect(find.widgetWithText(GlassPill, 'Osaka'), findsOneWidget);
+        expect(find.widgetWithText(GlassPill, 'Hanoi'), findsOneWidget);
     });
 
     testWidgets('offers somewhere searched before, ahead of what is trending', (tester) async {
@@ -88,9 +89,9 @@ void main() {
 
         await openWhere(tester);
 
-        final chips = tester.widgetList<ActionChip>(find.byType(ActionChip)).toList();
-        expect((chips.first.label as Text).data, 'Vigan');
-        expect(chips.map((c) => (c.label as Text).data), contains('Osaka'));
+        final chips = tester.widgetList<GlassPill>(find.byType(GlassPill)).toList();
+        expect(chips.first.label, 'Vigan');
+        expect(chips.map((c) => c.label), contains('Osaka'));
     });
 
     /// A chip reading "Seoul" directly above a photograph of Seoul is two answers to one
@@ -100,8 +101,8 @@ void main() {
 
         await openWhere(tester);
 
-        expect(find.widgetWithText(ActionChip, 'Seoul'), findsNothing);
-        expect(find.widgetWithText(ActionChip, 'Osaka'), findsOneWidget);
+        expect(find.widgetWithText(GlassPill, 'Seoul'), findsNothing);
+        expect(find.widgetWithText(GlassPill, 'Osaka'), findsOneWidget);
     });
 
     testWidgets('picking a chip answers the step without looking it up', (tester) async {
@@ -110,11 +111,42 @@ void main() {
         destinationsApi = _StubApi(trendingCities: const ['Osaka'], result: null);
 
         await openWhere(tester);
-        await tester.tap(find.widgetWithText(ActionChip, 'Osaka'));
+        await tester.tap(find.widgetWithText(GlassPill, 'Osaka'));
         await tester.pumpAndSettle();
 
         expect(find.text('Osaka'), findsWidgets);
-        expect(find.byType(ActionChip), findsNothing, reason: 'the question is answered');
+        expect(find.widgetWithText(GlassPill, 'Osaka'), findsNothing,
+            reason: 'the question is answered, so it is no longer being asked');
+    });
+
+    /// What shipped: two blank white boxes where the chips should be.
+    ///
+    /// `ActionChip` builds its surface as a `MaterialType.canvas` with no colour of its own,
+    /// which paints `ThemeData.canvasColor` — and this app sets that to the page background.
+    /// The `backgroundColor` the chips passed was an 8% white painted *on top* of an already
+    /// white pill, and the white label and white icon then had nowhere to show. Nothing a chip
+    /// exposes reaches that Material, so the fix was to stop using one.
+    testWidgets('a chip is not painted with the page background', (tester) async {
+        destinationsApi = _StubApi(trendingCities: const ['Osaka']);
+
+        await openWhere(tester);
+
+        final canvas = AppTheme.light.canvasColor;
+        final surfaces = tester.widgetList<Material>(
+            find.descendant(of: find.byType(GlassPill), matching: find.byType(Material)),
+        );
+        expect(surfaces, isNotEmpty);
+        for (final m in surfaces) {
+            final painted = m.color ?? (m.type == MaterialType.canvas ? canvas : null);
+            expect(painted, isNot(canvas),
+                reason: 'the pill sits on a photograph, not on the page');
+        }
+
+        // And it does carry a fill of its own, rather than relying on whatever is behind it.
+        final box = tester.widget<Container>(
+            find.descendant(of: find.byType(GlassPill), matching: find.byType(Container)).first,
+        );
+        expect((box.decoration! as BoxDecoration).color, isNotNull);
     });
 
     testWidgets('a failed lookup leaves the places already listed alone', (tester) async {
