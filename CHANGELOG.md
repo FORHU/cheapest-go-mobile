@@ -1,5 +1,13 @@
 # Changelog
 
+## [1.3.0](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.2.0...cheapest_go_mobile-v1.3.0) (2026-11-27)
+
+
+### Features
+
+* add step-by-step landing search component and associated unit t… ([694f34d](https://github.com/FORHU/cheapest-go-mobile/commit/694f34d58e8f39f869c83a7ce145de42252faf23))
+* add step-by-step landing search component and associated unit tests ([5d6ea17](https://github.com/FORHU/cheapest-go-mobile/commit/5d6ea17d626125050f22e8da6f46cb71ea84a9f4))
+
 ## [1.2.0](https://github.com/FORHU/cheapest-go-mobile/compare/cheapest_go_mobile-v1.1.0...cheapest_go_mobile-v1.2.0) (2026-11-26)
 
 
